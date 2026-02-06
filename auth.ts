@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { cookies } from "next/headers";
-import { compare } from "bcryptjs";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "./auth.config";
 
@@ -15,16 +14,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     ...authConfig.providers,
     Credentials({
       name: "Credentials",
+      // ... dentro do Credentials ...
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
         const user = await db.user.findUnique({
           where: { email: credentials.email as string },
         });
+
         if (!user || !user.password) return null;
+
+        // 👈 A MÁGICA ESTÁ AQUI: Importamos o bcrypt só agora!
+        const { compare } = await import("bcryptjs");
+
         const isValid = await compare(
           credentials.password as string,
           user.password,
         );
+
         if (!isValid) return null;
         return {
           id: user.id,
