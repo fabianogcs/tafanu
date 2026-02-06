@@ -17,7 +17,7 @@ export default async function AdminPage() {
     !currentUser ||
     currentUser.role !== "ADMIN" ||
     !currentUser.email ||
-    !ADMIN_EMAILS.includes(currentUser.email!) // 👈 O segredo é este "!" aqui
+    !ADMIN_EMAILS.includes(currentUser.email as string) // 👈 Usando "as string" é impossível o TS reclamar
   ) {
     redirect("/");
   }
