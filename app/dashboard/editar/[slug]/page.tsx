@@ -18,7 +18,7 @@ import BusinessEditor from "@/components/BusinessEditor";
 export default async function EditBusinessPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>; // 👈 Adicionamos o Promise aqui
 }) {
   const { slug } = await params;
   const cookieStore = await cookies();
