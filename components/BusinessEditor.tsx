@@ -1,5 +1,8 @@
 "use client";
-
+// Damos um apelido (UTButton) para evitar conflito com seu componente local
+import { UploadButton as UTButton } from "@uploadthing/react";
+import { OurFileRouter } from "@/app/api/uploadthing/core";
+// ... outros imports
 import { useState, useMemo, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -49,11 +52,6 @@ type BusinessHour = {
   close: string;
   closed?: boolean;
 };
-
-const UploadButton = dynamic(
-  () => import("@uploadthing/react").then((mod) => mod.UploadButton),
-  { ssr: false },
-);
 
 // --- DADOS ESTÁTICOS (Fora da função para evitar re-renders) ---
 const TAFANU_CATEGORIES = {
@@ -583,7 +581,7 @@ export default function BusinessEditor({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <UploadButton
+                      <UTButton<OurFileRouter, any>
                         endpoint="imageUploader"
                         onClientUploadComplete={(res) =>
                           setProfileImage(res[0].ufsUrl)
@@ -800,7 +798,8 @@ export default function BusinessEditor({
                     </>
                   ) : (
                     mediaType !== "none" && (
-                      <UploadButton
+                      // Mude de <UploadButton para:
+                      <UTButton<OurFileRouter, any>
                         endpoint={
                           mediaType === "video"
                             ? "videoUploader"
@@ -855,9 +854,8 @@ export default function BusinessEditor({
                         size={32}
                         className="text-slate-200 group-hover:text-indigo-200"
                       />
-                      <UploadButton
+                      <UTButton<OurFileRouter, any>
                         endpoint="imageUploader"
-                        input={{ maxFileCount: 8 - validGallery.length }}
                         onClientUploadComplete={(res) => {
                           if (!res) return;
                           setGallery((prev) =>

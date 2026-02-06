@@ -116,6 +116,7 @@ export default function ProfileForm({ user }: { user: any }) {
     setIsSaving(true);
     try {
       // IMPORTANTE: Adicione o import { cancelSubscriptionAction } no topo do arquivo
+      // @ts-ignore
       const res = await cancelSubscriptionAction();
 
       if (res.success) {

@@ -59,8 +59,9 @@ const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div
-      className={`mb-3 rounded-[1.5rem] border ${theme.border} ${theme.cardBg} overflow-hidden transition-all duration-300 ${isOpen ? "ring-1" : ""}`}
-      style={{ ringColor: isOpen ? "currentColor" : "transparent" }}
+      className={`mb-3 rounded-[1.5rem] border ${theme.border} ${theme.cardBg} overflow-hidden transition-all duration-300 ${
+        isOpen ? "ring-1 ring-current" : "ring-0 ring-transparent"
+      }`}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}

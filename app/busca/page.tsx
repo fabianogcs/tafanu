@@ -89,10 +89,23 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       },
       AND: [
         ...(category
-          ? [{ category: { equals: category, mode: "insensitive" } }]
+          ? [
+              {
+                category: {
+                  equals: category,
+                  mode: "insensitive" as const, // 👈 O segredo está no "as const"
+                },
+              },
+            ]
           : []),
-        ...(subcategoriesList.length > 0
-          ? [{ subcategory: { hasSome: subcategoriesList } }]
+        ...(subcategory
+          ? [
+              {
+                subcategory: {
+                  hasSome: [subcategory],
+                },
+              },
+            ]
           : []),
       ],
     },

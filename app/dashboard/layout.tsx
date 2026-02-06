@@ -38,7 +38,7 @@ export default async function DashboardLayout({
   // 2. LÓGICA DE TRAVA: Se é assinante E não tem dados, bloqueia o menu.
   const isLocked = isAssinante && (!user.document || !user.phone);
 
-  const nameParts = user.name.split(" ") || ["Usuário"];
+  const nameParts = user.name?.split(" ") ?? ["Usuário"];
   const displayName = nameParts[0];
 
   return (

@@ -63,7 +63,7 @@ export default async function DashboardPage() {
                   Ação Necessária
                 </span>
                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 uppercase italic leading-none mb-4">
-                  Quase lá, {user.name.split(" ")[0]}!
+                  Quase lá, {user.name?.split(" ")[0] ?? "Usuário"}!
                 </h2>
                 <p className="text-slate-500 font-medium mb-8">
                   Para liberar a criação de anúncios, precisamos validar seus

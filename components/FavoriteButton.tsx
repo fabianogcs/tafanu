@@ -26,7 +26,7 @@ export default function FavoriteButton({
       if (res.error) {
         alert(res.error);
       } else {
-        setLiked(res.isFavorite);
+        setLiked((res as any).isFavorite);
       }
     } catch (error) {
       console.error("Erro ao favoritar:", error);

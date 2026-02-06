@@ -18,7 +18,7 @@ export default function Typewriter({ text }: { text: string }) {
       opacity: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const, // 👈 O segredo é esse "as const"
         damping: 12,
         stiffness: 100,
       },

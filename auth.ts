@@ -7,7 +7,7 @@ import authConfig from "./auth.config";
 import { compareSync } from "bcrypt-ts"; // 👈 NOVA BIBLIOTECA COMPATÍVEL!
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(db),
+  adapter: PrismaAdapter(db) as any,
   trustHost: true,
   session: { strategy: "jwt" },
   ...authConfig,
