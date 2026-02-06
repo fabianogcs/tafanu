@@ -11,13 +11,13 @@ export default async function AdminPage() {
 
   if (!userId) redirect("/login");
 
-  const currentUser = await db.user.findUnique({ where: { id: userId } });
+  const userEmail = currentUser?.email;
 
   if (
     !currentUser ||
     currentUser.role !== "ADMIN" ||
-    !currentUser.email ||
-    !ADMIN_EMAILS.includes(currentUser.email as string) // 👈 Usando "as string" é impossível o TS reclamar
+    !userEmail || // 2. Se não existir email, ele para aqui
+    !ADMIN_EMAILS.includes(userEmail) // 3. Aqui o TS tem certeza que é string
   ) {
     redirect("/");
   }
