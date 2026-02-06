@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import { compare } from "bcryptjs";
 
+export const runtime = "nodejs";
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
   trustHost: true,
