@@ -16,6 +16,7 @@ export default async function AdminPage() {
   if (
     !currentUser ||
     currentUser.role !== "ADMIN" ||
+    !currentUser.email ||
     !ADMIN_EMAILS.includes(currentUser.email)
   ) {
     redirect("/");
