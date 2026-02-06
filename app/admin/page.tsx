@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
-
+// Forçando atualização do TypeScript
 const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"];
 
 export default async function AdminPage() {
