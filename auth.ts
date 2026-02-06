@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "./auth.config";
+import { compareSync } from "bcrypt-ts"; // 👈 NOVA BIBLIOTECA COMPATÍVEL!
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -23,9 +24,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.password) return null;
 
-        // Importação dinâmica para não travar o Middleware/Edge
-        const { compare } = await import("bcryptjs");
-        const isValid = await compare(
+        // Agora usamos o compareSync da bcrypt-ts que não trava o Edge!
+        const isValid = compareSync(
           credentials.password as string,
           user.password,
         );
@@ -41,6 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  // ... mantenha seus callbacks e events exatamente como estão agora ...
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) return { ...token, ...session };
