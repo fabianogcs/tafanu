@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
-// Forçando atualização do TypeScript
+
 const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"];
 
 export default async function AdminPage() {
@@ -11,18 +11,23 @@ export default async function AdminPage() {
 
   if (!userId) redirect("/login");
 
+  // 1. BUSCAMOS O USUÁRIO (Essa linha é essencial!)
+  const currentUser = await db.user.findUnique({ where: { id: userId } });
+
+  // 2. EXTRAÍMOS O EMAIL PARA UMA CONSTANTE
   const userEmail = currentUser?.email;
 
+  // 3. FAZEMOS A VALIDAÇÃO DE SEGURANÇA
   if (
     !currentUser ||
     currentUser.role !== "ADMIN" ||
-    !userEmail || // 2. Se não existir email, ele para aqui
-    !ADMIN_EMAILS.includes(userEmail) // 3. Aqui o TS tem certeza que é string
+    !userEmail ||
+    !ADMIN_EMAILS.includes(userEmail)
   ) {
     redirect("/");
   }
 
-  // Busca usuários incluindo a data de validade (expiresAt)
+  // Busca usuários incluindo a data de validade
   const users = await db.user.findMany({
     include: { businesses: true },
     orderBy: { createdAt: "desc" },
@@ -33,13 +38,11 @@ export default async function AdminPage() {
     include: { business: { select: { name: true, slug: true } } },
   });
 
-  // Cálculos Rápidos para o servidor
   const assinantesReais = users.filter((u) => u.role === "ASSINANTE");
 
   const adminData = {
     users,
     reports,
-    // Cálculo de MRR (Receita Mensal Recorrente Estimada)
     receita: assinantesReais.length * 29.9,
   };
 
