@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
-import authConfig from "./auth.config"; // 👈 Importando o leve
+import authConfig from "./auth.config";
 import { NextResponse } from "next/server";
 
+// Inicializa o NextAuth só com a config leve (sem bcrypt/prisma)
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
@@ -10,7 +11,6 @@ export default auth((req) => {
   const user = req.auth?.user;
   const pathname = nextUrl.pathname;
 
-  // 1. Caminhos que NUNCA devem ser bloqueados (Públicos e arquivos)
   if (
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
@@ -20,7 +20,6 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // 2. Se NÃO está logado e tenta entrar no Dashboard ou Admin -> Login
   if (
     !isLoggedIn &&
     (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
@@ -28,13 +27,11 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
-  // 3. Proteção básica de ADMIN
   // @ts-ignore
   if (pathname.startsWith("/admin") && user?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
-  // 4. Se está logado e tenta ir para o login, manda para o home ou dashboard
   if (isLoggedIn && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }

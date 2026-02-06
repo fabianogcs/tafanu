@@ -1,3 +1,2 @@
-import { handlers } from "@/auth"; // Importa do arquivo que criamos no passo 2
-
+import { handlers } from "@/auth";
 export const { GET, POST } = handlers;

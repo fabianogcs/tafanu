@@ -14,7 +14,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     ...authConfig.providers,
     Credentials({
       name: "Credentials",
-      // ... dentro do Credentials ...
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
@@ -24,15 +23,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.password) return null;
 
-        // 👈 A MÁGICA ESTÁ AQUI: Importamos o bcrypt só agora!
+        // Importação dinâmica para não travar o Middleware/Edge
         const { compare } = await import("bcryptjs");
-
         const isValid = await compare(
           credentials.password as string,
           user.password,
         );
 
         if (!isValid) return null;
+
         return {
           id: user.id,
           name: user.name,
@@ -45,21 +44,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) return { ...token, ...session };
+
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
-      // Busca dados extras no banco (telefone, doc) apenas se não for no Edge
+
+      // 🛑 RECUPERANDO O BALÃO DE SENHA E DADOS EXTRAS
       if (token.sub && process.env.NEXT_RUNTIME !== "edge") {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.sub },
-            select: { role: true, phone: true, document: true },
+            select: { role: true, phone: true, document: true, password: true },
           });
+
           if (dbUser) {
             token.role = dbUser.role;
             token.phone = dbUser.phone;
             token.document = dbUser.document;
+            token.hasPassword = !!dbUser.password; // Isso faz o balão sumir!
           }
         } catch (e) {
           /* ignore */
@@ -73,6 +76,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         // @ts-ignore
         session.user.phone = token.phone;
+        // @ts-ignore
+        session.user.hasPassword = token.hasPassword; // Envia para o front-end
       }
       return session;
     },
@@ -93,6 +98,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         maxAge: 604800,
         path: "/",
       });
+    },
+    // 🛑 ADICIONANDO O LOGOUT PARA LIMPAR COOKIES
+    async signOut() {
+      const cookieStore = await cookies();
+      cookieStore.delete("userId");
+      cookieStore.delete("userRole");
     },
   },
 });
