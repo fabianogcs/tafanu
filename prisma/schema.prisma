@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- TABELA DE USUÁRIOS ---
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?    @unique
+  emailVerified DateTime? // Necessário para o NextAuth
+  image         String?   // <--- NOVO: Foto do Google
+  password         String?
+  
+  // ROLE: VISITANTE, ASSINANTE ou ADMIN
+  role             String    @default("VISITANTE") 
+  expiresAt     DateTime?  // Data de vencimento da assinatura
+  document         String?   @unique
+  phone            String?
+  createdAt        DateTime  @default(now())
+
+  accounts      Account[] // <--- NOVO: Relacionamento
+  sessions      Session[] // <--- NOVO: Relacionamento
+
+  // RELAÇÕES
+  businesses       Business[] 
+  favorites        Favorite[] 
+}
+
+// --- TABELA DE NEGÓCIOS ---
+model Business {
+  id                  String         @id @default(cuid())
+  name                String
+  slug                String         @unique
+  description         String?        @db.Text
+  theme               String         @default("carbon")
+  layout              String         @default("influencer")
+  category            String
+  subcategory         String[]
+  keywords            String[]     @default([])
+  whatsapp_clicks Int @default(0)  // <--- ADICIONAR
+  phone_clicks    Int @default(0)  // <--- ADICIONAR
+  
+  // Mídia Principal
+  heroImage           String?        @db.Text
+  videoUrl            String?        @db.Text
+  imageUrl            String?        @db.Text // Foto de Perfil/Logo
+  gallery             String[]       @default([])
+
+  // Tags e Conteúdo Extra
+  urban_tag           String?
+  luxe_quote          String?
+  comercial_badge     String?
+  showroom_collection String?
+  
+  features            String[]       @default([])
+  faqs                Json[]         @default([])
+
+  // Localização e Contato
+  address             String?
+  neighborhood        String?        // Adicionado para suportar sua busca
+  city                String?   
+  state               String?   
+  latitude            Float?
+  longitude           Float?
+  whatsapp            String?
+  phone               String?
+  website             String?
+  instagram           String?
+  facebook            String?
+  tiktok              String?
+  
+  // Métricas de Popularidade
+  views               Int            @default(0)
+  published           Boolean        @default(true) 
+  isActive            Boolean        @default(true) 
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // RELAÇÃO COM O DONO
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  hours               BusinessHour[]
+  favorites           Favorite[]
+  reports             Report[]
+
+  // ÍNDICES PARA BUSCA RÁPIDA
+  @@index([city])
+  @@index([state])
+  @@index([category])
+}
+
+// --- HORÁRIOS DE FUNCIONAMENTO ---
+model BusinessHour {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int      
+  openTime    String   
+  closeTime   String   
+  isClosed    Boolean  @default(false)
+}
+
+// --- SISTEMA DE FAVORITOS ---
+model Favorite {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reason      String   // Motivo: "Conteúdo Impróprio", "Plágio", etc.
+  details     String?  // Detalhes opcionais
+  status      String   @default("PENDING") // PENDING (Pendente) ou RESOLVED (Resolvido)
+  createdAt   DateTime @default(now())
+
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+// --- ADICIONAR ISTO PARA O GOOGLE LOGIN ---
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+// --- RECUPERAÇÃO DE SENHA (NOVO) ---
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}

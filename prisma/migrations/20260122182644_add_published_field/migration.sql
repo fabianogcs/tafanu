@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Business" ADD COLUMN     "heroImage" TEXT,
+ADD COLUMN     "published" BOOLEAN NOT NULL DEFAULT true,
+ALTER COLUMN "gallery" SET DEFAULT ARRAY[]::TEXT[],
+ALTER COLUMN "theme" SET DEFAULT 'carbon',
+ALTER COLUMN "faqs" SET DEFAULT ARRAY[]::JSONB[],
+ALTER COLUMN "features" SET DEFAULT ARRAY[]::TEXT[];
