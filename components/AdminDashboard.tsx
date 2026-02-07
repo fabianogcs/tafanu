@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -110,12 +111,12 @@ export default function AdminDashboard({ data }: { data: any }) {
       const result = await runGarbageCollector();
 
       if (result.error) {
-        alert("Erro: " + result.error);
+        toast.error("Erro na faxina: " + result.error);
       } else {
-        alert(result.message);
+        toast.success(result.message);
       }
     } catch (error) {
-      alert("Erro ao tentar rodar a faxina.");
+      toast.error("Erro crítico ao tentar rodar a faxina.");
     } finally {
       setIsCleaning(false);
     }
@@ -144,8 +145,10 @@ export default function AdminDashboard({ data }: { data: any }) {
       startTransition(async () => {
         await adminAddDaysToUser(userId, months);
         router.refresh();
-        alert(
-          isActivation ? "Usuário Ativado com Sucesso!" : "Tempo atualizado.",
+        toast.success(
+          isActivation
+            ? "Usuário Ativado com Sucesso!"
+            : "Tempo atualizado com sucesso!",
         );
       });
     }
@@ -661,14 +664,25 @@ function Badge({ color, text }: any) {
 
 function ReportCard({ report }: any) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Adicione essa linha aqui se não tiver
+
   const handleResolve = async () => {
-    if (confirm("Resolver?")) {
+    if (confirm("Deseja marcar esta denúncia como resolvida?")) {
       setLoading(true);
-      await resolveReport(report.id);
-      window.location.reload();
+      const res = await resolveReport(report.id);
+
+      if (res?.success) {
+        toast.success("Denúncia resolvida!");
+        router.refresh();
+      } else {
+        toast.error("Erro ao resolver denúncia.");
+      }
+      setLoading(false);
     }
   };
+
   return (
+    // ... restante do seu return (não muda nada)
     <div className="bg-white p-6 rounded-2xl border border-rose-100 shadow-sm flex items-center justify-between">
       <div>
         <p className="text-xs font-bold text-rose-500 uppercase">
