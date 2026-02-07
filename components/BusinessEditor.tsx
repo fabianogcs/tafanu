@@ -240,6 +240,7 @@ export default function BusinessEditor({
   const themeKeys = useMemo(() => Object.keys(businessThemes), []);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // <--- A LINHA NOVA É ESTA
   const [activeTab, setActiveTab] = useState("design");
 
   // Estados
@@ -296,6 +297,7 @@ export default function BusinessEditor({
 
   const [addressData, setAddressData] = useState({
     address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
+    cep: safeBusiness.cep || "",
     neighborhood: safeBusiness.neighborhood,
     city: safeBusiness.city,
     state: safeBusiness.state,
@@ -315,6 +317,10 @@ export default function BusinessEditor({
     [gallery],
   );
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Sincroniza os dados locais com o banco quando a página atualiza
   useEffect(() => {
     if (!isNew && safeBusiness) {
@@ -323,7 +329,14 @@ export default function BusinessEditor({
       setGallery(safeBusiness.gallery);
       setProfileImage(safeBusiness.imageUrl);
       setIsPublished(safeBusiness.published);
-
+      setAddressData({
+        address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
+        cep: safeBusiness.cep || "",
+        neighborhood: safeBusiness.neighborhood || "",
+        city: safeBusiness.city || "",
+        state: safeBusiness.state || "",
+        number: safeBusiness.number || "",
+      });
       // Lógica para recuperar a Capa (Hero) corretamente
       if (safeBusiness.videoUrl?.trim()) {
         setMediaType("video");
@@ -381,6 +394,7 @@ export default function BusinessEditor({
         comercial_badge: layoutText,
         features: features.filter((f) => f.trim() !== ""),
         address: fullAddress,
+        cep: addressData.cep,
         city: addressData.city,
         state: addressData.state,
         whatsapp: onlyNumbers(whatsapp),
@@ -477,7 +491,7 @@ export default function BusinessEditor({
     setName(val);
     if (isNew) setSlug(toSlug(val));
   };
-
+  if (!isMounted) return null;
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-32">
       {isLoading && (
@@ -1043,7 +1057,12 @@ export default function BusinessEditor({
                   <MapPin size={18} className="text-rose-500" /> Localização
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  {/* LOCALIZAÇÃO: Por volta da linha 690 */}
                   <input
+                    value={addressData.cep} // <--- AGORA ELE MOSTRA O VALOR SALVO
+                    onChange={(e) =>
+                      setAddressData({ ...addressData, cep: e.target.value })
+                    } // <--- PERMITE DIGITAR
                     onBlur={(e) => {
                       const cep = e.target.value.replace(/\D/g, "");
                       if (cep.length !== 8) return;
@@ -1058,6 +1077,7 @@ export default function BusinessEditor({
                           if (!d.erro)
                             setAddressData((p) => ({
                               ...p,
+                              cep: cep, // <--- GARANTE QUE O CEP FIQUE SALVO
                               address: d.logradouro || "",
                               neighborhood: d.bairro || "",
                               city: d.localidade || "",

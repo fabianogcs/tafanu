@@ -518,6 +518,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
       ...validatedData,
       name: payload.name,
       slug: novoSlug,
+      cep: payload.cep,
       keywords: keywords, // Agora a variável já existe acima!
       latitude: coords.lat,
       longitude: coords.lng,
