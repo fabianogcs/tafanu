@@ -27,11 +27,6 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
-  // @ts-ignore
-  if (pathname.startsWith("/admin") && user?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/", nextUrl));
-  }
-
   if (isLoggedIn && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }

@@ -1,33 +1,38 @@
 import { db } from "@/lib/db";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
 
+// Lista de e-mails permitidos
 const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"];
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
+  const session = await auth();
 
-  if (!userId) redirect("/login");
+  // 1. Checa se você está logado
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
 
-  // 1. BUSCAMOS O USUÁRIO (Essa linha é essencial!)
-  const currentUser = await db.user.findUnique({ where: { id: userId } });
+  // 2. Busca o seu usuário no banco de dados da Neon
+  const currentUser = await db.user.findFirst({
+    where: {
+      email: {
+        equals: session.user.email,
+        mode: "insensitive", // Ignora maiúsculas/minúsculas
+      },
+    },
+  });
 
-  // 2. EXTRAÍMOS O EMAIL PARA UMA CONSTANTE
-  const userEmail = currentUser?.email;
+  const userEmail = currentUser?.email || session.user.email || "";
+  const isEmailInList = ADMIN_EMAILS.includes(userEmail.toLowerCase());
 
-  // 3. FAZEMOS A VALIDAÇÃO DE SEGURANÇA
-  if (
-    !currentUser ||
-    currentUser.role !== "ADMIN" ||
-    !userEmail ||
-    !ADMIN_EMAILS.includes(userEmail)
-  ) {
+  // 3. VALIDAÇÃO DE SEGURANÇA FINAL
+  if (!currentUser || currentUser.role !== "ADMIN" || !isEmailInList) {
     redirect("/");
   }
 
-  // Busca usuários incluindo a data de validade
+  // 4. Busca os dados do painel
   const users = await db.user.findMany({
     include: { businesses: true },
     orderBy: { createdAt: "desc" },
@@ -48,4 +53,3 @@ export default async function AdminPage() {
 
   return <AdminDashboard data={adminData} />;
 }
-// force deploy
