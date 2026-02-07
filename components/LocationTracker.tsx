@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { Navigation, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,7 +12,7 @@ export default function LocationTracker() {
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      alert("Seu navegador não suporta geolocalização.");
+      toast.error("Seu navegador não suporta geolocalização.");
       return;
     }
 
@@ -62,13 +63,21 @@ export default function LocationTracker() {
 
         // Se for Timeout, não damos o alert chato imediatamente, apenas paramos o loading
         // para o usuário tentar de novo se quiser.
-        if (error.code !== error.TIMEOUT) {
-          alert(msg);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Localização negada", {
+            description:
+              "Clique no cadeado ao lado da URL e permita o acesso ao GPS.",
+            duration: 5000,
+          });
+        } else if (error.code !== error.TIMEOUT) {
+          toast.warning(msg);
         } else {
-          console.warn("Timeout de GPS: O usuário pode tentar novamente.");
+          toast.info("Busca lenta?", {
+            description: "Tente clicar novamente para uma segunda tentativa.",
+          });
         }
       },
-      options
+      options,
     );
   };
 

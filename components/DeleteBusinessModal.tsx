@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { deleteBusiness } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2 } from "lucide-react";
@@ -14,10 +15,13 @@ export default function DeleteBusinessModal({ slug }: { slug: string }) {
     setLoading(true);
     const res = await deleteBusiness(slug);
 
+    // --- AQUI ENTRA O CÓDIGO DE SUCESSO ---
     if (res.success) {
-      router.push("/"); // Redireciona para a home após deletar e virar visitante
+      toast.success("Anúncio e assinatura encerrados com sucesso.");
+      router.push("/");
     } else {
-      alert(res.error);
+      // Aqui aproveitamos para trocar o alert pelo toast de erro também
+      toast.error(res.error || "Erro ao excluir anúncio.");
       setLoading(false);
     }
   };

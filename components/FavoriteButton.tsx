@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { Heart, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toggleFavorite } from "@/app/actions";
@@ -24,11 +25,12 @@ export default function FavoriteButton({
     try {
       const res = await toggleFavorite(businessId);
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
       } else {
         setLiked((res as any).isFavorite);
       }
     } catch (error) {
+      toast.error("Erro ao salvar favorito.");
       console.error("Erro ao favoritar:", error);
     } finally {
       setLoading(false);

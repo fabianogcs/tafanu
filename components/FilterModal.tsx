@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import {
   X,
@@ -67,7 +68,8 @@ export default function FilterModal({
   const currentLat = searchParams.get("lat");
 
   const ensureGPS = (callback: (lat: number, lng: number) => void) => {
-    if (!navigator.geolocation) return alert("Navegador sem suporte a GPS.");
+    if (!navigator.geolocation)
+      return toast.error("Seu navegador não suporta geolocalização.");
     setIsLoadingGPS(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -77,7 +79,9 @@ export default function FilterModal({
       (error) => {
         setIsLoadingGPS(false);
         console.error(error);
-        alert("Ative o GPS para usar este filtro.");
+        toast.warning(
+          "GPS desativado. Ative a localização para filtrar por distância.",
+        );
       },
     );
   };
