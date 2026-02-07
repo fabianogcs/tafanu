@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
 interface HoursFormProps {
@@ -52,7 +53,33 @@ export default function HoursForm({
     const newHours = [...hours];
     let val =
       field === "openTime" || field === "closeTime" ? formatTime(value) : value;
-    newHours[index] = { ...newHours[index], [field]: val };
+
+    const updatedDay = { ...newHours[index], [field]: val };
+
+    // BLOQUEIO ATIVO: Validação quando o usuário termina de digitar o horário (5 caracteres)
+    if (
+      !updatedDay.isClosed &&
+      updatedDay.openTime.length === 5 &&
+      updatedDay.closeTime.length === 5
+    ) {
+      const [openH, openM] = updatedDay.openTime.split(":").map(Number);
+      const [closeH, closeM] = updatedDay.closeTime.split(":").map(Number);
+
+      const openInMinutes = openH * 60 + openM;
+      const closeInMinutes = closeH * 60 + closeM;
+
+      if (closeInMinutes <= openInMinutes) {
+        toast.error(`Horário inválido de ${DAYS[index]}`, {
+          description: "O fechamento deve ser após a abertura.",
+        });
+
+        // Se o usuário tentou mudar o fechamento para algo menor que a abertura,
+        // nós impedimos a atualização desse campo específico voltando para o valor anterior
+        return;
+      }
+    }
+
+    newHours[index] = updatedDay;
     setHours(newHours);
   };
 

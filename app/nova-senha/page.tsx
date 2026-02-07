@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { resetPassword } from "@/app/actions";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -39,7 +40,7 @@ export default function NewPasswordPage() {
     } else if (result?.success) {
       // --- A CORREÇÃO ESTÁ AQUI ---
       // Se deu certo, avisamos o usuário e redirecionamos
-      alert("Senha alterada com sucesso!");
+      toast.success("Senha alterada com sucesso! Faça login com a nova senha.");
       router.push("/login");
     } else {
       // Caso genérico de falha

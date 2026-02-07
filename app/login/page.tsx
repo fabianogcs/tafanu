@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -70,7 +71,7 @@ export default function LoginPage() {
       // --- LOGIN NORMAL ---
       const result = await loginUser(formData);
       if (result?.error) {
-        alert(result.error);
+        toast.error(result.error);
         setIsLoading(false);
       } else {
         // Sucesso no login, o server action redireciona,
@@ -83,7 +84,7 @@ export default function LoginPage() {
       const registerResult = await registerUser(formData);
 
       if (registerResult?.error) {
-        alert(registerResult.error);
+        toast.error(registerResult.error);
         setIsLoading(false);
         return;
       }
@@ -93,7 +94,7 @@ export default function LoginPage() {
         const loginResult = await loginUser(formData);
 
         if (loginResult?.error) {
-          alert("Conta criada! Faça login para continuar.");
+          toast.warning("Conta criada! Agora é só fazer login para entrar.");
           setIsLogin(true);
           setIsLoading(false);
         } else {
