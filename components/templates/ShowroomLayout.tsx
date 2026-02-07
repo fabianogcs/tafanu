@@ -571,12 +571,14 @@ export default function ShowroomLayout({
                   >
                     Abrir Mapa
                   </h4>
+                  {/* Substitua os parágrafos de endereço por este bloco: */}
                   <p className="mt-2 opacity-60 text-sm max-w-[200px]">
                     {business.address || "Endereço sob consulta"}
                   </p>
                   <p className="opacity-40 text-xs mt-1">
                     {business.city || ""}
                     {business.state ? ` - ${business.state}` : ""}
+                    {business.cep ? ` | CEP: ${business.cep}` : ""}
                   </p>
                 </div>
               </a>

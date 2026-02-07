@@ -364,7 +364,8 @@ export default function UrbanLayout({
                   </p>
                   <p className="text-xs opacity-60 mt-1 uppercase">
                     {business.city}{" "}
-                    {business.state ? `- ${business.state}` : ""}
+                    {business.state ? `- ${business.state}` : ""}{" "}
+                    {business.cep ? `| CEP: ${business.cep}` : ""}
                   </p>
                 </a>
               )}

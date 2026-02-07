@@ -643,6 +643,7 @@ export default function LuxeLayout({
                           >
                             {business.city}
                             {business.state ? `, ${business.state}` : ""}
+                            {business.cep ? ` — CEP: ${business.cep}` : ""}
                           </p>
                         </div>
                       </a>

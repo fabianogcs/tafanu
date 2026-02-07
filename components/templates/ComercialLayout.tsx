@@ -552,7 +552,8 @@ export default function ComercialLayout({
                         </h4>
                         <p className="text-[9px] font-bold opacity-40 uppercase">
                           {business.city}{" "}
-                          {business.state ? `— ${business.state}` : ""}
+                          {business.state ? `— ${business.state}` : ""}{" "}
+                          {business.cep ? `| CEP: ${business.cep}` : ""}
                         </p>
                       </div>
                     </a>

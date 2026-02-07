@@ -15,7 +15,9 @@ export default async function ProfilePage() {
   });
 
   if (!user) redirect("/login");
-
+  if (user.role === "VISITANTE") {
+    redirect("/");
+  }
   return (
     <div className="max-w-2xl mx-auto pb-20 p-6 animate-in fade-in">
       <div className="mb-8 border-b border-gray-200 pb-6">
