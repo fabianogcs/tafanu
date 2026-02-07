@@ -24,11 +24,20 @@ export async function generateMetadata({
 
   if (!business) return { title: "Negócio não encontrado | Tafanu" };
 
-  // Criamos o link completo do site (ajuste se for .com.br)
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
-  const displayImage =
-    business.imageUrl || business.heroImage || `${siteUrl}/og-default.jpg`;
+  // 1. Identificamos qual imagem usar
+  const rawImage = business.imageUrl || business.heroImage;
+
+  // 2. Garantimos que o link da imagem seja completo (começando com http)
+  // Se a imagem for um link externo (ex: Uploadthing), usamos direto.
+  // Se for um caminho do site, grudamos o siteUrl na frente.
+  const displayImage = rawImage
+    ? rawImage.startsWith("http")
+      ? rawImage
+      : `${siteUrl}${rawImage}`
+    : `${siteUrl}/og-default.jpg`;
 
   return {
     title: `${business.name.toUpperCase()} | Tafanu`,
