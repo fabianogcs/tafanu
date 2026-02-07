@@ -37,7 +37,7 @@ export async function generateMetadata({
     ? rawImage.startsWith("http")
       ? rawImage
       : `${siteUrl}${rawImage}`
-    : `${siteUrl}/og-default.jpg`;
+    : `${siteUrl}/og-default.png`;
 
   return {
     title: `${business.name.toUpperCase()} | Tafanu`,
