@@ -1,5 +1,5 @@
 "use client";
-
+import { toast } from "sonner";
 import { useState } from "react";
 import { updateUserProfile } from "@/app/actions";
 import { cpf, cnpj } from "cpf-cnpj-validator";
@@ -58,11 +58,11 @@ export default function ProfileForm({ user }: { user: any }) {
 
     if (user.role === "ASSINANTE") {
       if (!docClean) {
-        alert("⚠️ O CPF ou CNPJ é obrigatório para assinantes.");
+        toast.warning("O CPF ou CNPJ é obrigatório para assinantes.");
         return;
       }
       if (phoneClean.length < 10) {
-        alert("⚠️ Forneça um número de WhatsApp válido.");
+        toast.warning("Forneça um número de WhatsApp válido.");
         return;
       }
     }
@@ -71,8 +71,8 @@ export default function ProfileForm({ user }: { user: any }) {
       const isValid =
         docClean.length <= 11 ? cpf.isValid(docClean) : cnpj.isValid(docClean);
       if (!isValid) {
-        alert(
-          `❌ O ${docClean.length <= 11 ? "CPF" : "CNPJ"} informado é inválido.`,
+        toast.error(
+          `O ${docClean.length <= 11 ? "CPF" : "CNPJ"} informado é inválido.`,
         );
         return;
       }
@@ -81,7 +81,7 @@ export default function ProfileForm({ user }: { user: any }) {
     const confirmPass = formData.get("confirmPassword") as string;
 
     if (newPass && newPass !== confirmPass) {
-      alert("❌ As senhas novas não coincidem! Verifique e tente novamente.");
+      toast.error("As senhas novas não coincidem!");
       return;
     }
 
@@ -90,18 +90,18 @@ export default function ProfileForm({ user }: { user: any }) {
       const res = await updateUserProfile(formData);
 
       if (res?.error) {
-        alert(`⚠️ ${res.error}`);
+        toast.error(res.error);
       } else {
         router.refresh();
         const form = event.target as HTMLFormElement;
         form
           .querySelectorAll('input[type="password"]')
           .forEach((i: any) => (i.value = ""));
-        alert("✅ Perfil atualizado com sucesso!");
+        toast.success("Perfil atualizado com sucesso!");
         setShowWelcome(false); // Esconde o banner após o primeiro save
       }
     } catch (error) {
-      alert("❌ Ocorreu um erro ao salvar. Tente novamente.");
+      toast.error("Ocorreu um erro ao salvar. Tente novamente.");
     } finally {
       setIsSaving(false);
     }
@@ -120,13 +120,15 @@ export default function ProfileForm({ user }: { user: any }) {
       const res = await cancelSubscriptionAction();
 
       if (res.success) {
-        alert("Sua assinatura foi cancelada. Você agora é um Visitante.");
+        toast.success(
+          "Sua assinatura foi cancelada. Você agora é um Visitante.",
+        );
         router.refresh(); // Atualiza a tela para sumir o botão de cancelar
       } else {
-        alert(res.error);
+        toast.error(res.error || "Erro ao cancelar assinatura.");
       }
     } catch (error) {
-      alert("Erro ao processar.");
+      toast.error("Erro ao processar o cancelamento.");
     } finally {
       setIsSaving(false);
     }
