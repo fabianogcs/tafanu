@@ -1,8 +1,8 @@
 "use client";
 // Damos um apelido (UTButton) para evitar conflito com seu componente local
+import { toast } from "sonner";
 import { UploadButton as UTButton } from "@uploadthing/react";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
-// ... outros imports
 import { useState, useMemo, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -371,7 +371,10 @@ export default function BusinessEditor({
 
   const handleUpdate = async () => {
     if (isLoading) return;
-    if (isNew && !name) return alert("Por favor, digite o nome do negócio.");
+    if (isNew && !name) {
+      toast.error("Por favor, digite o nome do negócio antes de salvar.");
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -443,7 +446,7 @@ export default function BusinessEditor({
 
         if (!result.success) {
           if (result.error?.toLowerCase().includes("slug")) {
-            alert("⚠️ Esse nome já está em uso. Tente outro!");
+            toast.warning("Este nome de link já está em uso. Tente outro.");
             setIsLoading(false);
             return;
           }
@@ -462,7 +465,7 @@ export default function BusinessEditor({
 
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
-        alert("✅ Alterações salvas!");
+        toast.success("Alterações salvas com sucesso!");
 
         // --- A MÁGICA DO REDIRECIONAMENTO ---
         // Se o link mudou, pulamos para a nova URL do editor para evitar o 404
@@ -476,12 +479,14 @@ export default function BusinessEditor({
       if (isNew) {
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
-        alert("🎉 Criado com sucesso!");
+        toast.success("Seu negócio foi criado com sucesso!");
         router.push("/dashboard");
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
-      alert(`❌ Erro: ${err.message || "Erro desconhecido"}`);
+      toast.error(
+        `Ops! ${err.message || "Ocorreu um erro desconhecido ao salvar."}`,
+      );
     } finally {
       setIsLoading(false);
     }

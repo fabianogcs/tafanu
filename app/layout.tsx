@@ -1,3 +1,4 @@
+import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -38,8 +39,9 @@ export default async function RootLayout({
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
         <Providers>
-          {/* ✅ Remova o "userId &&". Deixe o componente decidir internamente 
-              baseado na sessão real, não apenas no cookie. */}
+          {/* ✅ O Toaster deve ficar aqui dentro para funcionar em tudo */}
+          <Toaster position="top-center" richColors />
+
           <PasswordAlert />
 
           <Navbar isLoggedIn={!!userId} userRole={userRole} />
