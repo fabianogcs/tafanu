@@ -76,10 +76,7 @@ export default async function Home() {
                 {/* IMAGEM COM EFEITO PRETO E BRANCO SE FECHADO */}
                 <div className="aspect-[16/10] w-full relative overflow-hidden bg-gray-100">
                   <img
-                    src={
-                      item.imageUrl ||
-                      "https://images.unsplash.com/photo-1556761175-5973dc0f32e7"
-                    }
+                    src={item.imageUrl || "/og-default.png"}
                     className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
                       !isOpen ? "grayscale opacity-80" : ""
                     }`}

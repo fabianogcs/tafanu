@@ -122,11 +122,9 @@ export default async function DashboardPage() {
                   >
                     {/* Banner do Negócio */}
                     <div className="relative aspect-[16/9] w-full bg-slate-100 overflow-hidden">
+                      // COMO DEVE FICAR:
                       <img
-                        src={
-                          item.imageUrl ||
-                          "https://images.unsplash.com/photo-1556761175-5973dc0f32e7"
-                        }
+                        src={item.imageUrl || "/og-default.png"}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         alt={item.name}
                       />

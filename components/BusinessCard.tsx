@@ -14,10 +14,7 @@ export default function BusinessCard({ business }: any) {
       {/* IMAGEM COMPACTA */}
       <div className="relative aspect-[16/10] w-full bg-gray-100 overflow-hidden">
         <img
-          src={
-            business.imageUrl ||
-            "https://images.unsplash.com/photo-1556761175-5973dc0f32e7"
-          }
+          src={business.imageUrl || "/og-default.png"}
           alt={business.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />

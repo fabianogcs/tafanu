@@ -295,11 +295,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-xl transition-all duration-300 relative"
                 >
                   <div className="aspect-[4/3] md:aspect-[16/10] w-full relative overflow-hidden bg-gray-100">
+                    // COMO DEVE FICAR:
                     <img
-                      src={
-                        item.imageUrl ||
-                        "https://images.unsplash.com/photo-1556761175-5973dc0f32e7"
-                      }
+                      src={item.imageUrl || "/og-default.png"}
                       className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!item.isOpen ? "grayscale" : ""}`}
                       alt={item.name}
                     />
