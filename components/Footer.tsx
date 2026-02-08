@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { Mail, MessageCircle } from "lucide-react"; // ESSA LINHA É A QUE FALTAVA
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -33,7 +36,6 @@ export default function Footer() {
             >
               Termos de Uso
             </Link>
-            {/* NOVO LINK AQUI */}
             <Link
               href="/login"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm"
@@ -48,29 +50,33 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* BLOCO 3: Contato */}
+          {/* BLOCO 3: Contato - Ajustado */}
           <div className="flex flex-col space-y-3">
             <h3 className="font-bold text-gray-200 mb-1">Fale Conosco</h3>
 
+            {/* E-mail Profissional */}
             <a
-              href="mailto:contato@tafanu.com"
+              href="mailto:contato@tafanu.com.br"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm flex items-center justify-center md:justify-start gap-2"
             >
-              ✉️ contato@tafanu.com
+              <Mail size={16} className="text-tafanu-action" />
+              contato@tafanu.com.br
             </a>
 
+            {/* WhatsApp Real */}
             <a
-              href="https://wa.me/5511999999999"
+              href="https://wa.me/5514996050250"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm flex items-center justify-center md:justify-start gap-2"
             >
-              📱 (11) 99999-9999
+              <MessageCircle size={16} className="text-tafanu-action" />
+              (14) 99605-0250
             </a>
 
             <div className="pt-4 text-gray-600 text-xs">
               <p>&copy; {currentYear} TAFANU.</p>
-              <p>Todos os direitos reservados.</p>
+              <p>O seu guia oficial</p>
             </div>
           </div>
         </div>
