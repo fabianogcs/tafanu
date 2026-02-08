@@ -230,8 +230,18 @@ export async function logoutUser() {
   await signOut({ redirectTo: "/login" });
 }
 
-export async function googleLogin(redirectTo: string = "/") {
-  await signIn("google", { redirectTo });
+// app/actions.ts
+export async function googleLogin(redirectTo: string) {
+  await signIn("google", {
+    redirectTo,
+    authorization: {
+      params: {
+        prompt: "select_account", // ISSO obriga a mostrar a lista de contas
+        access_type: "offline",
+        response_type: "code",
+      },
+    },
+  });
 }
 
 // ==============================================================================
