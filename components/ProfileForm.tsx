@@ -35,7 +35,7 @@ export default function ProfileForm({ user }: { user: any }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const [showWelcome, setShowWelcome] = useState(!user.password); // Só mostra se não tem senha
-  const [termosAceitos, setTermosAceitos] = useState(false);
+  const [termosAceitos, setTermosAceitos] = useState(!!user.phone);
   // --- MÁSCARAS ---
 
   const maskPhone = (v: string) => {
@@ -122,19 +122,22 @@ export default function ProfileForm({ user }: { user: any }) {
       if (res?.error) {
         toast.error(res.error);
       } else {
-        router.refresh();
+        toast.success("Perfil atualizado com sucesso!", {
+          description: "Redirecionando para o painel...",
+        });
 
         const form = event.target as HTMLFormElement;
-
         form
-
           .querySelectorAll('input[type="password"]')
-
           .forEach((i: any) => (i.value = ""));
 
-        toast.success("Perfil atualizado com sucesso!");
+        setShowWelcome(false);
+        router.refresh();
 
-        setShowWelcome(false); // Esconde o banner após o primeiro save
+        // Envia o usuário para o dashboard após 1.5 segundos
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
       }
     } catch (error) {
       toast.error("Ocorreu um erro ao salvar. Tente novamente.");
@@ -393,9 +396,13 @@ export default function ProfileForm({ user }: { user: any }) {
                 <input
                   type="checkbox"
                   id="termos"
-                  checked={termosAceitos}
+                  // Lógica: Se já tem documento salvo, força 'true'. Se não, obedece o clique do usuário.
+                  checked={user.document ? true : termosAceitos}
+                  // Lógica: Se já tem documento salvo, trava o botão (disabled).
+                  disabled={!!user.document}
                   onChange={(e) => setTermosAceitos(e.target.checked)}
-                  className="w-6 h-6 mt-1 rounded-lg border-slate-300 text-[#023059] focus:ring-[#F28705] cursor-pointer"
+                  className={`w-6 h-6 mt-1 rounded-lg border-slate-300 text-[#023059] focus:ring-[#F28705] 
+    ${user.document ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
                 />
                 <label
                   htmlFor="termos"
@@ -422,10 +429,13 @@ export default function ProfileForm({ user }: { user: any }) {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSaving || !termosAceitos}
+                  // O botão desabilita se:
+                  // 1. Estiver salvando OU
+                  // 2. Se o usuário NÃO tem documento ainda E NÃO marcou a caixa.
+                  disabled={isSaving || (!user.document && !termosAceitos)}
                   className={`w-full md:w-auto px-10 h-16 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg ${
-                    termosAceitos
-                      ? "bg-[#023059] text-white hover:bg-[#F28705] hover:text-[#023059] active:scale-95"
+                    user.document || termosAceitos
+                      ? "bg-[#023059] text-white hover:bg-[#F28705] hover:text-[#023059]"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
                   }`}
                 >
@@ -434,7 +444,7 @@ export default function ProfileForm({ user }: { user: any }) {
                   ) : (
                     <Save size={18} />
                   )}
-                  {termosAceitos
+                  {user.document || termosAceitos
                     ? "Gravar Alterações"
                     : "Aceite os Termos primeiro"}
                 </button>
