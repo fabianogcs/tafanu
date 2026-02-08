@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { UploadDropzone } from "@/lib/uploadthing";
 import { X, Video, Image as ImageIcon, Save, Loader2 } from "lucide-react";
@@ -40,10 +41,10 @@ export default function MediaForm({
     setIsSaving(false);
 
     if (result.success) {
-      alert("Sucesso! Mídia atualizada.");
-      router.refresh(); // Atualiza a tela
+      toast.success("Mídia atualizada com sucesso!");
+      router.refresh();
     } else {
-      alert("Erro ao salvar.");
+      toast.error("Erro ao salvar mídia. Tente novamente.");
     }
   };
 
@@ -81,18 +82,16 @@ export default function MediaForm({
           <UploadDropzone
             endpoint="imageUploader"
             onClientUploadComplete={(res) => {
-              // ATUALIZADO: Mensagem mais clara e lógica de adição
               const newPhotos = res.map((r) => r.url);
               setGallery((prev) => [...prev, ...newPhotos]);
-              alert(
+              toast.success(
                 `${newPhotos.length} foto(s) carregada(s)! Clique em Salvar para confirmar.`,
               );
             }}
             onUploadError={(error: Error) => {
-              // ATUALIZADO: Tratamento de erro melhorado
               console.error(error);
-              alert(
-                `Erro no upload: Tente enviar menos fotos por vez ou verifique se são menores que 4MB.`,
+              toast.error(
+                "Erro no upload. Verifique se as fotos são menores que 4MB.",
               );
             }}
             className="ut-label:text-blue-500 ut-button:bg-blue-600 ut-button:hover:bg-blue-700 border-dashed border-2 border-gray-300 bg-gray-50 rounded-xl p-8 transition-all hover:bg-gray-100"

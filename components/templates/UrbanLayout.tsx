@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
+import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness"; // Importando a lib centralizada
@@ -160,13 +161,13 @@ export default function UrbanLayout({
           onClick={() => {
             const url = window.location.href;
             if (navigator.share) {
-              navigator.share({ url });
+              navigator.share({ url }).catch(() => {});
             } else {
               navigator.clipboard.writeText(url);
-              alert("Link copiado!");
+              toast.success("Link copiado para a área de transferência!");
             }
           }}
-          className="w-12 h-12 flex items-center justify-center border-2 border-white bg-black text-white shadow-[4px_4px_0px_rgba(255,255,255,0.2)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          className="..."
         >
           <Share2 size={20} />
         </button>

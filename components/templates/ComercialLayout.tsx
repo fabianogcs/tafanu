@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   MapPin,
@@ -210,11 +211,13 @@ export default function ComercialLayout({
             onClick={() => {
               const url = window.location.href;
               if (navigator.share) {
-                navigator.share({ url });
+                navigator.share({ url }).catch(() => {});
               } else if (navigator.clipboard?.writeText) {
                 navigator.clipboard
                   .writeText(url)
-                  .then(() => alert("Link copiado!"));
+                  .then(() =>
+                    toast.success("Link copiado para a área de transferência!"),
+                  );
               }
             }}
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black shadow-lg hover:scale-110 transition-transform"

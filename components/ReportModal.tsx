@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { Flag, Loader2, AlertTriangle, X } from "lucide-react";
 import { createReport } from "@/app/actions";
@@ -26,13 +27,14 @@ export default function ReportModal({
     setLoading(true);
     const res = await createReport(businessSlug, reason, details);
     setLoading(false);
-
     if (res.success) {
-      alert("Denúncia enviada. Vamos analisar o caso.");
+      toast.success("Denúncia recebida", {
+        description: "Nossa equipe irá analisar o caso em breve.",
+      });
       setIsOpen(false);
       setDetails("");
     } else {
-      alert("Erro ao enviar denúncia.");
+      toast.error("Não foi possível enviar a denúncia. Tente novamente.");
     }
   }
 

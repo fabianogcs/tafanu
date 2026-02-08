@@ -8,6 +8,7 @@ import {
   useTransform,
   useInView,
 } from "framer-motion";
+import { toast } from "sonner";
 import {
   Heart,
   Share2,
@@ -325,11 +326,13 @@ export default function LuxeLayout({
             onClick={() => {
               const url = window.location.href;
               if (navigator.share) {
-                navigator.share({ url });
+                navigator.share({ url }).catch(() => {});
               } else if (navigator.clipboard?.writeText) {
                 navigator.clipboard
                   .writeText(url)
-                  .then(() => alert("Link copiado!"));
+                  .then(() =>
+                    toast.success("Link copiado para a área de transferência!"),
+                  );
               }
             }}
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black shadow-xl hover:scale-110 active:scale-95 transition-all"

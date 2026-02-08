@@ -1,4 +1,6 @@
 "use client";
+
+import { toast } from "sonner";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { setInitialPassword } from "@/app/actions";
@@ -28,27 +30,37 @@ export default function PasswordAlert() {
   // ... resto do seu código (return do visual)
 
   const handleSave = async () => {
-    if (password.length < 6)
-      return alert("A senha deve ter pelo menos 6 dígitos");
-    if (password !== confirmPassword) return alert("As senhas não coincidem!");
+    // Validações com Toast + Return para parar o código
+    if (password.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 dígitos");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem!");
+      return;
+    }
 
     setLoading(true);
     try {
       const res = await setInitialPassword(password);
 
       if (res.success) {
-        // 2. MÁGICA AQUI: Esconde a caixa IMEDIATAMENTE
+        // Esconde a caixa
         setIsVisible(false);
 
-        // Atualiza a sessão em segundo plano para quando der F5
+        // Atualiza a sessão
         await update({ hasPassword: true });
 
-        alert("Senha cadastrada com sucesso!");
+        // Feedback de Sucesso
+        toast.success("Senha cadastrada com sucesso!");
       } else {
-        alert(res.error);
+        // Erro vindo do servidor
+        toast.error(res.error);
       }
     } catch (error) {
-      alert("Erro ao salvar senha.");
+      // Erro genérico
+      toast.error("Erro ao salvar senha.");
     } finally {
       setLoading(false);
     }

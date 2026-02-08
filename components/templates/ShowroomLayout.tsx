@@ -21,6 +21,7 @@ import {
   MessageCircle, // Ícone do WhatsApp
 } from "lucide-react";
 import * as Actions from "@/app/actions";
+import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness"; // Importando a lib
@@ -276,10 +277,12 @@ export default function ShowroomLayout({
             <button
               onClick={() => {
                 if (navigator.share) {
-                  navigator.share({ url: window.location.href });
+                  navigator
+                    .share({ url: window.location.href })
+                    .catch(() => {});
                 } else {
                   navigator.clipboard.writeText(window.location.href);
-                  alert("Link copiado!");
+                  toast.success("Link copiado para a área de transferência!");
                 }
               }}
               className="w-10 h-10 bg-white text-black flex items-center justify-center hover:bg-neutral-200 transition-colors shadow-lg rounded-full"

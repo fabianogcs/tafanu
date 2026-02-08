@@ -2,11 +2,12 @@
 
 import { AlertTriangle, Calendar, Zap, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import { ptBR } from "date-fns/locale";
 
 export default function SubscriptionAlert({ user }: { user: any }) {
   if (user.role !== "ASSINANTE" || !user.expiresAt) return null;
-
+  const router = useRouter();
   const isExpired = new Date(user.expiresAt) < new Date();
   const expiryDate = format(
     new Date(user.expiresAt),
@@ -53,7 +54,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
         </div>
 
         <button
-          onClick={() => (window.location.href = "/checkout")}
+          onClick={() => router.push("/checkout")}
           className="w-full md:w-auto bg-white text-rose-600 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-3"
         >
           Renovar Agora <ArrowRight size={16} />
