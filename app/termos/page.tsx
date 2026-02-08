@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { ShieldCheck, AlertOctagon, Scale, Ban } from "lucide-react";
 
@@ -129,12 +130,15 @@ export default function TermosPage() {
           </section>
 
           <div className="pt-10 border-t border-slate-100 flex flex-col items-center gap-4">
-            <Link
-              href="/"
-              className="px-8 py-3 bg-tafanu-blue text-white rounded-xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-lg shadow-blue-100"
+            <button
+              onClick={() => window.close()}
+              className="px-8 py-3 bg-tafanu-blue text-white rounded-xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-lg"
             >
-              Eu concordo e quero voltar
-            </Link>
+              Concordar e Fechar
+            </button>
+            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">
+              (Após fechar, continue seu cadastro na aba anterior)
+            </p>
             <p className="text-[10px] text-slate-400 font-bold uppercase">
               &copy; {currentYear} TAFANU - Conectando Cidades
             </p>

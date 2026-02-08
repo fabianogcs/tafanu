@@ -1,8 +1,13 @@
 "use client";
+
 import { toast } from "sonner";
+
 import { useState } from "react";
+
 import { updateUserProfile } from "@/app/actions";
+
 import { cpf, cnpj } from "cpf-cnpj-validator";
+
 import {
   Loader2,
   Save,
@@ -16,28 +21,40 @@ import {
   Sparkles,
   ArrowRight,
   Info,
+  ShieldCheck,
 } from "lucide-react";
+
 import { useRouter } from "next/navigation";
+import Link from "next/link"; // <--- ADICIONE ESTA LINHA NOVA
+
 import DeleteBusinessModal from "@/components/DeleteBusinessModal";
 
 export default function ProfileForm({ user }: { user: any }) {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(!user.password); // Só mostra se não tem senha
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [showWelcome, setShowWelcome] = useState(!user.password); // Só mostra se não tem senha
+  const [termosAceitos, setTermosAceitos] = useState(false);
   // --- MÁSCARAS ---
+
   const maskPhone = (v: string) => {
     if (!v) return "";
+
     v = v.replace(/\D/g, "");
+
     if (v.length <= 11) {
       v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
     }
+
     return v;
   };
 
   const maskDoc = (v: string) => {
     if (!v) return "";
+
     v = v.replace(/\D/g, "");
+
     if (v.length <= 11) {
       return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
     } else {
@@ -47,22 +64,29 @@ export default function ProfileForm({ user }: { user: any }) {
 
   async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     const formData = new FormData(event.currentTarget);
 
     const docRaw = formData.get("document") as string;
+
     const docClean = (docRaw || "").replace(/\D/g, "");
+
     const phoneClean = ((formData.get("phone") as string) || "").replace(
       /\D/g,
+
       "",
     );
 
     if (user.role === "ASSINANTE") {
       if (!docClean) {
         toast.warning("O CPF ou CNPJ é obrigatório para assinantes.");
+
         return;
       }
+
       if (phoneClean.length < 10) {
         toast.warning("Forneça um número de WhatsApp válido.");
+
         return;
       }
     }
@@ -70,22 +94,28 @@ export default function ProfileForm({ user }: { user: any }) {
     if (docClean.length > 0) {
       const isValid =
         docClean.length <= 11 ? cpf.isValid(docClean) : cnpj.isValid(docClean);
+
       if (!isValid) {
         toast.error(
           `O ${docClean.length <= 11 ? "CPF" : "CNPJ"} informado é inválido.`,
         );
+
         return;
       }
     }
+
     const newPass = formData.get("newPassword") as string;
+
     const confirmPass = formData.get("confirmPassword") as string;
 
     if (newPass && newPass !== confirmPass) {
       toast.error("As senhas novas não coincidem!");
+
       return;
     }
 
     setIsSaving(true);
+
     try {
       const res = await updateUserProfile(formData);
 
@@ -93,11 +123,17 @@ export default function ProfileForm({ user }: { user: any }) {
         toast.error(res.error);
       } else {
         router.refresh();
+
         const form = event.target as HTMLFormElement;
+
         form
+
           .querySelectorAll('input[type="password"]')
+
           .forEach((i: any) => (i.value = ""));
+
         toast.success("Perfil atualizado com sucesso!");
+
         setShowWelcome(false); // Esconde o banner após o primeiro save
       }
     } catch (error) {
@@ -106,23 +142,30 @@ export default function ProfileForm({ user }: { user: any }) {
       setIsSaving(false);
     }
   }
+
   // --- FUNÇÃO PARA CANCELAR ASSINATURA ---
+
   async function handleCancelSubscription() {
     const confirmar = confirm(
       "Deseja realmente cancelar sua assinatura? Seu negócio deixará de aparecer para os visitantes.",
     );
+
     if (!confirmar) return;
 
     setIsSaving(true);
+
     try {
       // IMPORTANTE: Adicione o import { cancelSubscriptionAction } no topo do arquivo
+
       // @ts-ignore
+
       const res = await cancelSubscriptionAction();
 
       if (res.success) {
         toast.success(
           "Sua assinatura foi cancelada. Você agora é um Visitante.",
         );
+
         router.refresh(); // Atualiza a tela para sumir o botão de cancelar
       } else {
         toast.error(res.error || "Erro ao cancelar assinatura.");
@@ -133,11 +176,13 @@ export default function ProfileForm({ user }: { user: any }) {
       setIsSaving(false);
     }
   }
+
   const businessSlug = user.businesses?.[0]?.slug || "none";
 
   return (
     <div className="w-full space-y-10 pb-20">
       {/* BANNER DIDÁTICO DE BOAS-VINDAS (ONBOARDING) */}
+
       {showWelcome && (
         <div className="bg-[#023059] p-8 rounded-[40px] shadow-2xl relative overflow-hidden animate-in slide-in-from-top duration-700">
           <div className="absolute top-[-20px] right-[-20px] text-[#F28705] opacity-10 rotate-12">
@@ -148,10 +193,12 @@ export default function ProfileForm({ user }: { user: any }) {
             <div className="w-20 h-20 bg-[#F28705] rounded-3xl flex items-center justify-center shadow-xl shrink-0 animate-bounce">
               <User size={40} className="text-[#023059]" />
             </div>
+
             <div className="flex-1 space-y-2">
               <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">
                 Seja bem-vindo, {user.name?.split(" ")[0]}!
               </h2>
+
               <p className="text-gray-300 font-bold text-sm leading-relaxed max-w-xl">
                 Você entrou com o Google, mas para sua conta ficar completa,
                 pedimos que
@@ -167,9 +214,11 @@ export default function ProfileForm({ user }: { user: any }) {
       <form onSubmit={handleFormSubmit} className="w-full space-y-12">
         <div className="flex flex-col gap-10">
           {/* SEÇÃO 1: PESSOAL */}
+
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
               <User size={18} className="text-[#F28705]" />
+
               <h2 className="text-sm font-black text-[#023059] uppercase tracking-tighter">
                 Informações de Perfil
               </h2>
@@ -180,6 +229,7 @@ export default function ProfileForm({ user }: { user: any }) {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                   Nome Completo
                 </label>
+
                 <input
                   name="name"
                   defaultValue={user.name}
@@ -198,6 +248,7 @@ export default function ProfileForm({ user }: { user: any }) {
                     <span className="ml-2 animate-pulse">(Obrigatório)</span>
                   )}
                 </label>
+
                 <input
                   name="phone"
                   defaultValue={maskPhone(user.phone || "")}
@@ -211,9 +262,11 @@ export default function ProfileForm({ user }: { user: any }) {
           </div>
 
           {/* SEÇÃO 2: DOCUMENTAÇÃO */}
+
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
               <ShieldAlert size={18} className="text-[#F28705]" />
+
               <h2 className="text-sm font-black text-[#023059] uppercase tracking-tighter">
                 Documentação e Acesso
               </h2>
@@ -227,6 +280,7 @@ export default function ProfileForm({ user }: { user: any }) {
                   <FileText size={12} /> CPF ou CNPJ{" "}
                   {user.role === "ASSINANTE" && "*"}
                 </label>
+
                 <input
                   name="document"
                   defaultValue={maskDoc(user.document || "")}
@@ -241,6 +295,7 @@ export default function ProfileForm({ user }: { user: any }) {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Mail size={12} /> E-mail (Somente Leitura)
                 </label>
+
                 <input
                   name="email"
                   type="email"
@@ -252,23 +307,24 @@ export default function ProfileForm({ user }: { user: any }) {
             </div>
           </div>
 
-          {/* SEÇÃO 3: SEGURANÇA E SENHA */}
-          {/* SEÇÃO 3: SEGURANÇA E SENHA */}
           <div className="bg-white p-8 md:p-10 rounded-[40px] border border-gray-100 shadow-xl space-y-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
                   <KeyRound size={24} />
                 </div>
+
                 <div>
                   <h3 className="text-sm font-black text-[#023059] uppercase">
                     Segurança da Conta
                   </h3>
+
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     Trocar Senha?
                   </p>
                 </div>
               </div>
+
               {!user.password && (
                 <span className="hidden md:flex items-center gap-2 px-4 py-2 bg-orange-100 text-[#F28705] text-[9px] font-black rounded-full uppercase">
                   <Info size={12} /> Definir Primeira Senha
@@ -285,6 +341,7 @@ export default function ProfileForm({ user }: { user: any }) {
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                     Senha Atual
                   </label>
+
                   <input
                     name="currentPassword"
                     type="password"
@@ -304,6 +361,7 @@ export default function ProfileForm({ user }: { user: any }) {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                   Nova Senha
                 </label>
+
                 <input
                   name="newPassword"
                   type="password"
@@ -316,6 +374,7 @@ export default function ProfileForm({ user }: { user: any }) {
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                   Confirmar Nova Senha
                 </label>
+
                 <input
                   name="confirmPassword"
                   type="password"
@@ -325,28 +384,72 @@ export default function ProfileForm({ user }: { user: any }) {
               </div>
             </div>
 
-            <div className="pt-6 border-t border-gray-50 flex justify-end">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="w-full md:w-auto px-10 h-16 bg-[#023059] text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 transition-all hover:bg-[#F28705] hover:text-[#023059] active:scale-95 disabled:opacity-50 shadow-lg"
+            {/* SEÇÃO DO CHECKBOX E BOTÃO (SUBSTITUIÇÃO CIRÚRGICA) */}
+            <div className="pt-6 border-t border-gray-50 flex flex-col gap-6">
+              {/* A CAIXINHA DE ACEITE */}
+              <div
+                className={`flex items-start gap-4 p-6 rounded-[2rem] transition-all border ${termosAceitos ? "bg-emerald-50 border-emerald-100" : "bg-slate-50 border-slate-100"}`}
               >
-                {isSaving ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Save size={18} />
-                )}
-                Gravar Alterações
-              </button>
+                <input
+                  type="checkbox"
+                  id="termos"
+                  checked={termosAceitos}
+                  onChange={(e) => setTermosAceitos(e.target.checked)}
+                  className="w-6 h-6 mt-1 rounded-lg border-slate-300 text-[#023059] focus:ring-[#F28705] cursor-pointer"
+                />
+                <label
+                  htmlFor="termos"
+                  className="text-[11px] font-bold text-slate-700 cursor-pointer leading-tight"
+                >
+                  LI E ACEITO OS{" "}
+                  <Link
+                    href="/termos"
+                    target="_blank"
+                    className="text-[#023059] font-black underline underline-offset-4"
+                  >
+                    TERMOS DE USO
+                  </Link>
+                  .
+                  <br />
+                  <span className="text-slate-400 font-medium">
+                    Entendo que violações das regras podem causar banimento sem
+                    reembolso.
+                  </span>
+                </label>
+              </div>
+
+              {/* O BOTÃO TRAVADO */}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSaving || !termosAceitos}
+                  className={`w-full md:w-auto px-10 h-16 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg ${
+                    termosAceitos
+                      ? "bg-[#023059] text-white hover:bg-[#F28705] hover:text-[#023059] active:scale-95"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                  }`}
+                >
+                  {isSaving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  {termosAceitos
+                    ? "Gravar Alterações"
+                    : "Aceite os Termos primeiro"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </form>
 
       {/* SEÇÃO DE GESTÃO DE PLANO */}
+
       <div className="pt-10 border-t border-gray-100 mt-10">
         <div className="flex items-center gap-2 mb-6">
           <ShieldAlert size={18} className="text-indigo-500" />
+
           <h2 className="text-sm font-black text-[#023059] uppercase tracking-tighter">
             Plano e Assinatura
           </h2>
@@ -359,11 +462,13 @@ export default function ProfileForm({ user }: { user: any }) {
                 <Sparkles size={16} className="text-[#F28705]" /> Assinatura
                 Parceiro Ativa
               </h3>
+
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
                 Você tem acesso total ao portal. O cancelamento rebaixará sua
                 conta para Visitante.
               </p>
             </div>
+
             <button
               type="button"
               onClick={handleCancelSubscription}
@@ -378,10 +483,12 @@ export default function ProfileForm({ user }: { user: any }) {
               <h3 className="font-black text-gray-400 uppercase text-sm">
                 Conta Visitante
               </h3>
+
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                 Você ainda não é um parceiro assinante.
               </p>
             </div>
+
             <a
               href="/anunciar"
               className="px-8 py-4 bg-[#023059] text-white text-[10px] font-black uppercase rounded-2xl hover:bg-[#F28705] transition-all"
