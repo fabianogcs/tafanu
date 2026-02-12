@@ -53,7 +53,7 @@ type BusinessHour = {
   closed?: boolean;
 };
 
-// --- DADOS ESTÁTICOS (Fora da função para evitar re-renders) ---
+// --- DADOS ESTÁTICOS ---
 const TAFANU_CATEGORIES = {
   Alimentação: [
     "Açaí & Sorvetes",
@@ -163,27 +163,6 @@ const TAFANU_CATEGORIES = {
   ].sort(),
 };
 
-const TABS = [
-  {
-    id: "design",
-    label: "Estilo",
-    icon: <Palette size={16} />,
-    activeClass: "bg-slate-900 text-white",
-  },
-  {
-    id: "content",
-    label: "Conteúdo",
-    icon: <Camera size={16} />,
-    activeClass: "bg-indigo-600 text-white",
-  },
-  {
-    id: "contact",
-    label: "Contato",
-    icon: <Phone size={16} />,
-    activeClass: "bg-emerald-600 text-white",
-  },
-];
-
 const layoutInfo: any = {
   urban: {
     label: "Urban",
@@ -239,8 +218,7 @@ export default function BusinessEditor({
   const categoryKeys = useMemo(() => Object.keys(TAFANU_CATEGORIES).sort(), []);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isMounted, setIsMounted] = useState(false); // <--- A LINHA NOVA É ESTA
-  const [activeTab, setActiveTab] = useState("design");
+  const [isMounted, setIsMounted] = useState(false);
 
   // Estados
   const [name, setName] = useState(safeBusiness.name);
@@ -249,17 +227,6 @@ export default function BusinessEditor({
   const [gallery, setGallery] = useState<string[]>(safeBusiness.gallery);
   const [profileImage, setProfileImage] = useState<string>(
     safeBusiness.imageUrl,
-  );
-
-  const [mediaType, setMediaType] = useState<"image" | "video" | "none">(
-    safeBusiness.videoUrl?.trim()
-      ? "video"
-      : safeBusiness.heroImage?.trim()
-        ? "image"
-        : "none",
-  );
-  const [heroMedia, setHeroMedia] = useState<string>(
-    safeBusiness.videoUrl?.trim() || safeBusiness.heroImage?.trim() || "",
   );
 
   const [categoria, setCategoria] = useState(safeBusiness.category);
@@ -315,7 +282,7 @@ export default function BusinessEditor({
       (key) => businessThemes[key].layout === selectedLayout,
     );
   }, [selectedLayout]);
-  // Cálculo da galeria válida (apenas fotos reais)
+
   const validGallery = useMemo(
     () => gallery.filter((g) => typeof g === "string" && g.startsWith("http")),
     [gallery],
@@ -325,27 +292,20 @@ export default function BusinessEditor({
     setIsMounted(true);
   }, []);
 
-  // --- COPIE A PARTIR DAQUI ---
+  // Lógica de troca de tema automática ao trocar layout
   useEffect(() => {
-    // 1. Olhamos qual é o tema que está selecionado agora
     const temaAtual = businessThemes[selectedTheme];
-
-    // 2. Perguntamos: "Esse tema pertence ao layout que eu acabei de clicar?"
     if (temaAtual?.layout !== selectedLayout) {
-      // 3. Se NÃO pertence, vamos procurar o primeiro tema que combine com o novo layout
       const primeiroTemaValido = Object.keys(businessThemes).find(
         (chave) => businessThemes[chave].layout === selectedLayout,
       );
-
-      // 4. Se acharmos um, a gente seleciona ele automaticamente
       if (primeiroTemaValido) {
         setSelectedTheme(primeiroTemaValido);
       }
     }
-  }, [selectedLayout]); // Isso aqui diz que o código só roda quando o LAYOUT mudar
-  // --- FIM DO CÓDIGO ---
+  }, [selectedLayout]);
 
-  // Sincroniza os dados locais com o banco quando a página atualiza
+  // Sincroniza dados com o banco ao carregar
   useEffect(() => {
     if (!isNew && safeBusiness) {
       setName(safeBusiness.name);
@@ -355,25 +315,14 @@ export default function BusinessEditor({
       setIsPublished(safeBusiness.published);
       setAddressData({
         address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
-        cep: safeBusiness.cep || "",
+        cep: safeBusiness.cep || "", // GARANTE QUE O CEP CARREGUE DO BANCO
         neighborhood: safeBusiness.neighborhood || "",
         city: safeBusiness.city || "",
         state: safeBusiness.state || "",
         number: safeBusiness.number || "",
       });
-      // Lógica para recuperar a Capa (Hero) corretamente
-      if (safeBusiness.videoUrl?.trim()) {
-        setMediaType("video");
-        setHeroMedia(safeBusiness.videoUrl);
-      } else if (safeBusiness.heroImage?.trim()) {
-        setMediaType("image");
-        setHeroMedia(safeBusiness.heroImage);
-      } else {
-        setMediaType("none");
-        setHeroMedia("");
-      }
     }
-  }, [safeBusiness, isNew]); // <--- O SEGREDO ESTÁ AQUI (Observamos o objeto todo)
+  }, [safeBusiness, isNew]);
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
@@ -402,8 +351,9 @@ export default function BusinessEditor({
     setIsLoading(true);
 
     try {
-      const fullAddress = `${addressData.address}${addressData.number ? ", " + addressData.number : ""}${addressData.neighborhood ? " - " + addressData.neighborhood : ""}`;
-      const finalHero = mediaType === "none" ? "" : heroMedia || "";
+      // CORREÇÃO AQUI: Agora montamos o endereço completo INCLUINDO O CEP e CIDADE
+      // Isso garante que no site do assinante apareça tudo.
+      const fullAddress = `${addressData.address}${addressData.number ? ", " + addressData.number : ""}${addressData.neighborhood ? " - " + addressData.neighborhood : ""}${addressData.city ? " - " + addressData.city : ""}${addressData.cep ? " - CEP " + addressData.cep : ""}`;
 
       const payload: any = {
         slug,
@@ -420,8 +370,8 @@ export default function BusinessEditor({
         showroom_collection: layoutText,
         comercial_badge: layoutText,
         features: features.filter((f) => f.trim() !== ""),
-        address: fullAddress,
-        cep: addressData.cep,
+        address: fullAddress, // Endereço completo com CEP
+        cep: addressData.cep, // Campo CEP separado para o input lembrar
         city: addressData.city,
         state: addressData.state,
         whatsapp: onlyNumbers(whatsapp),
@@ -434,8 +384,8 @@ export default function BusinessEditor({
           : "",
         tiktok: socials.tiktok ? `https://tiktok.com/@${socials.tiktok}` : "",
         website: socials.website,
-        videoUrl: mediaType === "video" ? finalHero : "",
-        heroImage: mediaType === "image" ? finalHero : "",
+        videoUrl: "",
+        heroImage: "",
         gallery: validGallery,
         imageUrl: profileImage,
         hours: businessHours,
@@ -455,7 +405,6 @@ export default function BusinessEditor({
               "faqs",
             ].includes(key)
           ) {
-            // Se for lista ou objeto (como hours/faqs), transformamos em texto para o FormData
             if (key === "hours" || key === "faqs") {
               submission.append(key, JSON.stringify(val));
             } else {
@@ -481,7 +430,6 @@ export default function BusinessEditor({
           (f) => f.q.trim() !== "" && f.a.trim() !== "",
         );
 
-        // Chamamos a atualização e pegamos o resultado (que tem o newSlug)
         const [updateResult] = await Promise.all([
           updateFullBusiness(business.slug, payload),
           updateBusinessHours(business.slug, businessHours),
@@ -491,8 +439,6 @@ export default function BusinessEditor({
         fireConfetti();
         toast.success("Alterações salvas com sucesso!");
 
-        // --- A MÁGICA DO REDIRECIONAMENTO ---
-        // Se o link mudou, pulamos para a nova URL do editor para evitar o 404
         if (updateResult.newSlug && updateResult.newSlug !== business.slug) {
           router.push(`/dashboard/editar/${updateResult.newSlug}`);
         } else {
@@ -591,631 +537,619 @@ export default function BusinessEditor({
         </div>
       </div>
 
-      <nav className="bg-white/80 backdrop-blur-md border-b sticky top-[80px] md:top-[96px] z-40 px-4 py-3 shadow-sm">
-        <div className="max-w-xl mx-auto flex bg-slate-100 p-1 rounded-2xl gap-1 shadow-inner">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === t.id ? t.activeClass + " shadow-md" : "text-slate-400"}`}
-            >
-              {t.icon} <span className="inline-block">{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-4 py-12 space-y-10">
-        <AnimatePresence mode="wait">
-          {activeTab === "design" && (
-            <motion.div
-              key="design"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-8"
-            >
-              <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 group">
-                  <div className="w-full h-full rounded-full bg-slate-50 border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center relative">
-                    {profileImage ? (
-                      <img
-                        src={profileImage}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <UTButton<OurFileRouter, any>
-                        endpoint="imageUploader"
-                        onClientUploadComplete={(res) =>
-                          setProfileImage(res[0].ufsUrl)
-                        }
-                        content={{
-                          button: <Plus size={40} className="text-slate-300" />,
-                        }}
-                        appearance={{
-                          button: "w-full h-full bg-transparent",
-                          allowedContent: "hidden",
-                        }}
-                      />
-                    )}
-                  </div>
-                  {profileImage && (
-                    <button
-                      onClick={() => setProfileImage("")}
-                      className="absolute bottom-1 right-1 bg-rose-500 text-white p-2.5 rounded-full shadow-lg hover:scale-110 transition-transform"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-                <input
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full text-center bg-transparent text-2xl md:text-3xl font-black outline-none border-b-2 border-transparent focus:border-indigo-100 transition-all pb-2 uppercase italic tracking-tighter"
-                  placeholder="NOME DO NEGÓCIO"
-                />
-
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-10 pt-8 border-t border-slate-50">
-                  {Object.keys(layoutInfo).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedLayout(key)}
-                      className={`p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 flex flex-col items-center gap-2 transition-all ${selectedLayout === key ? "border-slate-900 bg-slate-50 text-slate-900 shadow-inner" : "border-slate-50 text-slate-300"}`}
-                    >
-                      {layoutInfo[key].icon}{" "}
-                      <span className="text-[9px] md:text-[10px] font-black uppercase">
-                        {layoutInfo[key].label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.2rem] border border-dashed border-slate-200 w-full mt-6">
-                  <label className="text-[9px] font-black uppercase text-indigo-500 mb-2 block tracking-widest">
-                    {currentLayoutData.label} - Texto Especial
-                  </label>
-                  <input
-                    value={layoutText}
-                    onChange={(e) => setLayoutText(e.target.value)}
-                    className="w-full h-12 md:h-14 px-5 rounded-xl bg-white border font-bold text-xs md:text-sm shadow-sm outline-none"
-                    placeholder={currentLayoutData.placeholder}
+      <main className="max-w-4xl mx-auto px-4 py-12 space-y-12">
+        {/* =========================================================
+            SEÇÃO 1: DESIGN & IDENTIDADE
+           ========================================================= */}
+        <div className="space-y-8">
+          <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col items-center text-center">
+            {/* FOTO DE PERFIL */}
+            <div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 group">
+              <div className="w-full h-full rounded-full bg-slate-50 border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center relative">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    className="w-full h-full object-cover"
                   />
-                </div>
+                ) : (
+                  <UTButton<OurFileRouter, any>
+                    endpoint="imageUploader"
+                    onClientUploadComplete={(res) =>
+                      setProfileImage(res[0].ufsUrl)
+                    }
+                    content={{
+                      button: <Plus size={40} className="text-slate-300" />,
+                    }}
+                    appearance={{
+                      button: "w-full h-full bg-transparent",
+                      allowedContent: "hidden",
+                    }}
+                  />
+                )}
               </div>
-
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
-                  <Palette size={16} /> Temas Disponíveis
-                </h3>
-                <div className="grid grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-3 max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
-                  {filteredThemeKeys.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setSelectedTheme(t)}
-                      title={businessThemes[t].label}
-                      // MUDANÇAS AQUI:
-                      // 1. rounded-full: Deixa totalmente redondo
-                      // 2. ring-2 ring-offset-2: Cria um anel de seleção separado da bolinha (mais elegante)
-                      className={`aspect-square rounded-full transition-all relative group shadow-sm ${
-                        selectedTheme === t
-                          ? "ring-2 ring-offset-2 ring-slate-900 scale-90 z-10"
-                          : "hover:scale-110 hover:shadow-md border border-slate-100"
-                      }`}
-                      style={{ background: businessThemes[t].previewColor }}
-                    >
-                      {/* O pontinho branco no meio quando selecionado (Check visual) */}
-                      {selectedTheme === t && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          {/* Se o tema for muito claro, o ponto branco sumiria, então adicionamos uma sombra nele */}
-                          <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_2px_rgba(0,0,0,0.5)]" />
-                        </div>
-                      )}
-
-                      {/* Tooltip com o nome do tema (aparece no hover) */}
-                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase bg-slate-900 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
-                        {businessThemes[t].label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
-                  <Tag size={16} /> Segmentação
-                </h3>
-                <select
-                  value={categoria}
-                  onChange={(e) => {
-                    setCategoria(e.target.value);
-                    setSelectedSubs([]);
-                  }}
-                  className="w-full h-14 md:h-16 px-5 bg-slate-50 rounded-xl md:rounded-2xl font-black text-[11px] uppercase border outline-none mb-6"
+              {profileImage && (
+                <button
+                  onClick={() => setProfileImage("")}
+                  className="absolute bottom-1 right-1 bg-rose-500 text-white p-2.5 rounded-full shadow-lg hover:scale-110 transition-transform"
                 >
-                  {categoryKeys.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex flex-wrap gap-2">
-                  {(TAFANU_CATEGORIES as any)[categoria]?.map((sub: string) => (
-                    <button
-                      key={sub}
-                      type="button"
-                      onClick={() =>
-                        setSelectedSubs((prev) =>
-                          prev.includes(sub)
-                            ? prev.filter((s) => s !== sub)
-                            : [...prev, sub],
-                        )
-                      }
-                      className={`px-4 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase transition-all ${selectedSubs.includes(sub) ? "bg-slate-900 text-white shadow-lg" : "bg-slate-50 text-slate-400 border border-slate-100"}`}
-                    >
-                      {sub}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-8 pt-8 border-t border-slate-50">
-                  <div className="flex justify-between items-end mb-3">
-                    <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-                      <Hash size={16} /> Palavras-chave
-                    </label>
-                    <span className="text-[9px] font-bold text-slate-400">
-                      {keywords.length} / 10
-                    </span>
-                  </div>
-                  <div className="w-full min-h-[56px] px-2 py-2 bg-slate-50 rounded-xl border border-slate-200 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-50/50 transition-all flex flex-wrap gap-2 items-center">
-                    {keywords.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="bg-white border border-slate-200 text-slate-700 text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm"
-                      >
-                        {tag}
-                        <button
-                          onClick={() => removeTag(tag)}
-                          className="hover:text-rose-500 transition-colors"
-                        >
-                          <X size={12} />
-                        </button>
-                      </span>
-                    ))}
-                    <input
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleTagKeyDown}
-                      disabled={keywords.length >= 10}
-                      className="bg-transparent text-xs font-bold outline-none flex-1 min-w-[120px] h-8 px-2 placeholder:font-normal placeholder:text-slate-400 disabled:cursor-not-allowed"
-                      placeholder={
-                        keywords.length >= 10
-                          ? "Limite atingido"
-                          : "Digite e aperte Espaço ou Enter..."
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
 
-          {activeTab === "content" && (
-            <motion.div
-              key="content"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-8"
-            >
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                  <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
-                    <Camera size={18} className="text-rose-500" /> Banner
-                    Principal
-                  </h2>
-                  <div className="flex bg-slate-100 p-1 rounded-xl w-full md:w-auto">
-                    {["image", "video", "none"].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setMediaType(type as any)}
-                        className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-[9px] font-black transition-all ${mediaType === type ? "bg-white text-rose-500 shadow-sm" : "text-slate-400"}`}
-                      >
-                        {type.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="aspect-video rounded-[1.5rem] md:rounded-[2.5rem] bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden relative flex items-center justify-center group">
-                  {heroMedia && mediaType !== "none" ? (
-                    <>
-                      {mediaType === "video" ? (
-                        <video
-                          src={heroMedia}
-                          className="w-full h-full object-cover"
-                          autoPlay
-                          muted
-                          loop
-                          playsInline
-                        />
-                      ) : (
-                        <img
-                          src={heroMedia}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <button
-                          onClick={() => setHeroMedia("")}
-                          className="bg-white text-rose-500 px-6 py-3 rounded-xl font-black text-[10px] uppercase shadow-2xl"
-                        >
-                          Mudar Mídia
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    mediaType !== "none" && (
-                      // Mude de <UploadButton para:
-                      <UTButton<OurFileRouter, any>
-                        endpoint={
-                          mediaType === "video"
-                            ? "videoUploader"
-                            : "imageUploader"
-                        }
-                        onClientUploadComplete={(res) =>
-                          setHeroMedia(res[0].ufsUrl)
-                        }
-                        appearance={{
-                          button:
-                            "bg-slate-900 text-white text-[10px] font-black px-10 py-4 rounded-2xl shadow-xl",
-                          allowedContent: "hidden",
-                        }}
-                      />
-                    )
-                  )}
-                </div>
-              </div>
+            {/* NOME DO NEGÓCIO */}
+            <div className="w-full relative group mb-2">
+              <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1 block opacity-60 group-hover:opacity-100 transition-opacity">
+                Nome do Negócio (Clique para editar)
+              </label>
+              <input
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className="w-full text-center bg-transparent hover:bg-slate-50 text-2xl md:text-3xl font-black outline-none border-b-2 border-dashed border-slate-300 focus:border-indigo-500 focus:bg-white transition-all py-2 rounded-t-lg italic tracking-tighter placeholder:text-slate-300"
+                placeholder="Digite o Nome Aqui..."
+              />
+            </div>
 
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
-                    <Layout size={18} className="text-indigo-500" /> Galeria
-                    Vitrine
-                  </h2>
-                  <span className="text-[10px] font-black text-indigo-600 block uppercase">
-                    {validGallery.length} / 8
+            {/* SELETOR DE LAYOUT */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-10 pt-8 border-t border-slate-50">
+              {Object.keys(layoutInfo).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setSelectedLayout(key)}
+                  className={`p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 flex flex-col items-center gap-2 transition-all ${selectedLayout === key ? "border-slate-900 bg-slate-50 text-slate-900 shadow-inner" : "border-slate-50 text-slate-300"}`}
+                >
+                  {layoutInfo[key].icon}{" "}
+                  <span className="text-[9px] md:text-[10px] font-black uppercase">
+                    {layoutInfo[key].label}
                   </span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {validGallery.map((url, i) => (
-                    <div
-                      key={i}
-                      className="aspect-square rounded-xl overflow-hidden relative group border-2 border-white shadow-md"
-                    >
-                      <img src={url} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+
+            {/* INPUT DE TEXTO ESPECIAL DO LAYOUT */}
+            <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.2rem] border border-dashed border-slate-200 w-full mt-6">
+              <label className="text-[9px] font-black uppercase text-indigo-500 mb-2 block tracking-widest">
+                {currentLayoutData.label} - Texto Especial
+              </label>
+              <input
+                value={layoutText}
+                onChange={(e) => setLayoutText(e.target.value)}
+                className="w-full h-12 md:h-14 px-5 rounded-xl bg-white border font-bold text-xs md:text-sm shadow-sm outline-none"
+                placeholder={currentLayoutData.placeholder}
+              />
+            </div>
+          </div>
+
+          {/* TEMAS (CORES) */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
+              <Palette size={16} /> Temas Disponíveis
+            </h3>
+            <div className="grid grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4 p-2 pb-8">
+              {filteredThemeKeys.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTheme(t)}
+                  title={businessThemes[t].label}
+                  className={`aspect-square rounded-full transition-all relative group shadow-sm ${
+                    selectedTheme === t
+                      ? "ring-2 ring-offset-2 ring-slate-900 scale-90 z-10"
+                      : "hover:scale-110 hover:shadow-md border border-slate-100"
+                  }`}
+                  style={{ background: businessThemes[t].previewColor }}
+                >
+                  {selectedTheme === t && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_2px_rgba(0,0,0,0.5)]" />
+                    </div>
+                  )}
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase bg-slate-900 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
+                    {businessThemes[t].label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SEGMENTAÇÃO E TAGS */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
+              <Tag size={16} /> Segmentação
+            </h3>
+
+            {/* 1. SELETOR DE CATEGORIA (PRINCIPAL) */}
+            <div className="mb-8">
+              <label className="text-[9px] font-black uppercase text-indigo-400 mb-3 block tracking-widest">
+                1. Qual seu Ramo Principal?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {categoryKeys.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      setCategoria(cat);
+                      setSelectedSubs([]);
+                    }}
+                    className={`h-12 rounded-xl text-[9px] font-black uppercase transition-all border shadow-sm ${
+                      categoria === cat
+                        ? "bg-slate-900 text-white border-slate-900 ring-2 ring-slate-200 ring-offset-2"
+                        : "bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. SELETOR DE SUBCATEGORIAS (DENTRO DE UM BOX) */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8">
+              <label className="text-[9px] font-black uppercase text-slate-400 mb-3 block tracking-widest flex justify-between">
+                <span>2. O que você oferece? (Nichos)</span>
+                <span className="text-indigo-400">
+                  {selectedSubs.length} Selecionados
+                </span>
+              </label>
+
+              {/* Se não tiver subcategorias, avisa */}
+              {!(TAFANU_CATEGORIES as any)[categoria] ? (
+                <p className="text-xs text-slate-400 italic py-2">
+                  Selecione uma categoria acima primeiro.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {(TAFANU_CATEGORIES as any)[categoria]?.map((sub: string) => {
+                    const isSelected = selectedSubs.includes(sub);
+                    return (
                       <button
+                        key={sub}
+                        type="button"
                         onClick={() =>
-                          setGallery((prev) =>
-                            prev.filter((_, idx) => idx !== i),
+                          setSelectedSubs((prev) =>
+                            prev.includes(sub)
+                              ? prev.filter((s) => s !== sub)
+                              : [...prev, sub],
                           )
                         }
-                        className="absolute top-2 right-2 bg-rose-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                        className={`px-3 py-2 rounded-lg text-[9px] font-bold uppercase transition-all border ${
+                          isSelected
+                            ? "bg-indigo-500 text-white border-indigo-500 shadow-md transform scale-105"
+                            : "bg-white text-slate-500 border-slate-200 hover:border-indigo-200"
+                        }`}
                       >
-                        <Trash2 size={12} />
+                        {isSelected ? "✓ " : "+ "}
+                        {sub}
                       </button>
-                    </div>
-                  ))}
-                  {validGallery.length < 8 && (
-                    <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center relative transition-all group overflow-hidden">
-                      <Plus
-                        size={32}
-                        className="text-slate-200 group-hover:text-indigo-200"
-                      />
-                      <UTButton<OurFileRouter, any>
-                        endpoint="imageUploader"
-                        onClientUploadComplete={(res) => {
-                          if (!res) return;
-                          setGallery((prev) =>
-                            [...prev, ...res.map((f) => f.ufsUrl)].slice(0, 8),
-                          );
-                        }}
-                        appearance={{
-                          button:
-                            "absolute inset-0 w-full h-full bg-transparent text-transparent",
-                          allowedContent: "hidden",
-                        }}
-                      />
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <label className="text-[10px] font-black uppercase text-slate-400 mb-6 block flex items-center gap-2">
-                  <AlignLeft size={16} /> Sobre o Negócio
+            {/* 3. PALAVRAS-CHAVE */}
+            <div className="pt-6 border-t border-slate-100">
+              <div className="flex justify-between items-end mb-3">
+                <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+                  <Hash size={16} /> Palavras-chave Extras
                 </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={6}
-                  className="w-full bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-50"
-                  placeholder="Conte sua história..."
-                />
-
-                <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-                    <ListChecks size={18} /> Diferenciais
-                  </label>
-                  {features.map((f, i) => (
-                    <div key={i} className="flex gap-2">
-                      <textarea
-                        value={f}
-                        onChange={(e) => {
-                          const n = [...features];
-                          n[i] = e.target.value;
-                          setFeatures(n);
-                        }}
-                        rows={2}
-                        className="flex-1 bg-slate-50 p-4 rounded-xl text-xs font-bold border outline-none focus:border-indigo-300"
-                        placeholder="Ex: Wi-fi Grátis..."
-                      />
-                      <button
-                        onClick={() =>
-                          setFeatures(features.filter((_, idx) => idx !== i))
-                        }
-                        className="p-3 bg-rose-50 text-rose-400 rounded-xl shrink-0"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setFeatures([...features, ""])}
-                    className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase"
-                  >
-                    + Diferencial
-                  </button>
-                </div>
-
-                <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-                    <HelpCircle size={18} /> Perguntas Frequentes (FAQ)
-                  </label>
-                  {faqs.map((f, i) => (
-                    <div
-                      key={i}
-                      className="bg-slate-50 p-4 rounded-2xl border border-slate-100 relative group"
-                    >
-                      <input
-                        value={f.q}
-                        onChange={(e) => {
-                          const n = [...faqs];
-                          n[i].q = e.target.value;
-                          setFaqs(n);
-                        }}
-                        placeholder="Pergunta"
-                        className="w-full h-10 px-4 bg-white rounded-lg text-xs font-black uppercase border mb-2 outline-none"
-                      />
-                      <textarea
-                        value={f.a}
-                        onChange={(e) => {
-                          const n = [...faqs];
-                          n[i].a = e.target.value;
-                          setFaqs(n);
-                        }}
-                        placeholder="Resposta"
-                        rows={3}
-                        className="w-full p-3 bg-white rounded-lg text-xs text-slate-500 border outline-none resize-none"
-                      />
-                      <button
-                        onClick={() =>
-                          setFaqs(faqs.filter((_, idx) => idx !== i))
-                        }
-                        className="absolute top-2 right-2 p-2 text-red-200 hover:text-rose-500 transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setFaqs([...faqs, { q: "", a: "" }])}
-                    className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase"
-                  >
-                    + Nova Pergunta
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {activeTab === "contact" && (
-            <motion.div
-              key="contact"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-8"
-            >
-              <div className="bg-slate-900 text-white rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 shrink-0">
-                  <Share2 size={120} />
-                </div>
-                <h2 className="text-[10px] font-black uppercase tracking-widest mb-8 text-emerald-400 flex items-center gap-3 relative z-10">
-                  <Phone size={20} /> Conexões Digitais
-                </h2>
-                <div className="space-y-6 relative z-10">
-                  <div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow-inner">
-                    <label className="text-[9px] font-black uppercase text-emerald-400 mb-2 block">
-                      WhatsApp Business (Chat)
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <Smartphone className="text-emerald-400/50" size={20} />
-                      <input
-                        value={whatsapp}
-                        onChange={(e) => setWhatsapp(e.target.value)}
-                        placeholder="(00) 00000-0000"
-                        className="bg-transparent w-full text-2xl md:text-3xl font-mono text-white outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow-inner">
-                    <label className="text-[9px] font-black uppercase text-indigo-400 mb-2 block">
-                      Telefone para Ligações
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <PhoneCall className="text-indigo-400/50" size={20} />
-                      <input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="(00) 0000-0000"
-                        className="bg-transparent w-full text-xl md:text-2xl font-mono text-white outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {["instagram", "tiktok", "facebook", "website"].map((s) => (
-                      <div
-                        key={s}
-                        className="bg-white/5 p-4 rounded-xl border border-white/10 focus-within:bg-white/10 transition-all"
-                      >
-                        <label className="text-[8px] font-black uppercase text-slate-500 mb-1 block">
-                          {s.toUpperCase()}
-                        </label>
-                        <input
-                          value={(socials as any)[s]}
-                          onChange={(e) =>
-                            setSocials({ ...socials, [s]: e.target.value })
-                          }
-                          className="bg-transparent w-full text-xs font-bold text-white outline-none"
-                          placeholder={contactPlaceholders[s]}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2">
-                  <MapPin size={18} className="text-rose-500" /> Localização
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  {/* LOCALIZAÇÃO: Por volta da linha 690 */}
-                  <input
-                    value={addressData.cep} // <--- AGORA ELE MOSTRA O VALOR SALVO
-                    onChange={(e) =>
-                      setAddressData({ ...addressData, cep: e.target.value })
-                    } // <--- PERMITE DIGITAR
-                    onBlur={(e) => {
-                      const cep = e.target.value.replace(/\D/g, "");
-                      if (cep.length !== 8) return;
-                      cepController.current?.abort();
-                      const controller = new AbortController();
-                      cepController.current = controller;
-                      fetch(`https://viacep.com.br/ws/${cep}/json/`, {
-                        signal: controller.signal,
-                      })
-                        .then((r) => r.json())
-                        .then((d) => {
-                          if (!d.erro)
-                            setAddressData((p) => ({
-                              ...p,
-                              cep: cep, // <--- GARANTE QUE O CEP FIQUE SALVO
-                              address: d.logradouro || "",
-                              neighborhood: d.bairro || "",
-                              city: d.localidade || "",
-                              state: d.uf || "",
-                            }));
-                        })
-                        .catch(() => {});
-                    }}
-                    placeholder="DIGITE O CEP"
-                    className="h-12 px-5 bg-white rounded-xl font-bold text-xs border-2 border-indigo-100 outline-none focus:border-indigo-500"
-                  />
-                  <input
-                    value={addressData.address}
-                    readOnly
-                    className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
-                    placeholder="Rua / Logradouro"
-                  />
-                  <input
-                    value={addressData.number}
-                    onChange={(e) =>
-                      setAddressData({ ...addressData, number: e.target.value })
-                    }
-                    placeholder="Nº"
-                    className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
-                  />
-                  <input
-                    value={addressData.neighborhood}
-                    readOnly
-                    className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
-                    placeholder="Bairro"
-                  />
-                  <input
-                    value={addressData.city}
-                    readOnly
-                    className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
-                    placeholder="Cidade"
-                  />
-                  <input
-                    value={addressData.state}
-                    readOnly
-                    className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
-                    placeholder="UF"
-                  />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-                <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
-                  <Clock size={18} className="text-emerald-500" /> Horários de
-                  Atendimento
-                </h2>
-                <HoursForm
-                  businessSlug={isNew ? undefined : business.slug}
-                  initialHours={businessHours}
-                  hideSaveButton={true}
-                  onHoursChange={(h: any) => setBusinessHours(h)}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-[60] gap-3">
-          <AnimatePresence>
-            {!isPublished && !isLoading && (
-              <motion.div
-                initial={{ y: 5, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 5, opacity: 0 }}
-                className="bg-rose-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center gap-2 border border-rose-400"
-              >
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                  Status: Pausado
+                <span className="text-[9px] font-bold text-slate-400">
+                  {keywords.length} / 10
                 </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <button
-            onClick={handleUpdate}
-            disabled={isLoading}
-            className={`w-full max-w-xs md:max-w-lg h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50 tracking-[0.2em] italic ${!isPublished ? "bg-slate-700 text-slate-300" : "bg-slate-900 text-white hover:bg-indigo-600"}`}
-          >
-            {isLoading ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : isPublished ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <Power size={20} />
-            )}
-            {isLoading
-              ? "Salvando..."
-              : isPublished
-                ? isNew
-                  ? "Criar Perfil"
-                  : "Gravar Mudanças"
-                : "Salvar em Modo Offline"}
-          </button>
+              </div>
+              <div className="w-full min-h-[56px] px-2 py-2 bg-slate-50 rounded-xl border border-slate-200 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-50/50 transition-all flex flex-wrap gap-2 items-center">
+                {keywords.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="bg-white border border-slate-200 text-slate-700 text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm"
+                  >
+                    {tag}
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="hover:text-rose-500 transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  disabled={keywords.length >= 10}
+                  className="bg-transparent text-xs font-bold outline-none flex-1 min-w-[120px] h-8 px-2 placeholder:font-normal placeholder:text-slate-400 disabled:cursor-not-allowed"
+                  placeholder={
+                    keywords.length >= 10
+                      ? "Limite atingido"
+                      : "Digite e aperte Espaço ou Enter..."
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+            SEÇÃO 2: CONTEÚDO (GALERIA E SOBRE)
+           ========================================================= */}
+        <div className="space-y-8">
+          <div className="flex items-center gap-4 py-4">
+            <div className="h-px bg-slate-200 flex-1"></div>
+            <span className="text-xs font-black text-slate-300 uppercase tracking-widest">
+              Conteúdo
+            </span>
+            <div className="h-px bg-slate-200 flex-1"></div>
+          </div>
+
+          {/* GALERIA */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
+                <Layout size={18} className="text-indigo-500" /> Galeria Vitrine
+              </h2>
+              <span className="text-[10px] font-black text-indigo-600 block uppercase">
+                {validGallery.length} / 8
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {validGallery.map((url, i) => (
+                <div
+                  key={i}
+                  className="aspect-square rounded-xl overflow-hidden relative group border-2 border-white shadow-md"
+                >
+                  <img src={url} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() =>
+                      setGallery((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                    className="absolute top-2 right-2 bg-rose-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+              {validGallery.length < 8 && (
+                <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center relative transition-all group overflow-hidden">
+                  <Plus
+                    size={32}
+                    className="text-slate-200 group-hover:text-indigo-200"
+                  />
+                  <UTButton<OurFileRouter, any>
+                    endpoint="imageUploader"
+                    onClientUploadComplete={(res) => {
+                      if (!res) return;
+                      setGallery((prev) =>
+                        [...prev, ...res.map((f) => f.ufsUrl)].slice(0, 8),
+                      );
+                    }}
+                    appearance={{
+                      button:
+                        "absolute inset-0 w-full h-full bg-transparent text-transparent",
+                      allowedContent: "hidden",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SOBRE O NEGÓCIO */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <label className="text-[10px] font-black uppercase text-slate-400 mb-6 block flex items-center gap-2">
+              <AlignLeft size={16} /> Sobre o Negócio
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              className="w-full bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-50"
+              placeholder="Conte sua história..."
+            />
+
+            {/* DIFERENCIAIS */}
+            <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
+              <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+                <ListChecks size={18} /> Diferenciais
+              </label>
+              {features.map((f, i) => (
+                <div key={i} className="flex gap-2">
+                  <textarea
+                    value={f}
+                    onChange={(e) => {
+                      const n = [...features];
+                      n[i] = e.target.value;
+                      setFeatures(n);
+                    }}
+                    rows={2}
+                    className="flex-1 bg-slate-50 p-4 rounded-xl text-xs font-bold border outline-none focus:border-indigo-300"
+                    placeholder="Ex: Wi-fi Grátis..."
+                  />
+                  <button
+                    onClick={() =>
+                      setFeatures(features.filter((_, idx) => idx !== i))
+                    }
+                    className="p-3 bg-rose-50 text-rose-400 rounded-xl shrink-0"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => setFeatures([...features, ""])}
+                className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase"
+              >
+                + Diferencial
+              </button>
+            </div>
+
+            {/* FAQ */}
+            <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
+              <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+                <HelpCircle size={18} /> Perguntas Frequentes (FAQ)
+              </label>
+              {faqs.map((f, i) => (
+                <div
+                  key={i}
+                  className="bg-slate-50 p-4 rounded-2xl border border-slate-100 relative group"
+                >
+                  <input
+                    value={f.q}
+                    onChange={(e) => {
+                      const n = [...faqs];
+                      n[i].q = e.target.value;
+                      setFaqs(n);
+                    }}
+                    placeholder="Pergunta"
+                    className="w-full h-10 px-4 bg-white rounded-lg text-xs font-black uppercase border mb-2 outline-none"
+                  />
+                  <textarea
+                    value={f.a}
+                    onChange={(e) => {
+                      const n = [...faqs];
+                      n[i].a = e.target.value;
+                      setFaqs(n);
+                    }}
+                    placeholder="Resposta"
+                    rows={3}
+                    className="w-full p-3 bg-white rounded-lg text-xs text-slate-500 border outline-none resize-none"
+                  />
+                  <button
+                    onClick={() => setFaqs(faqs.filter((_, idx) => idx !== i))}
+                    className="absolute top-2 right-2 p-2 text-red-200 hover:text-rose-500 transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => setFaqs([...faqs, { q: "", a: "" }])}
+                className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase"
+              >
+                + Nova Pergunta
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+            SEÇÃO 3: CONTATO E LOCALIZAÇÃO
+           ========================================================= */}
+
+        <div className="space-y-8">
+          <div className="flex items-center gap-4 py-4">
+            <div className="h-px bg-slate-200 flex-1"></div>
+            <span className="text-xs font-black text-slate-300 uppercase tracking-widest">
+              Contato
+            </span>
+            <div className="h-px bg-slate-200 flex-1"></div>
+          </div>
+
+          <div className="bg-slate-900 text-white rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 shrink-0">
+              <Share2 size={120} />
+            </div>
+            <h2 className="text-[10px] font-black uppercase tracking-widest mb-8 text-emerald-400 flex items-center gap-3 relative z-10">
+              <Phone size={20} /> Conexões Digitais
+            </h2>
+            <div className="space-y-6 relative z-10">
+              <div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow-inner">
+                <label className="text-[9px] font-black uppercase text-emerald-400 mb-2 block">
+                  WhatsApp Business (Chat)
+                </label>
+                <div className="flex items-center gap-3">
+                  <Smartphone className="text-emerald-400/50" size={20} />
+                  <input
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    className="bg-transparent w-full text-2xl md:text-3xl font-mono text-white outline-none"
+                  />
+                </div>
+              </div>
+              <div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow-inner">
+                <label className="text-[9px] font-black uppercase text-indigo-400 mb-2 block">
+                  Telefone para Ligações
+                </label>
+                <div className="flex items-center gap-3">
+                  <PhoneCall className="text-indigo-400/50" size={20} />
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(00) 0000-0000"
+                    className="bg-transparent w-full text-xl md:text-2xl font-mono text-white outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {["instagram", "tiktok", "facebook", "website"].map((s) => (
+                  <div
+                    key={s}
+                    className="bg-white/5 p-4 rounded-xl border border-white/10 focus-within:bg-white/10 transition-all"
+                  >
+                    <label className="text-[8px] font-black uppercase text-slate-500 mb-1 block">
+                      {s.toUpperCase()}
+                    </label>
+                    <input
+                      value={(socials as any)[s]}
+                      onChange={(e) =>
+                        setSocials({ ...socials, [s]: e.target.value })
+                      }
+                      className="bg-transparent w-full text-xs font-bold text-white outline-none"
+                      placeholder={contactPlaceholders[s]}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            {/* CABEÇALHO DA SEÇÃO COM TÍTULO E BOTÃO NA MESMA LINHA */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
+                <MapPin size={18} className="text-rose-500" /> Localização
+              </h2>
+
+              {/* SÓ MOSTRA O BOTÃO SE HOUVER ALGO PARA APAGAR */}
+              {(addressData.address || addressData.cep) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAddressData({
+                      address: "",
+                      cep: "",
+                      neighborhood: "",
+                      city: "",
+                      state: "",
+                      number: "",
+                    })
+                  }
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-lg text-[9px] font-black uppercase hover:bg-rose-100 transition-colors border border-rose-100"
+                >
+                  <Trash2 size={12} /> Excluir Endereço
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <input
+                value={addressData.cep}
+                onChange={(e) =>
+                  setAddressData({ ...addressData, cep: e.target.value })
+                }
+                onBlur={(e) => {
+                  const cep = e.target.value.replace(/\D/g, "");
+                  if (cep.length !== 8) return;
+                  cepController.current?.abort();
+                  const controller = new AbortController();
+                  cepController.current = controller;
+                  fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+                    signal: controller.signal,
+                  })
+                    .then((r) => r.json())
+                    .then((d) => {
+                      if (!d.erro)
+                        setAddressData((p) => ({
+                          ...p,
+                          cep: cep,
+                          address: d.logradouro || "",
+                          neighborhood: d.bairro || "",
+                          city: d.localidade || "",
+                          state: d.uf || "",
+                        }));
+                    })
+                    .catch(() => {});
+                }}
+                placeholder="DIGITE O CEP"
+                className="h-12 px-5 bg-white rounded-xl font-bold text-xs border-2 border-indigo-100 outline-none focus:border-indigo-500"
+              />
+              <input
+                value={addressData.address}
+                readOnly
+                className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+                placeholder="Rua / Logradouro"
+              />
+              <input
+                value={addressData.number}
+                onChange={(e) =>
+                  setAddressData({ ...addressData, number: e.target.value })
+                }
+                placeholder="Nº"
+                className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
+              />
+              <input
+                value={addressData.neighborhood}
+                readOnly
+                className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+                placeholder="Bairro"
+              />
+              <input
+                value={addressData.city}
+                readOnly
+                className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+                placeholder="Cidade"
+              />
+              <input
+                value={addressData.state}
+                readOnly
+                className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+                placeholder="UF"
+              />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
+              <Clock size={18} className="text-emerald-500" /> Horários de
+              Atendimento
+            </h2>
+            <HoursForm
+              businessSlug={isNew ? undefined : business.slug}
+              initialHours={businessHours}
+              hideSaveButton={true}
+              onHoursChange={(h: any) => setBusinessHours(h)}
+            />
+          </div>
+        </div>
+
+        {/* BOTÃO FLUTUANTE DE SALVAR */}
+        <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-[60] gap-3 pointer-events-none">
+          <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
+            <AnimatePresence>
+              {!isPublished && !isLoading && (
+                <motion.div
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 5, opacity: 0 }}
+                  className="bg-rose-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center gap-2 border border-rose-400"
+                >
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                    Status: Pausado
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button
+              onClick={handleUpdate}
+              disabled={isLoading}
+              className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50 tracking-[0.2em] italic ${!isPublished ? "bg-slate-700 text-slate-300" : "bg-slate-900 text-white hover:bg-indigo-600"}`}
+            >
+              {isLoading ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : isPublished ? (
+                <CheckCircle2 size={20} />
+              ) : (
+                <Power size={20} />
+              )}
+              {isLoading
+                ? "Salvando..."
+                : isPublished
+                  ? isNew
+                    ? "Criar Perfil"
+                    : "Gravar Mudanças"
+                  : "Salvar em Modo Offline"}
+            </button>
+          </div>
         </div>
       </main>
     </div>

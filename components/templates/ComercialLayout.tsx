@@ -281,7 +281,7 @@ export default function ComercialLayout({
                   {business.comercial_badge}
                 </span>
               )}
-              <h1 className="text-3xl md:text-6xl font-black italic uppercase tracking-tighter leading-none text-slate-900">
+              <h1 className="text-3xl md:text-6xl font-black italic tracking-tighter leading-none text-slate-900">
                 {business.name}
               </h1>
             </div>

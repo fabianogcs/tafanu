@@ -217,7 +217,7 @@ export default function ShowroomLayout({
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-4xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-slate-900"
+              className="text-4xl md:text-8xl font-black tracking-tighter leading-[0.9] text-slate-900"
             >
               {business.name}
             </motion.h1>

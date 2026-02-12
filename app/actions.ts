@@ -393,7 +393,7 @@ export async function createBusiness(formData: FormData) {
           whatsapp: validatedData.whatsapp.replace(/\D/g, ""),
           phone: validatedData.phone
             ? validatedData.phone.replace(/\D/g, "")
-            : null,
+            : "",
           address: validatedData.address,
           city: validatedData.city,
           state: validatedData.state,
@@ -532,9 +532,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
       latitude: coords.lat,
       longitude: coords.lng,
       whatsapp: validatedData.whatsapp.replace(/\D/g, ""),
-      phone: validatedData.phone
-        ? validatedData.phone.replace(/\D/g, "")
-        : undefined,
+      phone: validatedData.phone ? validatedData.phone.replace(/\D/g, "") : "",
       imageUrl: payload.imageUrl,
       heroImage: payload.heroImage,
       videoUrl: payload.videoUrl,

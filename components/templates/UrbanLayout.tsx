@@ -211,7 +211,7 @@ export default function UrbanLayout({
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className={`text-urban-raw font-black uppercase italic leading-[0.85] tracking-tighter ${theme.textColor}`}
+            className={`text-urban-raw font-black italic leading-[0.85] tracking-tighter ${theme.textColor}`}
           >
             {business.name}
           </motion.h1>

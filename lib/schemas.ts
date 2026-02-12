@@ -18,9 +18,7 @@ export const businessSchema = z.object({
   // --- Identificação Básica ---
   name: z.string().min(3, "O nome deve ter pelo menos 3 letras"),
   slug: z.string().min(3, "O endereço (URL) deve ter pelo menos 3 letras"),
-  description: z
-    .string()
-    .min(10, "Conte um pouco mais sobre o seu negócio (min. 10 letras)"),
+  description: z.string().optional().or(z.literal("")),
   category: z.string().min(1, "Selecione uma categoria principal"),
 
   // --- Estilo e Layout ---
@@ -37,14 +35,14 @@ export const businessSchema = z.object({
   comercial_badge: z.string().optional().nullable(),
 
   // --- Localização ---
-  address: z.string().min(5, "O endereço parece estar incompleto"),
-  city: z.string().min(1, "Informe a cidade"),
-  state: z.string().length(2, "Use a sigla do estado (ex: SP)"),
+  address: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
 
   // --- Contato ---
   // Aceitamos strings e vamos limpar os números no backend
-  whatsapp: z.string().min(10, "WhatsApp inválido (digite com o DDD)"),
-  phone: z.string().optional().nullable(),
+  whatsapp: z.string().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
 
   // Redes Sociais
   instagram: z.string().optional().nullable(),
