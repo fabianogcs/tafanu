@@ -12,19 +12,18 @@ import {
   Globe,
   PhoneCall,
   MapPin,
-  MessageSquare,
   Maximize2,
   ChevronLeft,
   ChevronRight,
   Phone,
-  ArrowUpRight,
-  MessageCircle, // Ícone do WhatsApp
+  Camera,
+  MessageCircle,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
 import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
-import { useBusiness } from "@/lib/useBusiness"; // Importando a lib
+import { useBusiness } from "@/lib/useBusiness";
 
 // --- HELPERS ---
 const TikTokIcon = ({
@@ -39,15 +38,28 @@ const TikTokIcon = ({
   </svg>
 );
 
+const handleShare = async (businessName: string) => {
+  const url = typeof window !== "undefined" ? window.location.href : "";
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: businessName,
+        text: `Confira ${businessName}:`,
+        url,
+      });
+      return;
+    } catch (err) {}
+  }
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copiado!");
+  }
+};
+
 const formatPhoneNumber = (phone: string) => {
   const cleaned = (phone || "").replace(/\D/g, "");
   const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
   if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-
-  // Formata fixo
-  const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-  if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-
   return phone;
 };
 
@@ -57,60 +69,18 @@ const formatExternalLink = (url: string) => {
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
 };
 
-// --- COMPONENTES VISUAIS ÚNICOS DO SHOWROOM ---
-
-const ShowroomCard = ({ children, className, theme, onClick }: any) => (
-  <motion.div
-    layout
-    onClick={onClick}
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-50px" }}
-    transition={{ duration: 0.5, ease: "easeOut" }}
-    className={`relative overflow-hidden bg-white/5 backdrop-blur-sm border ${theme.border} hover:border-opacity-100 transition-colors duration-500 ${className}`}
-  >
-    {children}
-  </motion.div>
-);
-
 const StickerTitle = ({ text, theme }: any) => (
-  <div className="inline-flex items-center gap-2 mb-4">
-    <div className={`w-2 h-2 ${theme.bgAction}`} />
+  // Adicionei "mt-8" para descer e "mb-8" para dar espaço do conteúdo abaixo
+  <div className="inline-flex items-center gap-2 mt-10 mb-8">
+    <div className={`w-3 h-3 ${theme.bgAction}`} />
     <span
-      className={`text-xs font-bold uppercase tracking-widest ${theme.subTextColor}`}
+      // Mudei de "text-[10px]" para "text-sm" (que é 14px) para aumentar um pouco
+      className={`text-sm font-black uppercase tracking-[0.2em] ${theme.subTextColor}`}
     >
       {text}
     </span>
   </div>
 );
-
-const SocialButton = ({ type, url }: { type: string; url: string }) => {
-  let icon = <Globe size={20} className="text-slate-600" />;
-  let label = "Website";
-
-  if (type === "instagram") {
-    icon = <Instagram size={20} color="#E1306C" />;
-    label = "Instagram";
-  } else if (type === "facebook") {
-    icon = <Facebook size={20} color="#1877F2" />;
-    label = "Facebook";
-  } else if (type === "tiktok") {
-    icon = <TikTokIcon className="w-5 h-5" color="#000000" />;
-    label = "TikTok";
-  }
-
-  return (
-    <a
-      href={formatExternalLink(url)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:shadow-xl transition-all duration-300 group"
-      title={label}
-    >
-      {icon}
-    </a>
-  );
-};
 
 export default function ShowroomLayout({
   business: rawBusiness,
@@ -118,7 +88,6 @@ export default function ShowroomLayout({
   realHours: rawHours,
   fullAddress,
 }: any) {
-  // --- USANDO O HOOK UNIFICADO ---
   const {
     business,
     realHours: safeHours,
@@ -134,106 +103,46 @@ export default function ShowroomLayout({
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
-
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isFavoriting, setIsFavoriting] = useState(false);
-
-  // Tema Fallback
   const theme =
     propTheme ||
     businessThemes[business.theme] ||
     businessThemes["showroom_clean"];
+  const gallery = Array.isArray(business.gallery)
+    ? business.gallery.filter(Boolean)
+    : [];
+  const faqs = (business.faqs || []).filter(
+    (f: any) => (f.q || f.question) && (f.a || f.answer),
+  );
 
-  // --- LÓGICA DE CLICK & DRAG DA GALERIA ---
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (!scrollRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
-  };
-
-  const onMouseLeave = () => setIsDragging(false);
-  const onMouseUp = () => setIsDragging(false);
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 2;
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  // --- CONFIGURAÇÃO DO GRID ---
-  const gallery = business.gallery || [];
-
-  // Ajuste de colunas
-  const descriptionSpan = hasFeatures ? "md:col-span-8" : "md:col-span-12";
-  const featuresSpan = hasDescription ? "md:col-span-4" : "md:col-span-12";
-
-  // Define se exibe o card de contato (Se tiver telefone OU whats)
-  const showContactCard = hasPhone || hasWhatsapp;
-
-  const activeInfoBlocks = [showContactCard, hasHours, hasAddress].filter(
-    Boolean,
-  ).length;
-
-  const infoGridClass =
-    activeInfoBlocks === 3
-      ? "md:col-span-4"
-      : activeInfoBlocks === 2
-        ? "md:col-span-6"
-        : "md:col-span-6 md:col-start-4";
-
-  const safeAddress = fullAddress || business.address;
   const footerTriggerRef = useRef(null);
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
   });
 
-  const closeLightbox = useCallback(() => setSelectedIndex(null), []);
+  const safeSetIndex = useCallback(
+    (next: number) => {
+      if (gallery.length === 0) return;
+      setSelectedIndex((next + gallery.length) % gallery.length);
+    },
+    [gallery.length],
+  );
 
-  useEffect(() => {
-    document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
-  }, [selectedIndex]);
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [closeLightbox]);
-
-  // --- LÓGICA DE RASTREAMENTO CORRIGIDA ---
   const handleTrackLead = useCallback(
     async (type: "whatsapp" | "phone") => {
-      // Pega o número correto
       const rawNumber =
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
-
       if (!cleanNumber) return;
-
       const targetUrl =
         type === "whatsapp"
-          ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
-              `Olá! Vi o perfil de ${business.name} no Tafanu.`,
-            )}`
+          ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
           : `tel:${cleanNumber}`;
-
       try {
-        if (type === "whatsapp") {
+        if (type === "whatsapp")
           await (Actions as any).incrementWhatsappClicks?.(business.id);
-        } else {
-          await (Actions as any).incrementPhoneClicks?.(business.id);
-        }
-      } catch (e) {
-        console.error(e);
+        else await (Actions as any).incrementPhoneClicks?.(business.id);
       } finally {
         window.location.href = targetUrl;
       }
@@ -241,54 +150,30 @@ export default function ShowroomLayout({
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
+  useEffect(() => {
+    document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
+  }, [selectedIndex]);
+
   if (!theme) return null;
 
   return (
     <div
       className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans pb-0 selection:bg-black selection:text-white transition-colors duration-700`}
     >
-      {/* --- HERO SHOWROOM --- */}
-      <header className="relative h-[85vh] md:h-[90vh] w-full flex flex-col justify-between p-4 md:p-6 border-b border-black/10">
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          {business.videoUrl ? (
-            <video
-              src={business.videoUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full h-full object-cover opacity-90 grayscale-[20%]"
-            />
-          ) : business.heroImage ? (
-            <img
-              src={business.heroImage}
-              className="w-full h-full object-cover opacity-90 grayscale-[20%]"
-              alt="Capa"
-            />
-          ) : (
-            <div className={`w-full h-full ${theme.bgSecondary}`} />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30" />
-        </div>
-
-        {/* Top Bar (Share e Favorite) */}
-        <div className="relative z-10 flex justify-end items-start w-full">
-          <div className="flex gap-2">
+      {/* --- HEADER --- */}
+      <header
+        className={`relative pt-28 pb-10 w-full ${theme.bgPage} border-b border-black/10`}
+      >
+        {/* Pílula de Ações (Z-INDEX 10) */}
+        <div className="absolute top-4 right-4 z-10">
+          <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-xl">
             <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator
-                    .share({ url: window.location.href })
-                    .catch(() => {});
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  toast.success("Link copiado para a área de transferência!");
-                }
-              }}
-              className="w-10 h-10 bg-white text-black flex items-center justify-center hover:bg-neutral-200 transition-colors shadow-lg rounded-full"
+              onClick={() => handleShare(business.name)}
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all text-slate-700"
             >
-              <Share2 size={18} />
+              <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
             </button>
+            <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
             <button
               onClick={async () => {
                 if (isFavoriting) return;
@@ -300,24 +185,26 @@ export default function ShowroomLayout({
                   setIsFavoriting(false);
                 }
               }}
-              className={`w-10 h-10 flex items-center justify-center transition-colors shadow-lg rounded-full ${isFavorite ? "bg-rose-500 text-white" : "bg-white text-black"}`}
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all"
             >
               {isFavoriting ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin text-slate-400" />
               ) : (
-                <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+                <Heart
+                  className={`w-4 h-4 md:w-[18px] md:h-[18px] ${isFavorite ? "text-rose-500" : "text-slate-700"}`}
+                  fill={isFavorite ? "currentColor" : "none"}
+                />
               )}
             </button>
           </div>
         </div>
 
-        {/* Bottom Hero Info */}
-        <div className="relative z-10 flex flex-col justify-end pb-28 md:pb-0">
+        <div className="max-w-[1600px] mx-auto px-6 flex flex-col items-center md:items-start text-center md:text-left gap-6">
           {business.imageUrl && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 w-16 h-16 md:w-24 md:h-24 rounded-full border-2 border-white/30 shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-white"
             >
               <img
                 src={business.imageUrl}
@@ -326,379 +213,316 @@ export default function ShowroomLayout({
               />
             </motion.div>
           )}
-
-          {business.luxe_quote && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-2 max-w-2xl"
+          <div className="space-y-2">
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-slate-900"
             >
-              <p className="text-white/80 font-medium italic text-sm md:text-xl tracking-wide leading-relaxed">
-                "{business.luxe_quote}"
+              {business.name}
+            </motion.h1>
+            {business.luxe_quote && (
+              <p className="text-sm md:text-xl font-medium italic opacity-40">
+                {business.luxe_quote}
               </p>
-            </motion.div>
-          )}
+            )}
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-5xl md:text-9xl font-black uppercase tracking-tighter text-white leading-[0.9] mb-4 md:mb-6 mix-blend-overlay"
-          >
-            {business.name || "Showroom"}
-          </motion.h1>
-
-          {/* Redes Sociais */}
+          {/* REDES SOCIAIS INTELIGENTES */}
           {availableSocials.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-wrap gap-3 items-center"
-            >
-              {availableSocials.map((s) => (
-                <SocialButton key={s} type={s} url={business[s]} />
-              ))}
-            </motion.div>
+            <div className="flex flex-wrap gap-3">
+              {availableSocials.map((s) => {
+                const user = business[s];
+                const url =
+                  s === "instagram"
+                    ? `https://instagram.com/${user}`
+                    : s === "facebook"
+                      ? `https://facebook.com/${user}`
+                      : s === "tiktok"
+                        ? `https://tiktok.com/@${user}`
+                        : formatExternalLink(user);
+                return (
+                  <a
+                    key={s}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all border border-black/5"
+                  >
+                    {s === "instagram" ? (
+                      <Instagram size={20} color="#E1306C" />
+                    ) : s === "facebook" ? (
+                      <Facebook size={20} color="#1877F2" />
+                    ) : s === "tiktok" ? (
+                      <TikTokIcon className="w-5 h-5" color="#000" />
+                    ) : (
+                      <Globe size={20} color="#06b6d4" />
+                    )}
+                  </a>
+                );
+              })}
+            </div>
           )}
         </div>
       </header>
 
-      {/* --- GRID INTELIGENTE (MAIN CONTENT) --- */}
-      <main className="max-w-[1600px] mx-auto p-4 md:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 auto-rows-min">
-          {/* 1. DESCRIÇÃO */}
+      <main className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-12 mt-8">
+        {/* --- SOBRE (FIX DO VAZAMENTO E ENTERS) --- */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           {hasDescription && (
-            <ShowroomCard
-              className={`${descriptionSpan} p-6 md:p-10 bg-white`}
-              theme={theme}
-            >
-              <StickerTitle text="Conceito" theme={theme} />
-              <p
-                className={`text-lg md:text-2xl font-light leading-relaxed ${theme.textColor} whitespace-pre-line`}
-              >
+            <section className="md:col-span-8 p-8 md:p-12 bg-white border border-black/5 shadow-sm rounded-3xl overflow-hidden">
+              <StickerTitle text="Concept" theme={theme} />
+              <p className="text-xl md:text-3xl font-light leading-snug whitespace-pre-line break-words w-full">
                 {business.description}
               </p>
-            </ShowroomCard>
+            </section>
           )}
-
-          {/* 2. FEATURES */}
           {hasFeatures && (
-            <ShowroomCard
-              className={`${featuresSpan} p-6 md:p-10 bg-neutral-50`}
-              theme={theme}
-            >
-              <StickerTitle text="Destaques" theme={theme} />
+            <section className="md:col-span-4 p-8 md:p-12 bg-slate-50 border border-black/5 shadow-sm rounded-3xl">
+              <StickerTitle text="Spec" theme={theme} />
               <ul className="space-y-4">
-                {business.features.map((f: string, i: number) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-3 border-b border-black/5 pb-3 last:border-0"
-                  >
-                    <div
-                      className={`mt-1 w-1.5 h-1.5 rounded-full ${theme.bgAction}`}
-                    />
-                    <span
-                      className={`text-sm md:text-base font-medium uppercase tracking-wide ${theme.textColor}`}
+                {business.features
+                  .filter(Boolean)
+                  .map((f: string, i: number) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-3 font-bold uppercase text-xs md:text-sm tracking-widest opacity-70"
                     >
-                      {f}
-                    </span>
-                  </li>
-                ))}
+                      <div className={`w-2 h-2 ${theme.bgAction}`} /> {f}
+                    </li>
+                  ))}
               </ul>
-            </ShowroomCard>
+            </section>
           )}
+        </div>
 
-          {/* 3. GALERIA */}
-          {hasGallery && (
-            <div className="md:col-span-12 py-10 overflow-hidden">
-              <div className="flex items-center justify-between mb-6 px-2">
-                <h3
-                  className={`text-xl font-black uppercase ${theme.textColor}`}
-                >
-                  Galeria
-                </h3>
-                <span className="text-xs opacity-50 uppercase tracking-widest">
-                  Arraste para navegar
-                </span>
-              </div>
-
-              <div
-                ref={scrollRef}
-                onMouseDown={onMouseDown}
-                onMouseLeave={onMouseLeave}
-                onMouseUp={onMouseUp}
-                onMouseMove={onMouseMove}
-                className="flex gap-4 overflow-x-auto pb-8 -mb-8 px-2 cursor-grab active:cursor-grabbing no-scrollbar"
-              >
-                {gallery.map((img: string, i: number) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 0.98 }}
-                    onClick={() => {
-                      if (!isDragging) setSelectedIndex(i);
-                    }}
-                    className="relative shrink-0 w-[280px] md:w-[400px] aspect-[4/5] bg-neutral-200 select-none group cursor-pointer"
-                  >
-                    <img
-                      src={img}
-                      className="w-full h-full object-cover pointer-events-none"
-                      alt="Galeria"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 bg-white text-black p-3 rounded-full shadow-lg transition-all transform scale-90 group-hover:scale-100">
-                        <Maximize2 size={24} />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+        {/* GALERIA MOSAICO */}
+        {hasGallery && (
+          <section className="space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                <Camera size={20} /> Showroom
+              </h3>
             </div>
-          )}
-
-          {/* 4. FAQ */}
-          {hasFaqs && (
-            <div className="md:col-span-12 mt-4 mb-8">
-              <StickerTitle text="Q&A" theme={theme} />
-              <div className="grid md:grid-cols-2 gap-4">
-                {business.faqs.map((f: any, i: number) => (
-                  <div
-                    key={i}
-                    className={`p-6 border ${theme.border} bg-white hover:shadow-md transition-shadow`}
-                  >
-                    <h4
-                      className={`font-bold uppercase text-sm mb-2 ${theme.primary}`}
-                    >
-                      {f.q}
-                    </h4>
-                    <p className="text-sm opacity-70 leading-relaxed">{f.a}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[250px]">
+              {gallery.map((img: string, i: number) => (
+                <motion.div
+                  key={i}
+                  onClick={() => setSelectedIndex(i)}
+                  whileHover={{ scale: 0.99 }}
+                  className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-lg border border-black/5 group ${i === 0 ? "col-span-2 row-span-2" : ""} ${i === 3 ? "md:row-span-2" : ""}`}
+                >
+                  <img
+                    src={img}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    alt="Showroom"
+                  />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Maximize2 className="text-white" size={32} />
                   </div>
-                ))}
-              </div>
+                </motion.div>
+              ))}
             </div>
-          )}
+          </section>
+        )}
 
-          {/* 5. BLOCO DE INFORMAÇÕES */}
-
-          {/* 5.1 CARD DE CONTATO (Inteligente: Mostra Ligar ou Whats) */}
-          {showContactCard && (
-            <ShowroomCard
-              className={`${infoGridClass} p-8 ${theme.bgSecondary} flex flex-col justify-between group cursor-pointer`}
-              theme={theme}
-              // Se tiver telefone, clica e liga. Se só tiver whats, clica e abre whats.
-              onClick={() => handleTrackLead(hasPhone ? "phone" : "whatsapp")}
-            >
-              <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-100 transition-opacity">
-                <ArrowUpRight className={theme.primary} size={24} />
-              </div>
-              <div>
-                <StickerTitle text="Contato" theme={theme} />
+        {/* FAQ (COM FIX DE TEXTO) */}
+        {hasFaqs && (
+          <section className="space-y-6">
+            <StickerTitle text="Perguntas Frequentes" theme={theme} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {faqs.map((f: any, i: number) => (
                 <div
-                  className={`text-2xl md:text-4xl font-black italic ${theme.textColor} mb-2`}
+                  key={i}
+                  className="p-8 bg-white border border-black/5 rounded-3xl hover:shadow-md transition-shadow overflow-hidden"
                 >
-                  {/* Mostra o número de telefone se tiver, senão o do zap */}
-                  {formatPhoneNumber(business.phone || business.whatsapp)}
+                  <h4
+                    className={`font-black uppercase text-sm mb-3 ${theme.primary} break-words`}
+                  >
+                    {f.q || f.question}
+                  </h4>
+                  <p className="text-sm opacity-60 leading-relaxed italic whitespace-pre-line break-words">
+                    {f.a || f.answer}
+                  </p>
                 </div>
-                <p
-                  className={`text-xs uppercase opacity-50 tracking-widest ${theme.subTextColor}`}
-                >
-                  {hasPhone ? "Toque para Ligar" : "Chamar no WhatsApp"}
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CONTATOS (DOBRADINHA: CARD + BOTÃO) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {hasPhone && (
+            <button
+              onClick={() => handleTrackLead("phone")}
+              className="p-8 bg-slate-900 text-white rounded-[2.5rem] flex flex-col justify-between h-64 group border-none"
+            >
+              <StickerTitle text="Call" theme={theme} />
+              <div className="text-left">
+                <p className="text-3xl font-black italic mb-2">
+                  {formatPhoneNumber(business.phone)}
+                </p>
+                <p className="text-[10px] uppercase opacity-40 tracking-[0.3em]">
+                  Toque para ligar
                 </p>
               </div>
               <div
-                className={`mt-8 w-12 h-12 rounded-full ${theme.bgAction} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
+                className={`w-12 h-12 rounded-full ${theme.bgAction} flex items-center justify-center self-end group-hover:scale-110 transition-transform`}
               >
-                {/* Ícone muda dependendo da prioridade */}
-                {hasPhone ? <Phone size={20} /> : <MessageSquare size={20} />}
+                <PhoneCall size={20} />
               </div>
-            </ShowroomCard>
+            </button>
           )}
 
-          {/* 5.2 CARD DE HORÁRIO */}
-          {hasHours && (
-            <ShowroomCard
-              className={`${infoGridClass} p-8 ${theme.bgSecondary}`}
-              theme={theme}
+          {hasWhatsapp && (
+            <button
+              onClick={() => handleTrackLead("whatsapp")}
+              className="p-8 bg-[#25D366]/5 border border-[#25D366]/20 text-slate-900 rounded-[2.5rem] flex flex-col justify-between h-64 group hover:border-[#25D366] transition-all"
             >
-              <StickerTitle text="Horários" theme={theme} />
-              <div className="space-y-3">
-                {safeHours.map((h: any, i: number) => (
-                  <div
-                    key={i}
-                    className="flex justify-between items-center text-sm md:text-base"
-                  >
-                    <span className="opacity-50 uppercase font-bold">
-                      {h.day}
-                    </span>
-                    <span
-                      className={
-                        h.isClosed ? "text-rose-500 font-bold" : "font-medium"
-                      }
-                    >
-                      {h.time}
-                    </span>
-                  </div>
-                ))}
+              <StickerTitle text="Direct" theme={theme} />
+              <div className="text-left">
+                <p className="text-3xl font-black italic mb-2">WhatsApp</p>
+                <p className="text-[10px] uppercase opacity-40 tracking-[0.3em]">
+                  Chamar Agora
+                </p>
               </div>
-            </ShowroomCard>
+              <div className="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center self-end group-hover:scale-110 transition-transform">
+                <MessageCircle size={20} fill="currentColor" />
+              </div>
+            </button>
           )}
 
-          {/* 5.3 CARD DE ENDEREÇO */}
           {hasAddress && (
-            <ShowroomCard
-              className={`${infoGridClass} p-0 relative group`}
-              theme={theme}
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress || business.address)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-8 bg-neutral-100 rounded-[2.5rem] flex flex-col justify-between h-64 group border border-black/5"
             >
-              <a
-                href={
-                  safeAddress
-                    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`
-                    : "#"
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full h-full min-h-[300px] relative"
+              <StickerTitle text="Location" theme={theme} />
+              <div className="text-left">
+                <p className="text-xl font-black uppercase leading-tight mb-2 break-words">
+                  {business.address}
+                </p>
+                <p className="text-[10px] opacity-40 uppercase tracking-widest">
+                  {business.city} — {business.state}
+                </p>
+              </div>
+              <div
+                className={`w-12 h-12 rounded-full ${theme.bgAction} text-white flex items-center justify-center self-end group-hover:scale-110 transition-transform`}
               >
-                <div
-                  className={`absolute inset-0 ${theme.bgAction} opacity-5 group-hover:opacity-10 transition-opacity`}
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                  <div
-                    className={`w-16 h-16 ${theme.bgAction} text-white flex items-center justify-center rounded-full mb-4 shadow-xl group-hover:scale-110 transition-transform`}
-                  >
-                    <MapPin size={32} />
-                  </div>
-                  <h4
-                    className={`text-xl font-bold uppercase ${theme.textColor} underline decoration-transparent group-hover:decoration-current transition-all`}
-                  >
-                    Abrir Mapa
-                  </h4>
-                  {/* Substitua os parágrafos de endereço por este bloco: */}
-                  <p className="mt-2 opacity-60 text-sm max-w-[200px]">
-                    {business.address || "Endereço sob consulta"}
-                  </p>
-                  <p className="opacity-40 text-xs mt-1">
-                    {business.city || ""}
-                    {business.state ? ` - ${business.state}` : ""}
-                    {business.cep ? ` | CEP: ${business.cep}` : ""}
-                  </p>
-                </div>
-              </a>
-            </ShowroomCard>
+                <MapPin size={20} />
+              </div>
+            </a>
           )}
         </div>
 
-        {/* --- RODAPÉ COM REPORT --- */}
-        <div
-          ref={footerTriggerRef}
-          className="w-full flex flex-col items-center py-12 mt-12 gap-6 border-t border-black/5"
-        >
-          <div className="opacity-40 hover:opacity-100 transition-opacity">
-            <ReportModal businessSlug={business.slug} />
+        {hasHours && (
+          <div
+            className={`max-w-xl mx-auto w-full p-8 bg-white border border-black/5 rounded-[2.5rem] shadow-sm`}
+          >
+            <StickerTitle text="Hours" theme={theme} />
+            <div className="space-y-3">
+              {safeHours.map((h: any, i: number) => (
+                <div
+                  key={i}
+                  className="flex justify-between items-center text-xs font-bold uppercase tracking-tight pb-2 border-b border-black/5 last:border-0"
+                >
+                  <span className="opacity-40">{h.day}</span>
+                  <span className={h.isClosed ? "text-rose-500" : ""}>
+                    {h.time}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        <div className="w-full flex justify-center py-12 opacity-30 hover:opacity-100 transition-opacity">
+          <ReportModal businessSlug={business.slug} />
         </div>
+        <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
       </main>
 
-      {/* --- WHATSAPP CTA FLUTUANTE --- */}
+      {/* WHATSAPP FLUTUANTE (Z-INDEX 30) */}
       {hasWhatsapp && (
         <motion.button
           animate={
-            isFooterVisible ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }
+            isFooterVisible
+              ? { opacity: 0, scale: 0.8 }
+              : { opacity: 1, scale: 1 }
           }
-          className={`fixed bottom-6 right-6 w-16 h-16 ${theme.bgAction} text-white flex items-center justify-center shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all z-50 border-2 border-black`}
           onClick={() => handleTrackLead("whatsapp")}
+          className={`fixed bottom-8 right-8 z-30 w-14 h-14 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/20 hover:bg-emerald-600 transition-colors`}
         >
-          <MessageCircle size={28} strokeWidth={2} />
+          <MessageCircle
+            className="w-8 h-8 md:w-10 md:h-10"
+            fill="currentColor"
+          />
         </motion.button>
       )}
 
-      {/* --- LIGHTBOX --- */}
+      {/* LIGHTBOX (Z-INDEX 200) */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[100] ${theme.bgPage} flex flex-col items-center justify-center`}
-            onClick={closeLightbox}
+            className="fixed inset-0 z-[200] flex flex-col bg-black/98 backdrop-blur-xl"
+            onClick={() => setSelectedIndex(null)}
           >
-            <button
-              className={`absolute top-6 right-6 opacity-60 hover:opacity-100 transition-opacity ${theme.textColor}`}
-            >
+            <button className="absolute top-8 right-8 text-white z-[210] hover:scale-110 transition-transform">
               <X size={32} />
             </button>
-
-            <div
-              className="relative w-full h-[70vh] flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  safeSetIndex(selectedIndex - 1);
+                }}
+                className="hidden md:flex absolute left-8 w-16 h-16 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  safeSetIndex(selectedIndex + 1);
+                }}
+                className="hidden md:flex absolute right-8 w-16 h-16 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
+              >
+                <ChevronRight size={32} />
+              </button>
               <motion.img
                 key={selectedIndex}
-                src={
-                  gallery[selectedIndex] ||
-                  "https://placehold.co/1200x800?text=Imagem+Indisponível"
-                }
-                className="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"
-                alt="Zoom"
+                src={gallery[selectedIndex]}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.2}
-                onDragEnd={(e, { offset }) => {
-                  const swipe = offset.x;
-                  if (swipe < -50) {
-                    setSelectedIndex((selectedIndex + 1) % gallery.length);
-                  } else if (swipe > 50) {
-                    setSelectedIndex(
-                      (selectedIndex - 1 + gallery.length) % gallery.length,
-                    );
-                  }
+                onDragEnd={(e, info) => {
+                  if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
+                  else if (info.offset.x < -80) safeSetIndex(selectedIndex + 1);
                 }}
+                className="max-w-full max-h-[70vh] object-contain shadow-2xl rounded-2xl cursor-grab active:cursor-grabbing"
+                onClick={(e) => e.stopPropagation()}
               />
-
-              <div className="absolute inset-y-0 left-0 hidden md:flex items-center pl-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedIndex(
-                      (selectedIndex - 1 + gallery.length) % gallery.length,
-                    );
-                  }}
-                  className={`p-3 rounded-full border ${theme.border} ${theme.bgSecondary} hover:brightness-95 transition-all shadow-lg`}
-                >
-                  <ChevronLeft className={theme.textColor} />
-                </button>
-              </div>
-              <div className="absolute inset-y-0 right-0 hidden md:flex items-center pr-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedIndex((selectedIndex + 1) % gallery.length);
-                  }}
-                  className={`p-3 rounded-full border ${theme.border} ${theme.bgSecondary} hover:brightness-95 transition-all shadow-lg`}
-                >
-                  <ChevronRight className={theme.textColor} />
-                </button>
-              </div>
-            </div>
-
-            <div
-              className="absolute bottom-10 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {gallery.map((img: string, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`w-12 h-12 border-2 ${selectedIndex === idx ? theme.border : "border-transparent opacity-30"} transition-all`}
-                >
-                  <img src={img} className="w-full h-full object-cover" />
-                </button>
-              ))}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 }

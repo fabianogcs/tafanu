@@ -237,7 +237,6 @@ export default function BusinessEditor({
   // Memoizações
   const safeBusiness = useMemo(() => normalizeBusiness(business), [business]);
   const categoryKeys = useMemo(() => Object.keys(TAFANU_CATEGORIES).sort(), []);
-  const themeKeys = useMemo(() => Object.keys(businessThemes), []);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false); // <--- A LINHA NOVA É ESTA
@@ -311,6 +310,11 @@ export default function BusinessEditor({
     website: safeBusiness.website || "",
   });
 
+  const filteredThemeKeys = useMemo(() => {
+    return Object.keys(businessThemes).filter(
+      (key) => businessThemes[key].layout === selectedLayout,
+    );
+  }, [selectedLayout]);
   // Cálculo da galeria válida (apenas fotos reais)
   const validGallery = useMemo(
     () => gallery.filter((g) => typeof g === "string" && g.startsWith("http")),
@@ -320,6 +324,26 @@ export default function BusinessEditor({
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // --- COPIE A PARTIR DAQUI ---
+  useEffect(() => {
+    // 1. Olhamos qual é o tema que está selecionado agora
+    const temaAtual = businessThemes[selectedTheme];
+
+    // 2. Perguntamos: "Esse tema pertence ao layout que eu acabei de clicar?"
+    if (temaAtual?.layout !== selectedLayout) {
+      // 3. Se NÃO pertence, vamos procurar o primeiro tema que combine com o novo layout
+      const primeiroTemaValido = Object.keys(businessThemes).find(
+        (chave) => businessThemes[chave].layout === selectedLayout,
+      );
+
+      // 4. Se acharmos um, a gente seleciona ele automaticamente
+      if (primeiroTemaValido) {
+        setSelectedTheme(primeiroTemaValido);
+      }
+    }
+  }, [selectedLayout]); // Isso aqui diz que o código só roda quando o LAYOUT mudar
+  // --- FIM DO CÓDIGO ---
 
   // Sincroniza os dados locais com o banco quando a página atualiza
   useEffect(() => {
@@ -662,21 +686,32 @@ export default function BusinessEditor({
                 <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
                   <Palette size={16} /> Temas Disponíveis
                 </h3>
-                <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3 max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
-                  {themeKeys.map((t) => (
+                <div className="grid grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-3 max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
+                  {filteredThemeKeys.map((t) => (
                     <button
                       key={t}
                       onClick={() => setSelectedTheme(t)}
                       title={businessThemes[t].label}
-                      className={`aspect-square rounded-xl md:rounded-2xl transition-all relative group ${selectedTheme === t ? "ring-4 ring-slate-900 scale-90 shadow-xl z-10" : "hover:scale-105"}`}
+                      // MUDANÇAS AQUI:
+                      // 1. rounded-full: Deixa totalmente redondo
+                      // 2. ring-2 ring-offset-2: Cria um anel de seleção separado da bolinha (mais elegante)
+                      className={`aspect-square rounded-full transition-all relative group shadow-sm ${
+                        selectedTheme === t
+                          ? "ring-2 ring-offset-2 ring-slate-900 scale-90 z-10"
+                          : "hover:scale-110 hover:shadow-md border border-slate-100"
+                      }`}
                       style={{ background: businessThemes[t].previewColor }}
                     >
+                      {/* O pontinho branco no meio quando selecionado (Check visual) */}
                       {selectedTheme === t && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full shadow-sm" />
+                          {/* Se o tema for muito claro, o ponto branco sumiria, então adicionamos uma sombra nele */}
+                          <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_2px_rgba(0,0,0,0.5)]" />
                         </div>
                       )}
-                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase bg-slate-900 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
+
+                      {/* Tooltip com o nome do tema (aparece no hover) */}
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase bg-slate-900 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
                         {businessThemes[t].label}
                       </span>
                     </button>
