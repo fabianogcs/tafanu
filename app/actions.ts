@@ -390,10 +390,8 @@ export async function createBusiness(formData: FormData) {
           category: validatedData.category,
           subcategory: formData.getAll("subcategory") as string[],
           description: validatedData.description,
-          whatsapp: validatedData.whatsapp.replace(/\D/g, ""),
-          phone: validatedData.phone
-            ? validatedData.phone.replace(/\D/g, "")
-            : "",
+          whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
+          phone: (validatedData.phone || "").replace(/\D/g, ""),
           address: validatedData.address,
           city: validatedData.city,
           state: validatedData.state,
@@ -531,8 +529,8 @@ export async function updateFullBusiness(slug: string, payload: any) {
       keywords: keywords, // Agora a variável já existe acima!
       latitude: coords.lat,
       longitude: coords.lng,
-      whatsapp: validatedData.whatsapp.replace(/\D/g, ""),
-      phone: validatedData.phone ? validatedData.phone.replace(/\D/g, "") : "",
+      whatsapp: (payload.whatsapp || "").replace(/\D/g, ""),
+      phone: (payload.phone || "").replace(/\D/g, ""),
       imageUrl: payload.imageUrl,
       heroImage: payload.heroImage,
       videoUrl: payload.videoUrl,
