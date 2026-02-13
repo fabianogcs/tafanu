@@ -371,9 +371,9 @@ export async function createBusiness(formData: FormData) {
   if (existing) return { error: "Slug já em uso." };
 
   const coords = await getCoordinates(
-    validatedData.address,
-    validatedData.city,
-    validatedData.state,
+    validatedData.address || "",
+    validatedData.city || "",
+    validatedData.state || "",
   );
   const faqs = safeParseArray(formData.get("faqs"));
   const hours = safeParseArray(formData.get("hours"));
@@ -498,9 +498,9 @@ export async function updateFullBusiness(slug: string, payload: any) {
 
     // 5. BUSCA COORDENADAS NO MAPS
     const coords = await getCoordinates(
-      validatedData.address,
-      validatedData.city,
-      validatedData.state,
+      validatedData.address || "",
+      validatedData.city || "",
+      validatedData.state || "",
     );
 
     // 6. LOGICA DE LIMPEZA DE IMAGENS (FAXINA)
