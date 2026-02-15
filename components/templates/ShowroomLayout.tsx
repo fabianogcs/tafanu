@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
+import FavoriteButton from "@/components/FavoriteButton";
 
 // --- HELPERS ---
 const TikTokIcon = ({
@@ -87,12 +88,12 @@ export default function ShowroomLayout({
   theme: propTheme,
   realHours: rawHours,
   fullAddress,
+  isLoggedIn, // ⬅️ Adicionado
+  isFavorited, // ⬅️ Adicionado
 }: any) {
   const {
     business,
     realHours: safeHours,
-    isFavorite,
-    setIsFavorite,
     hasWhatsapp,
     hasPhone,
     hasFaqs,
@@ -104,7 +105,6 @@ export default function ShowroomLayout({
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isFavoriting, setIsFavoriting] = useState(false);
   const theme =
     propTheme ||
     businessThemes[business.theme] ||
@@ -164,38 +164,26 @@ export default function ShowroomLayout({
       <header
         className={`relative pt-28 pb-10 w-full ${theme.bgPage} border-b border-black/10`}
       >
-        {/* Pílula de Ações (Z-INDEX 10) */}
+        {/* Pílula de Ações */}
         <div className="absolute top-4 right-4 z-10">
           <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-xl">
+            {/* Botão de Compartilhar */}
             <button
               onClick={() => handleShare(business.name)}
               className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all text-slate-700"
             >
               <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
             </button>
+
+            {/* Divisor */}
             <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
-            <button
-              onClick={async () => {
-                if (isFavoriting) return;
-                setIsFavoriting(true);
-                try {
-                  await (Actions as any).toggleFavorite(business.id);
-                  setIsFavorite(!isFavorite);
-                } finally {
-                  setIsFavoriting(false);
-                }
-              }}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all"
-            >
-              {isFavoriting ? (
-                <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin text-slate-400" />
-              ) : (
-                <Heart
-                  className={`w-4 h-4 md:w-[18px] md:h-[18px] ${isFavorite ? "text-rose-500" : "text-slate-700"}`}
-                  fill={isFavorite ? "currentColor" : "none"}
-                />
-              )}
-            </button>
+
+            {/* O NOVO Botão de Favoritar (Entra aqui) */}
+            <FavoriteButton
+              businessId={business.id}
+              isLoggedIn={isLoggedIn}
+              initialIsFavorited={isFavorited}
+            />
           </div>
         </div>
 

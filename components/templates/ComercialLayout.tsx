@@ -30,6 +30,7 @@ import * as Actions from "@/app/actions";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
+import FavoriteButton from "@/components/FavoriteButton";
 
 // --- HELPERS ---
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -146,6 +147,8 @@ export default function ComercialLayout({
   theme: propTheme,
   realHours: rawHours,
   fullAddress,
+  isLoggedIn, // ⬅️ Nova informação
+  isFavorited, // ⬅️ Nova informação
 }: any) {
   const {
     business,
@@ -164,7 +167,6 @@ export default function ComercialLayout({
   } = useBusiness(rawBusiness, rawHours);
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isFavoriting, setIsFavoriting] = useState(false);
   const footerTriggerRef = useRef<HTMLDivElement | null>(null);
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
@@ -237,28 +239,14 @@ export default function ComercialLayout({
               <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
             </button>
             <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
-            <button
-              onClick={async () => {
-                if (isFavoriting) return;
-                setIsFavoriting(true);
-                try {
-                  await (Actions as any).toggleFavorite(business.id);
-                  setIsFavorite(!isFavorite);
-                } finally {
-                  setIsFavoriting(false);
-                }
-              }}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all"
-            >
-              {isFavoriting ? (
-                <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin text-slate-400" />
-              ) : (
-                <Heart
-                  className={`w-4 h-4 md:w-[18px] md:h-[18px] ${isFavorite ? "text-rose-500" : "text-slate-700"}`}
-                  fill={isFavorite ? "currentColor" : "none"}
-                />
-              )}
-            </button>
+            <div className="scale-75 md:scale-100">
+              <FavoriteButton
+                businessId={business.id}
+                isLoggedIn={isLoggedIn}
+                initialIsFavorited={isFavorited} // ⬅️ Garanta que está usando 'isFavorited' com D no final
+                key={isFavorited ? "favorited" : "not-favorited"} // ⬅️ ADICIONE ISSO: Força o botão a resetar se a página atualizar
+              />
+            </div>
           </div>
         </div>
 

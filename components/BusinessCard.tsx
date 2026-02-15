@@ -5,7 +5,7 @@ import { MapPin, ArrowRight, Heart } from "lucide-react";
 import FavoriteButton from "./FavoriteButton";
 import { motion } from "framer-motion";
 
-export default function BusinessCard({ business }: any) {
+export default function BusinessCard({ business, isLoggedIn }: any) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -19,7 +19,11 @@ export default function BusinessCard({ business }: any) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-2 right-2 scale-75 origin-top-right">
-          <FavoriteButton businessId={business.id} initialIsFavorited={true} />
+          <FavoriteButton
+            businessId={business.id}
+            initialIsFavorited={true} // Aqui recomendo usar business.isFavorite se o seu banco mandar
+            isLoggedIn={isLoggedIn} // ⬅️ A nova trava aqui
+          />
         </div>
       </div>
 

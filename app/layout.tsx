@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import PasswordAlert from "@/components/PasswordAlert"; // ⬅️ 1. ADICIONE ESSE IMPORT
 import { Providers } from "@/components/Providers";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
@@ -47,6 +48,7 @@ export default async function RootLayout({
           <Navbar isLoggedIn={!!userId} userRole={userRole} />
           <main className="flex-grow">{children}</main>
           <Footer />
+          <CookieBanner />
         </Providers>
 
         <div id="modal-root"></div>

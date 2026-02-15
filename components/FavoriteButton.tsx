@@ -9,31 +9,42 @@ import { motion, AnimatePresence } from "framer-motion";
 interface FavoriteButtonProps {
   businessId: string;
   initialIsFavorited?: boolean;
+  isLoggedIn: boolean;
 }
 
 export default function FavoriteButton({
   businessId,
   initialIsFavorited = false,
+  isLoggedIn,
 }: FavoriteButtonProps) {
   const [liked, setLiked] = useState(initialIsFavorited);
   const [loading, setLoading] = useState(false);
 
   async function handleToggle() {
+    if (!isLoggedIn) {
+      toast.error("Acesso restrito", {
+        description: "Você precisa estar logado para salvar favoritos.",
+      });
+      return;
+    }
+
     if (loading) return;
-    setLoading(true);
+
+    // 🚀 O PULO DO GATO: Muda a cor ANTES de ir no banco
+    const novoEstado = !liked;
+    setLiked(novoEstado);
 
     try {
       const res = await toggleFavorite(businessId);
+
       if (res.error) {
         toast.error(res.error);
-      } else {
-        setLiked((res as any).isFavorite);
+        setLiked(!novoEstado); // ⏪ Volta a cor original se der erro
       }
+      // Se deu certo, o 'liked' já está com o valor correto!
     } catch (error) {
+      setLiked(!novoEstado); // ⏪ Volta a cor se a internet cair
       toast.error("Erro ao salvar favorito.");
-      console.error("Erro ao favoritar:", error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -46,10 +57,8 @@ export default function FavoriteButton({
         handleToggle();
       }}
       disabled={loading}
-      className={`backdrop-blur-xl border p-2.5 rounded-full transition-all relative overflow-hidden ${
-        liked
-          ? "bg-rose-500/20 text-rose-500 border-rose-500/50"
-          : "bg-black/40 text-white border-white/20 hover:bg-white/20"
+      className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all relative overflow-hidden ${
+        liked ? "text-rose-500" : "text-slate-700"
       }`}
     >
       <AnimatePresence mode="wait">
@@ -60,7 +69,7 @@ export default function FavoriteButton({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <Loader2 size={20} className="animate-spin" />
+            <Loader2 size={20} className="animate-spin text-current" />
           </motion.div>
         ) : (
           <motion.div
@@ -69,10 +78,7 @@ export default function FavoriteButton({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Heart
-              size={20}
-              className={liked ? "fill-rose-500" : "fill-none"}
-            />
+            <Heart size={20} className={liked ? "fill-current" : "fill-none"} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import LocationTracker from "@/components/LocationTracker";
+import FavoriteButton from "@/components/FavoriteButton";
 import FilterModal from "@/components/FilterModal";
+import { cookies } from "next/headers";
 
 // Função de cálculo de distância
 function calculateDistance(
@@ -57,6 +59,8 @@ interface BuscaProps {
 }
 
 export default async function BuscaPage({ searchParams }: BuscaProps) {
+  const cookieStore = await cookies();
+  const isLoggedIn = !!cookieStore.get("userId")?.value;
   const filters = await searchParams;
   const rawQuery = (filters.q || "").trim();
   const query = normalize(rawQuery); // Query já limpa (sem acento)
@@ -300,6 +304,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                       className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!item.isOpen ? "grayscale" : ""}`}
                       alt={item.name}
                     />
+                    <div className="absolute top-2 right-2 z-10 scale-90 origin-top-right">
+                      <FavoriteButton
+                        businessId={item.id}
+                        isLoggedIn={isLoggedIn}
+                        initialIsFavorited={false}
+                      />
+                    </div>
                     {item.distance !== null && (
                       <div className="absolute top-2 left-2">
                         <div className="bg-black/70 backdrop-blur-md text-white text-[9px] md:text-[10px] font-black px-1.5 py-0.5 md:px-2 md:py-1 rounded flex items-center gap-1 uppercase">

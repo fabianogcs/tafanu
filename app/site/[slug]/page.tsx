@@ -168,6 +168,8 @@ export default async function BusinessPage({
     realHours,
     fullAddress,
     isOpen,
+    isLoggedIn: !!userId,
+    isFavorited: business.favorites && business.favorites.length > 0,
   };
 
   return (
