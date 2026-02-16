@@ -12,52 +12,58 @@ export default function InstallPrompt({
   const [isIOS, setIsIOS] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
+  // Criamos uma chave única para este negócio específico
+  // Ex: install_closed_Pizzaria do João
+  const storageKey = `install_closed_${businessName}`;
+
   useEffect(() => {
-    // 1. Verifica se já está instalado (Modo Standalone)
+    // 1. Verifica se já está instalado (Modo App)
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone ||
       document.referrer.includes("android-app://");
 
-    if (isStandalone) return; // Se já for app, não mostra nada.
+    if (isStandalone) return; // Se já é app, não mostra.
 
-    // 2. Detecta se é iOS (iPhone/iPad)
+    // 2. Detecta iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
 
-    // 3. Lógica para Android (Captura o evento de instalação)
-    const handleBeforeInstallPrompt = (e: any) => {
+    // Função para mostrar o botão
+    const handlePrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Só mostra se ainda não tiver fechado hoje
-      const hasClosed = localStorage.getItem("install_prompt_closed");
+
+      // MUDANÇA AQUI: Verifica no SessionStorage (Memória Temporária)
+      // e verifica SE ESSE NEGÓCIO ESPECÍFICO foi fechado
+      const hasClosed = sessionStorage.getItem(storageKey);
+
       if (!hasClosed) {
         setShowPrompt(true);
       }
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    // Verifica se o porteiro já segurou o evento
+    if ((window as any).deferredPrompt) {
+      handlePrompt((window as any).deferredPrompt);
+    }
 
-    // Para iOS, mostramos logo de cara (se não tiver fechado)
+    window.addEventListener("beforeinstallprompt", handlePrompt);
+
+    // iOS sempre tenta mostrar (se não tiver fechado nessa sessão)
     if (isIosDevice) {
-      const hasClosed = localStorage.getItem("install_prompt_closed");
+      const hasClosed = sessionStorage.getItem(storageKey);
       if (!hasClosed) setShowPrompt(true);
     }
 
     return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt,
-      );
+      window.removeEventListener("beforeinstallprompt", handlePrompt);
     };
-  }, []);
+  }, [businessName, storageKey]); // Recarrega se mudar o negócio
 
   const handleInstallClick = () => {
-    if (isIOS) {
-      // No iOS não dá pra instalar automático, apenas mostramos o tutorial
-      return;
-    }
+    if (isIOS) return;
 
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -65,15 +71,19 @@ export default function InstallPrompt({
         if (choiceResult.outcome === "accepted") {
           setShowPrompt(false);
         }
+        // Não salvamos o fechamento aqui, pois se ele instalar,
+        // o navegador já vai esconder automaticamente na próxima vez.
         setDeferredPrompt(null);
+        (window as any).deferredPrompt = null;
       });
     }
   };
 
   const handleClose = () => {
     setShowPrompt(false);
-    // Salva no navegador para não mostrar de novo por hoje
-    localStorage.setItem("install_prompt_closed", "true");
+    // MUDANÇA: Salva na SESSÃO (Reseta ao fechar o navegador)
+    // E salva com o NOME DO NEGÓCIO.
+    sessionStorage.setItem(storageKey, "true");
   };
 
   if (!showPrompt) return null;
@@ -87,7 +97,6 @@ export default function InstallPrompt({
         className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96"
       >
         <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-slate-700 relative overflow-hidden">
-          {/* Botão Fechar */}
           <button
             onClick={handleClose}
             className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white transition-colors"
@@ -110,11 +119,9 @@ export default function InstallPrompt({
               </p>
 
               {isIOS ? (
-                // --- INSTRUÇÕES PARA iOS ---
                 <div className="text-xs text-slate-400 space-y-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700">
                   <div className="flex items-center gap-2">
-                    1. Toque em <Share size={14} className="text-blue-400" />{" "}
-                    (Compartilhar)
+                    1. Toque em <Share size={14} className="text-blue-400" />
                   </div>
                   <div className="flex items-center gap-2">
                     2. Selecione{" "}
@@ -123,7 +130,6 @@ export default function InstallPrompt({
                   </div>
                 </div>
               ) : (
-                // --- BOTÃO PARA ANDROID ---
                 <button
                   onClick={handleInstallClick}
                   className="bg-white text-slate-900 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors w-full"
