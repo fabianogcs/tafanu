@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import PasswordAlert from "@/components/PasswordAlert"; // ⬅️ 1. ADICIONE ESSE IMPORT
 import { Providers } from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
+import PwaListener from "@/components/PwaListener";
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
@@ -40,6 +41,7 @@ export default async function RootLayout({
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
         <Providers>
+          <PwaListener />
           {/* ✅ O Toaster deve ficar aqui dentro para funcionar em tudo */}
           <Toaster position="top-center" richColors />
 
