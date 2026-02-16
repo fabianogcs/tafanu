@@ -50,9 +50,10 @@ export function normalizeBusiness(raw: any) {
     address: b.address || "",
     city: b.city || "",
     state: b.state || "",
-    // Garante strings para evitar erros nos inputs de endereço
-    number: b.address?.split(", ")[1]?.split(" - ")[0] || "",
-    neighborhood: b.address?.split(" - ")[1] || "",
+    cep: b.cep || "", // <--- Adicionamos o CEP que faltava!
+    // Tenta pegar o número direto, se não tiver, tenta extrair do endereço longo
+    number: b.number || b.address?.split(", ")[1]?.split(" - ")[0] || "",
+    neighborhood: b.neighborhood || b.address?.split(" - ")[1] || "",
 
     // Textos de Layout
     urban_tag: b.urban_tag || "",

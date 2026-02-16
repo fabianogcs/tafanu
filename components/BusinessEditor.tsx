@@ -344,6 +344,19 @@ export default function BusinessEditor({
 
   const handleUpdate = async () => {
     if (isLoading) return;
+    // Trava de Segurança para o Link (Slug)
+    if (!isNew && slug !== safeBusiness.slug) {
+      const confirmChange = window.confirm(
+        "⚠️ PERIGO: Você alterou o LINK do seu negócio.\n\n" +
+          "Isso fará com que seus QR Codes antigos e links compartilhados PAREM DE FUNCIONAR imediatamente.\n\n" +
+          "Tem certeza absoluta que deseja mudar de:\n" +
+          `"${safeBusiness.slug}" para "${slug}"?`,
+      );
+      if (!confirmChange) {
+        setSlug(safeBusiness.slug); // Cancela e volta o link antigo
+        return;
+      }
+    }
     if (isNew && !name) {
       toast.error("Por favor, digite o nome do negócio antes de salvar.");
       return;
@@ -464,8 +477,19 @@ export default function BusinessEditor({
 
   const handleNameChange = (val: string) => {
     setName(val);
-    if (isNew) setSlug(toSlug(val));
+    // Se for novo, gera o link automático. Se for edição, NÃO mexe no link.
+    if (isNew) {
+      setSlug(toSlug(val));
+    }
   };
+
+  // 2. Função que cuida SÓ do Link (Transforma em minúsculo p/ funcionar na web)
+  const handleSlugChange = (val: string) => {
+    const newSlug = toSlug(val); // Força padrão de URL (joao-pizza)
+    setSlug(newSlug);
+  };
+
+  // --- FIM DAS FUNÇÕES ---
   if (!isMounted) return null;
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-32">
@@ -589,7 +613,52 @@ export default function BusinessEditor({
                 placeholder="Digite o Nome Aqui..."
               />
             </div>
+            {/* LINK DO NEGÓCIO (SLUG) - NOVO */}
+            <div className="w-full relative group mb-8 px-4 mt-4">
+              <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block tracking-widest flex items-center justify-center gap-2">
+                <span className="bg-slate-100 px-2 py-1 rounded text-slate-500">
+                  Link do seu site: tafanu.com.br/site/
+                </span>
+              </label>
 
+              <div className="relative">
+                <input
+                  value={slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  onFocus={() => {
+                    if (!isNew) {
+                      toast.warning(
+                        "Cuidado: Mudar o link quebrará seus QR Codes antigos!",
+                      );
+                    }
+                  }}
+                  className={`w-full text-center text-sm md:text-base font-bold font-mono outline-none border-2 py-3 rounded-xl transition-all ${
+                    slug !== safeBusiness.slug && !isNew
+                      ? "bg-amber-50 border-amber-300 text-amber-700 focus:ring-4 ring-amber-100" // Estilo de Alerta
+                      : "bg-slate-50 border-slate-200 text-slate-600 focus:border-indigo-400" // Estilo Normal
+                  }`}
+                  placeholder="seu-link-aqui"
+                />
+
+                {!isNew && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    {slug !== safeBusiness.slug ? (
+                      <span className="text-amber-500 text-[10px] font-black uppercase animate-pulse">
+                        Alterado!
+                      </span>
+                    ) : (
+                      <span className="text-[10px] opacity-50">🔒</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {!isNew && slug !== safeBusiness.slug && (
+                <p className="text-[10px] text-amber-600 font-bold mt-2 bg-amber-100 p-2 rounded text-center border border-amber-200">
+                  ⚠️ Atenção: Se salvar, os links antigos deixarão de funcionar.
+                </p>
+              )}
+            </div>
             {/* SELETOR DE LAYOUT */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-10 pt-8 border-t border-slate-50">
               {Object.keys(layoutInfo).map((key) => (
