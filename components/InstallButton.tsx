@@ -21,7 +21,7 @@ export default function InstallButton({
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
-    // 1. Verifica se já está no App (Standalone)
+    // 1. Verifica se já está no App
     const inStandaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone ||
@@ -38,41 +38,21 @@ export default function InstallButton({
     setIsIOS(isIosDevice);
     if (isIosDevice) setCanInstall(true);
 
-    // 3. Android/PC - A SOLUÇÃO "RADAR" 📡
-    // O evento dispara muito rápido, às vezes antes do React carregar.
-    // Vamos criar uma função que checa se o evento já está guardado na janela.
-    const checkPrompt = () => {
-      if ((window as any).deferredPrompt) {
-        setCanInstall(true);
-        return true; // Encontrou!
-      }
-      return false; // Não encontrou ainda
-    };
+    // 3. Android/PC - LÓGICA DO INTERFONE 📞
 
-    // Checa agora (Imediato)
-    if (checkPrompt()) return;
+    // Função que ativa o botão
+    const activateButton = () => setCanInstall(true);
 
-    // Checa a cada 1 segundo pelos próximos 5 segundos (Para garantir)
-    const interval = setInterval(() => {
-      const found = checkPrompt();
-      if (found) clearInterval(interval); // Se achou, para de procurar
-    }, 1000);
+    // A) Checa se o porteiro JÁ pegou a encomenda antes da gente chegar
+    if ((window as any).deferredPrompt) {
+      activateButton();
+    }
 
-    // Também escuta o evento ao vivo (caso ele dispare depois)
-    const handlePrompt = (e: any) => {
-      e.preventDefault();
-      setCanInstall(true);
-      clearInterval(interval); // Se ouviu o evento, pode parar o radar
-    };
-    window.addEventListener("beforeinstallprompt", handlePrompt);
-
-    // Limpeza ao sair da tela (timeout de 10s para garantir que o intervalo morra)
-    const timeout = setTimeout(() => clearInterval(interval), 10000);
+    // B) Se não pegou ainda, fica ouvindo o interfone ("pwa-ready")
+    window.addEventListener("pwa-ready", activateButton);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handlePrompt);
-      clearInterval(interval);
-      clearTimeout(timeout);
+      window.removeEventListener("pwa-ready", activateButton);
     };
   }, []);
 
@@ -85,7 +65,7 @@ export default function InstallButton({
     const deferredPrompt = (window as any).deferredPrompt;
 
     if (!deferredPrompt) {
-      toast.info("Aguarde um momento e tente novamente...");
+      toast.info("A instalação não foi autorizada pelo navegador ainda.");
       return;
     }
 

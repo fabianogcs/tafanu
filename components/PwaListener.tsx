@@ -4,16 +4,23 @@ import { useEffect } from "react";
 export default function PwaListener() {
   useEffect(() => {
     const handler = (e: any) => {
-      // Impede o Chrome de mostrar a barra nativa feia automaticamente
+      // 1. Impede o banner nativo chato do Chrome
       e.preventDefault();
-      // Guarda o evento no 'bolso' (variável global window) para usar depois
+
+      // 2. Guarda o evento no bolso (variável global)
       (window as any).deferredPrompt = e;
-      console.log("PWA Event capturado e guardado!");
+
+      // 3. O PULO DO GATO: Grita para o resto do site que o PWA está pronto! 📢
+      // Isso avisa o botão instantaneamente.
+      window.dispatchEvent(new Event("pwa-ready"));
+
+      console.log("PWA Event capturado e notificado!");
     };
 
     window.addEventListener("beforeinstallprompt", handler);
+
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  return null; // Este componente é invisível
+  return null; // Esse componente é invisível, só serve de lógica.
 }
