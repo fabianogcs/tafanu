@@ -44,6 +44,7 @@ model Business {
   keywords            String[]     @default([])
   whatsapp_clicks Int @default(0)  // <--- ADICIONAR
   phone_clicks    Int @default(0)  // <--- ADICIONAR
+  installs    Int       @default(0) // <--- ADICIONE ISSO
   
   // Mídia Principal
   heroImage           String?        @db.Text

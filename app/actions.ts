@@ -1098,3 +1098,18 @@ export async function runGarbageCollector() {
     return { error: "Erro interno ao rodar faxina." };
   }
 }
+// ... (mantenha todo o resto do arquivo igual)
+
+// --- AÇÃO PARA CONTAR INSTALAÇÃO DO PWA ---
+export async function incrementInstallCount(slug: string) {
+  try {
+    await db.business.update({
+      where: { slug },
+      data: { installs: { increment: 1 } },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao contar instalação:", error);
+    return { success: false };
+  }
+}

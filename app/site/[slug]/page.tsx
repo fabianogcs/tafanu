@@ -8,7 +8,7 @@ import { Metadata } from "next";
 import LuxeLayout from "@/components/templates/LuxeLayout";
 import UrbanLayout from "@/components/templates/UrbanLayout";
 import ComercialLayout from "@/components/templates/ComercialLayout";
-import InstallPrompt from "@/components/InstallPrompt";
+import InstallButton from "@/components/InstallButton";
 import ShowroomLayout from "@/components/templates/ShowroomLayout";
 
 // COMPONENTES DE SUPORTE
@@ -106,7 +106,6 @@ export default async function BusinessPage({
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  // Busca o negócio com tudo o que precisamos
   const business = await db.business.findUnique({
     where: { slug },
     include: {
@@ -120,7 +119,19 @@ export default async function BusinessPage({
 
   if (!business) return notFound();
 
-  // --- 2. LÓGICA DE FUNCIONAMENTO (FUSO HORÁRIO BRASIL) ---
+  // --- LÓGICA DA IMAGEM DO APP (Igual ao Manifesto) ---
+  const siteUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
+  const rawImage = business.imageUrl || business.heroImage;
+
+  // Se tiver imagem do cliente, usa. Se não, usa seu og-default.png
+  const appIcon = rawImage
+    ? rawImage.startsWith("http")
+      ? rawImage
+      : `${siteUrl}${rawImage}`
+    : `${siteUrl}/og-default.png`;
+
+  // --- RESTO DA LÓGICA DE HORÁRIOS (Continua Igual) ---
   const serverDate = new Date();
   const brazilDate = new Date(
     serverDate.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
@@ -128,7 +139,6 @@ export default async function BusinessPage({
 
   const currentDay = brazilDate.getDay();
   const currentTime = brazilDate.getHours() * 100 + brazilDate.getMinutes();
-
   const todayHours = business.hours.find((h) => h.dayOfWeek === currentDay);
 
   let isOpen = false;
@@ -145,20 +155,15 @@ export default async function BusinessPage({
     isOpen = currentTime >= openVal && currentTime < closeVal;
   }
 
-  // Normalização do Layout
   let currentLayout = business.layout || "urban";
   if (currentLayout === "influencer") currentLayout = "urban";
 
-  // Tema Seguro
   const theme =
     businessThemes[business.theme as keyof typeof businessThemes] ||
     businessThemes["urban_gold"];
-
   const fullAddress = [business.address, business.city, business.state]
     .filter(Boolean)
     .join(", ");
-
-  // Formatação dos Horários
   const DAYS_MAP = [
     "Domingo",
     "Segunda",
@@ -181,7 +186,6 @@ export default async function BusinessPage({
     };
   });
 
-  // --- 3. DADOS ENVIADOS PARA OS TEMPLATES ---
   const layoutProps = {
     business,
     theme,
@@ -193,17 +197,22 @@ export default async function BusinessPage({
   };
 
   return (
-    <main className="min-h-screen">
-      {/* Contador de Visualizações */}
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       <ViewCounter businessId={business.id} userId={userId} />
-      {/* COMPONENTE NOVO DE INSTALAÇÃO */}
-      <InstallPrompt businessName={business.name} />
 
-      {/* Renderização Condicional do Template */}
       {currentLayout === "editorial" && <LuxeLayout {...layoutProps} />}
       {currentLayout === "urban" && <UrbanLayout {...layoutProps} />}
       {currentLayout === "businessList" && <ComercialLayout {...layoutProps} />}
       {currentLayout === "showroom" && <ShowroomLayout {...layoutProps} />}
-    </main>
+
+      {/* BOTÃO COM DADOS REAIS DO CLIENTE */}
+      <div className="w-full bg-slate-950 py-12">
+        <InstallButton
+          businessSlug={business.slug}
+          businessName={business.name} // <--- Nome do Negócio
+          businessLogo={appIcon} // <--- Foto ou Logo Padrão
+        />
+      </div>
+    </div>
   );
 }
