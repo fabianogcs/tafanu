@@ -51,13 +51,17 @@ export default withUt({
         "tafanu-light": "#f1f5f9",
       },
       animation: {
-        shine: "shine 3s infinite",
+        // MANTIDAS:
         ripple: "ripple 1.5s infinite",
         blob: "blob 7s infinite",
         marquee: "marquee 35s linear infinite",
+
+        // NOVAS/AJUSTADAS:
+        shine: "shine 1.5s ease-in-out infinite", // Deixei infinito para o brilho passar sempre
+        "bounce-slow": "bounce-slow 3s ease-in-out infinite",
       },
       keyframes: {
-        shine: { "100%": { left: "125%" } },
+        // MANTIDAS:
         ripple: {
           "0%": { transform: "scale(1)", opacity: "0.4" },
           "100%": { transform: "scale(1.5)", opacity: "0" },
@@ -71,6 +75,16 @@ export default withUt({
         marquee: {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
+        },
+
+        // NOVAS/AJUSTADAS:
+        shine: {
+          "0%": { left: "-100%" },
+          "100%": { left: "125%" },
+        },
+        "bounce-slow": {
+          "0%, 100%": { transform: "translateY(-3px)" },
+          "50%": { transform: "translateY(3px)" },
         },
       },
     },
