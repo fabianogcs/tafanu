@@ -1,6 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Download, Share, PlusSquare } from "lucide-react";
+import {
+  Download,
+  Share,
+  PlusSquare,
+  MoreVertical,
+  Smartphone,
+} from "lucide-react";
 import { incrementInstallCount } from "@/app/actions";
 import { toast } from "sonner";
 
@@ -15,13 +21,15 @@ export default function InstallButton({
   businessName,
   businessLogo,
 }: InstallButtonProps) {
-  const [canInstall, setCanInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  // Estado para saber se o "Automático" está disponível
+  const [hasDeferredPrompt, setHasDeferredPrompt] = useState(false);
 
   useEffect(() => {
-    // 1. Verifica se já está no App
+    // 1. Verifica se já está DENTRO do App
     const inStandaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone ||
@@ -29,57 +37,64 @@ export default function InstallButton({
 
     if (inStandaloneMode) {
       setIsStandalone(true);
-      return;
     }
 
-    // 2. iOS (Sempre mostra)
+    // 2. Detecta iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIOS(isIosDevice);
-    if (isIosDevice) setCanInstall(true);
+    const isIos = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(isIos);
 
-    // 3. Android/PC - LÓGICA DO INTERFONE 📞
+    // 3. Monitora o "Interfone" (Evento Automático)
+    const checkAndSetPrompt = () => {
+      if ((window as any).deferredPrompt) {
+        setHasDeferredPrompt(true);
+      }
+    };
 
-    // Função que ativa o botão
-    const activateButton = () => setCanInstall(true);
+    // Checa agora
+    checkAndSetPrompt();
 
-    // A) Checa se o porteiro JÁ pegou a encomenda antes da gente chegar
-    if ((window as any).deferredPrompt) {
-      activateButton();
-    }
-
-    // B) Se não pegou ainda, fica ouvindo o interfone ("pwa-ready")
-    window.addEventListener("pwa-ready", activateButton);
+    // Fica ouvindo caso chegue depois
+    window.addEventListener("beforeinstallprompt", checkAndSetPrompt);
+    window.addEventListener("pwa-ready", checkAndSetPrompt);
 
     return () => {
-      window.removeEventListener("pwa-ready", activateButton);
+      window.removeEventListener("beforeinstallprompt", checkAndSetPrompt);
+      window.removeEventListener("pwa-ready", checkAndSetPrompt);
     };
   }, []);
 
   const handleInstall = async () => {
+    // Se for iOS, sempre mostra instruções
     if (isIOS) {
-      setShowIOSInstructions(!showIOSInstructions);
+      setShowInstructions(!showInstructions);
       return;
     }
 
+    // Tenta pegar o evento automático
     const deferredPrompt = (window as any).deferredPrompt;
 
-    if (!deferredPrompt) {
-      toast.info("A instalação não foi autorizada pelo navegador ainda.");
+    // CENÁRIO A: Instalação Automática Disponível
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+
+      if (outcome === "accepted") {
+        await incrementInstallCount(businessSlug);
+        toast.success(`App ${businessName} instalado!`);
+        setShowInstructions(false);
+      }
       return;
     }
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      setCanInstall(false);
-      await incrementInstallCount(businessSlug);
-      toast.success(`App ${businessName} instalado!`);
-    }
+    // CENÁRIO B: Sem instalação automática (Já instalado ou Bloqueado)
+    // Mostra as instruções manuais do Android (3 pontinhos)
+    setShowInstructions(!showInstructions);
   };
 
-  if (isStandalone || !canInstall) return null;
+  // REGRA DE OURO: Só esconde se estiver USANDO o app.
+  // Se estiver no navegador (mesmo que já instalado), MOSTRA O BOTÃO.
+  if (isStandalone) return null;
 
   return (
     <div className="w-full flex flex-col items-center justify-center px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -99,20 +114,20 @@ export default function InstallButton({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={businessLogo}
-            alt="Icone do App"
+            alt="App Icon"
             className="w-full h-full object-cover"
           />
         </div>
 
         <div className="flex-1 text-left overflow-hidden">
           <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest truncate">
-            Instalar Aplicativo
+            {hasDeferredPrompt ? "Instalar Agora" : "Baixar Aplicativo"}
           </p>
           <p className="text-base font-black text-white leading-tight truncate">
             {businessName}
           </p>
           <p className="text-[10px] text-slate-400 truncate mt-0.5">
-            Acesse offline e direto da tela inicial
+            {isIOS ? "Instale no iPhone" : "Acesso rápido e offline"}
           </p>
         </div>
 
@@ -121,21 +136,71 @@ export default function InstallButton({
         </div>
       </button>
 
-      {showIOSInstructions && isIOS && (
-        <div className="w-full max-w-[95%] md:max-w-md mt-4 bg-slate-900/90 p-4 rounded-xl border border-slate-800 animate-in fade-in slide-in-from-top-2">
-          <p className="text-xs font-bold text-slate-400 mb-2 text-center uppercase">
-            Para instalar no iPhone:
+      {/* ÁREA DE INSTRUÇÕES (Aparece se clicar e não der pra instalar direto) */}
+      {showInstructions && (
+        <div className="w-full max-w-[95%] md:max-w-md mt-4 bg-slate-900/95 backdrop-blur border border-slate-800 p-5 rounded-xl animate-in fade-in slide-in-from-top-2 shadow-2xl">
+          <p className="text-sm font-bold text-white mb-4 text-center border-b border-slate-800 pb-2">
+            Como instalar o App:
           </p>
-          <div className="space-y-2 text-xs text-slate-300">
-            <div className="flex items-center gap-2">
-              <Share size={14} className="text-blue-500" /> Toque em{" "}
-              <strong>Compartilhar</strong>
+
+          {isIOS ? (
+            // INSTRUÇÕES iOS (iPhone)
+            <div className="space-y-3 text-xs text-slate-300">
+              <div className="flex items-center gap-3">
+                <span className="bg-slate-800 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white">
+                  1
+                </span>
+                <span>
+                  Toque no botão{" "}
+                  <Share size={14} className="inline text-blue-500 mx-1" />{" "}
+                  <strong>Compartilhar</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="bg-slate-800 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white">
+                  2
+                </span>
+                <span>
+                  Role e toque em{" "}
+                  <PlusSquare
+                    size={14}
+                    className="inline text-slate-400 mx-1"
+                  />{" "}
+                  <strong>Adicionar à Tela de Início</strong>
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <PlusSquare size={14} className="text-slate-400" /> Toque em{" "}
-              <strong>Adicionar à Tela de Início</strong>
+          ) : (
+            // INSTRUÇÕES ANDROID (Quando o automático falha)
+            <div className="space-y-3 text-xs text-slate-300">
+              <p className="text-center text-slate-400 italic mb-2">
+                Se a instalação automática não abriu:
+              </p>
+              <div className="flex items-center gap-3">
+                <span className="bg-slate-800 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white">
+                  1
+                </span>
+                <span>
+                  Toque nos <strong>3 pontinhos</strong> do navegador{" "}
+                  <MoreVertical size={14} className="inline text-slate-400" />
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="bg-slate-800 w-6 h-6 rounded-full flex items-center justify-center font-bold text-white">
+                  2
+                </span>
+                <span>
+                  Selecione{" "}
+                  <Smartphone
+                    size={14}
+                    className="inline text-slate-400 mx-1"
+                  />{" "}
+                  <strong>Instalar Aplicativo</strong> ou{" "}
+                  <strong>Adicionar à Tela Inicial</strong>
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
