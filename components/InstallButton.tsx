@@ -17,12 +17,11 @@ export default function InstallButton({
 }: InstallButtonProps) {
   const [canInstall, setCanInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false); // Novo estado
+  const [isStandalone, setIsStandalone] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
-    // 1. Verifica se JÁ ESTÁ RODANDO COMO APP
-    // Se estiver, a gente esconde o botão, pois o usuário já está no app.
+    // 1. Verifica se já está no App (Standalone)
     const inStandaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone ||
@@ -33,25 +32,48 @@ export default function InstallButton({
       return;
     }
 
-    // 2. iOS (Sempre mostra no navegador)
+    // 2. iOS (Sempre mostra)
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
     if (isIosDevice) setCanInstall(true);
 
-    // 3. Android/PC (Se tiver o evento, libera o botão)
-    if ((window as any).deferredPrompt) {
-      setCanInstall(true);
-    }
+    // 3. Android/PC - A SOLUÇÃO "RADAR" 📡
+    // O evento dispara muito rápido, às vezes antes do React carregar.
+    // Vamos criar uma função que checa se o evento já está guardado na janela.
+    const checkPrompt = () => {
+      if ((window as any).deferredPrompt) {
+        setCanInstall(true);
+        return true; // Encontrou!
+      }
+      return false; // Não encontrou ainda
+    };
 
+    // Checa agora (Imediato)
+    if (checkPrompt()) return;
+
+    // Checa a cada 1 segundo pelos próximos 5 segundos (Para garantir)
+    const interval = setInterval(() => {
+      const found = checkPrompt();
+      if (found) clearInterval(interval); // Se achou, para de procurar
+    }, 1000);
+
+    // Também escuta o evento ao vivo (caso ele dispare depois)
     const handlePrompt = (e: any) => {
       e.preventDefault();
       setCanInstall(true);
+      clearInterval(interval); // Se ouviu o evento, pode parar o radar
     };
     window.addEventListener("beforeinstallprompt", handlePrompt);
 
-    return () =>
+    // Limpeza ao sair da tela (timeout de 10s para garantir que o intervalo morra)
+    const timeout = setTimeout(() => clearInterval(interval), 10000);
+
+    return () => {
       window.removeEventListener("beforeinstallprompt", handlePrompt);
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -63,8 +85,7 @@ export default function InstallButton({
     const deferredPrompt = (window as any).deferredPrompt;
 
     if (!deferredPrompt) {
-      // Se clicou e não tem evento (ex: debug), só avisa
-      toast.info("Instalação não disponível neste navegador/modo.");
+      toast.info("Aguarde um momento e tente novamente...");
       return;
     }
 
@@ -72,18 +93,11 @@ export default function InstallButton({
     const { outcome } = await deferredPrompt.userChoice;
 
     if (outcome === "accepted") {
-      // NÃO salvamos mais no localStorage para não sumir pra sempre.
-      // Apenas escondemos agora momentaneamente.
       setCanInstall(false);
       await incrementInstallCount(businessSlug);
       toast.success(`App ${businessName} instalado!`);
     }
   };
-
-  // LÓGICA FINAL DE EXIBIÇÃO:
-  // 1. Se estiver DENTRO do App (Standalone) -> NÃO MOSTRA (Null).
-  // 2. Se não puder instalar (Android já instalado ou PC incompatível) -> NÃO MOSTRA.
-  // 3. Caso contrário -> MOSTRA.
 
   if (isStandalone || !canInstall) return null;
 
