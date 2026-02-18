@@ -181,9 +181,12 @@ export async function loginUser(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  // 1. Lógica de expiração do assinante
+  // 1. CAPTURA O DESTINO QUE VEM DA TELA
+  const callbackUrl = formData.get("callbackUrl") as string;
+
   let dbUser = await db.user.findUnique({ where: { email } });
 
+  // (Sua lógica de expiração mantida abaixo)
   if (
     dbUser &&
     dbUser.role === "ASSINANTE" &&
@@ -197,31 +200,23 @@ export async function loginUser(formData: FormData) {
   }
 
   try {
-    let destino = "/";
+    // 2. DEFINE O DESTINO: Prioridade para o callbackUrl (checkout)
+    let destino = callbackUrl || "/";
 
-    // Define o destino baseado no cargo (GPS)
-    if (dbUser?.role === "ADMIN") {
-      destino = "/admin";
-    } else if (dbUser?.role === "ASSINANTE") {
-      // Se ele já é assinante, vai pro dashboard
-      destino = "/dashboard";
+    if (!callbackUrl) {
+      if (dbUser?.role === "ADMIN") destino = "/admin";
+      else if (dbUser?.role === "ASSINANTE") destino = "/dashboard";
     }
-
-    // Se no formulário veio um "role" forçado (ex: quer ser assinante),
-    // o Client Component vai cuidar do redirecionamento para o checkout.
-    // Mas aqui garantimos o login seguro.
 
     await signIn("credentials", {
       email,
       password,
-      redirectTo: destino,
+      redirectTo: destino, // O servidor agora obedece o destino correto
     });
 
     return { success: true };
   } catch (error: any) {
-    if (error.message?.includes("NEXT_REDIRECT")) {
-      throw error;
-    }
+    if (error.message?.includes("NEXT_REDIRECT")) throw error;
     return { error: "E-mail ou senha inválidos." };
   }
 }
