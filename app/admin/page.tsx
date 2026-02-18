@@ -3,36 +3,41 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
 
-// Lista de e-mails permitidos
+// 1. LISTA DE OURO (E-mails que mandam em tudo)
 const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"];
 
 export default async function AdminPage() {
   const session = await auth();
 
-  // 1. Checa se você está logado
+  // 2. CHECA SE ESTÁ LOGADO
   if (!session?.user?.email) {
-    redirect("/login");
+    redirect("/login?callbackUrl=/admin"); // Se não tá logado, manda pro login e pede pra voltar pra cá
   }
 
-  // 2. Busca o seu usuário no banco de dados da Neon
+  const emailSessao = session.user.email.toLowerCase();
+
+  // 3. BUSCA NO BANCO
   const currentUser = await db.user.findFirst({
     where: {
       email: {
-        equals: session.user.email,
-        mode: "insensitive", // Ignora maiúsculas/minúsculas
+        equals: emailSessao,
+        mode: "insensitive",
       },
     },
   });
 
-  const userEmail = currentUser?.email || session.user.email || "";
-  const isEmailInList = ADMIN_EMAILS.includes(userEmail.toLowerCase());
+  // 4. VALIDAÇÃO DUPLA (Lista de E-mails OU Role no Banco)
+  const isEmailAutorizado = ADMIN_EMAILS.includes(emailSessao);
+  const isAdminNoBanco = currentUser?.role === "ADMIN";
 
-  // 3. VALIDAÇÃO DE SEGURANÇA FINAL
-  if (!currentUser || currentUser.role !== "ADMIN" || !isEmailInList) {
+  // Se o e-mail está na lista, mas no banco não está como ADMIN,
+  // vamos forçar a entrada (e você pode corrigir o role lá dentro do painel)
+  if (!isEmailAutorizado && !isAdminNoBanco) {
+    console.log(`Acesso negado para: ${emailSessao}`);
     redirect("/");
   }
 
-  // 4. Busca os dados do painel
+  // 5. BUSCA OS DADOS (Mesma lógica anterior)
   const users = await db.user.findMany({
     include: { businesses: true },
     orderBy: { createdAt: "desc" },

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react"; // Importante para a trava
 import {
   ShieldCheck,
   Lock,
@@ -16,15 +17,40 @@ import Link from "next/link";
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { data: session, status } = useSession(); // Pega quem está logado
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // --- TRAVA DE SEGURANÇA: EXPULSA QUEM JÁ É DE CASA ---
+  useEffect(() => {
+    if (status === "loading") return;
+
+    const role = session?.user?.role;
+    if (role === "ADMIN") {
+      router.replace("/admin");
+    } else if (role === "ASSINANTE") {
+      router.replace("/dashboard");
+    }
+  }, [session, status, router]);
 
   const handlePayment = () => {
     setIsProcessing(true);
     setTimeout(() => {
-      // Simulação do sucesso e upgrade de role
       router.push("/checkout/sucesso");
     }, 2000);
   };
+
+  // Enquanto checa a sessão, mostra um carregamento para não piscar o preço
+  if (
+    status === "loading" ||
+    session?.user?.role === "ADMIN" ||
+    session?.user?.role === "ASSINANTE"
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-tafanu-blue" size={40} />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 font-sans selection:bg-tafanu-action selection:text-tafanu-blue">
@@ -133,7 +159,6 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* BOX DE CANCELAMENTO */}
             <div className="bg-tafanu-blue/5 p-8 lg:p-10 rounded-[2.5rem] border border-tafanu-blue/10 flex items-start gap-6">
               <div className="bg-tafanu-blue text-white p-3 lg:p-4 rounded-2xl shadow-lg shadow-tafanu-blue/20">
                 <ShieldEllipsis className="w-6 h-6 lg:w-8 lg:h-8" />

@@ -12,16 +12,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cookies } from "next/headers";
+// --- ADICIONE ESTES DOIS ABAIXO PARA SUMIR AS LINHAS VERMELHAS ---
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function AnunciarPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
+  const session = await auth();
+  const userRole = session?.user?.role;
 
-  // Se logado: vai pro checkout.
-  // Se deslogado: vai pro login e avisa que o destino final (callback) é o checkout.
-  const destination = userId
+  // 1. BLOQUEIO DE QUEM JÁ É DE CASA
+  if (userRole === "ADMIN") redirect("/admin");
+  if (userRole === "ASSINANTE") redirect("/dashboard");
+
+  // 2. LÓGICA DE DESTINO PARA VISITANTES
+  // Priorizamos a session para saber se está logado
+  const destination = session
     ? "/checkout"
     : "/login?callbackUrl=/checkout&intent=assinante";
+
   return (
     <div className="bg-white min-h-screen font-sans selection:bg-tafanu-action selection:text-tafanu-blue">
       {/* --- HERO: DIRETO AO PONTO --- */}
@@ -57,7 +65,7 @@ export default async function AnunciarPage() {
         </div>
       </section>
 
-      {/* --- DIFERENCIAIS TÉCNICOS (Baseados no seu Schema) --- */}
+      {/* --- DIFERENCIAIS TÉCNICOS --- */}
       <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="flex flex-col gap-5 p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-tafanu-action/50 transition-colors group">
@@ -101,7 +109,7 @@ export default async function AnunciarPage() {
         </div>
       </section>
 
-      {/* --- CTA PRÁTICO: VALOR TRANSPARENTE --- */}
+      {/* --- CTA PRÁTICO --- */}
       <section className="py-20 px-6 bg-slate-50 border-y border-slate-200">
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-white p-8 md:p-16 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
