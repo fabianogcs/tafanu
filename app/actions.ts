@@ -637,22 +637,37 @@ export async function deleteBusiness(slug: string) {
 
 export async function incrementViews(
   businessId: string,
-  userId: string | undefined,
+  userId: string | undefined, // O userId agora é opcional
 ) {
-  if (!userId) return;
+  // 1. REMOVEMOS o "if (!userId) return;"
+  // Agora a função continua mesmo que o usuário seja deslogado.
+
   const cookieStore = await cookies();
   const cookieName = `viewed_${businessId}`;
+
+  // 2. Trava por Cookie (MANTIDA)
+  // Isso evita que a mesma pessoa (logada ou não) conte 50 visitas ao dar F5.
   if (cookieStore.get(cookieName)) return;
+
   try {
     const b = await db.business.findUnique({
       where: { id: businessId },
       select: { userId: true },
     });
-    if (b?.userId === userId) return;
+
+    // 3. Checagem de Dono (AJUSTADA)
+    // Só barramos se o usuário ESTIVER logado E for o dono da empresa.
+    // Se userId for undefined (deslogado), ele passa direto por aqui.
+    if (userId && b?.userId === userId) return;
+
+    // 4. Incrementa a visita no banco
     await db.business.update({
       where: { id: businessId },
       data: { views: { increment: 1 } },
     });
+
+    // 5. Salva o cookie no navegador do visitante (logado ou não)
+    // Expira em 24h (86400 segundos)
     cookieStore.set(cookieName, "true", {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -661,7 +676,7 @@ export async function incrementViews(
       httpOnly: true,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao incrementar views:", error);
   }
 }
 
