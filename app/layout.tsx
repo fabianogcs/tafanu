@@ -40,13 +40,24 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
+        {/* COLE ESTE BLOCO AQUI 👇 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+          window.deferredPrompt = null;
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+            window.dispatchEvent(new Event('pwa-prompt-ready'));
+          });
+        `,
+          }}
+        />
+
         <Providers>
           <PwaListener />
-          {/* ✅ O Toaster deve ficar aqui dentro para funcionar em tudo */}
           <Toaster position="top-center" richColors />
-
           <PasswordAlert />
-
           <Navbar isLoggedIn={!!userId} userRole={userRole} />
           <main className="flex-grow">{children}</main>
           <Footer />
