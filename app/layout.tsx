@@ -40,17 +40,27 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
-        {/* COLE ESTE BLOCO AQUI 👇 */}
+        {/* SCRIPT DE CONTROLE PWA */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-          window.deferredPrompt = null;
-          window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            window.deferredPrompt = e;
-            window.dispatchEvent(new Event('pwa-prompt-ready'));
-          });
-        `,
+              // 1. Captura o evento de instalação imediatamente
+              window.deferredPrompt = null;
+              window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                window.deferredPrompt = e;
+                window.dispatchEvent(new Event('pwa-prompt-ready'));
+              });
+
+              // 2. Remove Service Workers antigos (Resolve conflito entre assinantes)
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for(let registration of registrations) {
+                    registration.unregister();
+                  }
+                });
+              }
+            `,
           }}
         />
 

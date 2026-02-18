@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { businessThemes } from "@/lib/themes";
-import { Metadata, Viewport } from "next"; // <--- Importe Viewport aqui
+import { Metadata, Viewport } from "next";
 
 // IMPORTAÇÃO DOS TEMPLATES
 import LuxeLayout from "@/components/templates/LuxeLayout";
@@ -14,14 +14,13 @@ import ShowroomLayout from "@/components/templates/ShowroomLayout";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
-// --- 0. VIEWPORT DINÂMICO (NOVO: Onde fica a cor da barra) ---
+// --- 0. VIEWPORT DINÂMICO ---
 export async function generateViewport({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Viewport> {
   const { slug } = await params;
-  // Buscamos apenas o tema para ser rápido
   const business = await db.business.findUnique({
     where: { slug },
     select: { theme: true },
@@ -32,7 +31,7 @@ export async function generateViewport({
   const themeColor = businessThemes[themeKey]?.previewColor || "#000000";
 
   return {
-    themeColor: themeColor, // <--- A COR VEM PRA CÁ AGORA
+    themeColor: themeColor,
     width: "device-width",
     initialScale: 1,
     maximumScale: 1,
@@ -40,7 +39,7 @@ export async function generateViewport({
   };
 }
 
-// --- 1. SEO DINÂMICO & PWA ---
+// --- 1. SEO DINÂMICO & PWA (AQUI ESTÁ A MUDANÇA) ---
 export async function generateMetadata({
   params,
 }: {
@@ -55,13 +54,15 @@ export async function generateMetadata({
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
 
-  // Identificamos qual imagem usar (Ícone do App)
   const rawImage = business.imageUrl || business.heroImage;
   const displayImage = rawImage
     ? rawImage.startsWith("http")
       ? rawImage
       : `${siteUrl}${rawImage}`
     : `${siteUrl}/og-default.png`;
+
+  // TRUQUE DO CACHE: Cria um número único baseada na hora atual
+  const cacheBuster = new Date().getTime();
 
   return {
     title: `${business.name.toUpperCase()} | Tafanu`,
@@ -73,25 +74,21 @@ export async function generateMetadata({
       canonical: fullUrl,
     },
 
-    // --- PWA: IDENTIDADE DO CLIENTE ---
-    applicationName: business.name,
-    manifest: `/api/manifest/${business.slug}`,
-    // themeColor: REMOVIDO DAQUI (foi para generateViewport)
+    // --- MUDANÇA AQUI: Adicionei ?v=${cacheBuster} ---
+    // Isso obriga o celular a baixar o manifesto novo, ignorando o antigo.
+    manifest: `/api/manifest/${business.slug}?v=${cacheBuster}`,
 
-    // Configurações para iOS (iPhone)
+    applicationName: business.name,
     appleWebApp: {
       capable: true,
       title: business.name,
       statusBarStyle: "black-translucent",
     },
-
-    // Ícones Dinâmicos
     icons: {
       icon: displayImage,
       shortcut: displayImage,
       apple: displayImage,
     },
-
     openGraph: {
       title: `${business.name.toUpperCase()} - Guia Tafanu`,
       description:
@@ -140,7 +137,6 @@ export default async function BusinessPage({
 
   if (!business) return notFound();
 
-  // --- LÓGICA DA IMAGEM DO APP ---
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const rawImage = business.imageUrl || business.heroImage;
@@ -151,7 +147,6 @@ export default async function BusinessPage({
       : `${siteUrl}${rawImage}`
     : `${siteUrl}/og-default.png`;
 
-  // --- RESTO DA LÓGICA DE HORÁRIOS ---
   const serverDate = new Date();
   const brazilDate = new Date(
     serverDate.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
@@ -220,12 +215,27 @@ export default async function BusinessPage({
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <ViewCounter businessId={business.id} userId={userId} />
 
+      {/* SCRIPT DE SEGURANÇA: Garante que o navegador atualize o manifesto ao entrar aqui */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            if (window.location.search.indexOf('utm_source=pwa') === -1) {
+               // Se não for PWA, tenta limpar workers antigos para liberar instalação
+               if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for(let reg of regs) reg.unregister();
+                  });
+               }
+            }
+          `,
+        }}
+      />
+
       {currentLayout === "editorial" && <LuxeLayout {...layoutProps} />}
       {currentLayout === "urban" && <UrbanLayout {...layoutProps} />}
       {currentLayout === "businessList" && <ComercialLayout {...layoutProps} />}
       {currentLayout === "showroom" && <ShowroomLayout {...layoutProps} />}
 
-      {/* BOTÃO COM DADOS REAIS DO CLIENTE */}
       <div className="w-full bg-slate-950 py-12">
         <InstallButton
           businessSlug={business.slug}
