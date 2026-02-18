@@ -1,77 +1,57 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { businessThemes } from "@/lib/themes";
+import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
+  // 1. Pega o slug da URL
   const { slug } = await params;
 
+  // 2. Busca os dados do cliente no banco
   const business = await db.business.findUnique({
     where: { slug },
   });
 
   if (!business) {
-    return new NextResponse(JSON.stringify({ error: "Business not found" }), {
-      status: 404,
-    });
+    return new NextResponse("Business not found", { status: 404 });
   }
 
-  // --- CONFIGURAÇÃO DE URL E IMAGEM ---
+  // 3. Define a URL base do site
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
 
-  // AQUI: Usamos a imagem que você JÁ TEM na pasta public
-  const DEFAULT_ICON = `${siteUrl}/og-default.png`;
-
+  // 4. Lógica da Imagem (A mesma que usamos na página)
   const rawImage = business.imageUrl || business.heroImage;
+  const iconUrl = rawImage
+    ? rawImage.startsWith("http")
+      ? rawImage
+      : `${siteUrl}${rawImage}`
+    : `${siteUrl}/icon-512.png`; // Fallback para o ícone padrão
 
-  // Se a imagem do cliente for válida (http...), usa ela.
-  // Se não, usa o seu og-default.png
-  const iconUrl =
-    rawImage && rawImage.startsWith("http") ? rawImage : DEFAULT_ICON;
-
-  // --- CONFIGURAÇÃO DE COR (CORREÇÃO DE GRADIENTE) ---
-  const themeKey =
-    (business.theme as keyof typeof businessThemes) || "urban_gold";
-  let themeColor = businessThemes[themeKey]?.previewColor || "#000000";
-
-  // O Android exige cor sólida (Hex). Se for gradiente, pega a primeira cor.
-  if (themeColor.includes("gradient")) {
-    const match = themeColor.match(/#(?:[0-9a-fA-F]{3}){1,2}/);
-    themeColor = match ? match[0] : "#000000";
-  }
-
-  // 3. Montamos o JSON Final
-  const manifest = {
-    name: business.name,
+  // 5. GERA O JSON DO MANIFESTO
+  return NextResponse.json({
+    name: business.name, // Nome do App será o nome do Cliente!
     short_name:
-      business.name.length > 12
-        ? business.name.slice(0, 12) + "..."
-        : business.name,
-    description:
-      business.description?.slice(0, 150) || "App exclusivo do Tafanu",
-    start_url: `/site/${slug}/?source=pwa`,
+      business.name.length > 12 ? business.name.slice(0, 12) : business.name,
+    description: business.description || `App oficial de ${business.name}`,
+    start_url: `/site/${slug}`, // <--- IMPORTANTE: Abre direto na página do cliente
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: themeColor,
-    orientation: "portrait",
+    background_color: "#0f172a",
+    theme_color: "#0f172a",
     icons: [
       {
-        src: iconUrl,
-        sizes: "192x192",
+        src: iconUrl, // <--- Usa a mesma URL da imagem do cliente
+        sizes: "192x192", // Diz pro navegador: "Pode usar aqui como 192"
         type: "image/png",
         purpose: "any maskable",
       },
       {
-        src: iconUrl,
-        sizes: "512x512",
+        src: iconUrl, // <--- Usa a mesma URL de novo
+        sizes: "512x512", // Diz pro navegador: "Aqui é a original de 512"
         type: "image/png",
         purpose: "any maskable",
       },
     ],
-  };
-
-  return NextResponse.json(manifest);
+  });
 }

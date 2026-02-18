@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { businessThemes } from "@/lib/themes";
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next"; // <--- Importe Viewport aqui
 
 // IMPORTAÇÃO DOS TEMPLATES
 import LuxeLayout from "@/components/templates/LuxeLayout";
@@ -14,7 +14,33 @@ import ShowroomLayout from "@/components/templates/ShowroomLayout";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
-// --- 1. SEO DINÂMICO & PWA (TURBINADO) ---
+// --- 0. VIEWPORT DINÂMICO (NOVO: Onde fica a cor da barra) ---
+export async function generateViewport({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Viewport> {
+  const { slug } = await params;
+  // Buscamos apenas o tema para ser rápido
+  const business = await db.business.findUnique({
+    where: { slug },
+    select: { theme: true },
+  });
+
+  const themeKey =
+    (business?.theme as keyof typeof businessThemes) || "urban_gold";
+  const themeColor = businessThemes[themeKey]?.previewColor || "#000000";
+
+  return {
+    themeColor: themeColor, // <--- A COR VEM PRA CÁ AGORA
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  };
+}
+
+// --- 1. SEO DINÂMICO & PWA ---
 export async function generateMetadata({
   params,
 }: {
@@ -29,18 +55,13 @@ export async function generateMetadata({
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
 
-  // 1. Identificamos qual imagem usar (Ícone do App)
+  // Identificamos qual imagem usar (Ícone do App)
   const rawImage = business.imageUrl || business.heroImage;
   const displayImage = rawImage
     ? rawImage.startsWith("http")
       ? rawImage
       : `${siteUrl}${rawImage}`
     : `${siteUrl}/og-default.png`;
-
-  // 2. Identificamos a Cor do Tema para a barra do navegador
-  const themeKey =
-    (business.theme as keyof typeof businessThemes) || "urban_gold";
-  const themeColor = businessThemes[themeKey]?.previewColor || "#000000";
 
   return {
     title: `${business.name.toUpperCase()} | Tafanu`,
@@ -53,9 +74,9 @@ export async function generateMetadata({
     },
 
     // --- PWA: IDENTIDADE DO CLIENTE ---
-    applicationName: business.name, // Nome que aparece embaixo do ícone no celular
-    manifest: `/api/manifest/${business.slug}`, // <--- O PULO DO GATO: Manifesto Dinâmico
-    themeColor: themeColor, // Pinta a barra do navegador com a cor do cliente
+    applicationName: business.name,
+    manifest: `/api/manifest/${business.slug}`,
+    // themeColor: REMOVIDO DAQUI (foi para generateViewport)
 
     // Configurações para iOS (iPhone)
     appleWebApp: {
@@ -64,11 +85,11 @@ export async function generateMetadata({
       statusBarStyle: "black-translucent",
     },
 
-    // Ícones Dinâmicos (Favicon e Ícone de Instalação)
+    // Ícones Dinâmicos
     icons: {
       icon: displayImage,
       shortcut: displayImage,
-      apple: displayImage, // Ícone da tela inicial do iPhone
+      apple: displayImage,
     },
 
     openGraph: {
@@ -77,7 +98,7 @@ export async function generateMetadata({
         business.description?.slice(0, 160) ||
         "Veja mais fotos e informações no nosso site oficial.",
       url: fullUrl,
-      siteName: business.name, // Agora mostramos o nome do negócio, não Tafanu
+      siteName: business.name,
       images: [
         {
           url: displayImage,
@@ -119,19 +140,18 @@ export default async function BusinessPage({
 
   if (!business) return notFound();
 
-  // --- LÓGICA DA IMAGEM DO APP (Igual ao Manifesto) ---
+  // --- LÓGICA DA IMAGEM DO APP ---
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const rawImage = business.imageUrl || business.heroImage;
 
-  // Se tiver imagem do cliente, usa. Se não, usa seu og-default.png
   const appIcon = rawImage
     ? rawImage.startsWith("http")
       ? rawImage
       : `${siteUrl}${rawImage}`
     : `${siteUrl}/og-default.png`;
 
-  // --- RESTO DA LÓGICA DE HORÁRIOS (Continua Igual) ---
+  // --- RESTO DA LÓGICA DE HORÁRIOS ---
   const serverDate = new Date();
   const brazilDate = new Date(
     serverDate.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
@@ -209,8 +229,8 @@ export default async function BusinessPage({
       <div className="w-full bg-slate-950 py-12">
         <InstallButton
           businessSlug={business.slug}
-          businessName={business.name} // <--- Nome do Negócio
-          businessLogo={appIcon} // <--- Foto ou Logo Padrão
+          businessName={business.name}
+          businessLogo={appIcon}
         />
       </div>
     </div>
