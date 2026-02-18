@@ -5,10 +5,8 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  // 1. Pega o slug da URL
   const { slug } = await params;
 
-  // 2. Busca os dados do cliente no banco
   const business = await db.business.findUnique({
     where: { slug },
   });
@@ -17,38 +15,41 @@ export async function GET(
     return new NextResponse("Business not found", { status: 404 });
   }
 
-  // 3. Define a URL base do site
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
 
-  // 4. Lógica da Imagem (A mesma que usamos na página)
   const rawImage = business.imageUrl || business.heroImage;
   const iconUrl = rawImage
     ? rawImage.startsWith("http")
       ? rawImage
       : `${siteUrl}${rawImage}`
-    : `${siteUrl}/icon-512.png`; // Fallback para o ícone padrão
+    : `${siteUrl}/icon-512.png`;
 
-  // 5. GERA O JSON DO MANIFESTO
+  // --- AQUI ESTÁ A MÁGICA PARA SEPARAR OS APPS ---
+  // ID: Identidade única do app
+  // Scope: Até onde esse app manda (só dentro da pasta dele)
+
   return NextResponse.json({
-    name: business.name, // Nome do App será o nome do Cliente!
+    id: `/site/${slug}`, // <--- NOVO: O RG Único deste App
+    name: business.name,
     short_name:
       business.name.length > 12 ? business.name.slice(0, 12) : business.name,
     description: business.description || `App oficial de ${business.name}`,
-    start_url: `/site/${slug}`, // <--- IMPORTANTE: Abre direto na página do cliente
+    start_url: `/site/${slug}`,
+    scope: `/site/${slug}/`, // <--- NOVO: O App só "existe" dentro dessa URL
     display: "standalone",
     background_color: "#0f172a",
     theme_color: "#0f172a",
     icons: [
       {
-        src: iconUrl, // <--- Usa a mesma URL da imagem do cliente
-        sizes: "192x192", // Diz pro navegador: "Pode usar aqui como 192"
+        src: iconUrl,
+        sizes: "192x192",
         type: "image/png",
         purpose: "any maskable",
       },
       {
-        src: iconUrl, // <--- Usa a mesma URL de novo
-        sizes: "512x512", // Diz pro navegador: "Aqui é a original de 512"
+        src: iconUrl,
+        sizes: "512x512",
         type: "image/png",
         purpose: "any maskable",
       },
