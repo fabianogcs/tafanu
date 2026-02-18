@@ -8,7 +8,6 @@ import { Metadata, Viewport } from "next";
 import LuxeLayout from "@/components/templates/LuxeLayout";
 import UrbanLayout from "@/components/templates/UrbanLayout";
 import ComercialLayout from "@/components/templates/ComercialLayout";
-import InstallButton from "@/components/InstallButton";
 import ShowroomLayout from "@/components/templates/ShowroomLayout";
 
 // COMPONENTES DE SUPORTE
@@ -61,9 +60,6 @@ export async function generateMetadata({
       : `${siteUrl}${rawImage}`
     : `${siteUrl}/og-default.png`;
 
-  // TRUQUE DO CACHE: Cria um número único baseada na hora atual
-  const cacheBuster = new Date().getTime();
-
   return {
     title: `${business.name.toUpperCase()} | Tafanu`,
     description:
@@ -73,11 +69,6 @@ export async function generateMetadata({
     alternates: {
       canonical: fullUrl,
     },
-
-    // --- MUDANÇA AQUI: Adicionei ?v=${cacheBuster} ---
-    // Isso obriga o celular a baixar o manifesto novo, ignorando o antigo.
-    manifest: `/api/manifest/${business.slug}?v=${cacheBuster}`,
-
     applicationName: business.name,
     appleWebApp: {
       capable: true,
@@ -235,14 +226,6 @@ export default async function BusinessPage({
       {currentLayout === "urban" && <UrbanLayout {...layoutProps} />}
       {currentLayout === "businessList" && <ComercialLayout {...layoutProps} />}
       {currentLayout === "showroom" && <ShowroomLayout {...layoutProps} />}
-
-      <div className="w-full bg-slate-950 py-12">
-        <InstallButton
-          businessSlug={business.slug}
-          businessName={business.name}
-          businessLogo={appIcon}
-        />
-      </div>
     </div>
   );
 }
