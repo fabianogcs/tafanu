@@ -13,7 +13,6 @@ import PwaListener from "@/components/PwaListener";
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
   description: "Encontre serviços e comércios locais em Guarulhos.",
-  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({
