@@ -34,8 +34,13 @@ export default function CheckoutPage() {
 
   const handlePayment = () => {
     setIsProcessing(true);
+
+    // Gravamos um "lembrete" no navegador que estamos em processo de compra
+    localStorage.setItem("tafanu_pending_upgrade", "true");
+
     setTimeout(() => {
-      router.push("/checkout/sucesso");
+      // Em vez de router.push, vamos usar o window.location para limpar o cache da rota
+      window.location.href = "/checkout/sucesso";
     }, 2000);
   };
 

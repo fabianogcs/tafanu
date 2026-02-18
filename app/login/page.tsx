@@ -25,13 +25,12 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 1. CAPTURAMOS O DESTINO (O segredo está aqui!)
+  // --- MANTIDA: LÓGICA DO GPS ---
   const success = searchParams.get("success");
   const roleParam = searchParams.get("role");
   const intent = searchParams.get("intent");
-  const callbackUrl = searchParams.get("callbackUrl"); // Pega o /checkout vindo do anunciar
+  const callbackUrl = searchParams.get("callbackUrl");
 
-  // 2. DEFINE O PRÓXIMO PASSO (Prioridade total para o callbackUrl)
   const nextStep =
     callbackUrl ||
     (intent === "assinante" || roleParam === "ASSINANTE"
@@ -40,6 +39,7 @@ export default function LoginPage() {
 
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // --- MANTIDA: VERIFICAÇÃO DE SESSÃO ---
   useEffect(() => {
     async function checkSession() {
       const session = await getSession();
@@ -52,17 +52,18 @@ export default function LoginPage() {
     checkSession();
   }, [router, nextStep]);
 
+  // --- MANTIDA: CONFIGURAÇÃO DE LOGIN/CADASTRO ---
   useEffect(() => {
     if (success === "true") {
       setShowSuccess(true);
       setIsLogin(true);
     }
-    // Se veio do anunciar, já abre na tela de Cadastro
     if (intent === "assinante" || callbackUrl === "/checkout") {
       setIsLogin(false);
     }
   }, [success, intent, callbackUrl]);
 
+  // --- MANTIDA: LÓGICA DE SUBMISSÃO (O MOTOR DO LOGIN) ---
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
@@ -71,36 +72,28 @@ export default function LoginPage() {
     const formData = new FormData(form);
 
     if (isLogin) {
-      // LOGIN
       const result = await loginUser(formData);
       if (result?.error) {
         toast.error(result.error);
         setIsLoading(false);
       } else {
-        // Força o redirecionamento pelo cliente para não cair na Home
-        window.location.href = nextStep;
+        window.location.href = nextStep; // Redireciona para o destino do GPS
       }
     } else {
-      // CADASTRO
       const registerResult = await registerUser(formData);
-
       if (registerResult?.error) {
         toast.error(registerResult.error);
         setIsLoading(false);
         return;
       }
-
       if (registerResult?.success) {
-        // Tenta logar automaticamente após cadastrar
         const loginResult = await loginUser(formData);
-
         if (loginResult?.error) {
-          toast.warning("Conta criada! Faça o login para continuar.");
+          toast.warning("Conta criada! Faça o login.");
           setIsLogin(true);
           setIsLoading(false);
         } else {
-          // AQUI ESTÁ O TRUQUE: Usamos window.location para "vencer" qualquer redirect do servidor
-          window.location.href = nextStep;
+          window.location.href = nextStep; // Redireciona para o destino do GPS
         }
       }
     }
@@ -118,7 +111,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-slate-50 font-sans">
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 sm:px-12 lg:px-24 py-12 bg-white relative">
         <div className="max-w-md w-full mx-auto">
-          {/* O título agora começa aqui, sem o logo em cima */}
           <div className="mb-10 mt-[-20px]">
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2 uppercase italic tracking-tighter leading-none">
               {isLogin ? "Bem-vindo de volta" : "Crie sua conta"}
@@ -129,8 +121,11 @@ export default function LoginPage() {
                 : "Junte-se à maior rede de negócios da região."}
             </p>
           </div>
+
           <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* MANTIDO: O BILHETE DO GPS PARA O SERVIDOR */}
             <input type="hidden" name="callbackUrl" value={nextStep} />
+
             {!isLogin && (
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -187,6 +182,23 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* --- O AJUSTE: BOTÃO DE TROCA LOGO ABAIXO DA SENHA --- */}
+            <div className="flex justify-end pr-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setShowSuccess(false);
+                }}
+                className="text-[11px] font-bold text-slate-400 hover:text-tafanu-blue transition-colors uppercase tracking-tight"
+              >
+                {isLogin ? "Novo por aqui? " : "Já tem conta? "}
+                <span className="text-tafanu-blue underline ml-1">
+                  {isLogin ? "Cadastre-se" : "Fazer Login"}
+                </span>
+              </button>
+            </div>
+
             <button
               disabled={isLoading}
               className="w-full bg-tafanu-blue text-white font-black py-5 rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest italic"
@@ -212,18 +224,6 @@ export default function LoginPage() {
           </div>
 
           <GoogleLoginButton redirectTo={nextStep} />
-
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm font-medium text-slate-400"
-            >
-              {isLogin ? "Novo por aqui?" : "Já tem conta?"}{" "}
-              <span className="text-tafanu-blue font-black underline ml-1">
-                {isLogin ? "Cadastre-se" : "Fazer Login"}
-              </span>
-            </button>
-          </div>
         </div>
       </div>
 
