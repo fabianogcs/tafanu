@@ -1,189 +1,104 @@
-import { getRandomBusinesses } from "@/app/actions";
+import { auth } from "@/auth";
+import { getHomeBusinesses, getActiveCategories } from "@/app/actions"; // 1. IMPORTA AS NOVAS FUNÇÕES
 import Hero from "../components/Hero";
 import Categories from "../components/Categories";
 import Link from "next/link";
-import { ArrowRight, Sparkles, Eye, Heart, MapPin, Clock } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import BusinessCard from "@/components/BusinessCard";
 
 export const dynamic = "force-dynamic";
 
-// --- FUNÇÃO DE VERIFICAÇÃO DE HORÁRIO ---
-function checkIsOpen(hours: any[]) {
-  if (!hours || hours.length === 0) return false; // Sem horário = Fechado por segurança
-
-  // 1. Pega a hora atual em SP/Brasil (para não depender do servidor estar nos EUA)
-  const now = new Date();
-  const spTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
-  );
-
-  const currentDay = spTime.getDay(); // 0 = Domingo, 1 = Segunda...
-  const currentHour = spTime.getHours();
-  const currentMin = spTime.getMinutes();
-
-  // Transforma hora atual em string comparável "HH:MM"
-  const currentTimeStr = `${String(currentHour).padStart(2, "0")}:${String(
-    currentMin,
-  ).padStart(2, "0")}`;
-
-  // 2. Acha a regra de hoje
-  const todayRule = hours.find((h) => h.dayOfWeek === currentDay);
-
-  // 3. Se não tem regra hoje ou está marcado como fechado o dia todo
-  if (!todayRule || todayRule.isClosed) return false;
-
-  // 4. Verifica se está dentro do intervalo
-  return (
-    currentTimeStr >= todayRule.openTime && currentTimeStr < todayRule.closeTime
-  );
-}
-
 export default async function Home() {
-  const businesses = await getRandomBusinesses();
+  const session = await auth();
+
+  // 2. BUSCA AS CATEGORIAS REAIS DO BANCO
+  const activeCategories = await getActiveCategories();
+
+  // 3. BUSCA OS NEGÓCIOS INTELIGENTES (Sabendo quem é você para pintar o coração)
+  const businesses = await getHomeBusinesses(session?.user?.id);
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-20">
+    <main className="min-h-screen bg-[#F8FAFC] pb-24">
       <Hero />
-      <Categories />
 
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex justify-between items-end mb-8">
+      {/* 4. PASSA AS CATEGORIAS PARA O COMPONENTE */}
+      <Categories activeCats={activeCategories} />
+
+      {/* SEÇÃO DE DESTAQUES */}
+      <section className="max-w-7xl mx-auto px-4 md:px-6 py-12">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
           <div>
-            <span className="text-tafanu-blue font-black text-[10px] uppercase tracking-[0.3em]">
-              Explorar
-            </span>
-            <h2 className="text-2xl md:text-4xl font-black text-slate-900 uppercase italic tracking-tighter">
-              Destaques de Hoje
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-tafanu-blue/10 text-tafanu-blue p-1.5 rounded-lg">
+                <Sparkles size={14} />
+              </span>
+              <span className="text-tafanu-blue font-black text-[10px] uppercase tracking-[0.3em]">
+                Em Alta
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
+              Destaques{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-blue to-cyan-500">
+                do dia
+              </span>
             </h2>
           </div>
+
           <Link
             href="/busca"
-            className="text-tafanu-blue font-black text-xs uppercase flex items-center gap-2 hover:underline"
+            className="group flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm hover:shadow-lg transition-all border border-slate-100"
           >
-            Ver todos <ArrowRight size={16} />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-tafanu-blue">
+              Ver todos os locais
+            </span>
+            <div className="bg-slate-100 p-1.5 rounded-full group-hover:bg-tafanu-blue group-hover:text-white transition-colors">
+              <ArrowRight size={14} />
+            </div>
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-          {businesses.map((item) => {
-            // Calcula se está aberto PARA CADA CARD
-            const isOpen = checkIsOpen(item.hours);
-
-            return (
-              <div
-                key={item.id}
-                className="bg-white rounded-[25px] shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-xl transition-all duration-300 relative"
-              >
-                {/* IMAGEM COM EFEITO PRETO E BRANCO SE FECHADO */}
-                <div className="aspect-[16/10] w-full relative overflow-hidden bg-gray-100">
-                  <img
-                    src={item.imageUrl || "/og-default.png"}
-                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-                      !isOpen ? "grayscale opacity-80" : ""
-                    }`}
-                    alt={item.name}
-                  />
-
-                  {/* ETIQUETA DE FECHADO */}
-                  {!isOpen && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
-                      <div className="bg-slate-900/90 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 border border-white/10">
-                        <Clock size={12} /> Fechado
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ETIQUETA DE ABERTO (Opcional, discreta no canto) */}
-                  {isOpen && (
-                    <div className="absolute top-3 right-3">
-                      <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-wide shadow-sm">
-                        Aberto
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-3 md:p-5 flex-1 flex flex-col">
-                  <h3 className="font-black text-xs md:text-lg text-gray-900 leading-tight uppercase italic truncate mb-1">
-                    {item.name}
-                  </h3>
-
-                  <div className="flex items-start gap-1 text-gray-400 mb-3">
-                    <MapPin
-                      size={12}
-                      className="text-emerald-500 shrink-0 mt-0.5"
-                    />
-                    <span className="font-bold text-[8px] md:text-[10px] uppercase italic truncate">
-                      {item.city}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 mb-4 opacity-70">
-                    <div className="flex items-center gap-1 text-slate-500">
-                      <Eye size={12} />
-                      <span className="text-[9px] md:text-[11px] font-black">
-                        {item.views}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-rose-500">
-                      <Heart
-                        size={11}
-                        fill="currentColor"
-                        className="opacity-20"
-                      />
-                      <span className="text-[9px] md:text-[11px] font-black">
-                        {item._count?.favorites || 0}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/site/${item.slug}`}
-                    className={`mt-auto text-center py-2.5 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                      !isOpen
-                        ? "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                        : "bg-gray-50 text-tafanu-blue hover:bg-tafanu-blue hover:text-white"
-                    }`}
-                  >
-                    Ver Perfil <ArrowRight size={12} />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
+        {/* GRID DE CARDS PREMIUM (VIDRO) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {businesses.map((item: any) => (
+            <BusinessCard
+              key={item.id}
+              business={item}
+              isLoggedIn={!!session?.user} // Passa true se tiver logado
+            />
+          ))}
 
           {businesses.length === 0 && (
-            <div className="col-span-full text-center py-10 opacity-50 font-bold italic">
-              Ainda não há destaques hoje. Seja o primeiro!
+            <div className="col-span-full py-24 text-center bg-white/50 backdrop-blur-sm rounded-[3rem] border border-dashed border-slate-300">
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">
+                Estamos atualizando nossa vitrine. Volte em breve!
+              </p>
             </div>
           )}
         </div>
       </section>
 
-      <section className="py-16 px-4">
-        <div className="max-w-5xl mx-auto bg-[#0f172a] rounded-[40px] p-8 md:p-16 text-center md:text-left flex flex-col md:flex-row items-center justify-between shadow-2xl relative overflow-hidden border border-white/5">
-          <div className="absolute right-0 top-0 w-96 h-96 bg-tafanu-action opacity-10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+      {/* SEÇÃO CTA (MANTIDA) */}
+      <section className="px-4">
+        <div className="max-w-6xl mx-auto bg-[#0f172a] rounded-[3rem] p-8 md:p-16 text-center md:text-left flex flex-col md:flex-row items-center justify-between shadow-2xl shadow-tafanu-blue/20 relative overflow-hidden border border-white/5 group">
+          <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-tafanu-action opacity-10 rounded-full blur-[120px] -mr-40 -mt-40 group-hover:opacity-20 transition-opacity duration-1000"></div>
+          <div className="absolute left-0 bottom-0 w-80 h-80 bg-blue-600 opacity-20 rounded-full blur-[100px] -ml-20 -mb-20"></div>
 
-          <div className="z-10 mb-8 md:mb-0 max-w-lg">
-            <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
-              <Sparkles className="text-tafanu-action" size={20} />
-              <span className="text-tafanu-action font-black text-xs uppercase tracking-[0.3em]">
-                Oportunidade
-              </span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-black text-white mb-4 uppercase italic tracking-tighter leading-none">
-              Sua marca em <br /> destaque hoje.
+          <div className="z-10 mb-8 md:mb-0 max-w-lg relative">
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 uppercase italic tracking-tighter leading-[0.95]">
+              Sua marca merece <br />{" "}
+              <span className="text-tafanu-action">ser vista.</span>
             </h2>
-            <p className="text-slate-400 font-medium">
-              Aumente sua visibilidade e atraia clientes qualificados. Crie sua
-              vitrine profissional em poucos minutos.
+            <p className="text-slate-400 font-medium text-sm md:text-base leading-relaxed">
+              Junte-se a centenas de empresas que já estão crescendo com o
+              Tafanu.
             </p>
           </div>
 
           <Link
             href="/anunciar"
-            className="z-10 bg-tafanu-action text-[#0f172a] font-black py-5 px-10 rounded-2xl hover:bg-white transition-all shadow-xl whitespace-nowrap transform hover:scale-105 duration-200 uppercase text-sm tracking-widest"
+            className="z-10 bg-white text-[#0f172a] font-black py-5 px-10 rounded-2xl hover:bg-tafanu-action hover:text-white transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] whitespace-nowrap transform hover:-translate-y-1 duration-300 uppercase text-[10px] md:text-xs tracking-[0.2em]"
           >
-            Começar Agora
+            Criar Anúncio Grátis
           </Link>
         </div>
       </section>

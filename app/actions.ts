@@ -698,20 +698,6 @@ export async function toggleFavorite(businessId: string) {
   }
 }
 
-export async function getActiveCategories() {
-  try {
-    const active = await db.business.findMany({
-      where: { published: true },
-      select: { category: true },
-    });
-    return Array.from(
-      new Set(active.map((b) => b.category).filter(Boolean)),
-    ).sort();
-  } catch (error) {
-    return [];
-  }
-}
-
 export async function incrementWhatsappClicks(businessId: string) {
   try {
     await db.business.update({
@@ -972,10 +958,8 @@ export async function resetPassword(token: string | null, formData: FormData) {
 
   return { success: true };
 }
-export async function getRandomBusinesses() {
+export async function getRandomBusinesses(userId?: string) {
   try {
-    // 1. Busca TODOS os negócios válidos (PAGANTES ou ADMINS)
-    // Precisamos pegar só os IDs primeiro para ser rápido
     const validIds = await db.business.findMany({
       where: {
         isActive: true,
@@ -1007,23 +991,26 @@ export async function getRandomBusinesses() {
       where: { id: { in: shuffledIds } },
       include: {
         hours: true,
+        favorites: userId ? { where: { userId } } : false,
         _count: {
           select: { favorites: true },
         },
       },
     });
 
-    // Opcional: Embaralhar de novo só para garantir que a ordem de exibição também seja random
-    return randomBusinesses.sort(() => Math.random() - 0.5);
+    // MAPEAMENTO IMPORTANTE AQUI TAMBÉM:
+    return randomBusinesses
+      .map((b) => ({
+        ...b,
+        isFavorited: userId ? b.favorites.length > 0 : false,
+        favoritesCount: b._count.favorites,
+      }))
+      .sort(() => Math.random() - 0.5);
   } catch (error) {
     console.error("Erro ao buscar aleatórios:", error);
     return [];
   }
 }
-
-// ==============================================================================
-// 6. FAXINA GERAL (COM SEGURANÇA)
-// ==============================================================================
 
 export async function runGarbageCollector() {
   // 1. Verifica se é ADMIN
@@ -1121,5 +1108,59 @@ export async function incrementInstallCount(slug: string) {
   } catch (error) {
     console.error("Erro ao contar instalação:", error);
     return { success: false };
+  }
+}
+// Adicione no final de app/actions.ts
+
+export async function getHomeBusinesses(userId?: string) {
+  try {
+    const businesses = await db.business.findMany({
+      where: {
+        published: true,
+        isActive: true,
+      },
+      include: {
+        // Traz apenas o favorito do usuário logado (se houver)
+        favorites: userId ? { where: { userId } } : false,
+        _count: {
+          select: { favorites: true },
+        },
+      },
+      orderBy: [{ views: "desc" }, { favorites: { _count: "desc" } }],
+      take: 12,
+    });
+
+    // MAPEAMENTO: Transforma o array 'favorites' em um booleano 'isFavorited'
+    return businesses.map((b) => ({
+      ...b,
+      isFavorited: userId ? b.favorites.length > 0 : false,
+      favoritesCount: b._count.favorites,
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar destaques:", error);
+    return [];
+  }
+}
+
+export async function getActiveCategories() {
+  try {
+    const categories = await db.business.groupBy({
+      by: ["category"],
+      where: {
+        published: true,
+        isActive: true,
+      },
+      _count: {
+        category: true,
+      },
+    });
+
+    return categories
+      .map((c) => c.category)
+      .filter(Boolean)
+      .sort();
+  } catch (error) {
+    console.error("Erro ao buscar categorias:", error);
+    return [];
   }
 }

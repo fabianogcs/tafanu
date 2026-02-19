@@ -59,6 +59,7 @@ export default async function FavoritosPage() {
               key={fav.id}
               business={fav.business}
               isLoggedIn={true}
+              forceMatch={true} // 👈 A MÁGICA É ESSA LINHA AQUI!
             />
           ))}
         </div>
