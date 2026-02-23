@@ -5,15 +5,17 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import PasswordAlert from "@/components/PasswordAlert"; // ⬅️ 1. ADICIONE ESSE IMPORT
+import PasswordAlert from "@/components/PasswordAlert";
 import { Providers } from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import PwaListener from "@/components/PwaListener";
+import AffiliateTracker from "@/components/AffiliateTracker"; // ⬅️ FUSÃO: Adicionado
+import { Suspense } from "react"; // ⬅️ FUSÃO: Adicionado
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
   description: "Encontre serviços e comércios locais em Guarulhos.",
-  manifest: "/manifest.json", // <--- ADICIONE ISSO DE VOLTA
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({
@@ -21,7 +23,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Em Next.js 15/16, cookies() deve ser await
+  // Mantive sua lógica original de Cookies e Role
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
@@ -41,11 +43,15 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
-        {/* SCRIPT DE CONTROLE PWA */}
+        {/* 1. SISTEMA DE AFILIADOS (Invisível, mas ativo) */}
+        <Suspense fallback={null}>
+          <AffiliateTracker />
+        </Suspense>
+
+        {/* 2. SEU SCRIPT DE CONTROLE PWA (Mantido 100%) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // 1. Captura o evento de instalação imediatamente
               window.deferredPrompt = null;
               window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
@@ -53,7 +59,6 @@ export default async function RootLayout({
                 window.dispatchEvent(new Event('pwa-prompt-ready'));
               });
 
-              // 2. Remove Service Workers antigos (Resolve conflito entre assinantes)
               if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                   for(let registration of registrations) {
@@ -65,6 +70,7 @@ export default async function RootLayout({
           }}
         />
 
+        {/* 3. ESTRUTURA VISUAL (Mantida 100%) */}
         <Providers>
           <PwaListener />
           <Toaster position="top-center" richColors />

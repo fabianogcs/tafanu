@@ -10,15 +10,15 @@ import {
   Settings2,
   Sparkles,
   ShieldCheck,
-  MessageCircle, // <--- ADICIONADO
-  Phone, // <--- ADICIONADO
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import BusinessEditor from "@/components/BusinessEditor";
 
 export default async function EditBusinessPage({
   params,
 }: {
-  params: Promise<{ slug: string }>; // 👈 Adicionamos o Promise aqui
+  params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
   const cookieStore = await cookies();
@@ -26,6 +26,7 @@ export default async function EditBusinessPage({
 
   if (!userId) redirect("/login");
 
+  // 1. BUSCA O NEGÓCIO PELO SLUG
   const business = await db.business.findUnique({
     where: { slug: slug },
     include: {
@@ -37,7 +38,21 @@ export default async function EditBusinessPage({
   });
 
   if (!business) return notFound();
-  if (business.userId !== userId) {
+
+  // --- 2. LÓGICA DE SUPORTE MASTER (ADMIN) ---
+  // Buscamos os dados do usuário logado para conferir se é você (Admin)
+  const currentUser = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true, role: true },
+  });
+
+  const ADMIN_EMAIL = "prfabianoguedes@gmail.com";
+  const isAdmin =
+    currentUser?.email === ADMIN_EMAIL || currentUser?.role === "ADMIN";
+
+  // 3. VALIDAÇÃO DE ACESSO
+  // Se não for o dono do negócio E não for um administrador, bloqueia o acesso.
+  if (business.userId !== userId && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="bg-white p-10 rounded-[40px] shadow-xl border border-rose-100 text-center">
@@ -67,7 +82,7 @@ export default async function EditBusinessPage({
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">
       <div className="max-w-5xl mx-auto pb-24 p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* HEADER DE NAVEGAÇÃO 3.0 */}
+        {/* HEADER DE NAVEGAÇÃO */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <Link
             href="/dashboard"
@@ -88,9 +103,14 @@ export default async function EditBusinessPage({
           </Link>
         </div>
 
-        {/* BANNER DE STATUS E PERFORMANCE */}
+        {/* BANNER DE STATUS COM AVISO DE ADMIN */}
         <div className="bg-white border border-slate-200 rounded-[40px] p-8 md:p-10 mb-10 shadow-sm relative overflow-hidden">
-          {/* Decoração sutil */}
+          {isAdmin && business.userId !== userId && (
+            <div className="absolute top-0 left-0 bg-amber-500 text-white px-4 py-1 text-[10px] font-bold uppercase rounded-br-xl z-20">
+              Modo Suporte Ativado
+            </div>
+          )}
+
           <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
             <Settings2 size={180} className="rotate-12" />
           </div>
@@ -108,7 +128,6 @@ export default async function EditBusinessPage({
               </h1>
             </div>
 
-            {/* --- AQUI ESTÁ A MUDANÇA: ESTATÍSTICAS NOVAS --- */}
             <div className="flex flex-wrap items-center gap-3">
               <StatItem
                 icon={<Eye size={16} />}
@@ -122,21 +141,15 @@ export default async function EditBusinessPage({
                 value={business._count?.favorites || 0}
                 className="bg-rose-50 text-rose-500 border-rose-100"
               />
-
-              {/* BLOCO DE WHATSAPP */}
               <StatItem
                 icon={<MessageCircle size={16} />}
                 label="WhatsApp"
-                // Se der erro aqui, é porque você não rodou o passo 1 (Prisma)
                 value={(business as any).whatsapp_clicks || 0}
                 className="bg-emerald-50 text-emerald-600 border-emerald-100"
               />
-
-              {/* BLOCO DE LIGAÇÕES */}
               <StatItem
                 icon={<Phone size={16} />}
                 label="Ligações"
-                // Se der erro aqui, é porque você não rodou o passo 1 (Prisma)
                 value={(business as any).phone_clicks || 0}
                 className="bg-blue-50 text-blue-600 border-blue-100"
               />
@@ -144,7 +157,7 @@ export default async function EditBusinessPage({
           </div>
         </div>
 
-        {/* O CORAÇÃO DO SISTEMA - BUSINESS EDITOR 3.0 */}
+        {/* EDITOR */}
         <div className="relative bg-white rounded-[40px] shadow-sm border border-slate-200 p-2 md:p-4">
           <BusinessEditor business={business} />
         </div>
@@ -153,7 +166,6 @@ export default async function EditBusinessPage({
   );
 }
 
-// Subcomponente de Estatística
 function StatItem({ icon, label, value, className }: any) {
   return (
     <div

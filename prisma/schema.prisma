@@ -18,6 +18,12 @@ model User {
   
   // ROLE: VISITANTE, ASSINANTE ou ADMIN
   role             String    @default("VISITANTE") 
+  referralCode  String?   @unique // Código único do parceiro (ex: joao001)
+  affiliateId   String?           // ID de quem indicou este usuário
+  affiliate     User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id])
+  affiliateSince DateTime? // Data em que ele se tornou afiliado
+  lastPayoutDate DateTime?
+  referrals     User[]    @relation("AffiliateToUser")
   expiresAt     DateTime?  // Data de vencimento da assinatura
   document         String?   @unique
   phone            String?

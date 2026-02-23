@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,6 +63,14 @@ export default function LoginPage() {
       setIsLogin(false);
     }
   }, [success, intent, callbackUrl]);
+
+  useEffect(() => {
+    // Ele vai lá no "caderninho" (localStorage) e vê se o espião anotou algo
+    const savedRef = localStorage.getItem("tafanu_affiliate_ref");
+    if (savedRef) {
+      setAffiliateCode(savedRef);
+    }
+  }, []);
 
   // --- MANTIDA: LÓGICA DE SUBMISSÃO (O MOTOR DO LOGIN) ---
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -125,6 +134,11 @@ export default function LoginPage() {
           <form className="space-y-5" onSubmit={handleSubmit}>
             {/* MANTIDO: O BILHETE DO GPS PARA O SERVIDOR */}
             <input type="hidden" name="callbackUrl" value={nextStep} />
+            <input
+              type="hidden"
+              name="affiliateCode"
+              value={affiliateCode || ""}
+            />
 
             {!isLogin && (
               <div className="space-y-1">

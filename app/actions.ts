@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { cpf } from "cpf-cnpj-validator";
 import { auth, signIn, signOut } from "@/auth";
 import { Resend } from "resend";
+import crypto from "crypto";
 
 const utapi = new UTApi();
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -135,45 +136,73 @@ export async function registerUser(formData: FormData) {
   const password = formData.get("password") as string;
   const rawDocument = formData.get("document") as string;
 
-  let role = (formData.get("role") as string) || "VISITANTE";
-  if (email === "prfabianoguedes@gmail.com") role = "ADMIN";
+  // 1. MEMÓRIA DE AFILIADO: Tenta pegar o código do formulário OU do cookie
+  const cookieStore = await cookies();
+  const affiliateCode =
+    (formData.get("affiliateCode") as string) ||
+    cookieStore.get("affiliate_code")?.value;
 
-  if (!name || !email || !password)
-    return { error: "Preencha todos os campos." };
+  // Define a função do usuário (Admin se for seu e-mail, senão Visitante)
+  let role = (formData.get("role") as string) || "VISITANTE";
+  if (email.toLowerCase() === "prfabianoguedes@gmail.com") role = "ADMIN";
+
+  if (!name || !email || !password) {
+    return { error: "Preencha todos os campos obrigatórios." };
+  }
 
   try {
+    // 2. VALIDAÇÃO DE DUPLICIDADE
     const existingUser = await db.user.findUnique({ where: { email } });
-    if (existingUser) return { error: "E-mail já cadastrado." };
+    if (existingUser) return { error: "Este e-mail já está cadastrado." };
 
+    // 3. VALIDAÇÃO DE DOCUMENTO (CPF)
     let cleanDocument = null;
     if (rawDocument) {
       cleanDocument = rawDocument.replace(/\D/g, "");
       if (!cpf.isValid(cleanDocument)) return { error: "CPF inválido." };
+
       const existingCPF = await db.user.findUnique({
         where: { document: cleanDocument },
       });
-      if (existingCPF) return { error: "Este CPF já está sendo usado." };
+      if (existingCPF)
+        return { error: "Este CPF já está sendo usado por outra conta." };
     }
 
     const hashedPassword = await hash(password, 10);
 
-    // 1. Apenas cria no Banco (SEM TENTAR LOGAR AQUI)
-    // Isso evita o erro de "NEXT_REDIRECT" dentro do cadastro
+    // 4. VÍNCULO COM O PARCEIRO (AFILIADO)
+    let affiliateId = null;
+    if (affiliateCode) {
+      const partner = await db.user.findUnique({
+        where: { referralCode: affiliateCode.toLowerCase().trim() },
+        select: { id: true },
+      });
+      // Se o código for válido, guardamos o ID do parceiro
+      if (partner) affiliateId = partner.id;
+    }
+
+    // 5. CRIAÇÃO NO BANCO DE DADOS
     await db.user.create({
       data: {
         name,
         email,
-        emailVerified: new Date(), // Já marcamos como verificado para facilitar
+        emailVerified: new Date(),
         password: hashedPassword,
         role,
         document: cleanDocument,
+        affiliateId, // Aqui o usuário fica "preso" ao parceiro para sempre
       },
     });
+
+    // 6. LIMPEZA: Remove o cookie de indicação após o cadastro com sucesso
+    if (affiliateCode) {
+      cookieStore.delete("affiliate_code");
+    }
 
     return { success: true };
   } catch (error) {
     console.error("Erro no cadastro:", error);
-    return { error: "Erro ao criar conta. Tente novamente." };
+    return { error: "Erro ao criar conta. Tente novamente mais tarde." };
   }
 }
 
@@ -265,6 +294,9 @@ export async function updateUserProfile(formData: FormData) {
   if (!sessionUser) return { error: "Não autorizado." };
   const userId = sessionUser.id;
 
+  // 1. PEGA O CÓDIGO DO AFILIADO QUE VEM DO FORMULÁRIO (ProfileForm)
+  const affiliateCode = formData.get("affiliateCode") as string; // ⬅️ NOVO
+
   const rawData = Object.fromEntries(formData.entries());
   const validatedFields = userProfileSchema.safeParse(rawData);
 
@@ -277,7 +309,11 @@ export async function updateUserProfile(formData: FormData) {
   const validatedData = validatedFields.data;
 
   try {
-    const dbUser = await db.user.findUnique({ where: { id: userId } });
+    const dbUser = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true, affiliateId: true }, // ⬅️ Adicionado affiliateId aqui
+    });
+
     if (!dbUser) return { error: "Usuário não encontrado." };
 
     const updateData: any = {
@@ -285,6 +321,20 @@ export async function updateUserProfile(formData: FormData) {
       phone: validatedData.phone.replace(/\D/g, ""),
       document: validatedData.document.replace(/\D/g, ""),
     };
+
+    // 2. LÓGICA DE VÍNCULO DE AFILIADO (SÓ ACONTECE UMA VEZ)
+    // Se o usuário ainda não tem um "pai" (affiliateId) e enviou um código
+    if (!dbUser.affiliateId && affiliateCode) {
+      // ⬅️ NOVO
+      const partner = await db.user.findUnique({
+        where: { referralCode: affiliateCode.toLowerCase() },
+        select: { id: true },
+      });
+
+      if (partner) {
+        updateData.affiliateId = partner.id; // ⬅️ Vincula o usuário ao parceiro
+      }
+    }
 
     if (validatedData.newPassword) {
       const currentPassword = formData.get("currentPassword") as string;
@@ -1162,5 +1212,290 @@ export async function getActiveCategories() {
   } catch (error) {
     console.error("Erro ao buscar categorias:", error);
     return [];
+  }
+}
+
+// ==============================================================================
+// 6. SISTEMA DE AFILIADOS (ADMIN)
+// ==============================================================================
+
+/**
+ * Transforma um usuário em AFILIADO e define seu código único de indicação.
+ */
+export async function promoteToAffiliate(userId: string, code: string) {
+  // 1. Verificação de segurança: apenas você (Admin) pode rodar isso
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Acesso negado." };
+
+  try {
+    // 2. Limpa o código (remove espaços e coloca em minúsculo)
+    const cleanCode = code.trim().toLowerCase().replace(/\s+/g, "-");
+
+    if (!cleanCode || cleanCode.length < 3) {
+      return { error: "O código deve ter pelo menos 3 caracteres." };
+    }
+
+    // 3. Verifica se este código já existe para OUTRA pessoa
+    const existingUserWithCode = await db.user.findUnique({
+      where: { referralCode: cleanCode },
+    });
+
+    if (existingUserWithCode && existingUserWithCode.id !== userId) {
+      return { error: "Este código já está sendo usado por outro parceiro." };
+    }
+
+    // 4. Atualiza o usuário no banco
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        role: "AFILIADO",
+        referralCode: cleanCode,
+        affiliateSince: new Date(), // ⬅️ Adicione isso para começar a contar o "Mês 1"
+      },
+    });
+
+    // 5. Limpa o cache para a mudança aparecer na hora
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      message: `Agora o usuário é um Afiliado com o código: ${cleanCode}`,
+    };
+  } catch (error) {
+    console.error("Erro ao promover afiliado:", error);
+    return { error: "Erro interno ao processar a promoção." };
+  }
+}
+export async function getAffiliateStats() {
+  const sessionUser = await getSafeUser();
+
+  // 1. Bloqueio de segurança: Só parceiros ou admins entram
+  if (
+    !sessionUser ||
+    (sessionUser.role !== "AFILIADO" && sessionUser.role !== "ADMIN")
+  ) {
+    return { error: "Não autorizado." };
+  }
+
+  try {
+    const userId = sessionUser.id;
+    const VALOR_MENSALIDADE = 29.9;
+    const hoje = new Date();
+
+    // 2. Busca dados do parceiro (especialmente o último reset de pagamento)
+    const partner = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        referralCode: true,
+        affiliateSince: true,
+        createdAt: true,
+        lastPayoutDate: true, // Crucial para zerar o saldo após você pagar
+      },
+    });
+
+    // 3. Busca todos os indicados (referrals)
+    const allReferrals = await db.user.findMany({
+      where: { affiliateId: userId },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        expiresAt: true,
+        businesses: { select: { slug: true, name: true }, take: 1 },
+      },
+    });
+
+    // Filtro de tempo: 30 dias atrás (para separar teste de R$ 1,00 da mensalidade real)
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(hoje.getDate() - 30);
+
+    // --- SEPARAÇÃO DAS GAVETAS (LÓGICA UNIFICADA) ---
+
+    // GAVETA 1: ATIVOS (Gerando lucro AGORA)
+    // Condição: > 30 dias de casa + Plano Ativo + Não foi pago no último reset
+    // 1. ATIVOS (Quem já pagou os 29,90 e ainda não foi comissionado após o último reset)
+    const ativos = allReferrals.filter((u) => {
+      // 🛡️ GUARDA DE SEGURANÇA: Se não tiver data de expiração ou criação, ignora o usuário
+      if (!u.expiresAt || !u.createdAt) return false;
+
+      // Agora o TypeScript sabe que u.expiresAt e u.createdAt EXISTEM nesta linha
+      const isComissionavel = u.createdAt <= trintaDiasAtras;
+      const isAtivo = u.expiresAt > hoje;
+
+      // 🔒 TRAVA DE RESET: Verifica se esse pagamento já foi "limpo" no último reset
+      let jaPagoNesteCiclo = false;
+
+      if (partner?.lastPayoutDate) {
+        // Criamos a data de corte: data do último pagamento + 30 dias
+        const dataCorte = new Date(
+          partner.lastPayoutDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+        );
+
+        // Se a expiração atual do cliente é menor que a data de corte, ele já foi pago
+        jaPagoNesteCiclo = u.expiresAt < dataCorte;
+      }
+
+      return (
+        u.role === "ASSINANTE" &&
+        isComissionavel &&
+        isAtivo &&
+        !jaPagoNesteCiclo
+      );
+    });
+
+    // GAVETA 2: EM TESTE (Aguardando maturação)
+    // Condição: < 30 dias de casa (Pagou R$ 1,00) + Plano Ativo
+    const emTeste = allReferrals.filter((u) => {
+      const ehNovo = u.createdAt > trintaDiasAtras;
+      const isAtivo = u.expiresAt && u.expiresAt > hoje;
+      return u.role === "ASSINANTE" && ehNovo && isAtivo;
+    });
+
+    // GAVETA 3: INATIVOS (Sem lucro)
+    // Condição: Visitante OU Assinante com plano vencido
+    const inativos = allReferrals.filter((u) => {
+      const expirado = !u.expiresAt || u.expiresAt <= hoje;
+      return u.role === "VISITANTE" || (u.role === "ASSINANTE" && expirado);
+    });
+
+    // --- CÁLCULO DE TAXAS E METAS ---
+    const novosPagantesEsteMes = ativos.length;
+
+    let taxaAtual = 15; // Nível Bronze
+    if (novosPagantesEsteMes >= 20)
+      taxaAtual = 30; // Nível Ouro
+    else if (novosPagantesEsteMes >= 10) taxaAtual = 20; // Nível Prata
+
+    return {
+      success: true,
+      referralCode: partner?.referralCode,
+      stats: {
+        taxaAtual,
+        ganhoEstimado: ativos.length * VALOR_MENSALIDADE * (taxaAtual / 100),
+        potencialFuturo: emTeste.length * VALOR_MENSALIDADE * (taxaAtual / 100),
+        vendasConfirmadas: novosPagantesEsteMes,
+        progressoMeta: Math.min((novosPagantesEsteMes / 20) * 100, 100),
+      },
+      ativos,
+      emTeste,
+      inativos,
+    };
+  } catch (error) {
+    console.error("Erro na Server Action getAffiliateStats:", error);
+    return { error: "Erro interno no servidor ao processar estatísticas." };
+  }
+}
+// 1. Busca a lista de parceiros e quanto eles têm para receber
+export async function getAffiliatePayouts() {
+  const sessionUser = await getSafeUser();
+  if (!sessionUser || sessionUser.role !== "ADMIN")
+    return { error: "Não autorizado." };
+
+  try {
+    const VALOR_MENSALIDADE = 29.9;
+    const hoje = new Date();
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(hoje.getDate() - 30);
+
+    // Busca todos os parceiros
+    const partners = await db.user.findMany({
+      where: { role: "AFILIADO" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        lastPayoutDate: true, // Data do último "Reset" que você deu
+        referrals: {
+          where: {
+            role: "ASSINANTE",
+            expiresAt: { gt: hoje },
+            createdAt: { lte: trintaDiasAtras }, // 🔒 TRAVA DE SEGURANÇA: Só conta quem já pagou os 29,90
+          },
+          select: { id: true },
+        },
+      },
+    });
+
+    const payoutData = partners.map((p) => {
+      // Lógica de meta idêntica à do parceiro
+      const qtdAtivos = p.referrals.length;
+      let taxa = 0.15;
+      if (qtdAtivos >= 20) taxa = 0.3;
+      else if (qtdAtivos >= 10) taxa = 0.2;
+
+      return {
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        ativos: qtdAtivos,
+        taxa: taxa * 100,
+        valorDevido: qtdAtivos * VALOR_MENSALIDADE * taxa,
+        ultimoPagamento: p.lastPayoutDate,
+      };
+    });
+
+    return { success: true, payouts: payoutData };
+  } catch (error) {
+    return { error: "Erro ao calcular pagamentos." };
+  }
+}
+
+// 2. Registra o pagamento e "Zera" o saldo do parceiro
+export async function markAffiliateAsPaid(affiliateId: string) {
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Não autorizado." };
+
+  try {
+    await db.user.update({
+      where: { id: affiliateId },
+      data: { lastPayoutDate: new Date() },
+    });
+
+    // ⬅️ ESSENCIAL: Faz o AdminDashboard e o AffiliateDashboard atualizarem os valores na hora
+    revalidatePath("/admin");
+    revalidatePath("/dashboard/parceiro");
+
+    return { success: true, message: "Pagamento registrado e saldo resetado!" };
+  } catch (error) {
+    return { error: "Erro ao registrar pagamento." };
+  }
+}
+import { MercadoPagoConfig, PreApprovalPlan } from "mercadopago";
+
+// Configuração do Mercado Pago com sua chave secreta
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN || "",
+});
+
+export async function createSubscription(userId: string, userEmail: string) {
+  const plan = new PreApprovalPlan(client);
+
+  try {
+    const subscription = await plan.create({
+      body: {
+        reason: "Assinatura Tafanu HQ",
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: "months",
+          billing_day: 1,
+          transaction_amount: 1.0,
+          currency_id: "BRL",
+        },
+        back_url: "https://seusite.com.br/dashboard",
+        // @ts-ignore - Força o TS a aceitar o campo se a tipagem do SDK estiver incompleta
+        external_reference: userId,
+        payer_email: userEmail,
+      } as any, // ⬅️ Usar "as any" aqui resolve o conflito de tipos do SDK
+    });
+
+    return { success: true, init_point: subscription.init_point };
+  } catch (error) {
+    console.error("Erro ao criar assinatura:", error);
+    return { error: "Não foi possível gerar o link de pagamento." };
   }
 }
