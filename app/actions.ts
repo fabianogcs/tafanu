@@ -1518,6 +1518,8 @@ export async function createSubscription(
       payment_methods_allowed: {
         payment_types: [{ id: "credit_card" }, { id: "debit_card" }],
         payment_methods: [],
+        // 💳 ADICIONE ISSO AQUI:
+        installments: 12, // Permite parcelar em até 12x (com juros do cliente)
       },
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
