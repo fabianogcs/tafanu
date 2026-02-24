@@ -1495,68 +1495,38 @@ export async function createSubscription(
   userEmail: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
-  const plan = new PreApprovalPlan(client);
+  // 1. Usamos PreApproval (Assinatura direta)
+  const preApproval = new PreApproval(client);
 
-  // Configurações de preço e tempo para cada plano
-  const planConfigs = {
-    monthly: {
-      amount: 29.9,
-      frequency: 1,
-      type: "months",
-      trialDays: 7,
-      reason: "Assinatura Tafanu PRO - Mensal (7 dias grátis)",
-    },
-    quarterly: {
-      amount: 74.7,
-      frequency: 3,
-      type: "months",
-      trialDays: 0,
-      reason: "Assinatura Tafanu PRO - Trimestral",
-    },
-    yearly: {
-      amount: 238.8,
-      frequency: 12, // ⬅️ MUDAMOS PARA 12
-      type: "months", // ⬅️ MUDAMOS PARA "months"
-      trialDays: 0,
-      reason: "Assinatura Tafanu PRO - Anual",
-    },
+  // 2. IDs que você pegou nas URLs (os moldes fixos)
+  const PLAN_IDS = {
+    monthly: "1d60e8a12620447fbb7cebaa10c31ab8",
+    quarterly: "3b5d1ca1907b4905a976df346c78f5cf",
+    yearly: "8f68660b45ae4d8fb4076b921837d349",
   };
 
-  const config = planConfigs[planType];
+  const planId = PLAN_IDS[planType];
 
   try {
-    const body: any = {
-      reason: config.reason,
-      auto_recurring: {
-        frequency: config.frequency,
-        frequency_type: config.type,
-        transaction_amount: config.amount,
-        currency_id: "BRL",
-      },
-      payment_methods_allowed: {
-        payment_types: [{ id: "credit_card" }, { id: "debit_card" }],
-        payment_methods: [],
-        // 💳 TRAVA INTELIGENTE: Bloqueia parcela se for teste grátis
-        installments: config.trialDays > 0 ? 1 : 12,
-      },
-      back_url: "https://tafanu.vercel.app/dashboard",
-      external_reference: userId,
+    const body = {
+      preapproval_plan_id: planId, // Usa o plano fixo
       payer_email: userEmail,
+      back_url: "https://tafanu.vercel.app/dashboard",
+      external_reference: userId, // ID do usuário para o Webhook achar depois
+      reason:
+        planType === "monthly"
+          ? "Tafanu PRO - Mensal"
+          : planType === "quarterly"
+            ? "Tafanu PRO - Trimestral"
+            : "Tafanu PRO - Anual",
     };
 
-    // Só adiciona o teste grátis se o plano tiver trialDays (no caso, o mensal)
-    if (config.trialDays > 0) {
-      body.auto_recurring.free_trial = {
-        frequency: config.trialDays,
-        frequency_type: "days",
-      };
-    }
+    const response = await preApproval.create({ body });
 
-    const subscription = await plan.create({ body });
-
-    return { success: true, init_point: subscription.init_point };
+    // O init_point aqui vai levar o usuário para o checkout do plano fixo
+    return { success: true, init_point: response.init_point };
   } catch (error) {
-    console.error("Erro ao criar assinatura:", error);
+    console.error("Erro ao gerar link de assinatura:", error);
     return { error: "Não foi possível gerar o link de assinatura." };
   }
 }
