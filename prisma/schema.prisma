@@ -25,6 +25,7 @@ model User {
   lastPayoutDate DateTime?
   referrals     User[]    @relation("AffiliateToUser")
   expiresAt     DateTime?  // Data de vencimento da assinatura
+  mpSubscriptionId String?
   document         String?   @unique
   phone            String?
   createdAt        DateTime  @default(now())

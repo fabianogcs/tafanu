@@ -9,6 +9,11 @@ import { cpf } from "cpf-cnpj-validator";
 import { auth, signIn, signOut } from "@/auth";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago"; // 👈 NOVO IMPORT AQUI
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN || "",
+});
 
 const utapi = new UTApi();
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -880,15 +885,34 @@ export async function setInitialPassword(password: string) {
   }
 }
 export async function cancelSubscriptionAction() {
-  const user = await getSafeUser();
-  if (!user) return { error: "Não autorizado." };
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return { error: "Não autorizado." };
 
   try {
+    // 1. Busca o ID da assinatura no banco
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { mpSubscriptionId: true },
+    });
+
+    // 2. Avisa o Mercado Pago para cancelar
+    if (user?.mpSubscriptionId) {
+      const preApproval = new PreApproval(client);
+      await preApproval.update({
+        id: user.mpSubscriptionId,
+        body: { status: "cancelled" },
+      });
+    }
+
+    // 3. Atualiza o banco rebaixando o cara
     await db.user.update({
-      where: { id: user.id },
+      where: { id: userId },
       data: {
         role: "VISITANTE",
         expiresAt: null,
+        mpSubscriptionId: null, // Limpa a gaveta
       },
     });
 
@@ -1465,12 +1489,6 @@ export async function markAffiliateAsPaid(affiliateId: string) {
     return { error: "Erro ao registrar pagamento." };
   }
 }
-import { MercadoPagoConfig, PreApprovalPlan } from "mercadopago";
-
-// Configuração do Mercado Pago com sua chave secreta
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN || "",
-});
 
 export async function createSubscription(
   userId: string,
@@ -1518,8 +1536,8 @@ export async function createSubscription(
       payment_methods_allowed: {
         payment_types: [{ id: "credit_card" }, { id: "debit_card" }],
         payment_methods: [],
-        // 💳 ADICIONE ISSO AQUI:
-        installments: 12, // Permite parcelar em até 12x (com juros do cliente)
+        // 💳 TRAVA INTELIGENTE: Bloqueia parcela se for teste grátis
+        installments: config.trialDays > 0 ? 1 : 12,
       },
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,

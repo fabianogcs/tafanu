@@ -60,7 +60,7 @@ export async function POST(request: Request) {
           data: {
             role: "ASSINANTE",
             expiresAt: expiresAt,
-            // Guardamos o ID da assinatura para facilitar o cancelamento depois
+            mpSubscriptionId: preApprovalId, // 👈 AGORA SALVAMOS O ID REAL AQUI
           },
         });
 
