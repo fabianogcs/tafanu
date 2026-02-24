@@ -1472,30 +1472,84 @@ const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
 
-export async function createSubscription(userId: string, userEmail: string) {
+export async function createSubscription(
+  userId: string,
+  userEmail: string,
+  planType: "monthly" | "quarterly" | "yearly" = "monthly",
+) {
   const plan = new PreApprovalPlan(client);
 
+  // Configurações de preço e tempo para cada plano
+  const planConfigs = {
+    monthly: {
+      amount: 29.9,
+      frequency: 1,
+      type: "months",
+      trialDays: 7,
+      reason: "Assinatura Tafanu PRO - Mensal (7 dias grátis)",
+    },
+    quarterly: {
+      amount: 74.7,
+      frequency: 3,
+      type: "months",
+      trialDays: 0,
+      reason: "Assinatura Tafanu PRO - Trimestral",
+    },
+    yearly: {
+      amount: 238.8,
+      frequency: 12, // ⬅️ MUDAMOS PARA 12
+      type: "months", // ⬅️ MUDAMOS PARA "months"
+      trialDays: 0,
+      reason: "Assinatura Tafanu PRO - Anual",
+    },
+  };
+
+  const config = planConfigs[planType];
+
   try {
-    const subscription = await plan.create({
-      body: {
-        reason: "Assinatura Tafanu HQ",
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: "months",
-          billing_day: 1,
-          transaction_amount: 1.0,
-          currency_id: "BRL",
-        },
-        back_url: "https://seusite.com.br/dashboard",
-        // @ts-ignore - Força o TS a aceitar o campo se a tipagem do SDK estiver incompleta
-        external_reference: userId,
-        payer_email: userEmail,
-      } as any, // ⬅️ Usar "as any" aqui resolve o conflito de tipos do SDK
-    });
+    const body: any = {
+      reason: config.reason,
+      auto_recurring: {
+        frequency: config.frequency,
+        frequency_type: config.type,
+        transaction_amount: config.amount,
+        currency_id: "BRL",
+      },
+      payment_methods_allowed: {
+        payment_types: [{ id: "credit_card" }, { id: "debit_card" }],
+        payment_methods: [],
+      },
+      back_url: "https://tafanu.vercel.app/dashboard",
+      external_reference: userId,
+      payer_email: userEmail,
+    };
+
+    // Só adiciona o teste grátis se o plano tiver trialDays (no caso, o mensal)
+    if (config.trialDays > 0) {
+      body.auto_recurring.free_trial = {
+        frequency: config.trialDays,
+        frequency_type: "days",
+      };
+    }
+
+    const subscription = await plan.create({ body });
 
     return { success: true, init_point: subscription.init_point };
   } catch (error) {
     console.error("Erro ao criar assinatura:", error);
-    return { error: "Não foi possível gerar o link de pagamento." };
+    return { error: "Não foi possível gerar o link de assinatura." };
   }
+}
+// app/actions.ts
+
+export async function getAuthSession() {
+  const session = await auth(); // Usa a função auth() que você já tem importada lá no topo
+
+  if (!session?.user?.id) return null;
+
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    role: session.user.role,
+  };
 }

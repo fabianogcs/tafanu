@@ -46,16 +46,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) return { ...token, ...session };
 
+      // 1. Garantia: Se for o primeiro login, user existe.
+      // Se não, usamos o sub (que é o ID padrão que o NextAuth guarda)
       if (user) {
         token.id = user.id;
         token.role = user.role;
+      } else if (!token.id && token.sub) {
+        token.id = token.sub; // 👈 ISSO AQUI SALVA O ID NAS NAVEGAÇÕES
       }
 
-      // 🛑 RECUPERANDO O BALÃO DE SENHA E DADOS EXTRAS
-      if (token.sub && process.env.NEXT_RUNTIME !== "edge") {
+      // 🛑 RECUPERANDO DADOS EXTRAS DO BANCO
+      if (token.id && process.env.NEXT_RUNTIME !== "edge") {
         try {
           const dbUser = await db.user.findUnique({
-            where: { id: token.sub },
+            where: { id: token.id as string },
             select: { role: true, phone: true, document: true, password: true },
           });
 
@@ -63,7 +67,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.role = dbUser.role;
             token.phone = dbUser.phone;
             token.document = dbUser.document;
-            token.hasPassword = !!dbUser.password; // Isso faz o balão sumir!
+            token.hasPassword = !!dbUser.password;
           }
         } catch (e) {
           /* ignore */
@@ -71,14 +75,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return token;
     },
+
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
+        // Agora o token.id terá valor sempre!
+        session.user.id = (token.id || token.sub) as string;
         session.user.role = token.role as string;
         // @ts-ignore
         session.user.phone = token.phone;
         // @ts-ignore
-        session.user.hasPassword = token.hasPassword; // Envia para o front-end
+        session.user.hasPassword = token.hasPassword;
       }
       return session;
     },

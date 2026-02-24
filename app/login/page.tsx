@@ -72,7 +72,6 @@ export default function LoginPage() {
     }
   }, []);
 
-  // --- MANTIDA: LÓGICA DE SUBMISSÃO (O MOTOR DO LOGIN) ---
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
@@ -86,23 +85,33 @@ export default function LoginPage() {
         toast.error(result.error);
         setIsLoading(false);
       } else {
-        window.location.href = nextStep; // Redireciona para o destino do GPS
+        // Força um carregamento limpo da próxima página
+        window.location.assign(nextStep);
       }
     } else {
       const registerResult = await registerUser(formData);
+
       if (registerResult?.error) {
         toast.error(registerResult.error);
         setIsLoading(false);
         return;
       }
+
       if (registerResult?.success) {
         const loginResult = await loginUser(formData);
+
         if (loginResult?.error) {
-          toast.warning("Conta criada! Faça o login.");
+          toast.warning("Conta criada! Faça o login para continuar.");
           setIsLogin(true);
           setIsLoading(false);
         } else {
-          window.location.href = nextStep; // Redireciona para o destino do GPS
+          toast.success("Conta criada! Redirecionando...");
+
+          // 🛑 O PULO DO GATO: Esperamos 500ms para o cookie "assentar" no navegador
+          // antes de redirecionar para o checkout.
+          setTimeout(() => {
+            window.location.assign(nextStep);
+          }, 500);
         }
       }
     }
