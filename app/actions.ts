@@ -1504,30 +1504,34 @@ export async function createSubscription(
   };
 
   try {
+    // ⚠️ AQUI ESTÁ A MUDANÇA: Objeto ultra-simplificado
     const response = await preApproval.create({
       body: {
         preapproval_plan_id: PLAN_IDS[planType],
-        payer_email: userEmail.trim(),
-        back_url: "https://tafanu.vercel.app/dashboard",
-        external_reference: userId,
         reason: "Assinatura Tafanu PRO",
-        // 🚀 ADICIONE ESTA LINHA AQUI:
-        status: "pending",
+        external_reference: userId,
+        payer_email: userEmail.trim(), // O e-mail precisa estar no topo do body
+        back_url: "https://tafanu.vercel.app/dashboard",
+        status: "pending", // ISSO AQUI É OBRIGATÓRIO
       },
     });
 
-    const link = response.init_point;
-
-    if (!link) {
-      throw new Error("O Mercado Pago não retornou o link init_point.");
+    if (response.init_point) {
+      return { success: true, init_point: response.init_point };
     }
 
-    return { success: true, init_point: link };
+    return { error: "O Mercado Pago não gerou o link de pagamento." };
   } catch (error: any) {
-    console.error("ERRO REAL DO MERCADO PAGO:", error.response?.data || error);
-    return {
-      error: `Erro ao gerar link: ${error.response?.data?.message || error.message}`,
-    };
+    // Esse log no seu terminal do VS Code vai dizer a verdade nua e crua
+    console.error(
+      "ERRO COMPLETO MP:",
+      JSON.stringify(error.response?.data || error, null, 2),
+    );
+
+    const mpMessage = error.response?.data?.message || "";
+
+    // Se ainda der erro de card_token, o problema é a conta do Mercado Pago
+    return { error: `Erro MP: ${mpMessage || "Falha na comunicação"}` };
   }
 }
 
