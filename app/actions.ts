@@ -14,7 +14,7 @@ import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago"; /
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
-
+console.log("Token começa com:", process.env.MP_ACCESS_TOKEN?.substring(0, 10));
 const utapi = new UTApi();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
