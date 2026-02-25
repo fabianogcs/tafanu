@@ -1504,41 +1504,29 @@ export async function createSubscription(
   };
 
   try {
-    const body = {
-      preapproval_plan_id: PLAN_IDS[planType],
-      payer_email: userEmail.trim(), // Limpa espaços extras
-      back_url: "https://tafanu.vercel.app/dashboard",
-      external_reference: userId,
-      reason: "Assinatura Tafanu PRO",
-      auto_recurring: {
-        frequency:
-          planType === "monthly" ? 1 : planType === "quarterly" ? 3 : 12,
-        frequency_type: "months",
-        transaction_amount:
-          planType === "monthly"
-            ? 29.9
-            : planType === "quarterly"
-              ? 74.7
-              : 238.8,
-        currency_id: "BRL",
+    const response = await preApproval.create({
+      body: {
+        preapproval_plan_id: PLAN_IDS[planType],
+        payer_email: userEmail.trim(),
+        back_url: "https://tafanu.vercel.app/dashboard",
+        external_reference: userId,
+        reason: "Assinatura Tafanu PRO",
+        // 🚀 ADICIONE ESTA LINHA AQUI:
+        status: "pending",
       },
-    };
+    });
 
-    const response = await preApproval.create({ body });
-
-    // Se o init_point não vier, ele pode estar escondido aqui:
-    const link = response.init_point || (response as any).sandbox_init_point;
+    const link = response.init_point;
 
     if (!link) {
-      throw new Error("Link de pagamento (init_point) não retornado pela API");
+      throw new Error("O Mercado Pago não retornou o link init_point.");
     }
 
     return { success: true, init_point: link };
   } catch (error: any) {
-    console.error("Erro detalhado do MP:", error.message || error);
-    // Isso vai te ajudar a ver no log se o problema é e-mail
+    console.error("ERRO REAL DO MERCADO PAGO:", error.response?.data || error);
     return {
-      error: `Erro: ${error.message || "Falha na comunicação com Mercado Pago"}`,
+      error: `Erro ao gerar link: ${error.response?.data?.message || error.message}`,
     };
   }
 }
