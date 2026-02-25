@@ -1536,6 +1536,14 @@ export async function createSubscription(
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
       payer_email: userEmail,
+
+      // 👇 AQUI ESTÁ A TRAVA QUE ADICIONAMOS
+      payment_methods_allowed: {
+        payment_types: [
+          { id: "credit_card" }, // Aceita apenas cartão de crédito
+        ],
+      },
+      // 👆 FIM DA TRAVA
     };
 
     // Adiciona o teste grátis se for o plano mensal
