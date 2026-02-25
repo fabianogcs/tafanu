@@ -1519,6 +1519,7 @@ export async function createSubscription(
           : planType === "quarterly"
             ? "Tafanu PRO - Trimestral"
             : "Tafanu PRO - Anual",
+      status: "pending",
     };
 
     const response = await preApproval.create({ body });
