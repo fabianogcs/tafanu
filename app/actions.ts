@@ -1495,43 +1495,53 @@ export async function createSubscription(
   userEmail: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
-  // 1. Usamos PreApproval (Assinatura direta)
   const preApproval = new PreApproval(client);
 
-  // 2. IDs que você pegou nas URLs (os moldes fixos)
   const PLAN_IDS = {
     monthly: "1d60e8a12620447fbb7cebaa10c31ab8",
     quarterly: "3b5d1ca1907b4905a976df346c78f5cf",
     yearly: "8f68660b45ae4d8fb4076b921837d349",
   };
 
-  const planId = PLAN_IDS[planType];
-
   try {
     const body = {
-      preapproval_plan_id: planId, // Usa o plano fixo
-      payer_email: userEmail,
+      preapproval_plan_id: PLAN_IDS[planType],
+      payer_email: userEmail.trim(), // Limpa espaços extras
       back_url: "https://tafanu.vercel.app/dashboard",
-      external_reference: userId, // ID do usuário para o Webhook achar depois
-      reason:
-        planType === "monthly"
-          ? "Tafanu PRO - Mensal"
-          : planType === "quarterly"
-            ? "Tafanu PRO - Trimestral"
-            : "Tafanu PRO - Anual",
-      status: "pending",
+      external_reference: userId,
+      reason: "Assinatura Tafanu PRO",
+      auto_recurring: {
+        frequency:
+          planType === "monthly" ? 1 : planType === "quarterly" ? 3 : 12,
+        frequency_type: "months",
+        transaction_amount:
+          planType === "monthly"
+            ? 29.9
+            : planType === "quarterly"
+              ? 74.7
+              : 238.8,
+        currency_id: "BRL",
+      },
     };
 
     const response = await preApproval.create({ body });
 
-    // O init_point aqui vai levar o usuário para o checkout do plano fixo
-    return { success: true, init_point: response.init_point };
-  } catch (error) {
-    console.error("Erro ao gerar link de assinatura:", error);
-    return { error: "Não foi possível gerar o link de assinatura." };
+    // Se o init_point não vier, ele pode estar escondido aqui:
+    const link = response.init_point || (response as any).sandbox_init_point;
+
+    if (!link) {
+      throw new Error("Link de pagamento (init_point) não retornado pela API");
+    }
+
+    return { success: true, init_point: link };
+  } catch (error: any) {
+    console.error("Erro detalhado do MP:", error.message || error);
+    // Isso vai te ajudar a ver no log se o problema é e-mail
+    return {
+      error: `Erro: ${error.message || "Falha na comunicação com Mercado Pago"}`,
+    };
   }
 }
-// app/actions.ts
 
 export async function getAuthSession() {
   const session = await auth(); // Usa a função auth() que você já tem importada lá no topo
