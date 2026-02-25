@@ -1495,48 +1495,64 @@ export async function createSubscription(
   userEmail: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
-  const PLAN_IDS = {
-    monthly: "1d60e8a12620447fbb7cebaa10c31ab8",
-    quarterly: "3b5d1ca1907b4905a976df346c78f5cf",
-    yearly: "8f68660b45ae4d8fb4076b921837d349",
+  // VOLTAMOS PARA A FERRAMENTA QUE FUNCIONA: PreApprovalPlan
+  const plan = new PreApprovalPlan(client);
+
+  const planConfigs = {
+    monthly: {
+      amount: 29.9,
+      frequency: 1,
+      type: "months",
+      trialDays: 7, // Mantendo os 7 dias grátis
+      reason: "Assinatura Tafanu PRO - Mensal",
+    },
+    quarterly: {
+      amount: 74.7,
+      frequency: 3,
+      type: "months",
+      trialDays: 0,
+      reason: "Assinatura Tafanu PRO - Trimestral",
+    },
+    yearly: {
+      amount: 238.8,
+      frequency: 12,
+      type: "months",
+      trialDays: 0,
+      reason: "Assinatura Tafanu PRO - Anual",
+    },
   };
 
+  const config = planConfigs[planType];
+
   try {
-    const response = await fetch("https://api.mercadopago.com/preapproval", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+    const body: any = {
+      reason: config.reason,
+      auto_recurring: {
+        frequency: config.frequency,
+        frequency_type: config.type,
+        transaction_amount: config.amount,
+        currency_id: "BRL",
       },
-      body: JSON.stringify({
-        preapproval_plan_id: PLAN_IDS[planType],
-        reason: "Assinatura Tafanu PRO",
-        external_reference: userId,
-        payer_email: userEmail.trim(),
-        back_url: "https://tafanu.vercel.app/dashboard",
-        auto_recurring: {
-          currency_id: "BRL", // Algumas contas exigem isso na raiz do redirect
-        },
-        status: "pending", // Força a geração do link (init_point)
-      }),
-    });
+      back_url: "https://tafanu.vercel.app/dashboard",
+      external_reference: userId,
+      payer_email: userEmail,
+    };
 
-    const data = await response.json();
-
-    // Se o init_point vier, a vitória é nossa!
-    if (data.init_point) {
-      return { success: true, init_point: data.init_point };
+    // Adiciona o teste grátis se for o plano mensal
+    if (config.trialDays > 0) {
+      body.auto_recurring.free_trial = {
+        frequency: config.trialDays,
+        frequency_type: "days",
+      };
     }
 
-    // Se der erro, vamos ver o objeto real que o MP mandou
-    console.error("RESPOSTA COMPLETA MP:", JSON.stringify(data, null, 2));
+    // Cria a intenção de pagamento e gera o Link (init_point)!
+    const subscription = await plan.create({ body });
 
-    return {
-      error: `Erro MP: ${data.message || "Não foi possível gerar o link."}`,
-    };
-  } catch (error: any) {
-    console.error("ERRO NA REQUISIÇÃO:", error);
-    return { error: "Falha técnica ao conectar com o Mercado Pago." };
+    return { success: true, init_point: subscription.init_point };
+  } catch (error) {
+    console.error("Erro ao criar assinatura:", error);
+    return { error: "Não foi possível gerar o link de assinatura." };
   }
 }
 
