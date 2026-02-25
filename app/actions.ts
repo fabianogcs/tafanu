@@ -14,7 +14,7 @@ import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago"; /
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
-console.log("Token começa com:", process.env.MP_ACCESS_TOKEN?.substring(0, 10));
+
 const utapi = new UTApi();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -1495,8 +1495,6 @@ export async function createSubscription(
   userEmail: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
-  const preApproval = new PreApproval(client);
-
   const PLAN_IDS = {
     monthly: "1d60e8a12620447fbb7cebaa10c31ab8",
     quarterly: "3b5d1ca1907b4905a976df346c78f5cf",
@@ -1504,34 +1502,41 @@ export async function createSubscription(
   };
 
   try {
-    // ⚠️ AQUI ESTÁ A MUDANÇA: Objeto ultra-simplificado
-    const response = await preApproval.create({
-      body: {
+    const response = await fetch("https://api.mercadopago.com/preapproval", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify({
         preapproval_plan_id: PLAN_IDS[planType],
         reason: "Assinatura Tafanu PRO",
         external_reference: userId,
-        payer_email: userEmail.trim(), // O e-mail precisa estar no topo do body
+        payer_email: userEmail.trim(),
         back_url: "https://tafanu.vercel.app/dashboard",
-        status: "pending", // ISSO AQUI É OBRIGATÓRIO
-      },
+        auto_recurring: {
+          currency_id: "BRL", // Algumas contas exigem isso na raiz do redirect
+        },
+        status: "pending", // Força a geração do link (init_point)
+      }),
     });
 
-    if (response.init_point) {
-      return { success: true, init_point: response.init_point };
+    const data = await response.json();
+
+    // Se o init_point vier, a vitória é nossa!
+    if (data.init_point) {
+      return { success: true, init_point: data.init_point };
     }
 
-    return { error: "O Mercado Pago não gerou o link de pagamento." };
+    // Se der erro, vamos ver o objeto real que o MP mandou
+    console.error("RESPOSTA COMPLETA MP:", JSON.stringify(data, null, 2));
+
+    return {
+      error: `Erro MP: ${data.message || "Não foi possível gerar o link."}`,
+    };
   } catch (error: any) {
-    // Esse log no seu terminal do VS Code vai dizer a verdade nua e crua
-    console.error(
-      "ERRO COMPLETO MP:",
-      JSON.stringify(error.response?.data || error, null, 2),
-    );
-
-    const mpMessage = error.response?.data?.message || "";
-
-    // Se ainda der erro de card_token, o problema é a conta do Mercado Pago
-    return { error: `Erro MP: ${mpMessage || "Falha na comunicação"}` };
+    console.error("ERRO NA REQUISIÇÃO:", error);
+    return { error: "Falha técnica ao conectar com o Mercado Pago." };
   }
 }
 
