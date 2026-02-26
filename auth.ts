@@ -60,7 +60,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },
-            select: { role: true, phone: true, document: true, password: true },
+            // 👇 AQUI A MÁGICA: Adicionamos o expiresAt na busca!
+            select: {
+              role: true,
+              phone: true,
+              document: true,
+              password: true,
+              expiresAt: true,
+            },
           });
 
           if (dbUser) {
@@ -68,6 +75,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.phone = dbUser.phone;
             token.document = dbUser.document;
             token.hasPassword = !!dbUser.password;
+            // 👇 Salvamos a data no token
+            token.expiresAt = dbUser.expiresAt;
           }
         } catch (e) {
           /* ignore */
@@ -85,6 +94,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.phone = token.phone;
         // @ts-ignore
         session.user.hasPassword = token.hasPassword;
+        // 👇 FINALMENTE: Repassamos a data para a Sessão (Frontend)
+        // @ts-ignore
+        session.user.expiresAt = token.expiresAt;
       }
       return session;
     },

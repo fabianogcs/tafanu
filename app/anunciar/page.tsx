@@ -16,12 +16,17 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export default async function AnunciarPage() {
-  const session = await auth();
+  // Colocamos o 'as any' aqui para o TypeScript parar de encher o saco!
+  const session = (await auth()) as any;
   const userRole = session?.user?.role;
+  const expiresAt = session?.user?.expiresAt;
 
-  // 1. BLOQUEIO DE QUEM JÁ É DE CASA
+  // O segurança agora sabe ler a data de validade!
+  const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false;
+
+  // 1. BLOQUEIO DE QUEM JÁ É DE CASA (E COM A MENSALIDADE EM DIA)
   if (userRole === "ADMIN") redirect("/admin");
-  if (userRole === "ASSINANTE") redirect("/dashboard");
+  if (userRole === "ASSINANTE" && !isExpired) redirect("/dashboard");
 
   // 2. LÓGICA DE DESTINO
   const destination = session
