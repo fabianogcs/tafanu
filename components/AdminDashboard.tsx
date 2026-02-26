@@ -73,7 +73,7 @@ export default function AdminDashboard({ data }: { data: any }) {
     if (activeTab === "payouts") loadPayouts();
   }, [activeTab]);
 
-  // --- O NOVO CÉREBRO DE PROCESSAMENTO DE DADOS ---
+  // --- PROCESSAMENTO DE DADOS (ABAS) ---
   const {
     allUsers,
     activeSubscribers,
@@ -87,7 +87,6 @@ export default function AdminDashboard({ data }: { data: any }) {
     const users = data.users.filter((u: any) => u.email !== ADMIN_EMAIL);
     const now = new Date();
 
-    // Vencidos (No Limbo Nunca Mais)
     const expired = users.filter(
       (u: any) =>
         u.role === "ASSINANTE" &&
@@ -95,8 +94,6 @@ export default function AdminDashboard({ data }: { data: any }) {
         new Date(u.expiresAt) < now &&
         !u.isBanned,
     );
-
-    // Todos que estão com a assinatura rodando (maior que agora)
     const running = users.filter(
       (u: any) =>
         u.role === "ASSINANTE" &&
@@ -105,7 +102,6 @@ export default function AdminDashboard({ data }: { data: any }) {
         !u.isBanned,
     );
 
-    // Separando quem tá "Em Teste" (menos de 7 dias) de quem tá "Ativo Full" (mais de 7 dias)
     const trials = running.filter((u: any) => {
       const diffDays =
         (new Date(u.expiresAt).getTime() - now.getTime()) /
@@ -139,12 +135,11 @@ export default function AdminDashboard({ data }: { data: any }) {
     };
   }, [data]);
 
-  // --- BUSCA GLOBAL MODO DEUS ---
+  // --- BUSCA GLOBAL ---
   const filteredData = useMemo(() => {
     if (activeTab === "reports") return pendingReports;
     if (activeTab === "payouts") return payouts;
 
-    // SE DIGITOU ALGO NA BUSCA: Ignora a aba e caça em todo o banco de dados
     if (searchTerm.trim().length > 0) {
       const searchLower = searchTerm.toLowerCase();
       return allUsers.filter(
@@ -155,7 +150,6 @@ export default function AdminDashboard({ data }: { data: any }) {
       );
     }
 
-    // SE A BUSCA TÁ VAZIA: Mostra a aba normal
     switch (activeTab) {
       case "subscribers":
         return activeSubscribers;
@@ -221,6 +215,7 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
+  // 💰 PROMOVER A AFILIADO
   const handlePromote = async () => {
     if (!referralCodeInput) return toast.error("Defina um código!");
     startTransition(async () => {
@@ -240,7 +235,7 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
-  // ⏱️ CONTROLE DE MESES (MODAL NÃO FECHA MAIS!)
+  // ⏱️ CONTROLE DE MESES E DIAS
   const handleAddMonths = (e: any, userId: string, months: number) => {
     e.stopPropagation();
     if (
@@ -248,13 +243,10 @@ export default function AdminDashboard({ data }: { data: any }) {
       !confirm("ATENÇÃO: Deseja realmente REMOVER 1 mês deste usuário?")
     )
       return;
-
     startTransition(async () => {
       await adminAddDaysToUser(userId, months);
       toast.success(months > 0 ? "+1 Mês adicionado!" : "-1 Mês removido!");
       router.refresh();
-
-      // Atualiza a telinha ao vivo sem fechar!
       setSelectedUser((prev: any) => {
         if (!prev) return prev;
         const base =
@@ -268,7 +260,6 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
-  // ⏱️ CONTROLE DE DIAS (1 DIA) (MODAL NÃO FECHA MAIS!)
   const handleAddExactDays = (e: any, userId: string, days: number) => {
     e.stopPropagation();
     startTransition(async () => {
@@ -276,8 +267,6 @@ export default function AdminDashboard({ data }: { data: any }) {
       if (res?.success) {
         toast.success(res.message);
         router.refresh();
-
-        // Atualiza a telinha ao vivo sem fechar!
         setSelectedUser((prev: any) => {
           if (!prev) return prev;
           const base =
@@ -372,7 +361,6 @@ export default function AdminDashboard({ data }: { data: any }) {
       </header>
 
       <main className="max-w-7xl mx-auto space-y-8">
-        {/* NAVEGAÇÃO SUPERIOR - AGORA COM ABAS PARA TESTES E VENCIDOS */}
         <div className="flex p-1.5 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
           <TabButton
             active={activeTab === "overview"}
@@ -432,7 +420,6 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
 
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-          {/* TABELA DE USUÁRIOS */}
           {activeTab !== "overview" &&
             activeTab !== "reports" &&
             activeTab !== "payouts" && (
@@ -523,7 +510,6 @@ export default function AdminDashboard({ data }: { data: any }) {
               </div>
             )}
 
-          {/* OVERVIEW GERAL */}
           {activeTab === "overview" && (
             <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
@@ -600,7 +586,6 @@ export default function AdminDashboard({ data }: { data: any }) {
             </div>
           )}
 
-          {/* FINANCEIRO E OUTRAS ABAS INALTERADAS... */}
           {activeTab === "payouts" && (
             <div className="p-8 space-y-4">
               {payouts.map((p: any) => (
@@ -657,7 +642,7 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       </main>
 
-      {/* 🚀 O NOVO RAIO-X REFORÇADO COM CONTROLE DE TEMPO FIXO 🚀 */}
+      {/* RAIO-X DO USUÁRIO */}
       {selectedUser && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl overflow-y-auto"
@@ -719,7 +704,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </div>
               </div>
 
-              {/* CONTROLES DE TEMPO DINÂMICOS */}
+              {/* CONTROLES E BOTÕES RESTAURADOS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm">
                   <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
@@ -743,7 +728,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                   )}
                 </div>
 
-                {/* CONTROLE 1 DIA E 1 MES SEM FECHAR */}
+                {/* CONTROLE 1 DIA, 1 MES, AFILIADO E BANIR RESTAURADOS */}
                 <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center gap-3 relative">
                   {isPending && (
                     <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-10">
@@ -756,46 +741,69 @@ export default function AdminDashboard({ data }: { data: any }) {
                   </h3>
 
                   {!selectedUser.isBanned && selectedUser.role !== "ADMIN" ? (
-                    <div className="flex flex-wrap gap-2">
-                      <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-fit">
+                    <>
+                      {/* Botões de Tempo */}
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-fit">
+                          <button
+                            onClick={(e) =>
+                              handleAddMonths(e, selectedUser.id, -1)
+                            }
+                            className="px-4 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100 font-bold text-xs"
+                            title="Tirar 1 Mês"
+                          >
+                            - 1 Mês
+                          </button>
+                          <button
+                            onClick={(e) =>
+                              handleAddExactDays(e, selectedUser.id, -1)
+                            }
+                            className="px-4 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100 font-bold text-xs"
+                            title="Tirar 1 Dia"
+                          >
+                            - 1 Dia
+                          </button>
+                          <button
+                            onClick={(e) =>
+                              handleAddExactDays(e, selectedUser.id, 1)
+                            }
+                            className="px-4 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all border-r border-slate-100 font-bold text-xs"
+                            title="Somar 1 Dia"
+                          >
+                            + 1 Dia
+                          </button>
+                          <button
+                            onClick={(e) =>
+                              handleAddMonths(e, selectedUser.id, 1)
+                            }
+                            className="px-4 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all font-bold text-xs"
+                            title="Somar 1 Mês"
+                          >
+                            + 1 Mês
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Botões de Ação Restaurados */}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedUser.role !== "AFILIADO" && (
+                          <button
+                            onClick={() => setPromotingUser(selectedUser)}
+                            className="px-4 py-2 bg-amber-100 text-amber-700 font-bold text-xs rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2 shadow-sm"
+                          >
+                            <Award size={14} /> Tornar Parceiro
+                          </button>
+                        )}
                         <button
-                          onClick={(e) =>
-                            handleAddMonths(e, selectedUser.id, -1)
+                          onClick={() =>
+                            handleBan(selectedUser.id, selectedUser.name)
                           }
-                          className="px-4 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100 font-bold text-xs"
-                          title="Tirar 1 Mês"
+                          className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-rose-600 transition-all flex items-center gap-2 shadow-sm"
                         >
-                          - 1 Mês
-                        </button>
-                        <button
-                          onClick={(e) =>
-                            handleAddExactDays(e, selectedUser.id, -1)
-                          }
-                          className="px-4 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100 font-bold text-xs"
-                          title="Tirar 1 Dia"
-                        >
-                          - 1 Dia
-                        </button>
-                        <button
-                          onClick={(e) =>
-                            handleAddExactDays(e, selectedUser.id, 1)
-                          }
-                          className="px-4 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all border-r border-slate-100 font-bold text-xs"
-                          title="Somar 1 Dia"
-                        >
-                          + 1 Dia
-                        </button>
-                        <button
-                          onClick={(e) =>
-                            handleAddMonths(e, selectedUser.id, 1)
-                          }
-                          className="px-4 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all font-bold text-xs"
-                          title="Somar 1 Mês"
-                        >
-                          + 1 Mês
+                          <Gavel size={14} /> Banir CPF
                         </button>
                       </div>
-                    </div>
+                    </>
                   ) : (
                     <p className="text-xs font-bold text-slate-400">
                       Tempo de admin/banido não pode ser mexido.
@@ -803,6 +811,53 @@ export default function AdminDashboard({ data }: { data: any }) {
                   )}
                 </div>
               </div>
+
+              {/* BLOCO EXTRA RESTAURADO: SE FOR AFILIADO, MOSTRA AS VENDAS DELE AQUI DENTRO TAMBÉM */}
+              {selectedUser.role === "AFILIADO" && (
+                <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem]">
+                  <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Wallet size={14} /> Raio-X do Parceiro
+                  </h3>
+                  <div className="flex flex-wrap gap-8 items-center">
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
+                        Código / Link
+                      </p>
+                      <p className="font-black text-emerald-900 flex items-center gap-2 bg-white px-3 py-1 rounded-lg mt-1 border border-emerald-100">
+                        {selectedUser.referralCode}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `tafanu.app/?ref=${selectedUser.referralCode}`,
+                            );
+                            toast.success("Link copiado!");
+                          }}
+                          className="text-emerald-500 hover:text-emerald-700"
+                        >
+                          <LinkIcon size={14} />
+                        </button>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
+                        Vendas Ativas
+                      </p>
+                      <p className="font-black text-2xl text-emerald-900">
+                        {getSelectedUserAffiliateData()?.ativos}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
+                        A Receber
+                      </p>
+                      <p className="font-black text-2xl text-emerald-600">
+                        R${" "}
+                        {getSelectedUserAffiliateData()?.valorDevido.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* LISTA DE ANÚNCIOS DO USUÁRIO */}
               <div>
@@ -846,7 +901,62 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       )}
 
-      {/* MODAL AFILIADO AQUI MANTIDO NORMALMENTE */}
+      {/* MODAL NOVO AFILIADO (AGORA ELE TÁ AQUI DE VERDADE) */}
+      {promotingUser && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
+          onClick={() => setPromotingUser(null)}
+        >
+          <div
+            className="bg-white w-full max-w-md rounded-[3rem] p-10 animate-in zoom-in-95 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-amber-500 shadow-inner">
+                <Award size={48} />
+              </div>
+              <h2 className="text-2xl font-black uppercase italic tracking-tighter">
+                Novo Parceiro VIP
+              </h2>
+              <p className="text-xs font-bold text-slate-400 mt-2">
+                Personalize o código para {promotingUser.name}
+              </p>
+            </div>
+            <div className="space-y-6">
+              <input
+                type="text"
+                placeholder="EX: NOME-SAO-PAULO"
+                className="w-full px-6 py-5 bg-slate-50 rounded-2xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center text-lg tracking-widest"
+                value={referralCodeInput}
+                onChange={(e) =>
+                  setReferralCodeInput(
+                    e.target.value.toUpperCase().replace(/\s/g, "-"),
+                  )
+                }
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPromotingUser(null)}
+                  className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                >
+                  Abortar
+                </button>
+                <button
+                  onClick={handlePromote}
+                  disabled={isPending}
+                  className="flex-[2] py-5 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-amber-100"
+                >
+                  {isPending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "ATIVAR AFILIADO"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
