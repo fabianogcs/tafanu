@@ -23,12 +23,16 @@ model User {
   affiliate     User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id])
   affiliateSince DateTime? // Data em que ele se tornou afiliado
   lastPayoutDate DateTime?
+  lastPrice      Float?    @default(0)    // Valor pago na última renovação
+  planType       String?   @default("monthly") // monthly, quarterly ou yearly
   referrals     User[]    @relation("AffiliateToUser")
   expiresAt     DateTime?  // Data de vencimento da assinatura
   mpSubscriptionId String?
   document         String?   @unique
   phone            String?
   createdAt        DateTime  @default(now())
+
+  isBanned         Boolean   @default(false)
 
   accounts      Account[] // <--- NOVO: Relacionamento
   sessions      Session[] // <--- NOVO: Relacionamento

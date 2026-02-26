@@ -1293,7 +1293,6 @@ export async function promoteToAffiliate(userId: string, code: string) {
 export async function getAffiliateStats() {
   const sessionUser = await getSafeUser();
 
-  // 1. Bloqueio de segurança: Só parceiros ou admins entram
   if (
     !sessionUser ||
     (sessionUser.role !== "AFILIADO" && sessionUser.role !== "ADMIN")
@@ -1303,21 +1302,13 @@ export async function getAffiliateStats() {
 
   try {
     const userId = sessionUser.id;
-    const VALOR_MENSALIDADE = 29.9;
     const hoje = new Date();
 
-    // 2. Busca dados do parceiro (especialmente o último reset de pagamento)
     const partner = await db.user.findUnique({
       where: { id: userId },
-      select: {
-        referralCode: true,
-        affiliateSince: true,
-        createdAt: true,
-        lastPayoutDate: true, // Crucial para zerar o saldo após você pagar
-      },
+      select: { referralCode: true, createdAt: true, lastPayoutDate: true },
     });
 
-    // 3. Busca todos os indicados (referrals)
     const allReferrals = await db.user.findMany({
       where: { affiliateId: userId },
       select: {
@@ -1328,80 +1319,107 @@ export async function getAffiliateStats() {
         phone: true,
         createdAt: true,
         expiresAt: true,
+        lastPrice: true,
         businesses: { select: { slug: true, name: true }, take: 1 },
       },
     });
 
-    // Filtro de tempo: 30 dias atrás (para separar teste de R$ 1,00 da mensalidade real)
-    const trintaDiasAtras = new Date();
-    trintaDiasAtras.setDate(hoje.getDate() - 30);
+    // 1. DATA DE CORTE DO CICLO
+    // Ex: Se o afiliado foi criado dia 05/01, e hoje é 20/02. O ciclo atual começou 05/02.
+    const dataCriacaoParceiro = partner?.createdAt
+      ? new Date(partner.createdAt)
+      : new Date();
+    const diaFechamento = dataCriacaoParceiro.getDate();
 
-    // --- SEPARAÇÃO DAS GAVETAS (LÓGICA UNIFICADA) ---
+    let inicioCicloAtual = new Date(
+      hoje.getFullYear(),
+      hoje.getMonth(),
+      diaFechamento,
+    );
+    if (hoje < inicioCicloAtual) {
+      inicioCicloAtual.setMonth(inicioCicloAtual.getMonth() - 1); // Volta pro mês passado se o dia do fechamento ainda não chegou
+    }
 
-    // GAVETA 1: ATIVOS (Gerando lucro AGORA)
-    // Condição: > 30 dias de casa + Plano Ativo + Não foi pago no último reset
-    // 1. ATIVOS (Quem já pagou os 29,90 e ainda não foi comissionado após o último reset)
+    // --- SEPARAÇÃO DAS GAVETAS ---
+
     const ativos = allReferrals.filter((u) => {
-      // 🛡️ GUARDA DE SEGURANÇA: Se não tiver data de expiração ou criação, ignora o usuário
       if (!u.expiresAt || !u.createdAt) return false;
+      const dataCriacaoCliente = new Date(u.createdAt);
 
-      // Agora o TypeScript sabe que u.expiresAt e u.createdAt EXISTEM nesta linha
-      const isComissionavel = u.createdAt <= trintaDiasAtras;
+      // REGRA DO TESTE GRÁTIS: Só conta se já passou de 7 dias (cobrança real ocorreu)
+      const diasDeCasa =
+        (hoje.getTime() - dataCriacaoCliente.getTime()) / (1000 * 60 * 60 * 24);
+      const isCobrado = diasDeCasa > 7;
+
       const isAtivo = u.expiresAt > hoje;
 
-      // 🔒 TRAVA DE RESET: Verifica se esse pagamento já foi "limpo" no último reset
-      let jaPagoNesteCiclo = false;
-
-      if (partner?.lastPayoutDate) {
-        // Criamos a data de corte: data do último pagamento + 30 dias
-        const dataCorte = new Date(
-          partner.lastPayoutDate.getTime() + 30 * 24 * 60 * 60 * 1000,
-        );
-
-        // Se a expiração atual do cliente é menor que a data de corte, ele já foi pago
-        jaPagoNesteCiclo = u.expiresAt < dataCorte;
+      // TRAVA DO CICLO E HIGH TICKET:
+      // Conta se o cliente renovou/pagou DENTRO do ciclo atual.
+      // Se ele já foi pago pelo Admin (lastPayoutDate), ignora.
+      let pagoNesteCiclo = false;
+      if (
+        partner?.lastPayoutDate &&
+        partner.lastPayoutDate >= inicioCicloAtual
+      ) {
+        pagoNesteCiclo = true;
       }
 
-      return (
-        u.role === "ASSINANTE" &&
-        isComissionavel &&
-        isAtivo &&
-        !jaPagoNesteCiclo
-      );
+      return u.role === "ASSINANTE" && isCobrado && isAtivo && !pagoNesteCiclo;
     });
 
-    // GAVETA 2: EM TESTE (Aguardando maturação)
-    // Condição: < 30 dias de casa (Pagou R$ 1,00) + Plano Ativo
     const emTeste = allReferrals.filter((u) => {
-      const ehNovo = u.createdAt > trintaDiasAtras;
-      const isAtivo = u.expiresAt && u.expiresAt > hoje;
-      return u.role === "ASSINANTE" && ehNovo && isAtivo;
+      if (!u.createdAt || !u.expiresAt) return false;
+      const diasDeCasa =
+        (hoje.getTime() - new Date(u.createdAt).getTime()) /
+        (1000 * 60 * 60 * 24);
+      return u.role === "ASSINANTE" && diasDeCasa <= 7 && u.expiresAt > hoje;
     });
 
-    // GAVETA 3: INATIVOS (Sem lucro)
-    // Condição: Visitante OU Assinante com plano vencido
     const inativos = allReferrals.filter((u) => {
       const expirado = !u.expiresAt || u.expiresAt <= hoje;
       return u.role === "VISITANTE" || (u.role === "ASSINANTE" && expirado);
     });
 
-    // --- CÁLCULO DE TAXAS E METAS ---
-    const novosPagantesEsteMes = ativos.length;
+    // --- MATEMÁTICA PRO MAX (TAXAS E HIGH TICKET) ---
+    // Clientes High Ticket não influenciam na regra de % da mensalidade de 29.90,
+    // mas geram 30% na veia.
 
-    let taxaAtual = 15; // Nível Bronze
-    if (novosPagantesEsteMes >= 20)
-      taxaAtual = 30; // Nível Ouro
-    else if (novosPagantesEsteMes >= 10) taxaAtual = 20; // Nível Prata
+    let baseMensal = 0; // Contagem só da galera de 29,90
+    let lucroEstimado = 0;
+
+    ativos.forEach((u) => {
+      const valorPago = Number(u.lastPrice) || 29.9;
+
+      if (valorPago > 30) {
+        // HIGH TICKET (Trimestral/Anual): 30% direto, não conta na base mensal de taxa
+        lucroEstimado += valorPago * 0.3;
+      } else {
+        baseMensal += 1; // Soma na meta
+      }
+    });
+
+    // Calcula a taxa baseada em quem paga R$ 29,90
+    let taxaAtual = 15;
+    if (baseMensal >= 20) taxaAtual = 30;
+    else if (baseMensal >= 10) taxaAtual = 20;
+
+    // Aplica a taxa na galera do mensal e soma ao High Ticket
+    lucroEstimado += baseMensal * 29.9 * (taxaAtual / 100);
+
+    // O potencial futuro calcula os de 7 dias considerando a taxa base atual
+    // (aqui assumimos que eles vão assinar o mensal)
+    const potencialFuturo = emTeste.length * 29.9 * (taxaAtual / 100);
 
     return {
       success: true,
       referralCode: partner?.referralCode,
+      createdAt: partner?.createdAt,
       stats: {
         taxaAtual,
-        ganhoEstimado: ativos.length * VALOR_MENSALIDADE * (taxaAtual / 100),
-        potencialFuturo: emTeste.length * VALOR_MENSALIDADE * (taxaAtual / 100),
-        vendasConfirmadas: novosPagantesEsteMes,
-        progressoMeta: Math.min((novosPagantesEsteMes / 20) * 100, 100),
+        ganhoEstimado: lucroEstimado,
+        potencialFuturo,
+        vendasConfirmadas: ativos.length, // Mostra o total para dar moral, mesmo se for High Ticket
+        progressoMeta: Math.min((baseMensal / 20) * 100, 100), // Barra de progresso baseada só no plano de 29.90
       },
       ativos,
       emTeste,
@@ -1419,10 +1437,7 @@ export async function getAffiliatePayouts() {
     return { error: "Não autorizado." };
 
   try {
-    const VALOR_MENSALIDADE = 29.9;
     const hoje = new Date();
-    const trintaDiasAtras = new Date();
-    trintaDiasAtras.setDate(hoje.getDate() - 30);
 
     // Busca todos os parceiros
     const partners = await db.user.findMany({
@@ -1432,39 +1447,83 @@ export async function getAffiliatePayouts() {
         name: true,
         email: true,
         phone: true,
-        lastPayoutDate: true, // Data do último "Reset" que você deu
+        createdAt: true,
+        lastPayoutDate: true,
         referrals: {
           where: {
             role: "ASSINANTE",
             expiresAt: { gt: hoje },
-            createdAt: { lte: trintaDiasAtras }, // 🔒 TRAVA DE SEGURANÇA: Só conta quem já pagou os 29,90
           },
-          select: { id: true },
+          select: { id: true, createdAt: true, lastPrice: true },
         },
       },
     });
 
     const payoutData = partners.map((p) => {
-      // Lógica de meta idêntica à do parceiro
-      const qtdAtivos = p.referrals.length;
+      // 1. DATA DE CORTE DO PARCEIRO
+      const dataCriacaoParceiro = p.createdAt
+        ? new Date(p.createdAt)
+        : new Date();
+      const diaFechamento = dataCriacaoParceiro.getDate();
+
+      let inicioCicloAtual = new Date(
+        hoje.getFullYear(),
+        hoje.getMonth(),
+        diaFechamento,
+      );
+      if (hoje < inicioCicloAtual) {
+        inicioCicloAtual.setMonth(inicioCicloAtual.getMonth() - 1);
+      }
+
+      // 2. FILTRA OS ATIVOS DESTE CICLO (Passaram dos 7 dias E não foram pagos)
+      const ativosNesteCiclo = p.referrals.filter((u) => {
+        const diasDeCasa =
+          (hoje.getTime() - new Date(u.createdAt).getTime()) /
+          (1000 * 60 * 60 * 24);
+        const isCobrado = diasDeCasa > 7;
+
+        let pagoNesteCiclo = false;
+        if (p.lastPayoutDate && p.lastPayoutDate >= inicioCicloAtual) {
+          pagoNesteCiclo = true;
+        }
+
+        return isCobrado && !pagoNesteCiclo;
+      });
+
+      // 3. MATEMÁTICA PRO MAX (Admin)
+      let baseMensal = 0;
+      let valorDevido = 0;
+
+      ativosNesteCiclo.forEach((u) => {
+        const valorPago = Number(u.lastPrice) || 29.9;
+        if (valorPago > 30) {
+          valorDevido += valorPago * 0.3; // High Ticket: 30% na lata
+        } else {
+          baseMensal += 1;
+        }
+      });
+
       let taxa = 0.15;
-      if (qtdAtivos >= 20) taxa = 0.3;
-      else if (qtdAtivos >= 10) taxa = 0.2;
+      if (baseMensal >= 20) taxa = 0.3;
+      else if (baseMensal >= 10) taxa = 0.2;
+
+      valorDevido += baseMensal * 29.9 * taxa;
 
       return {
         id: p.id,
         name: p.name,
         email: p.email,
         phone: p.phone,
-        ativos: qtdAtivos,
-        taxa: taxa * 100,
-        valorDevido: qtdAtivos * VALOR_MENSALIDADE * taxa,
+        ativos: ativosNesteCiclo.length, // Total real para mostrar na dashboard
+        taxa: taxa * 100, // Mostra a taxa base alcançada
+        valorDevido: valorDevido, // O PIX exato que você deve mandar
         ultimoPagamento: p.lastPayoutDate,
       };
     });
 
     return { success: true, payouts: payoutData };
   } catch (error) {
+    console.error("Erro em getAffiliatePayouts:", error);
     return { error: "Erro ao calcular pagamentos." };
   }
 }
@@ -1495,6 +1554,13 @@ export async function createSubscription(
   userEmail: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
+  const dbUser = await db.user.findUnique({ where: { id: userId } });
+  if (dbUser?.isBanned) {
+    return {
+      error:
+        "Sua conta possui restrições e não pode realizar assinaturas. Entre em contato com o suporte.",
+    };
+  }
   // VOLTAMOS PARA A FERRAMENTA QUE FUNCIONA: PreApprovalPlan
   const plan = new PreApprovalPlan(client);
 
@@ -1574,4 +1640,67 @@ export async function getAuthSession() {
     email: session.user.email,
     role: session.user.role,
   };
+}
+// 🔨 BANIR USUÁRIO E CANCELAR PAGAMENTO
+export async function banUserAction(userId: string) {
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Acesso negado." };
+
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { mpSubscriptionId: true, role: true },
+    });
+
+    if (!user) return { error: "Usuário não encontrado." };
+
+    // 1. Se ele tiver assinatura ativa, cancelamos no Mercado Pago agora!
+    if (user.mpSubscriptionId) {
+      try {
+        const preApproval = new PreApproval(client);
+        await preApproval.update({
+          id: user.mpSubscriptionId,
+          body: { status: "cancelled" },
+        });
+      } catch (mpError) {
+        console.error(
+          "Erro ao cancelar no MP (pode já estar cancelada):",
+          mpError,
+        );
+      }
+    }
+
+    // 2. Aplicamos o Banimento no Banco de Dados
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        isBanned: true,
+        role: "VISITANTE", // Rebaixa na hora
+        mpSubscriptionId: null,
+        expiresAt: null,
+      },
+    });
+
+    revalidatePath("/admin");
+    return {
+      success: true,
+      message: "Usuário banido e pagamentos interrompidos.",
+    };
+  } catch (error) {
+    return { error: "Erro ao processar banimento." };
+  }
+}
+
+// 🔓 DESBANIR USUÁRIO
+export async function unbanUserAction(userId: string) {
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Acesso negado." };
+
+  await db.user.update({
+    where: { id: userId },
+    data: { isBanned: false },
+  });
+
+  revalidatePath("/admin");
+  return { success: true, message: "Usuário desbanido com sucesso." };
 }

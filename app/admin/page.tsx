@@ -11,12 +11,12 @@ export default async function AdminPage() {
 
   // 2. CHECA SE ESTÁ LOGADO
   if (!session?.user?.email) {
-    redirect("/login?callbackUrl=/admin"); // Se não tá logado, manda pro login e pede pra voltar pra cá
+    redirect("/login?callbackUrl=/admin");
   }
 
   const emailSessao = session.user.email.toLowerCase();
 
-  // 3. BUSCA NO BANCO
+  // 3. BUSCA O USUÁRIO ATUAL NO BANCO
   const currentUser = await db.user.findFirst({
     where: {
       email: {
@@ -26,18 +26,16 @@ export default async function AdminPage() {
     },
   });
 
-  // 4. VALIDAÇÃO DUPLA (Lista de E-mails OU Role no Banco)
+  // 4. VALIDAÇÃO DE ADMIN (E-mail ou Role)
   const isEmailAutorizado = ADMIN_EMAILS.includes(emailSessao);
   const isAdminNoBanco = currentUser?.role === "ADMIN";
 
-  // Se o e-mail está na lista, mas no banco não está como ADMIN,
-  // vamos forçar a entrada (e você pode corrigir o role lá dentro do painel)
   if (!isEmailAutorizado && !isAdminNoBanco) {
     console.log(`Acesso negado para: ${emailSessao}`);
     redirect("/");
   }
 
-  // 5. BUSCA OS DADOS (Mesma lógica anterior)
+  // 5. BUSCA OS DADOS (Usuários e Denúncias)
   const users = await db.user.findMany({
     include: { businesses: true },
     orderBy: { createdAt: "desc" },
@@ -48,12 +46,26 @@ export default async function AdminPage() {
     include: { business: { select: { name: true, slug: true } } },
   });
 
-  const assinantesReais = users.filter((u) => u.role === "ASSINANTE");
+  // 6. CÁLCULO DE RECEITA DINÂMICA (Soma real de lastPrice)
+  const agora = new Date();
+  const receitaTotal = users.reduce((acc, user) => {
+    // Só conta na receita se: for assinante, não estiver vencido e NÃO estiver banido
+    if (
+      user.role === "ASSINANTE" &&
+      user.expiresAt &&
+      user.expiresAt > agora &&
+      !user.isBanned
+    ) {
+      return acc + (Number(user.lastPrice) || 0);
+    }
+    return acc;
+  }, 0);
 
+  // 7. PREPARA OS DADOS PARA O COMPONENTE VISUAL
   const adminData = {
-    users,
-    reports,
-    receita: assinantesReais.length * 29.9,
+    users: users as any[],
+    reports: reports as any[],
+    receita: receitaTotal,
   };
 
   return <AdminDashboard data={adminData} />;

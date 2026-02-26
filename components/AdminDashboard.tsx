@@ -16,7 +16,6 @@ import {
   CalendarDays,
   UserPlus,
   X,
-  Eye,
   AlertTriangle,
   MinusCircle,
   UserCheck,
@@ -27,13 +26,14 @@ import {
   DollarSign,
   Activity,
   Mail,
-  PhoneCall,
   MessageCircle,
-  Copy,
   Award,
   Star,
   Wallet,
-  ArrowRight,
+  UserX,
+  ShieldAlert,
+  Gavel,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -41,8 +41,10 @@ import {
   adminAddDaysToUser,
   runGarbageCollector,
   promoteToAffiliate,
-  getAffiliatePayouts, // ⬅️ Nova
-  markAffiliateAsPaid, // ⬅️ Nova
+  getAffiliatePayouts,
+  markAffiliateAsPaid,
+  banUserAction,
+  unbanUserAction,
 } from "@/app/actions";
 
 export default function AdminDashboard({ data }: { data: any }) {
@@ -54,18 +56,14 @@ export default function AdminDashboard({ data }: { data: any }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isCleaning, setIsCleaning] = useState(false);
-
-  // Estados de Pagamentos
   const [payouts, setPayouts] = useState<any[]>([]);
   const [loadingPayouts, setLoadingPayouts] = useState(false);
-
-  // Estados para Promoção de Afiliado
   const [promotingUser, setPromotingUser] = useState<any>(null);
   const [referralCodeInput, setReferralCodeInput] = useState("");
 
   const ADMIN_EMAIL = "prfabianoguedes@gmail.com";
 
-  // --- BUSCA DE PAGAMENTOS (LOGICA NOVA) ---
+  // --- CARREGAR PAGAMENTOS DE AFILIADOS ---
   const loadPayouts = async () => {
     setLoadingPayouts(true);
     const res = await getAffiliatePayouts();
@@ -77,75 +75,51 @@ export default function AdminDashboard({ data }: { data: any }) {
     if (activeTab === "payouts") loadPayouts();
   }, [activeTab]);
 
-  // --- PROCESSAMENTO DE DADOS (EXISTENTE + MELHORIAS) ---
+  // --- PROCESSAMENTO DE DADOS ---
   const {
     allUsers,
     activeSubscribers,
-    expiredSubscribers,
     visitors,
     partners,
     pendingReports,
-    totalInstalls,
-    totalViews,
-    projectedRevenue,
+    bannedUsers,
   } = useMemo(() => {
     const users = data.users.filter((u: any) => u.email !== ADMIN_EMAIL);
     const now = new Date();
 
     const active = users.filter(
       (u: any) =>
-        u.role === "ASSINANTE" && u.expiresAt && new Date(u.expiresAt) > now,
+        u.role === "ASSINANTE" &&
+        u.expiresAt &&
+        new Date(u.expiresAt) > now &&
+        !u.isBanned,
     );
-    const expired = users.filter(
-      (u: any) =>
-        u.role === "ASSINANTE" && u.expiresAt && new Date(u.expiresAt) < now,
+    const leads = users.filter(
+      (u: any) => u.role === "VISITANTE" && !u.isBanned,
     );
-    const leads = users.filter((u: any) => u.role === "VISITANTE");
     const affs = users.filter((u: any) => u.role === "AFILIADO");
+    const banned = users.filter((u: any) => u.isBanned);
     const reports = data.reports.filter((r: any) => r.status === "PENDING");
-
-    const installs = users.reduce(
-      (acc: number, u: any) =>
-        acc +
-        (u.businesses?.reduce(
-          (sum: number, b: any) => sum + (b.installs || 0),
-          0,
-        ) || 0),
-      0,
-    );
-
-    const views = users.reduce(
-      (acc: number, u: any) =>
-        acc +
-        (u.businesses?.reduce(
-          (sum: number, b: any) => sum + (b.views || 0),
-          0,
-        ) || 0),
-      0,
-    );
 
     return {
       allUsers: users,
       activeSubscribers: active,
-      expiredSubscribers: expired,
       visitors: leads,
       partners: affs,
+      bannedUsers: banned,
       pendingReports: reports,
-      totalInstalls: installs,
-      totalViews: views,
-      projectedRevenue: active.length * 29.9,
     };
-  }, [data, ADMIN_EMAIL]);
+  }, [data]);
 
-  // --- FILTRO DE BUSCA ---
+  // --- FILTRO DE BUSCA INTELIGENTE ---
   const filteredData = useMemo(() => {
     let baseList = [];
+    if (activeTab === "reports") return pendingReports;
+    if (activeTab === "payouts") return payouts;
+
     switch (activeTab) {
       case "subscribers":
         baseList = activeSubscribers;
-        break;
-      case "expired":
-        baseList = expiredSubscribers;
         break;
       case "visitors":
         baseList = visitors;
@@ -153,32 +127,87 @@ export default function AdminDashboard({ data }: { data: any }) {
       case "partners":
         baseList = partners;
         break;
-      case "reports":
-        return pendingReports;
-      case "payouts":
-        return payouts; // Nova Tab
+      case "banned":
+        baseList = bannedUsers;
+        break;
       default:
-        return [];
+        baseList = allUsers;
     }
+
     const searchLower = searchTerm.toLowerCase();
     return baseList.filter(
       (u: any) =>
         (u.name?.toLowerCase() || "").includes(searchLower) ||
         (u.email?.toLowerCase() || "").includes(searchLower) ||
-        (u.referralCode?.toLowerCase() || "").includes(searchLower),
+        (u.document || "").includes(searchLower),
     );
   }, [
     activeTab,
     searchTerm,
+    allUsers,
     activeSubscribers,
-    expiredSubscribers,
     visitors,
     partners,
     pendingReports,
     payouts,
+    bannedUsers,
   ]);
 
-  // --- AÇÕES ---
+  // --- AÇÕES ADMINISTRATIVAS ---
+  const handleBan = (userId: string, name: string) => {
+    if (
+      !confirm(
+        `BANIR ${name.toUpperCase()}? Isso cancela o pagamento no Mercado Pago e bloqueia o CPF.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      const res = await banUserAction(userId);
+      res.success ? toast.success(res.message) : toast.error(res.error);
+      router.refresh();
+    });
+  };
+
+  const handleUnban = (userId: string) => {
+    startTransition(async () => {
+      const res = await unbanUserAction(userId);
+      res.success ? toast.success(res.message) : toast.error(res.error);
+      router.refresh();
+    });
+  };
+
+  const handleResolveReport = (reportId: string) => {
+    startTransition(async () => {
+      const res = await resolveReport(reportId);
+      res.success
+        ? toast.success("Caso encerrado!")
+        : toast.error("Erro ao resolver.");
+      router.refresh();
+    });
+  };
+
+  const handlePromote = async () => {
+    if (!referralCodeInput) return toast.error("Defina um código!");
+    startTransition(async () => {
+      const res = await promoteToAffiliate(promotingUser.id, referralCodeInput);
+      if (res.success) {
+        toast.success(res.message);
+        setPromotingUser(null);
+        setReferralCodeInput("");
+        router.refresh();
+      } else toast.error(res.error);
+    });
+  };
+
+  const handleAddDays = (e: any, userId: string, months: number) => {
+    e.stopPropagation();
+    startTransition(async () => {
+      await adminAddDaysToUser(userId, months);
+      router.refresh();
+      toast.success("Tempo ajustado!");
+    });
+  };
+
   const handleConfirmPayment = async (
     affiliateId: string,
     valor: number,
@@ -186,7 +215,7 @@ export default function AdminDashboard({ data }: { data: any }) {
   ) => {
     if (
       !confirm(
-        `Confirmar que pagou R$ ${valor.toFixed(2)} para ${name}? Isso zerará o saldo dele.`,
+        `Confirmar que o PIX de R$ ${valor.toFixed(2)} foi enviado para ${name.toUpperCase()}? Isso vai zerar o saldo dele no sistema.`,
       )
     )
       return;
@@ -195,71 +224,31 @@ export default function AdminDashboard({ data }: { data: any }) {
       const res = await markAffiliateAsPaid(affiliateId);
       if (res.success) {
         toast.success(res.message);
-        loadPayouts(); // Recarrega a lista
+        loadPayouts();
       } else {
         toast.error(res.error);
       }
     });
-  };
-
-  const handlePromote = async () => {
-    if (!referralCodeInput) return toast.error("Digite um código!");
-    startTransition(async () => {
-      const res = await promoteToAffiliate(promotingUser.id, referralCodeInput);
-      if (res.success) {
-        toast.success(res.message);
-        setPromotingUser(null);
-        setReferralCodeInput("");
-        router.refresh();
-      } else {
-        toast.error(res.error);
-      }
-    });
-  };
-
-  const handleRunFaxina = async () => {
-    if (!confirm("Isso apagará imagens sem uso. Prosseguir?")) return;
-    setIsCleaning(true);
-    try {
-      const result = await runGarbageCollector();
-      result.error ? toast.error(result.error) : toast.success(result.message);
-    } catch {
-      toast.error("Erro crítico na faxina.");
-    } finally {
-      setIsCleaning(false);
-    }
-  };
-
-  const handleAddDays = async (e: any, userId: string, months: number) => {
-    e.stopPropagation();
-    if (confirm("Confirmar alteração de tempo?")) {
-      startTransition(async () => {
-        await adminAddDaysToUser(userId, months);
-        router.refresh();
-        toast.success("Tempo atualizado!");
-      });
-    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7FE] p-4 md:p-8 font-sans text-slate-900">
-      {/* HEADER SUPREMO */}
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans text-slate-900">
+      {/* HEADER ULTRA PRO */}
       <header className="max-w-7xl mx-auto mb-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-white">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-slate-900 rounded-3xl text-white shadow-lg shadow-slate-200">
+            <div className="p-4 bg-slate-900 rounded-3xl text-emerald-400 shadow-xl">
               <ShieldCheck size={32} />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-                Administração
+                Security & Billing
               </p>
               <h1 className="text-3xl font-black italic uppercase tracking-tighter">
                 Tafanu <span className="text-emerald-500">HQ</span>
               </h1>
             </div>
           </div>
-
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
               <Search
@@ -268,60 +257,64 @@ export default function AdminDashboard({ data }: { data: any }) {
               />
               <input
                 type="text"
-                placeholder="Buscar..."
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-emerald-500/20 transition-all font-medium shadow-inner"
+                placeholder="Buscar por Nome, E-mail ou CPF..."
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-emerald-500/20 shadow-inner font-medium"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button
-              onClick={handleRunFaxina}
-              className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all shadow-sm"
+              onClick={() => {
+                if (confirm("Iniciar limpeza de imagens inúteis?"))
+                  runGarbageCollector().then((r) => toast.success(r.message));
+              }}
+              className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100"
+              title="Faxina UploadThing"
             >
-              {isCleaning ? <Loader2 className="animate-spin" /> : <Eraser />}
+              <Eraser />
             </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto space-y-8">
-        {/* GRID DE MÉTRICAS */}
+        {/* CARDS DE PERFORMANCE DINÂMICOS */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard
             icon={<DollarSign />}
-            label="Receita Mensal"
-            value={`R$ ${projectedRevenue.toFixed(2)}`}
+            label="Receita Real"
+            value={`R$ ${data.receita.toFixed(2)}`}
             color="emerald"
-            subValue="Estimada"
+            subValue="Soma dos 3 Planos"
           />
           <MetricCard
             icon={<Activity />}
-            label="Conversão"
-            value={`${((activeSubscribers.length / (allUsers.length || 1)) * 100).toFixed(1)}%`}
-            color="amber"
-            subValue="Taxa Leads"
+            label="Membresia"
+            value={activeSubscribers.length}
+            color="blue"
+            subValue="Assinantes Ativos"
           />
           <MetricCard
             icon={<Award />}
-            label="Parceiros"
+            label="Time de Vendas"
             value={partners.length}
-            color="blue"
-            subValue="Afiliados"
+            color="amber"
+            subValue="Parceiros Ativos"
           />
           <MetricCard
-            icon={<Download />}
-            label="Instalações"
-            value={totalInstalls}
-            color="purple"
-            subValue="Apps Ativos"
+            icon={<ShieldAlert />}
+            label="Fila de Crise"
+            value={pendingReports.length}
+            color="rose"
+            subValue="Denúncias Pendentes"
           />
         </section>
 
-        {/* NAVEGAÇÃO POR ABAS */}
+        {/* NAVEGAÇÃO DE COMANDO */}
         <div className="flex p-1.5 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
           <TabButton
             active={activeTab === "overview"}
             onClick={() => setActiveTab("overview")}
-            label="Painel"
+            label="Overview"
             icon={<LayoutGrid size={16} />}
           />
           <TabButton
@@ -341,16 +334,9 @@ export default function AdminDashboard({ data }: { data: any }) {
           <TabButton
             active={activeTab === "payouts"}
             onClick={() => setActiveTab("payouts")}
-            label="Pagamentos"
+            label="Financeiro"
             icon={<Wallet size={16} />}
             count={payouts.length}
-          />
-          <TabButton
-            active={activeTab === "visitors"}
-            onClick={() => setActiveTab("visitors")}
-            label="Leads"
-            icon={<UserPlus size={16} />}
-            count={visitors.length}
           />
           <TabButton
             active={activeTab === "reports"}
@@ -359,178 +345,150 @@ export default function AdminDashboard({ data }: { data: any }) {
             icon={<AlertTriangle size={16} />}
             count={pendingReports.length}
           />
+          <TabButton
+            active={activeTab === "banned"}
+            onClick={() => setActiveTab("banned")}
+            label="Banidos"
+            icon={<UserX size={16} />}
+            count={bannedUsers.length}
+          />
         </div>
 
-        {/* CONTEÚDO DAS ABAS */}
+        {/* CONTAINER DE CONTEÚDO PRINCIPAL */}
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+          {/* ABA: DENÚNCIAS (CRISES) */}
+          {activeTab === "reports" && (
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b">
+                <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
+                  <th className="p-6 text-left">Perfil / Slug</th>
+                  <th className="p-6 text-left">Motivo / Detalhes</th>
+                  <th className="p-6 text-right">Ação Corretiva</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {pendingReports.map((report: any) => (
+                  <tr
+                    key={report.id}
+                    className="hover:bg-rose-50/20 transition-colors"
+                  >
+                    <td className="p-6 font-black uppercase italic text-slate-900">
+                      {report.business?.name}
+                      <p className="text-[9px] text-rose-500 font-bold tracking-normal underline">
+                        tafanu.app/site/{report.business?.slug}
+                      </p>
+                    </td>
+                    <td className="p-6">
+                      <span className="px-2 py-1 bg-rose-100 text-rose-700 rounded text-[9px] font-black uppercase">
+                        {report.reason}
+                      </span>
+                      <p className="text-xs text-slate-500 mt-2 font-medium italic">
+                        "{report.details}"
+                      </p>
+                    </td>
+                    <td className="p-6 text-right">
+                      <button
+                        onClick={() => handleResolveReport(report.id)}
+                        className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-emerald-600 transition-all"
+                      >
+                        Arquivar / Resolver
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {pendingReports.length === 0 && (
+                  <EmptyState message="Céu limpo. Nenhuma crise detectada." />
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {/* ABA: OVERVIEW (PAINEL GERAL) */}
           {activeTab === "overview" && (
-            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <h3 className="font-black uppercase italic text-slate-900 flex items-center gap-2">
-                  <TrendingUp className="text-emerald-500" /> Atividade Recente
+                  <TrendingUp className="text-emerald-500" /> Novos Negócios
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {data.users
+                  {allUsers
                     .flatMap((u: any) => u.businesses)
                     .sort(
                       (a: any, b: any) =>
                         new Date(b.createdAt).getTime() -
                         new Date(a.createdAt).getTime(),
                     )
-                    .slice(0, 6)
+                    .slice(0, 8)
                     .map((biz: any) => (
                       <div
                         key={biz.id}
-                        className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100"
+                        className="p-5 bg-slate-50 rounded-[2rem] flex items-center justify-between border border-slate-100 hover:shadow-sm transition-all"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white rounded-lg text-emerald-500 shadow-sm">
-                            <Store size={20} />
-                          </div>
-                          <p className="font-bold text-slate-900 truncate max-w-[120px]">
+                        <div>
+                          <p className="font-black text-slate-900 italic uppercase leading-none">
                             {biz.name}
+                          </p>
+                          <p className="text-[9px] text-slate-400 font-bold mt-1">
+                            /{biz.slug}
                           </p>
                         </div>
                         <a
                           href={`/site/${biz.slug}`}
                           target="_blank"
-                          className="p-2 bg-white rounded-lg text-slate-400 hover:text-emerald-500 transition-all"
+                          className="p-2.5 bg-white text-emerald-500 rounded-xl shadow-sm border border-slate-100"
                         >
-                          <ExternalLink size={14} />
+                          <ExternalLink size={16} />
                         </a>
                       </div>
                     ))}
                 </div>
               </div>
-              <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white flex flex-col justify-center">
-                <h3 className="font-black uppercase italic text-slate-400 mb-6 tracking-widest text-sm text-center">
-                  Saúde do Ecossistema
-                </h3>
-                <div className="space-y-8">
+              <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex flex-col justify-between">
+                <div>
+                  <h3 className="font-black uppercase italic text-slate-500 mb-8 tracking-[0.2em] text-center text-xs">
+                    Vigital Saúde HQ
+                  </h3>
                   <HealthItem
-                    label="Usuários Ativos"
+                    label="Conversão"
                     value={activeSubscribers.length}
                     total={allUsers.length}
-                    color="bg-emerald-500"
+                    color="bg-emerald-400"
                   />
                   <HealthItem
-                    label="Base de Parceiros"
+                    label="Capilaridade (Parceiros)"
                     value={partners.length}
                     total={allUsers.length}
-                    color="bg-blue-500"
+                    color="bg-blue-400"
+                  />
+                  <HealthItem
+                    label="Taxa de Banimento"
+                    value={bannedUsers.length}
+                    total={allUsers.length}
+                    color="bg-rose-500"
                   />
                 </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "payouts" && (
-            <div className="p-8 space-y-6">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-100 pb-6">
-                <div>
-                  <h3 className="text-xl font-black uppercase italic text-slate-900">
-                    Fechamento de Comissões
-                  </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                    Regra: 30 dias de carência (Pagamento R$ 29,90 confirmado)
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center">
+                  <p className="text-[10px] font-black text-emerald-400 uppercase italic mb-1">
+                    Status do Sistema
+                  </p>
+                  <p className="text-xs font-bold text-white uppercase tracking-widest">
+                    100% OPERACIONAL
                   </p>
                 </div>
-                <button
-                  onClick={loadPayouts}
-                  className="p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all"
-                >
-                  {loadingPayouts ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <Clock size={18} />
-                  )}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                {payouts.map((p: any) => (
-                  <div
-                    key={p.id}
-                    className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-white transition-all hover:shadow-md"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm border border-slate-100">
-                        <Wallet size={28} />
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-900 uppercase italic leading-none">
-                          {p.name || "Sem Nome"}
-                        </p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1">
-                          {p.email}
-                        </p>
-                        <p className="text-[9px] font-black text-emerald-500 uppercase mt-1">
-                          PIX Pendente
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-8 text-center bg-white px-8 py-4 rounded-3xl border border-slate-100 shadow-sm">
-                      <div>
-                        <p className="text-[9px] font-black text-slate-300 uppercase">
-                          Ativos
-                        </p>
-                        <p className="font-black text-slate-900">{p.ativos}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-300 uppercase">
-                          Taxa
-                        </p>
-                        <p className="font-black text-blue-600">{p.taxa}%</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-300 uppercase">
-                          Valor
-                        </p>
-                        <p className="font-black text-emerald-600 text-lg">
-                          R$ {p.valorDevido.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`https://wa.me/55${p.phone?.replace(/\D/g, "")}`}
-                        target="_blank"
-                        className="p-4 bg-white border border-slate-200 text-emerald-500 rounded-2xl hover:bg-emerald-50 transition-all"
-                      >
-                        <MessageCircle size={20} />
-                      </a>
-                      <button
-                        onClick={() =>
-                          handleConfirmPayment(p.id, p.valorDevido, p.name)
-                        }
-                        className="px-6 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all shadow-lg"
-                      >
-                        Pagar e Resetar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {payouts.length === 0 && !loadingPayouts && (
-                  <div className="text-center py-20 opacity-30 font-black uppercase tracking-widest text-xs">
-                    Sem pagamentos para processar
-                  </div>
-                )}
               </div>
             </div>
           )}
 
+          {/* TABELA DE USUÁRIOS (ASSINANTES, LEADS, AFILIADOS, BANIDOS) */}
           {activeTab !== "overview" &&
-            activeTab !== "payouts" &&
-            activeTab !== "reports" && (
+            activeTab !== "reports" &&
+            activeTab !== "payouts" && (
               <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-slate-50 border-b">
                   <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
-                    <th className="p-6 text-left">Identificação</th>
-                    <th className="p-6 text-left">Contatos</th>
-                    <th className="p-6 text-left">Status Financeiro</th>
-                    <th className="p-6 text-right">Controle HQ</th>
+                    <th className="p-6 text-left">Membro</th>
+                    <th className="p-6 text-left">Plano / Status</th>
+                    <th className="p-6 text-right">Ações HQ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -538,70 +496,83 @@ export default function AdminDashboard({ data }: { data: any }) {
                     <tr
                       key={user.id}
                       onClick={() => setSelectedUser(user)}
-                      className="hover:bg-slate-50/50 cursor-pointer transition-colors group"
+                      className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/20" : ""}`}
                     >
                       <td className="p-6">
-                        <p className="font-black text-slate-900 uppercase italic group-hover:text-emerald-600 transition-colors">
-                          {user.name || "N/A"}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-bold">
-                          {user.email}
-                        </p>
-                        {user.referralCode && (
-                          <span className="mt-1 inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black">
-                            CÓD: {user.referralCode}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          <a
-                            href={`https://wa.me/55${user.phone?.replace(/\D/g, "")}`}
-                            target="_blank"
-                            className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-500 hover:text-white transition-all"
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${user.isBanned ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"}`}
                           >
-                            <MessageCircle size={16} />
-                          </a>
-                          <a
-                            href={`mailto:${user.email}`}
-                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
-                          >
-                            <Mail size={16} />
-                          </a>
+                            {user.name?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <p
+                              className={`font-black uppercase italic ${user.isBanned ? "text-rose-600 line-through" : "text-slate-900"}`}
+                            >
+                              {user.name || "Sem Nome"}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold">
+                              {user.email}
+                            </p>
+                          </div>
                         </div>
                       </td>
                       <td className="p-6">
-                        <StatusBadge
-                          expiresAt={user.expiresAt}
-                          role={user.role}
-                        />
+                        {user.isBanned ? (
+                          <span className="px-3 py-1 bg-rose-600 text-white rounded-full text-[9px] font-black uppercase italic">
+                            BLACKLIST
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <StatusBadge
+                              expiresAt={user.expiresAt}
+                              role={user.role}
+                            />
+                            {user.role === "ASSINANTE" && (
+                              <PlanPriceBadge price={user.lastPrice} />
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td
                         className="p-6 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex justify-end gap-2">
-                          {user.role !== "AFILIADO" &&
-                            user.role !== "ADMIN" && (
+                          {user.isBanned ? (
+                            <button
+                              onClick={() => handleUnban(user.id)}
+                              className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg hover:bg-emerald-600 transition-all"
+                              title="Desbanir"
+                            >
+                              <UserCheck size={18} />
+                            </button>
+                          ) : (
+                            <>
+                              {user.role !== "AFILIADO" &&
+                                user.role !== "ADMIN" && (
+                                  <button
+                                    onClick={() => setPromotingUser(user)}
+                                    className="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all border border-amber-100"
+                                  >
+                                    <Award size={18} />
+                                  </button>
+                                )}
                               <button
-                                onClick={() => setPromotingUser(user)}
-                                className="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all"
+                                onClick={(e) => handleAddDays(e, user.id, 1)}
+                                className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-100"
                               >
-                                <Award size={18} />
+                                <CalendarDays size={18} />
                               </button>
-                            )}
-                          <button
-                            onClick={(e) => handleAddDays(e, user.id, 1)}
-                            className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all"
-                          >
-                            <CalendarDays size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => handleAddDays(e, user.id, -1)}
-                            className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-500 hover:text-white transition-all"
-                          >
-                            <MinusCircle size={18} />
-                          </button>
+                              <button
+                                onClick={() => handleBan(user.id, user.name)}
+                                className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-rose-600 transition-all shadow-md"
+                                title="BANIR CPF"
+                              >
+                                <Gavel size={18} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -609,86 +580,173 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </tbody>
               </table>
             )}
+
+          {/* ABA: FINANCEIRO (PAGAMENTOS AFILIADOS) */}
+          {activeTab === "payouts" && (
+            <div className="p-8 space-y-4">
+              {payouts.map((p: any) => (
+                <div
+                  key={p.id}
+                  className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-white transition-all hover:shadow-md"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center shadow-lg">
+                      <Wallet size={28} />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 uppercase italic text-lg leading-none">
+                        {p.name}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                        {p.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-8 text-center bg-white px-10 py-5 rounded-[2rem] border shadow-inner">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-300 uppercase">
+                        Vendas
+                      </p>
+                      <p className="font-black text-xl">{p.ativos}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-300 uppercase">
+                        Comissão
+                      </p>
+                      <p className="font-black text-blue-600 text-xl">
+                        {p.taxa}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-300 uppercase">
+                        A Pagar
+                      </p>
+                      <p className="font-black text-emerald-600 text-2xl tracking-tighter">
+                        R$ {p.valorDevido.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <a
+                      href={`https://wa.me/55${p.phone?.replace(/\D/g, "")}`}
+                      target="_blank"
+                      className="p-5 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100"
+                    >
+                      <MessageCircle />
+                    </a>
+                    <button
+                      onClick={() =>
+                        handleConfirmPayment(p.id, p.valorDevido, p.name)
+                      }
+                      className="px-8 py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all"
+                    >
+                      PAGAR VIA PIX
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {payouts.length === 0 && (
+                <EmptyState message="Nenhum parceiro atingiu o teto de pagamento ainda." />
+              )}
+            </div>
+          )}
         </div>
       </main>
 
-      {/* MODAL SUPORTE */}
+      {/* MODAL DETALHES USUÁRIO */}
       {selectedUser && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
           onClick={() => setSelectedUser(null)}
         >
           <div
-            className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95"
+            className="bg-white w-full max-w-3xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center text-slate-900">
-                  <ShieldCheck size={32} />
+            <div className="p-10 bg-slate-50 border-b flex justify-between items-center">
+              <div className="flex items-center gap-6">
+                <div
+                  className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl ${selectedUser.isBanned ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}
+                >
+                  {selectedUser.isBanned ? (
+                    <UserX size={40} />
+                  ) : (
+                    <ShieldCheck size={40} />
+                  )}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 italic uppercase leading-none mb-1">
-                    {selectedUser.name || "Usuário"}
+                  <h2 className="text-3xl font-black text-slate-900 italic uppercase tracking-tighter leading-none mb-2">
+                    {selectedUser.name}
                   </h2>
-                  <p className="text-sm text-slate-400 font-bold">
-                    {selectedUser.email}
-                  </p>
+                  <div className="flex gap-3">
+                    <span className="px-2 py-1 bg-white rounded-lg border text-[10px] font-bold text-slate-400 tracking-tighter">
+                      {selectedUser.email}
+                    </span>
+                    <span className="px-2 py-1 bg-white rounded-lg border text-[10px] font-bold text-slate-400 tracking-tighter">
+                      CPF: {selectedUser.document || "N/A"}
+                    </span>
+                  </div>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-rose-500 transition-colors"
+                className="p-4 bg-white border border-slate-100 rounded-3xl text-slate-300 hover:text-rose-500 transition-all"
               >
-                <X />
+                <X size={24} />
               </button>
             </div>
-            <div className="p-8 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-                <ContactAction
-                  icon={<MessageCircle />}
-                  label="WhatsApp"
-                  value={selectedUser.phone}
-                  href={`https://wa.me/55${selectedUser.phone?.replace(/\D/g, "")}`}
-                  color="emerald"
-                />
-                <ContactAction
-                  icon={<PhoneCall />}
-                  label="Ligar"
-                  value={selectedUser.phone}
-                  href={`tel:${selectedUser.phone}`}
-                  color="slate"
-                />
-                <ContactAction
-                  icon={<Mail />}
-                  label="E-mail"
-                  value={selectedUser.email}
-                  href={`mailto:${selectedUser.email}`}
-                  color="blue"
-                />
-              </div>
-              <h3 className="text-[10px] font-black uppercase text-slate-300 tracking-[0.2em] mb-4">
-                Negócios Sob Gestão
+            <div className="p-10">
+              {selectedUser.isBanned ? (
+                <div className="p-10 bg-rose-50 border-2 border-rose-100 border-dashed rounded-[2.5rem] text-center mb-8">
+                  <AlertTriangle
+                    className="mx-auto text-rose-500 mb-4"
+                    size={48}
+                  />
+                  <h4 className="font-black text-rose-600 uppercase italic text-xl">
+                    Acesso Revogado
+                  </h4>
+                  <p className="text-sm text-rose-500 font-medium max-w-sm mx-auto mt-2">
+                    O CPF do usuário foi bloqueado permanentemente. Nenhuma nova
+                    transação será aceita no Mercado Pago.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                  <ContactAction
+                    icon={<MessageCircle />}
+                    label="WhatsApp"
+                    href={`https://wa.me/55${selectedUser.phone?.replace(/\D/g, "")}`}
+                    color="emerald"
+                  />
+                  <ContactAction
+                    icon={<Mail />}
+                    label="E-mail"
+                    href={`mailto:${selectedUser.email}`}
+                    color="blue"
+                  />
+                  <ContactAction
+                    icon={<Activity />}
+                    label="Log de Acesso"
+                    href="#"
+                    color="slate"
+                  />
+                </div>
+              )}
+              <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-6 flex items-center gap-2">
+                <LayoutGrid size={14} /> Negócios na Plataforma
               </h3>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedUser.businesses?.map((biz: any) => (
                   <div
                     key={biz.id}
-                    className="flex items-center justify-between p-5 bg-slate-50 rounded-[2rem] border border-slate-100 hover:bg-white transition-all"
+                    className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all group"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center text-emerald-400">
-                        {biz.imageUrl ? (
-                          <img
-                            src={biz.imageUrl}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Store />
-                        )}
-                      </div>
+                    <div>
                       <p className="font-black text-slate-900 italic uppercase">
                         {biz.name}
+                      </p>
+                      <p className="text-[10px] font-bold text-emerald-500">
+                        tafanu.app/site/{biz.slug}
                       </p>
                     </div>
                     <button
@@ -697,73 +755,73 @@ export default function AdminDashboard({ data }: { data: any }) {
                           `/dashboard/editar/${biz.slug}?adminMode=true`,
                         )
                       }
-                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase hover:bg-emerald-600 transition-all"
+                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase opacity-0 group-hover:opacity-100 transition-all shadow-lg"
                     >
-                      Admin Mode
+                      Editar
                     </button>
                   </div>
                 ))}
+                {(!selectedUser.businesses ||
+                  selectedUser.businesses.length === 0) && (
+                  <p className="text-xs text-slate-300 font-bold italic">
+                    Nenhum anúncio criado.
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL PROMOVER PARCEIRO */}
+      {/* MODAL AFILIADO */}
       {promotingUser && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
           onClick={() => setPromotingUser(null)}
         >
           <div
-            className="bg-white w-full max-w-md rounded-[2.5rem] p-8 animate-in zoom-in-95"
+            className="bg-white w-full max-w-md rounded-[3rem] p-10 animate-in zoom-in-95 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-500">
-                <Award size={32} />
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-amber-500 shadow-inner">
+                <Award size={48} />
               </div>
-              <h2 className="text-xl font-black uppercase italic text-slate-900">
-                Novo Parceiro
+              <h2 className="text-2xl font-black uppercase italic tracking-tighter">
+                Novo Parceiro VIP
               </h2>
-              <p className="text-xs font-bold text-slate-400 mt-1">
-                Configurando acesso para {promotingUser.name}
+              <p className="text-xs font-bold text-slate-400 mt-2">
+                Personalize o código para {promotingUser.name}
               </p>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-2 block">
-                  Código do Afiliado
-                </label>
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="Ex: ANTONIO-VIP"
-                  className="w-full px-5 py-4 bg-slate-50 rounded-2xl font-bold uppercase outline-none focus:ring-2 ring-amber-500/20"
-                  value={referralCodeInput}
-                  onChange={(e) =>
-                    setReferralCodeInput(
-                      e.target.value.toUpperCase().replace(/\s/g, "-"),
-                    )
-                  }
-                />
-              </div>
-              <div className="flex gap-2">
+            <div className="space-y-6">
+              <input
+                type="text"
+                placeholder="EX: NOME-SAO-PAULO"
+                className="w-full px-6 py-5 bg-slate-50 rounded-2xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center text-lg tracking-widest"
+                value={referralCodeInput}
+                onChange={(e) =>
+                  setReferralCodeInput(
+                    e.target.value.toUpperCase().replace(/\s/g, "-"),
+                  )
+                }
+              />
+              <div className="flex gap-3">
                 <button
                   onClick={() => setPromotingUser(null)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                  className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest"
                 >
-                  Cancelar
+                  Abortar
                 </button>
                 <button
                   onClick={handlePromote}
                   disabled={isPending}
-                  className="flex-[2] py-4 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-100 flex items-center justify-center gap-2"
+                  className="flex-[2] py-5 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-amber-100"
                 >
                   {isPending ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
-                    "Ativar Parceiro"
+                    "ATIVAR AFILIADO"
                   )}
                 </button>
               </div>
@@ -775,49 +833,66 @@ export default function AdminDashboard({ data }: { data: any }) {
   );
 }
 
-// --- SUBCOMPONENTES ---
+// --- SUBCOMPONENTES DE APOIO ---
+
+function PlanPriceBadge({ price }: { price: number }) {
+  const isTrimestral = price > 30 && price < 100;
+  const isAnual = price > 100;
+
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${isAnual ? "bg-emerald-100 text-emerald-700" : isTrimestral ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}
+    >
+      {isAnual ? "Anual" : isTrimestral ? "Trimestral" : "Mensal"}
+    </span>
+  );
+}
 
 function MetricCard({ icon, label, value, color, subValue }: any) {
   const colors: any = {
-    emerald: "bg-emerald-50 text-emerald-600",
-    purple: "bg-purple-50 text-purple-600",
-    blue: "bg-blue-50 text-blue-600",
-    amber: "bg-amber-50 text-amber-600",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    rose: "bg-rose-50 text-rose-600 border-rose-100",
   };
   return (
-    <div className="p-6 bg-white rounded-[2rem] border border-slate-200 shadow-sm">
+    <div
+      className={`p-6 bg-white rounded-[2.5rem] border ${colors[color]} shadow-sm`}
+    >
       <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${colors[color]}`}
+        className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 ${colors[color].replace("border-", "")} shadow-sm`}
       >
         {icon}
       </div>
-      <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1">
+      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
         {label}
       </p>
-      <h4 className="text-2xl font-black text-slate-900 italic tracking-tighter">
+      <h4 className="text-3xl font-black text-slate-900 italic tracking-tighter">
         {value}
       </h4>
-      <p className="text-[8px] font-bold text-slate-300 uppercase mt-1">
+      <p className="text-[8px] font-bold text-slate-300 uppercase mt-1 tracking-widest">
         {subValue}
       </p>
     </div>
   );
 }
 
-function ContactAction({ icon, label, value, href, color }: any) {
+function ContactAction({ icon, label, href, color }: any) {
   const colors: any = {
     emerald:
-      "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white",
-    blue: "bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white",
-    slate: "bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white",
+      "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border-emerald-100",
+    blue: "bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border-blue-100",
+    slate:
+      "bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white border-slate-100",
   };
   return (
     <a
       href={href}
-      className={`p-4 rounded-2xl border border-slate-100 transition-all flex flex-col items-center gap-1 ${colors[color]}`}
+      target="_blank"
+      className={`p-6 rounded-3xl border transition-all flex flex-col items-center gap-2 ${colors[color]} group shadow-sm`}
     >
-      <div className="opacity-70">{icon}</div>
-      <span className="text-[9px] font-black uppercase tracking-tighter">
+      <div className="group-hover:scale-110 transition-transform">{icon}</div>
+      <span className="text-[10px] font-black uppercase tracking-tighter">
         {label}
       </span>
     </a>
@@ -828,12 +903,12 @@ function TabButton({ active, onClick, label, icon, count }: any) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-6 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"}`}
+      className={`flex items-center gap-2 px-8 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:bg-slate-50"}`}
     >
       {icon} {label}
       {count !== undefined && (
         <span
-          className={`ml-1 px-2 py-0.5 rounded-full text-[8px] ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}
+          className={`ml-2 px-2.5 py-0.5 rounded-full text-[9px] ${active ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"}`}
         >
           {count}
         </span>
@@ -855,7 +930,6 @@ function StatusBadge({ expiresAt, role }: any) {
         Lead
       </span>
     );
-
   const diff = expiresAt
     ? (new Date(expiresAt).getTime() - new Date().getTime()) /
       (1000 * 60 * 60 * 24)
@@ -872,7 +946,6 @@ function StatusBadge({ expiresAt, role }: any) {
         Vencido
       </span>
     );
-
   return (
     <span
       className={`px-3 py-1 rounded-full text-[9px] font-black uppercase italic border ${diff < 7 ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}
@@ -885,17 +958,32 @@ function StatusBadge({ expiresAt, role }: any) {
 function HealthItem({ label, value, total, color }: any) {
   const percentage = Math.min((value / (total || 1)) * 100, 100);
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 italic">
+    <div className="space-y-2 mb-6">
+      <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 italic">
         <span>{label}</span>
-        <span className="text-white">{value}</span>
+        <span className="text-white">
+          {value} / {total}
+        </span>
       </div>
-      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
         <div
           className={`h-full ${color} transition-all duration-1000`}
           style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <tr>
+      <td
+        colSpan={3}
+        className="py-20 text-center opacity-30 font-black uppercase tracking-[0.3em] text-[10px] italic"
+      >
+        {message}
+      </td>
+    </tr>
   );
 }
