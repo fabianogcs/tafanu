@@ -36,10 +36,24 @@ export default async function AdminPage() {
   }
 
   // 5. BUSCA OS DADOS (Usuários e Denúncias)
-  const users = await db.user.findMany({
-    include: { businesses: true },
+  // ⬅️ MUDANÇA AQUI: Pedimos pro banco trazer os dados do afiliado (O "Pai" da conta)
+  const usersData = await db.user.findMany({
+    include: {
+      businesses: true,
+      affiliate: {
+        select: { name: true, referralCode: true },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
+
+  // ⬅️ MUDANÇA AQUI: Formatamos a etiqueta bonitinha "Nome (CÓDIGO)" pro seu painel
+  const users = usersData.map((u: any) => ({
+    ...u,
+    referredBy: u.affiliate
+      ? `${u.affiliate.name} (${u.affiliate.referralCode})`
+      : null,
+  }));
 
   const reports = await db.report.findMany({
     orderBy: { createdAt: "desc" },
@@ -63,7 +77,7 @@ export default async function AdminPage() {
 
   // 7. PREPARA OS DADOS PARA O COMPONENTE VISUAL
   const adminData = {
-    users: users as any[],
+    users: users,
     reports: reports as any[],
     receita: receitaTotal,
   };
