@@ -11,10 +11,6 @@ import {
   CheckCircle2,
   Loader2,
   Sparkles,
-  ShieldEllipsis,
-  Calendar,
-  Zap,
-  Star,
 } from "lucide-react";
 import { createSubscription, getAuthSession } from "@/app/actions";
 
@@ -57,15 +53,27 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("monthly");
 
-  // --- SEGURANÇA E SINCRONIZAÇÃO ---
+  // --- SEGURANÇA E SINCRONIZAÇÃO TREINADA 🛡️ ---
   useEffect(() => {
     if (status === "loading") return;
     if (status === "authenticated" && !session?.user?.id) {
       update();
     }
+
     const role = session?.user?.role;
-    if (role === "ADMIN") router.replace("/admin");
-    else if (role === "ASSINANTE") router.replace("/dashboard");
+    const expiresAt = session?.user?.expiresAt;
+
+    // O segurança olha a data de validade!
+    const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false;
+
+    if (role === "ADMIN") {
+      router.replace("/admin");
+    }
+    // Se for assinante E NÃO ESTIVER VENCIDO, manda pro dashboard.
+    // Se estiver vencido (isExpired = true), a porta do checkout fica aberta!
+    else if (role === "ASSINANTE" && !isExpired) {
+      router.replace("/dashboard");
+    }
   }, [session, status, router, update]);
 
   // --- LÓGICA DE PAGAMENTO ---
@@ -99,7 +107,16 @@ export default function CheckoutPage() {
     }
   };
 
-  if (status === "loading" || session?.user?.role === "ASSINANTE") {
+  // Trava visual atualizada: Só mostra o "Loader" infinito bloqueando a tela
+  // se ele for ASSINANTE com tempo sobrando (!isExpired).
+  const isExpired = session?.user?.expiresAt
+    ? new Date(session.user.expiresAt) < new Date()
+    : false;
+
+  if (
+    status === "loading" ||
+    (session?.user?.role === "ASSINANTE" && !isExpired)
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="animate-spin text-emerald-500" size={40} />
