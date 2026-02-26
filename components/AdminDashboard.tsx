@@ -29,12 +29,16 @@ import {
   ShieldAlert,
   Gavel,
   Timer,
+  Info,
+  Link as LinkIcon,
+  CreditCard,
+  Edit3,
 } from "lucide-react";
 
 import {
   resolveReport,
   adminAddDaysToUser,
-  adminAddExactDaysToUser, // A nova função de dar dias exatos
+  adminAddExactDaysToUser,
   runGarbageCollector,
   promoteToAffiliate,
   getAffiliatePayouts,
@@ -157,6 +161,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       const res = await banUserAction(userId);
       res.success ? toast.success(res.message) : toast.error(res.error);
       router.refresh();
+      setSelectedUser(null);
     });
   };
 
@@ -165,6 +170,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       const res = await unbanUserAction(userId);
       res.success ? toast.success(res.message) : toast.error(res.error);
       router.refresh();
+      setSelectedUser(null);
     });
   };
 
@@ -187,11 +193,16 @@ export default function AdminDashboard({ data }: { data: any }) {
         setPromotingUser(null);
         setReferralCodeInput("");
         router.refresh();
+        if (selectedUser)
+          setSelectedUser({
+            ...selectedUser,
+            role: "AFILIADO",
+            referralCode: referralCodeInput,
+          });
       } else toast.error(res.error);
     });
   };
 
-  // ⏱️ CONTROLE DE MESES (Adiciona ou Remove)
   const handleAddMonths = (e: any, userId: string, months: number) => {
     e.stopPropagation();
     if (
@@ -206,10 +217,10 @@ export default function AdminDashboard({ data }: { data: any }) {
       await adminAddDaysToUser(userId, months);
       router.refresh();
       toast.success(months > 0 ? "+1 Mês adicionado!" : "-1 Mês removido!");
+      setSelectedUser(null);
     });
   };
 
-  // ⏱️ CONTROLE DE DIAS (Botão de 5 Dias)
   const handleAddExactDays = (e: any, userId: string, days: number) => {
     e.stopPropagation();
     startTransition(async () => {
@@ -217,6 +228,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       if (res?.success) {
         toast.success(res.message);
         router.refresh();
+        setSelectedUser(null);
       } else {
         toast.error(res?.error || "Erro ao adicionar dias.");
       }
@@ -244,6 +256,18 @@ export default function AdminDashboard({ data }: { data: any }) {
         toast.error(res.error);
       }
     });
+  };
+
+  // Encontra os dados financeiros do usuário se ele for um afiliado
+  const getSelectedUserAffiliateData = () => {
+    if (!selectedUser || selectedUser.role !== "AFILIADO") return null;
+    return (
+      payouts.find((p) => p.id === selectedUser.id) || {
+        ativos: 0,
+        taxa: 0,
+        valorDevido: 0,
+      }
+    );
   };
 
   return (
@@ -279,7 +303,11 @@ export default function AdminDashboard({ data }: { data: any }) {
             </div>
             <button
               onClick={() => {
-                if (confirm("Iniciar faxina de imagens?"))
+                if (
+                  confirm(
+                    "Iniciar faxina de imagens órfãs? (Isso não afeta imagens em uso)",
+                  )
+                )
                   runGarbageCollector().then((r) => toast.success(r.message));
               }}
               className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100"
@@ -395,7 +423,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                     <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
                       <th className="p-6 text-left">Membro</th>
                       <th className="p-6 text-left">Status da Conta</th>
-                      <th className="p-6 text-right">Painel de Ações</th>
+                      <th className="p-6 text-right">Ações Rápidas</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -456,57 +484,11 @@ export default function AdminDashboard({ data }: { data: any }) {
                               </button>
                             ) : (
                               <>
-                                {/* PAINEL DE CONTROLE DE TEMPO */}
-                                {user.role !== "ADMIN" &&
-                                  user.role !== "AFILIADO" && (
-                                    <div className="flex items-center gap-1 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
-                                      <button
-                                        onClick={(e) =>
-                                          handleAddMonths(e, user.id, -1)
-                                        }
-                                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-white rounded-xl transition-all"
-                                        title="Remover 1 Mês"
-                                      >
-                                        <MinusCircle size={16} />
-                                      </button>
-                                      <button
-                                        onClick={(e) =>
-                                          handleAddExactDays(e, user.id, 5)
-                                        }
-                                        className="p-2 text-slate-400 hover:text-amber-500 hover:bg-white rounded-xl transition-all"
-                                        title="Dar 5 Dias de Teste"
-                                      >
-                                        <Timer size={16} />
-                                      </button>
-                                      <button
-                                        onClick={(e) =>
-                                          handleAddMonths(e, user.id, 1)
-                                        }
-                                        className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-white rounded-xl transition-all"
-                                        title="Adicionar 1 Mês"
-                                      >
-                                        <CalendarDays size={16} />
-                                      </button>
-                                    </div>
-                                  )}
-
-                                {user.role !== "AFILIADO" &&
-                                  user.role !== "ADMIN" && (
-                                    <button
-                                      onClick={() => setPromotingUser(user)}
-                                      className="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all border border-amber-100"
-                                      title="Tornar Parceiro"
-                                    >
-                                      <Award size={18} />
-                                    </button>
-                                  )}
-
                                 <button
-                                  onClick={() => handleBan(user.id, user.name)}
-                                  className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-rose-600 transition-all shadow-md"
-                                  title="BANIR CPF"
+                                  onClick={() => setSelectedUser(user)}
+                                  className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
                                 >
-                                  <Gavel size={18} />
+                                  <Info size={14} /> Raio-X Completo
                                 </button>
                               </>
                             )}
@@ -712,126 +694,268 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       </main>
 
-      {/* MODAIS (MANTIDOS INTACTOS DA SUA VERSÃO) */}
+      {/* NOVO MODAL: RAIO-X DO USUÁRIO (O SEU CENTRO DE CONTROLE) */}
       {selectedUser && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl overflow-y-auto"
           onClick={() => setSelectedUser(null)}
         >
           <div
-            className="bg-white w-full max-w-3xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95"
+            className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-10 bg-slate-50 border-b flex justify-between items-center">
+            {/* Cabeçalho do Modal */}
+            <div className="p-8 bg-slate-50 border-b flex justify-between items-start">
               <div className="flex items-center gap-6">
                 <div
-                  className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl ${selectedUser.isBanned ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}
+                  className={`w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}
                 >
                   {selectedUser.isBanned ? (
-                    <UserX size={40} />
+                    <UserX size={48} />
                   ) : (
-                    <ShieldCheck size={40} />
+                    <ShieldCheck size={48} />
                   )}
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black text-slate-900 italic uppercase tracking-tighter leading-none mb-2">
+                  <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter leading-none mb-2">
                     {selectedUser.name}
                   </h2>
-                  <div className="flex gap-3">
-                    <span className="px-2 py-1 bg-white rounded-lg border text-[10px] font-bold text-slate-400 tracking-tighter">
-                      {selectedUser.email}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <span className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <Mail size={12} /> {selectedUser.email}
                     </span>
-                    <span className="px-2 py-1 bg-white rounded-lg border text-[10px] font-bold text-slate-400 tracking-tighter">
-                      CPF: {selectedUser.document || "N/A"}
+                    <span className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <CreditCard size={12} /> CPF:{" "}
+                      {selectedUser.document || "N/A"}
+                    </span>
+                    <span className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <MessageCircle size={12} /> {selectedUser.phone || "N/A"}
                     </span>
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="p-4 bg-white border border-slate-100 rounded-3xl text-slate-300 hover:text-rose-500 transition-all"
+                className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all"
               >
                 <X size={24} />
               </button>
             </div>
-            <div className="p-10">
-              {selectedUser.isBanned ? (
-                <div className="p-10 bg-rose-50 border-2 border-rose-100 border-dashed rounded-[2.5rem] text-center mb-8">
-                  <AlertTriangle
-                    className="mx-auto text-rose-500 mb-4"
-                    size={48}
-                  />
-                  <h4 className="font-black text-rose-600 uppercase italic text-xl">
-                    Acesso Revogado
-                  </h4>
-                  <p className="text-sm text-rose-500 font-medium max-w-sm mx-auto mt-2">
-                    CPF bloqueado. Nenhuma nova transação será aceita no Mercado
-                    Pago.
-                  </p>
+
+            <div className="p-8 space-y-8">
+              {/* BLOCO 1: STATUS E CONTROLE DE ASSINATURA */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Ficha da Assinatura */}
+                <div className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm">
+                  <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
+                    Status da Conta
+                  </h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <StatusBadge
+                      expiresAt={selectedUser.expiresAt}
+                      role={selectedUser.role}
+                    />
+                    {selectedUser.role === "ASSINANTE" && (
+                      <PlanPriceBadge price={selectedUser.lastPrice} />
+                    )}
+                  </div>
+                  {selectedUser.expiresAt && (
+                    <p className="text-xs font-medium text-slate-500">
+                      Vencimento:{" "}
+                      <span className="font-bold text-slate-900">
+                        {new Date(selectedUser.expiresAt).toLocaleDateString(
+                          "pt-BR",
+                        )}
+                      </span>
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                  <ContactAction
-                    icon={<MessageCircle />}
-                    label="WhatsApp"
-                    href={`https://wa.me/55${selectedUser.phone?.replace(/\D/g, "")}`}
-                    color="emerald"
-                  />
-                  <ContactAction
-                    icon={<Mail />}
-                    label="E-mail"
-                    href={`mailto:${selectedUser.email}`}
-                    color="blue"
-                  />
-                  <ContactAction
-                    icon={<Activity />}
-                    label="Log de Acesso"
-                    href="#"
-                    color="slate"
-                  />
+
+                {/* Ações de Admin */}
+                <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center gap-3">
+                  <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
+                    Painel de Controle
+                  </h3>
+
+                  {!selectedUser.isBanned ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUser.role !== "ADMIN" && (
+                        <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                          <button
+                            onClick={(e) =>
+                              handleAddMonths(e, selectedUser.id, -1)
+                            }
+                            className="px-4 py-2 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100"
+                            title="Remover 1 Mês"
+                          >
+                            <MinusCircle size={18} />
+                          </button>
+                          <button
+                            onClick={(e) =>
+                              handleAddExactDays(e, selectedUser.id, 5)
+                            }
+                            className="px-4 py-2 hover:bg-amber-50 text-slate-500 hover:text-amber-600 transition-all border-r border-slate-100 font-bold text-xs"
+                            title="Dar 5 Dias"
+                          >
+                            5 Dias
+                          </button>
+                          <button
+                            onClick={(e) =>
+                              handleAddMonths(e, selectedUser.id, 1)
+                            }
+                            className="px-4 py-2 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all font-bold text-xs"
+                            title="Dar 1 Mês"
+                          >
+                            + 1 Mês
+                          </button>
+                        </div>
+                      )}
+
+                      {selectedUser.role !== "AFILIADO" &&
+                        selectedUser.role !== "ADMIN" && (
+                          <button
+                            onClick={() => setPromotingUser(selectedUser)}
+                            className="px-4 py-2 bg-amber-100 text-amber-700 font-bold text-xs rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2"
+                          >
+                            <Award size={14} /> Tornar Afiliado
+                          </button>
+                        )}
+
+                      <button
+                        onClick={() =>
+                          handleBan(selectedUser.id, selectedUser.name)
+                        }
+                        className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-rose-600 transition-all flex items-center gap-2"
+                      >
+                        <Gavel size={14} /> Banir CPF
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-rose-100 p-4 rounded-xl border border-rose-200 flex justify-between items-center">
+                      <div>
+                        <p className="text-xs font-black text-rose-700 uppercase">
+                          Conta Restrita
+                        </p>
+                        <p className="text-[10px] text-rose-600">
+                          Checkout e Anúncios bloqueados.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleUnban(selectedUser.id)}
+                        className="px-4 py-2 bg-white text-rose-600 font-bold text-xs rounded-lg shadow-sm hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
+                      >
+                        Revogar Ban
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-              <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-6 flex items-center gap-2">
-                <LayoutGrid size={14} /> Negócios na Plataforma
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedUser.businesses?.map((biz: any) => (
-                  <div
-                    key={biz.id}
-                    className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all group"
-                  >
+              </div>
+
+              {/* BLOCO EXTRA: SE FOR AFILIADO, MOSTRA AS VENDAS DELE AQUI DENTRO TAMBÉM */}
+              {selectedUser.role === "AFILIADO" && (
+                <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem]">
+                  <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Wallet size={14} /> Raio-X do Parceiro
+                  </h3>
+                  <div className="flex flex-wrap gap-8 items-center">
                     <div>
-                      <p className="font-black text-slate-900 italic uppercase">
-                        {biz.name}
+                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
+                        Código / Link
                       </p>
-                      <p className="text-[10px] font-bold text-emerald-500">
-                        tafanu.app/site/{biz.slug}
+                      <p className="font-black text-emerald-900 flex items-center gap-2 bg-white px-3 py-1 rounded-lg mt-1 border border-emerald-100">
+                        {selectedUser.referralCode}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `tafanu.app/?ref=${selectedUser.referralCode}`,
+                            );
+                            toast.success("Link copiado!");
+                          }}
+                          className="text-emerald-500 hover:text-emerald-700"
+                        >
+                          <LinkIcon size={14} />
+                        </button>
                       </p>
                     </div>
-                    <button
-                      onClick={() =>
-                        router.push(
-                          `/dashboard/editar/${biz.slug}?adminMode=true`,
-                        )
-                      }
-                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                    >
-                      Editar
-                    </button>
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
+                        Vendas Ativas
+                      </p>
+                      <p className="font-black text-2xl text-emerald-900">
+                        {getSelectedUserAffiliateData()?.ativos}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
+                        A Receber
+                      </p>
+                      <p className="font-black text-2xl text-emerald-600">
+                        R${" "}
+                        {getSelectedUserAffiliateData()?.valorDevido.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
-                ))}
-                {(!selectedUser.businesses ||
-                  selectedUser.businesses.length === 0) && (
-                  <p className="text-xs text-slate-300 font-bold italic">
-                    Nenhum anúncio criado.
-                  </p>
-                )}
+                </div>
+              )}
+
+              {/* BLOCO 3: NEGÓCIOS / ANÚNCIOS DO USUÁRIO */}
+              <div>
+                <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-4 flex items-center gap-2">
+                  <LayoutGrid size={14} /> Anúncios Deste Usuário
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {selectedUser.businesses?.map((biz: any) => (
+                    <div
+                      key={biz.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all shadow-sm gap-4"
+                    >
+                      <div>
+                        <p className="font-black text-slate-900 italic uppercase text-lg">
+                          {biz.name}
+                        </p>
+                        <a
+                          href={`/site/${biz.slug}`}
+                          target="_blank"
+                          className="text-[10px] font-bold text-emerald-500 hover:underline flex items-center gap-1 mt-1"
+                        >
+                          tafanu.app/site/{biz.slug} <ExternalLink size={10} />
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase ${biz.isActive ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                        >
+                          {biz.isActive ? "No Ar" : "Oculto"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/editar/${biz.slug}?adminMode=true`,
+                            )
+                          }
+                          className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-2 shadow-md"
+                        >
+                          <Edit3 size={14} /> Editar Anúncio
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!selectedUser.businesses ||
+                    selectedUser.businesses.length === 0) && (
+                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 border-dashed text-center">
+                      <p className="text-sm text-slate-400 font-bold italic">
+                        Este usuário ainda não criou nenhum anúncio.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* MODAL NOVO AFILIADO */}
       {promotingUser && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
@@ -932,28 +1056,6 @@ function MetricCard({ icon, label, value, color, subValue }: any) {
         {subValue}
       </p>
     </div>
-  );
-}
-
-function ContactAction({ icon, label, href, color }: any) {
-  const colors: any = {
-    emerald:
-      "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border-emerald-100",
-    blue: "bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border-blue-100",
-    slate:
-      "bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white border-slate-100",
-  };
-  return (
-    <a
-      href={href}
-      target="_blank"
-      className={`p-6 rounded-3xl border transition-all flex flex-col items-center gap-2 ${colors[color]} group shadow-sm`}
-    >
-      <div className="group-hover:scale-110 transition-transform">{icon}</div>
-      <span className="text-[10px] font-black uppercase tracking-tighter">
-        {label}
-      </span>
-    </a>
   );
 }
 

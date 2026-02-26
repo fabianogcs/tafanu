@@ -1641,7 +1641,7 @@ export async function getAuthSession() {
     role: session.user.role,
   };
 }
-// 🔨 BANIR USUÁRIO E CANCELAR PAGAMENTO
+// 🔨 BANIR USUÁRIO, CANCELAR PAGAMENTO E DERRUBAR ANÚNCIOS
 export async function banUserAction(userId: string) {
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
@@ -1663,10 +1663,7 @@ export async function banUserAction(userId: string) {
           body: { status: "cancelled" },
         });
       } catch (mpError) {
-        console.error(
-          "Erro ao cancelar no MP (pode já estar cancelada):",
-          mpError,
-        );
+        console.error("Erro ao cancelar no MP:", mpError);
       }
     }
 
@@ -1681,28 +1678,60 @@ export async function banUserAction(userId: string) {
       },
     });
 
+    // 3. Derruba os anúncios do usuário!
+    await db.business.updateMany({
+      where: { userId: userId },
+      data: {
+        isActive: false,
+        published: false,
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/busca");
     revalidatePath("/admin");
+
     return {
       success: true,
-      message: "Usuário banido e pagamentos interrompidos.",
+      message: "Usuário banido e anúncios removidos do ar.",
     };
   } catch (error) {
     return { error: "Erro ao processar banimento." };
   }
 }
 
-// 🔓 DESBANIR USUÁRIO
+// 🔓 DESBANIR USUÁRIO E RESTAURAR ANÚNCIOS
 export async function unbanUserAction(userId: string) {
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
 
-  await db.user.update({
-    where: { id: userId },
-    data: { isBanned: false },
-  });
+  try {
+    // 1. Tira o banimento da conta
+    await db.user.update({
+      where: { id: userId },
+      data: { isBanned: false },
+    });
 
-  revalidatePath("/admin");
-  return { success: true, message: "Usuário desbanido com sucesso." };
+    // 2. Traz os anúncios de volta à vida!
+    await db.business.updateMany({
+      where: { userId: userId },
+      data: {
+        isActive: true,
+        published: true,
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/busca");
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      message: "Usuário desbanido e anúncios reativados!",
+    };
+  } catch (error) {
+    return { error: "Erro ao desbanir usuário." };
+  }
 }
 // ⏱️ ADICIONAR DIAS EXATOS (TESTE GRÁTIS)
 export async function adminAddExactDaysToUser(
