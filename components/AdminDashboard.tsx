@@ -390,7 +390,7 @@ export default function AdminDashboard({ data }: { data: any }) {
           <TabButton
             active={activeTab === "trials"}
             onClick={() => setActiveTab("trials")}
-            label="Em Teste"
+            label="Vencendo"
             icon={<Clock size={16} />}
             count={trialSubscribers.length}
           />
