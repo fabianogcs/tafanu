@@ -1555,12 +1555,18 @@ export async function createSubscription(
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
   const dbUser = await db.user.findUnique({ where: { id: userId } });
+
   if (dbUser?.isBanned) {
     return {
       error:
         "Sua conta possui restrições e não pode realizar assinaturas. Entre em contato com o suporte.",
     };
   }
+
+  // 🚨 TRAVA ANTI-MALANDRO: Verifica se ele já teve assinatura antes
+  // Se ele tem qualquer data no expiresAt, significa que já usou o sistema!
+  const hasUsedTrial = !!dbUser?.expiresAt;
+
   // VOLTAMOS PARA A FERRAMENTA QUE FUNCIONA: PreApprovalPlan
   const plan = new PreApprovalPlan(client);
 
@@ -1569,7 +1575,8 @@ export async function createSubscription(
       amount: 29.9,
       frequency: 1,
       type: "months",
-      trialDays: 7, // Mantendo os 7 dias grátis
+      // 👇 AQUI A MÁGICA ACONTECE: Se já usou, trial é 0. Se é novo, ganha 7.
+      trialDays: hasUsedTrial ? 0 : 7,
       reason: "Assinatura Tafanu PRO - Mensal",
     },
     quarterly: {
@@ -1603,7 +1610,7 @@ export async function createSubscription(
       external_reference: userId,
       payer_email: userEmail,
 
-      // 👇 AQUI ESTÁ A TRAVA QUE ADICIONAMOS
+      // 👇 TRAVA DE CARTÃO DE CRÉDITO MANTIDA INTACTA
       payment_methods_allowed: {
         payment_types: [
           { id: "credit_card" }, // Aceita apenas cartão de crédito
@@ -1612,7 +1619,7 @@ export async function createSubscription(
       // 👆 FIM DA TRAVA
     };
 
-    // Adiciona o teste grátis se for o plano mensal
+    // Adiciona o teste grátis APENAS se o trialDays for maior que 0 (novatos)
     if (config.trialDays > 0) {
       body.auto_recurring.free_trial = {
         frequency: config.trialDays,
