@@ -1704,3 +1704,39 @@ export async function unbanUserAction(userId: string) {
   revalidatePath("/admin");
   return { success: true, message: "Usuário desbanido com sucesso." };
 }
+// ⏱️ ADICIONAR DIAS EXATOS (TESTE GRÁTIS)
+export async function adminAddExactDaysToUser(
+  userId: string,
+  daysToAdd: number,
+) {
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Acesso negado." };
+
+  try {
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) return { error: "Não encontrado." };
+
+    const now = new Date();
+    // Se ele já tem tempo, soma a partir do tempo dele. Se tá vencido, soma a partir de hoje.
+    const base =
+      user.expiresAt && new Date(user.expiresAt) > now
+        ? new Date(user.expiresAt)
+        : now;
+
+    const newDate = new Date(base);
+    newDate.setDate(newDate.getDate() + daysToAdd); // Soma os dias precisos
+
+    await db.user.update({
+      where: { id: userId },
+      data: { role: "ASSINANTE", expiresAt: newDate },
+    });
+
+    revalidatePath("/admin");
+    return {
+      success: true,
+      message: `${daysToAdd} dias adicionados com sucesso!`,
+    };
+  } catch (error) {
+    return { error: "Erro ao adicionar dias." };
+  }
+}

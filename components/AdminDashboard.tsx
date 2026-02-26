@@ -5,23 +5,18 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   Users,
-  Store,
-  Clock,
   CheckCircle2,
-  Trash2,
   ExternalLink,
   ShieldCheck,
   Search,
   LayoutGrid,
   CalendarDays,
-  UserPlus,
   X,
   AlertTriangle,
   MinusCircle,
   UserCheck,
   Eraser,
   Loader2,
-  Download,
   TrendingUp,
   DollarSign,
   Activity,
@@ -33,12 +28,13 @@ import {
   UserX,
   ShieldAlert,
   Gavel,
-  Zap,
+  Timer,
 } from "lucide-react";
 
 import {
   resolveReport,
   adminAddDaysToUser,
+  adminAddExactDaysToUser, // A nova função de dar dias exatos
   runGarbageCollector,
   promoteToAffiliate,
   getAffiliatePayouts,
@@ -55,9 +51,7 @@ export default function AdminDashboard({ data }: { data: any }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [isCleaning, setIsCleaning] = useState(false);
   const [payouts, setPayouts] = useState<any[]>([]);
-  const [loadingPayouts, setLoadingPayouts] = useState(false);
   const [promotingUser, setPromotingUser] = useState<any>(null);
   const [referralCodeInput, setReferralCodeInput] = useState("");
 
@@ -65,10 +59,8 @@ export default function AdminDashboard({ data }: { data: any }) {
 
   // --- CARREGAR PAGAMENTOS DE AFILIADOS ---
   const loadPayouts = async () => {
-    setLoadingPayouts(true);
     const res = await getAffiliatePayouts();
     if (res.payouts) setPayouts(res.payouts);
-    setLoadingPayouts(false);
   };
 
   useEffect(() => {
@@ -199,12 +191,35 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
-  const handleAddDays = (e: any, userId: string, months: number) => {
+  // ⏱️ CONTROLE DE MESES (Adiciona ou Remove)
+  const handleAddMonths = (e: any, userId: string, months: number) => {
     e.stopPropagation();
+    if (
+      months < 0 &&
+      !confirm(
+        "ATENÇÃO: Deseja realmente REMOVER 1 mês de acesso deste usuário?",
+      )
+    )
+      return;
+
     startTransition(async () => {
       await adminAddDaysToUser(userId, months);
       router.refresh();
-      toast.success("Tempo ajustado!");
+      toast.success(months > 0 ? "+1 Mês adicionado!" : "-1 Mês removido!");
+    });
+  };
+
+  // ⏱️ CONTROLE DE DIAS (Botão de 5 Dias)
+  const handleAddExactDays = (e: any, userId: string, days: number) => {
+    e.stopPropagation();
+    startTransition(async () => {
+      const res = await adminAddExactDaysToUser(userId, days);
+      if (res?.success) {
+        toast.success(res.message);
+        router.refresh();
+      } else {
+        toast.error(res?.error || "Erro ao adicionar dias.");
+      }
     });
   };
 
@@ -215,7 +230,7 @@ export default function AdminDashboard({ data }: { data: any }) {
   ) => {
     if (
       !confirm(
-        `Confirmar que o PIX de R$ ${valor.toFixed(2)} foi enviado para ${name.toUpperCase()}? Isso vai zerar o saldo dele no sistema.`,
+        `Confirmar o envio do PIX de R$ ${valor.toFixed(2)} para ${name.toUpperCase()}? O saldo será zerado.`,
       )
     )
       return;
@@ -233,7 +248,7 @@ export default function AdminDashboard({ data }: { data: any }) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans text-slate-900">
-      {/* HEADER ULTRA PRO */}
+      {/* HEADER 2.0 */}
       <header className="max-w-7xl mx-auto mb-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
           <div className="flex items-center gap-4">
@@ -264,11 +279,11 @@ export default function AdminDashboard({ data }: { data: any }) {
             </div>
             <button
               onClick={() => {
-                if (confirm("Iniciar limpeza de imagens inúteis?"))
+                if (confirm("Iniciar faxina de imagens?"))
                   runGarbageCollector().then((r) => toast.success(r.message));
               }}
               className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100"
-              title="Faxina UploadThing"
+              title="Limpar Imagens Inúteis"
             >
               <Eraser />
             </button>
@@ -277,14 +292,14 @@ export default function AdminDashboard({ data }: { data: any }) {
       </header>
 
       <main className="max-w-7xl mx-auto space-y-8">
-        {/* CARDS DE PERFORMANCE DINÂMICOS */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* CARDS DE PERFORMANCE */}
+        <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <MetricCard
             icon={<DollarSign />}
             label="Receita Real"
             value={`R$ ${data.receita.toFixed(2)}`}
             color="emerald"
-            subValue="Soma dos 3 Planos"
+            subValue="Soma Mensal/Anual"
           />
           <MetricCard
             icon={<Activity />}
@@ -294,22 +309,29 @@ export default function AdminDashboard({ data }: { data: any }) {
             subValue="Assinantes Ativos"
           />
           <MetricCard
+            icon={<Users />}
+            label="Leads"
+            value={visitors.length}
+            color="slate"
+            subValue="Visitantes / Testes"
+          />
+          <MetricCard
             icon={<Award />}
-            label="Time de Vendas"
+            label="Parceiros"
             value={partners.length}
             color="amber"
-            subValue="Parceiros Ativos"
+            subValue="Time de Vendas"
           />
           <MetricCard
             icon={<ShieldAlert />}
-            label="Fila de Crise"
+            label="Crises"
             value={pendingReports.length}
             color="rose"
-            subValue="Denúncias Pendentes"
+            subValue="Aguardando Ação"
           />
         </section>
 
-        {/* NAVEGAÇÃO DE COMANDO */}
+        {/* NAVEGAÇÃO */}
         <div className="flex p-1.5 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
           <TabButton
             active={activeTab === "overview"}
@@ -323,6 +345,13 @@ export default function AdminDashboard({ data }: { data: any }) {
             label="Assinantes"
             icon={<CheckCircle2 size={16} />}
             count={activeSubscribers.length}
+          />
+          <TabButton
+            active={activeTab === "visitors"}
+            onClick={() => setActiveTab("visitors")}
+            label="Leads"
+            icon={<Users size={16} />}
+            count={visitors.length}
           />
           <TabButton
             active={activeTab === "partners"}
@@ -354,61 +383,152 @@ export default function AdminDashboard({ data }: { data: any }) {
           />
         </div>
 
-        {/* CONTAINER DE CONTEÚDO PRINCIPAL */}
+        {/* CONTAINER PRINCIPAL */}
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-          {/* ABA: DENÚNCIAS (CRISES) */}
-          {activeTab === "reports" && (
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b">
-                <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
-                  <th className="p-6 text-left">Perfil / Slug</th>
-                  <th className="p-6 text-left">Motivo / Detalhes</th>
-                  <th className="p-6 text-right">Ação Corretiva</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {pendingReports.map((report: any) => (
-                  <tr
-                    key={report.id}
-                    className="hover:bg-rose-50/20 transition-colors"
-                  >
-                    <td className="p-6 font-black uppercase italic text-slate-900">
-                      {report.business?.name}
-                      <p className="text-[9px] text-rose-500 font-bold tracking-normal underline">
-                        tafanu.app/site/{report.business?.slug}
-                      </p>
-                    </td>
-                    <td className="p-6">
-                      <span className="px-2 py-1 bg-rose-100 text-rose-700 rounded text-[9px] font-black uppercase">
-                        {report.reason}
-                      </span>
-                      <p className="text-xs text-slate-500 mt-2 font-medium italic">
-                        "{report.details}"
-                      </p>
-                    </td>
-                    <td className="p-6 text-right">
-                      <button
-                        onClick={() => handleResolveReport(report.id)}
-                        className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-emerald-600 transition-all"
+          {/* TABELA GERAL DE USUÁRIOS */}
+          {activeTab !== "overview" &&
+            activeTab !== "reports" &&
+            activeTab !== "payouts" && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[800px]">
+                  <thead className="bg-slate-50 border-b">
+                    <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
+                      <th className="p-6 text-left">Membro</th>
+                      <th className="p-6 text-left">Status da Conta</th>
+                      <th className="p-6 text-right">Painel de Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredData.map((user: any) => (
+                      <tr
+                        key={user.id}
+                        onClick={() => setSelectedUser(user)}
+                        className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/20" : ""}`}
                       >
-                        Arquivar / Resolver
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {pendingReports.length === 0 && (
-                  <EmptyState message="Céu limpo. Nenhuma crise detectada." />
-                )}
-              </tbody>
-            </table>
-          )}
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${user.isBanned ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"}`}
+                            >
+                              {user.name?.charAt(0) || "U"}
+                            </div>
+                            <div>
+                              <p
+                                className={`font-black uppercase italic ${user.isBanned ? "text-rose-600 line-through" : "text-slate-900"}`}
+                              >
+                                {user.name || "Sem Nome"}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-bold">
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          {user.isBanned ? (
+                            <span className="px-3 py-1 bg-rose-600 text-white rounded-full text-[9px] font-black uppercase italic">
+                              BLACKLIST
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <StatusBadge
+                                expiresAt={user.expiresAt}
+                                role={user.role}
+                              />
+                              {user.role === "ASSINANTE" && (
+                                <PlanPriceBadge price={user.lastPrice} />
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td
+                          className="p-6 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex justify-end gap-3 items-center">
+                            {user.isBanned ? (
+                              <button
+                                onClick={() => handleUnban(user.id)}
+                                className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg hover:bg-emerald-600 transition-all"
+                                title="Desbanir"
+                              >
+                                <UserCheck size={18} />
+                              </button>
+                            ) : (
+                              <>
+                                {/* PAINEL DE CONTROLE DE TEMPO */}
+                                {user.role !== "ADMIN" &&
+                                  user.role !== "AFILIADO" && (
+                                    <div className="flex items-center gap-1 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+                                      <button
+                                        onClick={(e) =>
+                                          handleAddMonths(e, user.id, -1)
+                                        }
+                                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-white rounded-xl transition-all"
+                                        title="Remover 1 Mês"
+                                      >
+                                        <MinusCircle size={16} />
+                                      </button>
+                                      <button
+                                        onClick={(e) =>
+                                          handleAddExactDays(e, user.id, 5)
+                                        }
+                                        className="p-2 text-slate-400 hover:text-amber-500 hover:bg-white rounded-xl transition-all"
+                                        title="Dar 5 Dias de Teste"
+                                      >
+                                        <Timer size={16} />
+                                      </button>
+                                      <button
+                                        onClick={(e) =>
+                                          handleAddMonths(e, user.id, 1)
+                                        }
+                                        className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-white rounded-xl transition-all"
+                                        title="Adicionar 1 Mês"
+                                      >
+                                        <CalendarDays size={16} />
+                                      </button>
+                                    </div>
+                                  )}
 
-          {/* ABA: OVERVIEW (PAINEL GERAL) */}
+                                {user.role !== "AFILIADO" &&
+                                  user.role !== "ADMIN" && (
+                                    <button
+                                      onClick={() => setPromotingUser(user)}
+                                      className="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all border border-amber-100"
+                                      title="Tornar Parceiro"
+                                    >
+                                      <Award size={18} />
+                                    </button>
+                                  )}
+
+                                <button
+                                  onClick={() => handleBan(user.id, user.name)}
+                                  className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-rose-600 transition-all shadow-md"
+                                  title="BANIR CPF"
+                                >
+                                  <Gavel size={18} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredData.length === 0 && (
+                      <EmptyState message="Nenhum usuário listado nesta categoria." />
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+          {/* ABA OVERVIEW */}
           {activeTab === "overview" && (
             <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <h3 className="font-black uppercase italic text-slate-900 flex items-center gap-2">
-                  <TrendingUp className="text-emerald-500" /> Novos Negócios
+                  <TrendingUp className="text-emerald-500" /> Últimos Negócios
+                  Criados
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {allUsers
@@ -446,142 +566,81 @@ export default function AdminDashboard({ data }: { data: any }) {
               <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex flex-col justify-between">
                 <div>
                   <h3 className="font-black uppercase italic text-slate-500 mb-8 tracking-[0.2em] text-center text-xs">
-                    Vigital Saúde HQ
+                    Termômetro da Plataforma
                   </h3>
                   <HealthItem
-                    label="Conversão"
+                    label="Conversão (Assinantes)"
                     value={activeSubscribers.length}
                     total={allUsers.length}
                     color="bg-emerald-400"
                   />
                   <HealthItem
-                    label="Capilaridade (Parceiros)"
+                    label="Potencial Oculto (Leads)"
+                    value={visitors.length}
+                    total={allUsers.length}
+                    color="bg-amber-400"
+                  />
+                  <HealthItem
+                    label="Parceiros"
                     value={partners.length}
                     total={allUsers.length}
                     color="bg-blue-400"
                   />
-                  <HealthItem
-                    label="Taxa de Banimento"
-                    value={bannedUsers.length}
-                    total={allUsers.length}
-                    color="bg-rose-500"
-                  />
                 </div>
-                <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center">
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center mt-6">
                   <p className="text-[10px] font-black text-emerald-400 uppercase italic mb-1">
-                    Status do Sistema
+                    Status Global
                   </p>
                   <p className="text-xs font-bold text-white uppercase tracking-widest">
-                    100% OPERACIONAL
+                    SISTEMA ONLINE
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TABELA DE USUÁRIOS (ASSINANTES, LEADS, AFILIADOS, BANIDOS) */}
-          {activeTab !== "overview" &&
-            activeTab !== "reports" &&
-            activeTab !== "payouts" && (
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b">
-                  <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
-                    <th className="p-6 text-left">Membro</th>
-                    <th className="p-6 text-left">Plano / Status</th>
-                    <th className="p-6 text-right">Ações HQ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredData.map((user: any) => (
-                    <tr
-                      key={user.id}
-                      onClick={() => setSelectedUser(user)}
-                      className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/20" : ""}`}
-                    >
-                      <td className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${user.isBanned ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"}`}
-                          >
-                            {user.name?.charAt(0) || "U"}
-                          </div>
-                          <div>
-                            <p
-                              className={`font-black uppercase italic ${user.isBanned ? "text-rose-600 line-through" : "text-slate-900"}`}
-                            >
-                              {user.name || "Sem Nome"}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-bold">
-                              {user.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-6">
-                        {user.isBanned ? (
-                          <span className="px-3 py-1 bg-rose-600 text-white rounded-full text-[9px] font-black uppercase italic">
-                            BLACKLIST
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <StatusBadge
-                              expiresAt={user.expiresAt}
-                              role={user.role}
-                            />
-                            {user.role === "ASSINANTE" && (
-                              <PlanPriceBadge price={user.lastPrice} />
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td
-                        className="p-6 text-right"
-                        onClick={(e) => e.stopPropagation()}
+          {/* ABA DENÚNCIAS */}
+          {activeTab === "reports" && (
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b">
+                <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
+                  <th className="p-6 text-left">Perfil Reportado</th>
+                  <th className="p-6 text-left">Detalhes da Crise</th>
+                  <th className="p-6 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {pendingReports.map((report: any) => (
+                  <tr key={report.id} className="hover:bg-rose-50/20">
+                    <td className="p-6 font-black uppercase italic text-slate-900">
+                      {report.business?.name}
+                    </td>
+                    <td className="p-6">
+                      <span className="px-2 py-1 bg-rose-100 text-rose-700 rounded text-[9px] font-black uppercase">
+                        {report.reason}
+                      </span>
+                      <p className="text-xs text-slate-500 mt-2 font-medium italic">
+                        "{report.details}"
+                      </p>
+                    </td>
+                    <td className="p-6 text-right">
+                      <button
+                        onClick={() => handleResolveReport(report.id)}
+                        className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase shadow-lg"
                       >
-                        <div className="flex justify-end gap-2">
-                          {user.isBanned ? (
-                            <button
-                              onClick={() => handleUnban(user.id)}
-                              className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg hover:bg-emerald-600 transition-all"
-                              title="Desbanir"
-                            >
-                              <UserCheck size={18} />
-                            </button>
-                          ) : (
-                            <>
-                              {user.role !== "AFILIADO" &&
-                                user.role !== "ADMIN" && (
-                                  <button
-                                    onClick={() => setPromotingUser(user)}
-                                    className="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all border border-amber-100"
-                                  >
-                                    <Award size={18} />
-                                  </button>
-                                )}
-                              <button
-                                onClick={(e) => handleAddDays(e, user.id, 1)}
-                                className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-100"
-                              >
-                                <CalendarDays size={18} />
-                              </button>
-                              <button
-                                onClick={() => handleBan(user.id, user.name)}
-                                className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-rose-600 transition-all shadow-md"
-                                title="BANIR CPF"
-                              >
-                                <Gavel size={18} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        Arquivar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {pendingReports.length === 0 && (
+                  <EmptyState message="Céu limpo. Nenhuma denúncia." />
+                )}
+              </tbody>
+            </table>
+          )}
 
-          {/* ABA: FINANCEIRO (PAGAMENTOS AFILIADOS) */}
+          {/* ABA FINANCEIRO */}
           {activeTab === "payouts" && (
             <div className="p-8 space-y-4">
               {payouts.map((p: any) => (
@@ -646,14 +705,14 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </div>
               ))}
               {payouts.length === 0 && (
-                <EmptyState message="Nenhum parceiro atingiu o teto de pagamento ainda." />
+                <EmptyState message="Nenhum parceiro atingiu a meta de pagamento." />
               )}
             </div>
           )}
         </div>
       </main>
 
-      {/* MODAL DETALHES USUÁRIO */}
+      {/* MODAIS (MANTIDOS INTACTOS DA SUA VERSÃO) */}
       {selectedUser && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
@@ -706,8 +765,8 @@ export default function AdminDashboard({ data }: { data: any }) {
                     Acesso Revogado
                   </h4>
                   <p className="text-sm text-rose-500 font-medium max-w-sm mx-auto mt-2">
-                    O CPF do usuário foi bloqueado permanentemente. Nenhuma nova
-                    transação será aceita no Mercado Pago.
+                    CPF bloqueado. Nenhuma nova transação será aceita no Mercado
+                    Pago.
                   </p>
                 </div>
               ) : (
@@ -773,7 +832,6 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       )}
 
-      {/* MODAL AFILIADO */}
       {promotingUser && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
@@ -838,7 +896,6 @@ export default function AdminDashboard({ data }: { data: any }) {
 function PlanPriceBadge({ price }: { price: number }) {
   const isTrimestral = price > 30 && price < 100;
   const isAnual = price > 100;
-
   return (
     <span
       className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${isAnual ? "bg-emerald-100 text-emerald-700" : isTrimestral ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}
@@ -854,6 +911,7 @@ function MetricCard({ icon, label, value, color, subValue }: any) {
     blue: "bg-blue-50 text-blue-600 border-blue-100",
     amber: "bg-amber-50 text-amber-600 border-amber-100",
     rose: "bg-rose-50 text-rose-600 border-rose-100",
+    slate: "bg-slate-50 text-slate-600 border-slate-200",
   };
   return (
     <div
