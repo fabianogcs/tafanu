@@ -143,9 +143,11 @@ export async function registerUser(formData: FormData) {
 
   // 1. MEMÓRIA DE AFILIADO: Tenta pegar o código do formulário OU do cookie
   const cookieStore = await cookies();
-  const affiliateCode =
-    (formData.get("affiliateCode") as string) ||
-    cookieStore.get("affiliate_code")?.value;
+  const formAffiliateCode = formData.get("affiliateCode") as string;
+  const cookieAffiliateCode = cookieStore.get("tafanu_ref")?.value; // ⬅️ AGORA LÊ O COOKIE CERTO
+
+  // Prioriza o formulário, mas se não tiver, pega o "invisível" do cookie!
+  const affiliateCode = formAffiliateCode || cookieAffiliateCode;
 
   // Define a função do usuário (Admin se for seu e-mail, senão Visitante)
   let role = (formData.get("role") as string) || "VISITANTE";
@@ -200,8 +202,9 @@ export async function registerUser(formData: FormData) {
     });
 
     // 6. LIMPEZA: Remove o cookie de indicação após o cadastro com sucesso
-    if (affiliateCode) {
-      cookieStore.delete("affiliate_code");
+    // para não dar comissão dupla se ele cadastrar o irmão no mesmo PC depois.
+    if (cookieStore.has("tafanu_ref")) {
+      cookieStore.delete("tafanu_ref");
     }
 
     return { success: true };
