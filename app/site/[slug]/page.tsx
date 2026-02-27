@@ -115,9 +115,13 @@ export default async function BusinessPage({
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
+  // 1. BUSCA O NEGÓCIO + DADOS DO DONO (User)
   const business = await db.business.findUnique({
     where: { slug },
     include: {
+      user: {
+        select: { role: true, expiresAt: true },
+      },
       hours: true,
       favorites: userId ? { where: { userId } } : false,
       _count: {
@@ -126,8 +130,21 @@ export default async function BusinessPage({
     },
   });
 
+  // 2. TRAVA DE SEGURANÇA: Se não existe ou se o dono expirou
   if (!business) return notFound();
 
+  const now = new Date();
+  const isOwnerAdmin = business.user?.role === "ADMIN";
+  const isExpired = business.user?.expiresAt
+    ? new Date(business.user.expiresAt) < now
+    : true;
+
+  // Se o dono não for ADMIN e estiver expirado, manda pro 404
+  if (!isOwnerAdmin && isExpired) {
+    return notFound();
+  }
+
+  // ... (Daqui para baixo o seu código continua exatamente igual)
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const rawImage = business.imageUrl || business.heroImage;

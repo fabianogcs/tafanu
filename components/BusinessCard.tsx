@@ -90,6 +90,8 @@ export default function BusinessCard({
             businessId={business.id}
             initialIsFavorited={isFavorited}
             isLoggedIn={isLoggedIn}
+            // Se business.userLoggedInVerified for nulo ou indefinido, ele assume falso
+            emailVerified={!!business.userLoggedInVerified}
           />
           {favoriteCount > 0 && (
             <span className="text-[10px] font-black text-slate-600">

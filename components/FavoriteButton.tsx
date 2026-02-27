@@ -10,17 +10,20 @@ interface FavoriteButtonProps {
   businessId: string;
   initialIsFavorited?: boolean;
   isLoggedIn: boolean;
+  emailVerified?: boolean; // ⬅️ Adicionamos essa portinha
 }
 
 export default function FavoriteButton({
   businessId,
   initialIsFavorited = false,
   isLoggedIn,
+  emailVerified = false, // ⬅️ Se ninguém avisar, a gente assume que não tá verificado por segurança
 }: FavoriteButtonProps) {
   const [liked, setLiked] = useState(initialIsFavorited);
   const [loading, setLoading] = useState(false);
 
   async function handleToggle() {
+    // 1. Checa se tá logado (Sua lógica original)
     if (!isLoggedIn) {
       toast.error("Acesso restrito", {
         description: "Você precisa estar logado para salvar favoritos.",
@@ -28,9 +31,18 @@ export default function FavoriteButton({
       return;
     }
 
+    // 2. NOVA TRAVA: Checa se o e-mail é real/verificado
+    if (!emailVerified) {
+      toast.warning("Confirme seu e-mail", {
+        description:
+          "Para evitar perfis falsos, confirme seu e-mail para liberar os favoritos.",
+      });
+      return;
+    }
+
     if (loading) return;
 
-    // 🚀 O PULO DO GATO: Muda a cor ANTES de ir no banco
+    // 🚀 O PULO DO GATO (Mantido): Muda a cor ANTES de ir no banco
     const novoEstado = !liked;
     setLiked(novoEstado);
 
@@ -41,7 +53,6 @@ export default function FavoriteButton({
         toast.error(res.error);
         setLiked(!novoEstado); // ⏪ Volta a cor original se der erro
       }
-      // Se deu certo, o 'liked' já está com o valor correto!
     } catch (error) {
       setLiked(!novoEstado); // ⏪ Volta a cor se a internet cair
       toast.error("Erro ao salvar favorito.");

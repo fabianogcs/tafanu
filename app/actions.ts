@@ -141,12 +141,20 @@ export async function registerUser(formData: FormData) {
   const password = formData.get("password") as string;
   const rawDocument = formData.get("document") as string;
 
+  // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO (Ex: fabiano@a) ---
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!email || !emailRegex.test(email)) {
+    return {
+      error: "Por favor, insira um e-mail válido (ex: nome@dominio.com).",
+    };
+  }
+  // --------------------------------------------------
+
   // 1. MEMÓRIA DE AFILIADO: Tenta pegar o código do formulário OU do cookie
   const cookieStore = await cookies();
   const formAffiliateCode = formData.get("affiliateCode") as string;
-  const cookieAffiliateCode = cookieStore.get("tafanu_ref")?.value; // ⬅️ AGORA LÊ O COOKIE CERTO
+  const cookieAffiliateCode = cookieStore.get("tafanu_ref")?.value;
 
-  // Prioriza o formulário, mas se não tiver, pega o "invisível" do cookie!
   const affiliateCode = formAffiliateCode || cookieAffiliateCode;
 
   // Define a função do usuário (Admin se for seu e-mail, senão Visitante)
@@ -189,18 +197,44 @@ export async function registerUser(formData: FormData) {
     }
 
     // 5. CRIAÇÃO NO BANCO DE DADOS
-    await db.user.create({
+    // Nota: Removi o "emailVerified: new Date()" para o usuário começar como NÃO verificado
+    const user = await db.user.create({
       data: {
         name,
         email,
-        emailVerified: new Date(),
         password: hashedPassword,
         role,
         document: cleanDocument,
-        affiliateId, // Aqui o usuário fica "preso" ao parceiro para sempre
+        affiliateId,
       },
     });
 
+    // 5.5 ENVIO DE E-MAIL DE VERIFICAÇÃO (MÁGICA DO RESEND)
+    const verificationToken = await generateVerificationToken(email);
+    const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
+
+    try {
+      await resend.emails.send({
+        from: "Tafanu <onboarding@resend.dev>", // Certifique-se que este e-mail está configurado no Resend
+        to: email,
+        subject: "Ative sua conta no Tafanu",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #0f172a;">Bem-vindo ao Tafanu, ${name}!</h2>
+            <p>Falta pouco para você começar a explorar e favoritar os melhores locais de Guarulhos.</p>
+            <p>Clique no botão abaixo para confirmar seu e-mail e liberar todas as funções do site:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${confirmLink}" style="background-color: #0070f3; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">CONFIRMAR MEU E-MAIL</a>
+            </div>
+            <p style="font-size: 12px; color: #666;">Este link expira em 24 horas. Se você não solicitou este cadastro, ignore este e-mail.</p>
+          </div>
+        `,
+      });
+    } catch (e) {
+      console.error("Erro ao enviar e-mail de verificação:", e);
+      // Não travamos o cadastro se o e-mail falhar, mas o usuário precisará pedir reenvio depois.
+    }
     // 6. LIMPEZA: Remove o cookie de indicação após o cadastro com sucesso
     // para não dar comissão dupla se ele cadastrar o irmão no mesmo PC depois.
     if (cookieStore.has("tafanu_ref")) {
@@ -741,6 +775,17 @@ export async function incrementViews(
 export async function toggleFavorite(businessId: string) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
+
+  // 🛡️ TRAVA DE SERVIDOR: Verifica se o e-mail está confirmado no banco
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { emailVerified: true },
+  });
+
+  if (!dbUser?.emailVerified) {
+    return { error: "Verifique seu e-mail para usar esta função." };
+  }
+
   const userId = user.id;
   try {
     const existing = await db.favorite.findUnique({
@@ -748,11 +793,13 @@ export async function toggleFavorite(businessId: string) {
     });
     if (existing) await db.favorite.delete({ where: { id: existing.id } });
     else await db.favorite.create({ data: { userId, businessId } });
+
     revalidatePath("/dashboard/favoritos");
     revalidatePath("/busca");
     return { success: true };
   } catch (error) {
-    return { error: "Erro favoritar." };
+    console.error("Erro ao favoritar:", error);
+    return { error: "Erro ao favoritar." };
   }
 }
 
@@ -1037,6 +1084,16 @@ export async function resetPassword(token: string | null, formData: FormData) {
 }
 export async function getRandomBusinesses(userId?: string) {
   try {
+    // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO
+    let isVerified = false;
+    if (userId) {
+      const u = await db.user.findUnique({
+        where: { id: userId },
+        select: { emailVerified: true },
+      });
+      isVerified = !!u?.emailVerified;
+    }
+
     const validIds = await db.business.findMany({
       where: {
         isActive: true,
@@ -1054,15 +1111,13 @@ export async function getRandomBusinesses(userId?: string) {
       select: { id: true },
     });
 
-    // 2. Embaralha a lista de IDs
+    if (validIds.length === 0) return [];
+
     const shuffledIds = validIds
       .map((value) => ({ value, sort: Math.random() }))
       .sort((a, b) => a.sort - b.sort)
       .map(({ value }) => value.id)
-      .slice(0, 12); // Pega só os 12 primeiros sorteados
-
-    // 3. Busca os dados completos desses 12 IDs sorteados
-    if (shuffledIds.length === 0) return [];
+      .slice(0, 12);
 
     const randomBusinesses = await db.business.findMany({
       where: { id: { in: shuffledIds } },
@@ -1075,12 +1130,12 @@ export async function getRandomBusinesses(userId?: string) {
       },
     });
 
-    // MAPEAMENTO IMPORTANTE AQUI TAMBÉM:
     return randomBusinesses
       .map((b) => ({
         ...b,
         isFavorited: userId ? b.favorites.length > 0 : false,
         favoritesCount: b._count.favorites,
+        userLoggedInVerified: isVerified, // ⬅️ AQUI TAMBÉM!
       }))
       .sort(() => Math.random() - 0.5);
   } catch (error) {
@@ -1191,13 +1246,31 @@ export async function incrementInstallCount(slug: string) {
 
 export async function getHomeBusinesses(userId?: string) {
   try {
+    // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO
+    let isVerified = false;
+    if (userId) {
+      const u = await db.user.findUnique({
+        where: { id: userId },
+        select: { emailVerified: true },
+      });
+      isVerified = !!u?.emailVerified;
+    }
+
     const businesses = await db.business.findMany({
       where: {
         published: true,
         isActive: true,
+        user: {
+          OR: [
+            { role: "ADMIN" },
+            {
+              role: "ASSINANTE",
+              expiresAt: { gt: new Date() },
+            },
+          ],
+        },
       },
       include: {
-        // Traz apenas o favorito do usuário logado (se houver)
         favorites: userId ? { where: { userId } } : false,
         _count: {
           select: { favorites: true },
@@ -1207,11 +1280,11 @@ export async function getHomeBusinesses(userId?: string) {
       take: 12,
     });
 
-    // MAPEAMENTO: Transforma o array 'favorites' em um booleano 'isFavorited'
     return businesses.map((b) => ({
       ...b,
       isFavorited: userId ? b.favorites.length > 0 : false,
       favoritesCount: b._count.favorites,
+      userLoggedInVerified: isVerified, // ⬅️ AQUI ESTÁ A "CARTA" PRO CARTEIRO
     }));
   } catch (error) {
     console.error("Erro ao buscar destaques:", error);
@@ -1777,5 +1850,96 @@ export async function adminAddExactDaysToUser(
     };
   } catch (error) {
     return { error: "Erro ao adicionar dias." };
+  }
+}
+// --- FUNÇÃO PARA GERAR TOKEN DE VERIFICAÇÃO DE E-MAIL ---
+export async function generateVerificationToken(email: string) {
+  const token = crypto.randomUUID();
+  const expires = new Date(new Date().getTime() + 3600 * 1000 * 24); // Expira em 24h
+
+  // Limpa tokens antigos do mesmo e-mail para não poluir o banco
+  await db.verificationToken.deleteMany({
+    where: { identifier: email },
+  });
+
+  const verificationToken = await db.verificationToken.create({
+    data: {
+      identifier: email,
+      token,
+      expires,
+    },
+  });
+
+  return verificationToken;
+}
+export async function verifyEmailAction(token: string) {
+  try {
+    const existingToken = await db.verificationToken.findUnique({
+      where: { token },
+    });
+
+    if (!existingToken) return { error: "Link de verificação inválido." };
+
+    const hasExpired = new Date(existingToken.expires) < new Date();
+    if (hasExpired) return { error: "Este link expirou. Solicite um novo." };
+
+    const existingUser = await db.user.findUnique({
+      where: { email: existingToken.identifier },
+    });
+
+    if (!existingUser) return { error: "Usuário não encontrado." };
+
+    // 1. MARCA O USUÁRIO COMO VERIFICADO
+    await db.user.update({
+      where: { id: existingUser.id },
+      data: { emailVerified: new Date() },
+    });
+
+    // 2. APAGA O TOKEN (Usando o token como referência, já que ele é único)
+    await db.verificationToken.delete({
+      where: { token: existingToken.token }, // ⬅️ CORRIGIDO AQUI
+    });
+
+    return { success: "E-mail verificado com sucesso!" };
+  } catch (error) {
+    console.error("Erro na verificação:", error);
+    return { error: "Erro interno ao verificar e-mail." };
+  }
+}
+export async function resendVerificationEmail(email: string) {
+  try {
+    // 1. Busca o usuário
+    const user = await db.user.findUnique({
+      where: { email },
+      select: { name: true, emailVerified: true },
+    });
+
+    if (!user) return { error: "Usuário não encontrado." };
+    if (user.emailVerified) return { error: "Este e-mail já está verificado." };
+
+    // 2. Gera um novo token (usando a função que já criamos)
+    const verificationToken = await generateVerificationToken(email);
+
+    const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
+
+    // 3. Dispara o e-mail
+    await resend.emails.send({
+      from: "Tafanu <onboarding@resend.dev>",
+      to: email,
+      subject: "Novo link de ativação - Tafanu",
+      html: `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>Olá, ${user.name}!</h2>
+          <p>Você solicitou um novo link para ativar sua conta no Tafanu.</p>
+          <a href="${confirmLink}" style="background-color: #0070f3; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Ativar minha conta agora</a>
+          <p style="margin-top: 20px; font-size: 12px;">Se o botão não funcionar, copie este link: ${confirmLink}</p>
+        </div>
+      `,
+    });
+
+    return { success: "Novo link enviado! Verifique sua caixa de entrada." };
+  } catch (error) {
+    return { error: "Erro ao reenviar e-mail." };
   }
 }
