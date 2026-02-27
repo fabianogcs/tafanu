@@ -12,8 +12,9 @@ import {
   CheckCircle,
   Loader2,
   Sparkles,
+  MailWarning, // ⬅️ Adicionado para o ícone de erro
 } from "lucide-react";
-import { registerUser, loginUser } from "../actions";
+import { registerUser, loginUser, resendVerificationEmail } from "../actions"; // ⬅️ resendVerificationEmail adicionado aqui
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { getSession } from "next-auth/react";
 
@@ -22,6 +23,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+
+  // --- 🛡️ NOVOS ESTADOS PARA A TRAVA DE E-MAIL ---
+  const [loginError, setLoginError] = useState("");
+  const [showResend, setShowResend] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
+  // ----------------------------------------------
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,17 +80,43 @@ export default function LoginPage() {
     }
   }, []);
 
+  // --- NOVA FUNÇÃO PARA REENVIAR O E-MAIL ---
+  async function handleResendEmail() {
+    if (!unverifiedEmail) return;
+    setIsResending(true);
+    const res = await resendVerificationEmail(unverifiedEmail);
+    if (res.success) {
+      toast.success(res.success);
+      setShowResend(false); // Esconde o botão após enviar
+    } else {
+      toast.error(res.error || "Erro ao reenviar link.");
+    }
+    setIsResending(false);
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
+
+    // Limpa erros anteriores
+    setLoginError("");
+    setShowResend(false);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
 
     if (isLogin) {
       const result = await loginUser(formData);
+
       if (result?.error) {
-        toast.error(result.error);
+        // 🛡️ AQUI TRATAMOS O ERRO DA TRAVA
+        setLoginError(result.error);
+        if (result.notVerified) {
+          setShowResend(true);
+          setUnverifiedEmail(result.email || (formData.get("email") as string));
+        } else {
+          toast.error(result.error);
+        }
         setIsLoading(false);
       } else {
         // Força um carregamento limpo da próxima página
@@ -101,14 +135,17 @@ export default function LoginPage() {
         const loginResult = await loginUser(formData);
 
         if (loginResult?.error) {
-          toast.warning("Conta criada! Faça o login para continuar.");
+          // Se deu erro ao logar logo após o cadastro, é porque caiu na trava de verificação (o que é esperado!)
+          toast.success("Conta criada! Verifique seu e-mail para ativar.");
           setIsLogin(true);
+          // Preenche a caixa de erro para ele já ver o botão de reenvio
+          setLoginError("Verifique sua caixa de entrada para ativar a conta.");
+          setShowResend(true);
+          setUnverifiedEmail(formData.get("email") as string);
           setIsLoading(false);
         } else {
+          // Caso você libere o cadastro sem trava no futuro (ex: via Google)
           toast.success("Conta criada! Redirecionando...");
-
-          // 🛑 O PULO DO GATO: Esperamos 500ms para o cookie "assentar" no navegador
-          // antes de redirecionar para o checkout.
           setTimeout(() => {
             window.location.assign(nextStep);
           }, 500);
@@ -139,6 +176,37 @@ export default function LoginPage() {
                 : "Junte-se à maior rede de negócios da região."}
             </p>
           </div>
+
+          {/* --- 🛡️ CAIXA DE ALERTA DE E-MAIL NÃO VERIFICADO --- */}
+          {loginError && (
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-2xl flex flex-col gap-3 animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center gap-3">
+                <div className="bg-orange-100 p-2 rounded-full">
+                  <MailWarning className="w-5 h-5 text-orange-600" />
+                </div>
+                <p className="text-sm font-bold text-orange-800 leading-tight">
+                  {loginError}
+                </p>
+              </div>
+
+              {showResend && (
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={isResending}
+                  className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                >
+                  {isResending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Mail size={14} />
+                  )}
+                  {isResending ? "Enviando..." : "Reenviar link de ativação"}
+                </button>
+              )}
+            </div>
+          )}
+          {/* -------------------------------------------------- */}
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             {/* MANTIDO: O BILHETE DO GPS PARA O SERVIDOR */}
@@ -205,13 +273,19 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* --- O AJUSTE: BOTÃO DE TROCA LOGO ABAIXO DA SENHA --- */}
-            <div className="flex justify-end pr-1">
+            <div className="flex justify-between items-center pr-1 px-1">
+              <Link
+                href="/esqueci-minha-senha"
+                className="text-[10px] font-bold text-slate-400 hover:text-tafanu-blue transition-colors uppercase tracking-widest"
+              >
+                Esqueci a senha
+              </Link>
               <button
                 type="button"
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setShowSuccess(false);
+                  setLoginError(""); // Limpa o erro ao trocar de tela
                 }}
                 className="text-[11px] font-bold text-slate-400 hover:text-tafanu-blue transition-colors uppercase tracking-tight"
               >

@@ -252,14 +252,33 @@ export async function loginUser(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  // 1. CAPTURA O DESTINO QUE VEM DA TELA
+  // 1. CAPTURA O DESTINO QUE VEM DA TELA (Original mantido)
   const callbackUrl = formData.get("callbackUrl") as string;
 
   let dbUser = await db.user.findUnique({ where: { email } });
 
-  // (Sua lógica de expiração mantida abaixo)
+  // 2. VERIFICA SE USUÁRIO EXISTE (Segurança básica)
+  if (!dbUser || !dbUser.password) {
+    return { error: "E-mail ou senha inválidos." };
+  }
+
+  // 3. VERIFICA SENHA E TRAVA E-MAIL NÃO VERIFICADO
+  const isPasswordCorrect = await compare(password, dbUser.password);
+  if (!isPasswordCorrect) {
+    return { error: "E-mail ou senha inválidos." };
+  }
+
+  // 👇 O PULO DO GATO: Se a senha tá certa, mas não verificou o e-mail, barramos aqui.
+  if (!dbUser.emailVerified) {
+    return {
+      error: "E-mail não verificado.",
+      notVerified: true,
+      email: dbUser.email,
+    };
+  }
+
+  // 4. LÓGICA DE EXPIRAÇÃO (Sua lógica original mantida abaixo)
   if (
-    dbUser &&
     dbUser.role === "ASSINANTE" &&
     dbUser.expiresAt &&
     new Date(dbUser.expiresAt) < new Date()
@@ -271,7 +290,7 @@ export async function loginUser(formData: FormData) {
   }
 
   try {
-    // 2. DEFINE O DESTINO: Prioridade para o callbackUrl (checkout)
+    // 5. DEFINE O DESTINO (Original mantido)
     let destino = callbackUrl || "/";
 
     if (!callbackUrl) {
@@ -279,10 +298,11 @@ export async function loginUser(formData: FormData) {
       else if (dbUser?.role === "ASSINANTE") destino = "/dashboard";
     }
 
+    // 6. REALIZA O LOGIN DE FATO
     await signIn("credentials", {
       email,
       password,
-      redirectTo: destino, // O servidor agora obedece o destino correto
+      redirectTo: destino,
     });
 
     return { success: true };

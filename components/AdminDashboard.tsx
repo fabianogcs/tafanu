@@ -10,31 +10,25 @@ import {
   ShieldCheck,
   Search,
   LayoutGrid,
-  CalendarDays,
+  Clock,
+  History,
   X,
-  AlertTriangle,
-  MinusCircle,
   UserCheck,
   Eraser,
   Loader2,
   TrendingUp,
-  DollarSign,
-  Activity,
   Mail,
-  MessageCircle,
   Award,
   Star,
   Wallet,
   UserX,
   ShieldAlert,
   Gavel,
-  Timer,
   Info,
   Link as LinkIcon,
   CreditCard,
-  Edit3,
-  Clock,
-  History,
+  AlertTriangle,
+  User, // ⬅️ Ícone do Usuário para o card de denúncias
 } from "lucide-react";
 
 import {
@@ -53,8 +47,10 @@ export default function AdminDashboard({ data }: { data: any }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // --- ESTADOS ---
+  // --- NOVO SISTEMA DE ABAS (ORGANIZADO) ---
+  const [mainCategory, setMainCategory] = useState("overview");
   const [activeTab, setActiveTab] = useState("overview");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
@@ -73,7 +69,7 @@ export default function AdminDashboard({ data }: { data: any }) {
     if (activeTab === "payouts") loadPayouts();
   }, [activeTab]);
 
-  // --- PROCESSAMENTO DE DADOS (ABAS) ---
+  // --- PROCESSAMENTO DE DADOS ---
   const {
     allUsers,
     activeSubscribers,
@@ -121,7 +117,34 @@ export default function AdminDashboard({ data }: { data: any }) {
     );
     const affs = users.filter((u: any) => u.role === "AFILIADO");
     const banned = users.filter((u: any) => u.isBanned);
-    const reports = data.reports.filter((r: any) => r.status === "PENDING");
+
+    // 🕵️‍♂️ MÁGICA AQUI: Cruzando os dados da denúncia com o dono do anúncio!
+    const reports = data.reports
+      .filter((r: any) => r.status === "PENDING")
+      .map((report: any) => {
+        let foundBusiness = null;
+        let foundOwner = null;
+
+        // Procura em todos os usuários quem é o dono desse businessId
+        for (const u of data.users) {
+          if (u.businesses) {
+            const biz = u.businesses.find(
+              (b: any) => b.id === report.businessId,
+            );
+            if (biz) {
+              foundBusiness = biz;
+              foundOwner = u;
+              break;
+            }
+          }
+        }
+
+        return {
+          ...report,
+          business: foundBusiness,
+          owner: foundOwner,
+        };
+      });
 
     return {
       allUsers: users,
@@ -209,13 +232,12 @@ export default function AdminDashboard({ data }: { data: any }) {
     startTransition(async () => {
       const res = await resolveReport(reportId);
       res.success
-        ? toast.success("Caso encerrado!")
+        ? toast.success("Caso encerrado com sucesso!")
         : toast.error("Erro ao resolver.");
       router.refresh();
     });
   };
 
-  // 💰 PROMOVER A AFILIADO
   const handlePromote = async () => {
     if (!referralCodeInput) return toast.error("Defina um código!");
     startTransition(async () => {
@@ -235,7 +257,6 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
-  // ⏱️ CONTROLE DE MESES E DIAS
   const handleAddMonths = (e: any, userId: string, months: number) => {
     e.stopPropagation();
     if (
@@ -299,9 +320,27 @@ export default function AdminDashboard({ data }: { data: any }) {
       if (res.success) {
         toast.success(res.message);
         loadPayouts();
-      } else {
-        toast.error(res.error);
-      }
+      } else toast.error(res.error);
+    });
+  };
+
+  const handleGarbageCollection = () => {
+    if (
+      !confirm(
+        "Iniciar faxina de imagens órfãs? O servidor fará uma varredura.",
+      )
+    )
+      return;
+
+    const promise = runGarbageCollector().then((res) => {
+      if (res.error) throw new Error(res.error);
+      return res.message;
+    });
+
+    toast.promise(promise, {
+      loading: "Analisando servidor... isso pode levar alguns segundos.",
+      success: (msg) => `${msg}`,
+      error: (err) => err.message || "Erro ao rodar faxina.",
     });
   };
 
@@ -316,6 +355,15 @@ export default function AdminDashboard({ data }: { data: any }) {
     );
   };
 
+  const allBusinesses = useMemo(() => {
+    return allUsers
+      .flatMap((u: any) => u.businesses)
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+  }, [allUsers]);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans text-slate-900">
       <header className="max-w-7xl mx-auto mb-10">
@@ -326,7 +374,7 @@ export default function AdminDashboard({ data }: { data: any }) {
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-                Security & Billing
+                Painel Administrativo
               </p>
               <h1 className="text-3xl font-black italic uppercase tracking-tighter">
                 Tafanu <span className="text-emerald-500">HQ</span>
@@ -341,18 +389,15 @@ export default function AdminDashboard({ data }: { data: any }) {
               />
               <input
                 type="text"
-                placeholder="Busca Global (Qualquer e-mail/CPF)..."
+                placeholder="Busca Global (E-mail/CPF)..."
                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-emerald-500/20 shadow-inner font-medium"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button
-              onClick={() => {
-                if (confirm("Iniciar faxina de imagens órfãs?"))
-                  runGarbageCollector().then((r) => toast.success(r.message));
-              }}
-              className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100"
-              title="Limpar Imagens Inúteis"
+              onClick={handleGarbageCollection}
+              className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100 shadow-sm"
+              title="Limpar Imagens Inúteis (Garbage Collector)"
             >
               <Eraser />
             </button>
@@ -360,70 +405,123 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-8">
-        <div className="flex p-1.5 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
+      <main className="max-w-7xl mx-auto space-y-6">
+        {/* --- MENU NÍVEL 1: CATEGORIAS PRINCIPAIS --- */}
+        <div className="flex p-2 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
           <TabButton
-            active={activeTab === "overview"}
-            onClick={() => setActiveTab("overview")}
-            label="Overview"
+            active={mainCategory === "overview"}
+            onClick={() => {
+              setMainCategory("overview");
+              setActiveTab("overview");
+            }}
+            label="Visão Geral"
             icon={<LayoutGrid size={16} />}
           />
           <TabButton
-            active={activeTab === "subscribers"}
-            onClick={() => setActiveTab("subscribers")}
-            label="Ativos"
-            icon={<CheckCircle2 size={16} />}
-            count={activeSubscribers.length}
-          />
-          <TabButton
-            active={activeTab === "trials"}
-            onClick={() => setActiveTab("trials")}
-            label="Vencendo"
-            icon={<Clock size={16} />}
-            count={trialSubscribers.length}
-          />
-          <TabButton
-            active={activeTab === "expired"}
-            onClick={() => setActiveTab("expired")}
-            label="Vencidos"
-            icon={<History size={16} />}
-            count={expiredSubscribers.length}
-          />
-          <TabButton
-            active={activeTab === "visitors"}
-            onClick={() => setActiveTab("visitors")}
-            label="Leads"
+            active={mainCategory === "users"}
+            onClick={() => {
+              setMainCategory("users");
+              setActiveTab("subscribers");
+            }}
+            label="Membros"
             icon={<Users size={16} />}
-            count={visitors.length}
           />
           <TabButton
-            active={activeTab === "partners"}
-            onClick={() => setActiveTab("partners")}
+            active={mainCategory === "affiliates"}
+            onClick={() => {
+              setMainCategory("affiliates");
+              setActiveTab("partners");
+            }}
             label="Parceiros"
             icon={<Star size={16} />}
-            count={partners.length}
           />
           <TabButton
-            active={activeTab === "payouts"}
-            onClick={() => setActiveTab("payouts")}
-            label="Financeiro"
-            icon={<Wallet size={16} />}
-            count={payouts.length}
-          />
-          <TabButton
-            active={activeTab === "banned"}
-            onClick={() => setActiveTab("banned")}
-            label="Banidos"
-            icon={<UserX size={16} />}
-            count={bannedUsers.length}
+            active={mainCategory === "security"}
+            onClick={() => {
+              setMainCategory("security");
+              setActiveTab("reports");
+            }}
+            label="Segurança"
+            icon={<ShieldAlert size={16} />}
+            count={
+              pendingReports.length > 0 ? pendingReports.length : undefined
+            }
+            alertMode={pendingReports.length > 0}
           />
         </div>
 
+        {/* --- MENU NÍVEL 2: SUB-ABAS --- */}
+        {mainCategory === "users" && (
+          <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
+            <SubTabButton
+              active={activeTab === "subscribers"}
+              onClick={() => setActiveTab("subscribers")}
+              label="Ativos"
+              count={activeSubscribers.length}
+            />
+            <SubTabButton
+              active={activeTab === "trials"}
+              onClick={() => setActiveTab("trials")}
+              label="Vencendo"
+              count={trialSubscribers.length}
+            />
+            <SubTabButton
+              active={activeTab === "expired"}
+              onClick={() => setActiveTab("expired")}
+              label="Vencidos"
+              count={expiredSubscribers.length}
+            />
+            <SubTabButton
+              active={activeTab === "visitors"}
+              onClick={() => setActiveTab("visitors")}
+              label="Leads"
+              count={visitors.length}
+            />
+          </div>
+        )}
+
+        {mainCategory === "affiliates" && (
+          <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
+            <SubTabButton
+              active={activeTab === "partners"}
+              onClick={() => setActiveTab("partners")}
+              label="Ver Parceiros"
+              count={partners.length}
+            />
+            <SubTabButton
+              active={activeTab === "payouts"}
+              onClick={() => setActiveTab("payouts")}
+              label="Fila de Pagamentos"
+              count={payouts.length}
+            />
+          </div>
+        )}
+
+        {mainCategory === "security" && (
+          <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
+            <SubTabButton
+              active={activeTab === "reports"}
+              onClick={() => setActiveTab("reports")}
+              label="Denúncias"
+              count={pendingReports.length}
+              alertMode
+            />
+            <SubTabButton
+              active={activeTab === "banned"}
+              onClick={() => setActiveTab("banned")}
+              label="Lista Negra (Banidos)"
+              count={bannedUsers.length}
+            />
+          </div>
+        )}
+
+        {/* --- ÁREA DE CONTEÚDO --- */}
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+          {/* TABELA PADRÃO */}
           {activeTab !== "overview" &&
             activeTab !== "reports" &&
             activeTab !== "payouts" && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto animate-in fade-in duration-500">
                 {searchTerm && (
                   <div className="bg-emerald-50 text-emerald-700 p-3 text-center text-xs font-black tracking-widest uppercase">
                     Resultados da Busca Global Ativados
@@ -503,30 +601,26 @@ export default function AdminDashboard({ data }: { data: any }) {
                       </tr>
                     ))}
                     {filteredData.length === 0 && (
-                      <EmptyState message="Nenhum usuário listado nesta categoria/busca." />
+                      <EmptyState message="Nenhum registro encontrado nesta categoria." />
                     )}
                   </tbody>
                 </table>
               </div>
             )}
 
+          {/* OVERVIEW */}
           {activeTab === "overview" && (
-            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
               <div className="lg:col-span-2 space-y-6">
                 <h3 className="font-black uppercase italic text-slate-900 flex items-center gap-2">
                   <TrendingUp className="text-emerald-500" /> Últimos Negócios
                   Criados
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {allUsers
-                    .flatMap((u: any) => u.businesses)
-                    .sort(
-                      (a: any, b: any) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime(),
-                    )
-                    .slice(0, 8)
-                    .map((biz: any) => (
+                  {allBusinesses.length === 0 ? (
+                    <EmptyCardState message="Nenhum negócio criado ainda." />
+                  ) : (
+                    allBusinesses.slice(0, 8).map((biz: any) => (
                       <div
                         key={biz.id}
                         className="p-5 bg-slate-50 rounded-[2rem] flex items-center justify-between border border-slate-100 hover:shadow-sm transition-all"
@@ -547,7 +641,8 @@ export default function AdminDashboard({ data }: { data: any }) {
                           <ExternalLink size={16} />
                         </a>
                       </div>
-                    ))}
+                    ))
+                  )}
                 </div>
               </div>
               <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex flex-col justify-between">
@@ -586,8 +681,95 @@ export default function AdminDashboard({ data }: { data: any }) {
             </div>
           )}
 
+          {/* DENÚNCIAS (REPORTS) - AGORA COM O RAIO-X DO CULPADO! */}
+          {activeTab === "reports" && (
+            <div className="p-8 space-y-4 animate-in fade-in duration-500">
+              {pendingReports.length === 0 ? (
+                <EmptyCardState message="Tudo limpo! Nenhuma denúncia pendente." />
+              ) : (
+                pendingReports.map((report: any) => (
+                  <div
+                    key={report.id}
+                    className="p-6 bg-rose-50 border border-rose-200 rounded-[2rem] flex flex-col justify-between gap-6 shadow-sm relative overflow-hidden"
+                  >
+                    <div className="flex flex-col md:flex-row justify-between gap-6">
+                      <div className="flex gap-4">
+                        <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
+                          <AlertTriangle size={24} />
+                        </div>
+                        <div>
+                          <h4 className="font-black text-rose-900 uppercase italic">
+                            {report.reason}
+                          </h4>
+                          <p className="text-sm font-medium text-rose-700 mt-1">
+                            {report.details ||
+                              "Nenhum detalhe adicional fornecido."}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start shrink-0">
+                        <button
+                          onClick={() => handleResolveReport(report.id)}
+                          disabled={isPending}
+                          className="px-6 py-4 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg w-full md:w-auto flex items-center justify-center gap-2"
+                        >
+                          {isPending ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <CheckCircle2 size={16} />
+                          )}
+                          Encerrar Caso
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* DADOS DO ALVO DA DENÚNCIA */}
+                    {report.business && report.owner ? (
+                      <div className="mt-2 pt-4 border-t border-rose-200/60 flex flex-col sm:flex-row gap-6 justify-between">
+                        <div>
+                          <p className="text-[10px] font-black text-rose-800/60 uppercase tracking-widest">
+                            Alvo da Denúncia:
+                          </p>
+                          <a
+                            href={`/site/${report.business.slug}`}
+                            target="_blank"
+                            className="text-sm font-black italic text-rose-700 hover:text-rose-900 flex items-center gap-1 underline decoration-rose-300 underline-offset-4 mt-1"
+                          >
+                            {report.business.name} <ExternalLink size={14} />
+                          </a>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-rose-800/60 uppercase tracking-widest">
+                            Criador do Anúncio:
+                          </p>
+                          <button
+                            onClick={() => setSelectedUser(report.owner)}
+                            className="text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white flex items-center gap-2 mt-1 bg-white/50 px-4 py-2 rounded-xl border border-rose-200 shadow-sm transition-all"
+                          >
+                            <User size={14} /> {report.owner.name}{" "}
+                            <span className="text-[10px] font-normal opacity-50">
+                              ({report.owner.email})
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 pt-4 border-t border-rose-200/60">
+                        <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">
+                          ID do Local: {report.businessId} (Este anúncio já foi
+                          excluído do sistema)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* PAGAMENTOS (PAYOUTS) */}
           {activeTab === "payouts" && (
-            <div className="p-8 space-y-4">
+            <div className="p-8 space-y-4 animate-in fade-in duration-500">
               {payouts.map((p: any) => (
                 <div
                   key={p.id}
@@ -635,7 +817,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </div>
               ))}
               {payouts.length === 0 && (
-                <EmptyState message="Nenhum parceiro atingiu a meta de pagamento." />
+                <EmptyCardState message="Nenhum parceiro atingiu a meta de pagamento." />
               )}
             </div>
           )}
@@ -687,7 +869,6 @@ export default function AdminDashboard({ data }: { data: any }) {
             </div>
 
             <div className="p-8 space-y-8">
-              {/* O DE QUEM É ESSE ASSINANTE? (ORIGEM) */}
               <div className="bg-slate-100/50 border border-slate-100 p-4 rounded-2xl flex items-center gap-3">
                 <div className="p-2 bg-slate-200 text-slate-500 rounded-xl">
                   <Users size={16} />
@@ -704,7 +885,6 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </div>
               </div>
 
-              {/* CONTROLES E BOTÕES RESTAURADOS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm">
                   <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
@@ -728,21 +908,17 @@ export default function AdminDashboard({ data }: { data: any }) {
                   )}
                 </div>
 
-                {/* CONTROLE 1 DIA, 1 MES, AFILIADO E BANIR RESTAURADOS */}
                 <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center gap-3 relative">
                   {isPending && (
                     <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-10">
                       <Loader2 className="animate-spin text-emerald-500" />
                     </div>
                   )}
-
                   <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
                     Soma e Subtração de Tempo
                   </h3>
-
                   {!selectedUser.isBanned && selectedUser.role !== "ADMIN" ? (
                     <>
-                      {/* Botões de Tempo */}
                       <div className="flex flex-wrap gap-2">
                         <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-fit">
                           <button
@@ -783,8 +959,6 @@ export default function AdminDashboard({ data }: { data: any }) {
                           </button>
                         </div>
                       </div>
-
-                      {/* Botões de Ação Restaurados */}
                       <div className="flex flex-wrap gap-2 mt-2">
                         {selectedUser.role !== "AFILIADO" && (
                           <button
@@ -812,7 +986,6 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </div>
               </div>
 
-              {/* BLOCO EXTRA RESTAURADO: SE FOR AFILIADO, MOSTRA AS VENDAS DELE AQUI DENTRO TAMBÉM */}
               {selectedUser.role === "AFILIADO" && (
                 <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem]">
                   <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.2em] mb-4 flex items-center gap-2">
@@ -859,7 +1032,6 @@ export default function AdminDashboard({ data }: { data: any }) {
                 </div>
               )}
 
-              {/* LISTA DE ANÚNCIOS DO USUÁRIO */}
               <div>
                 <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-4 flex items-center gap-2">
                   <LayoutGrid size={14} /> Anúncios Deste Usuário
@@ -901,7 +1073,7 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       )}
 
-      {/* MODAL NOVO AFILIADO (AGORA ELE TÁ AQUI DE VERDADE) */}
+      {/* MODAL NOVO AFILIADO */}
       {promotingUser && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
@@ -962,50 +1134,41 @@ export default function AdminDashboard({ data }: { data: any }) {
 }
 
 // --- SUBCOMPONENTES ---
-function PlanPriceBadge({ price }: { price: number }) {
-  return null;
-}
 
-function MetricCard({ icon, label, value, color, subValue }: any) {
-  const colors: any = {
-    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    amber: "bg-amber-50 text-amber-600 border-amber-100",
-    rose: "bg-rose-50 text-rose-600 border-rose-100",
-    slate: "bg-slate-50 text-slate-600 border-slate-200",
-  };
-  return (
-    <div
-      className={`p-6 bg-white rounded-[2.5rem] border ${colors[color]} shadow-sm`}
-    >
-      <div
-        className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 ${colors[color].replace("border-", "")} shadow-sm`}
-      >
-        {icon}
-      </div>
-      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
-        {label}
-      </p>
-      <h4 className="text-3xl font-black text-slate-900 italic tracking-tighter">
-        {value}
-      </h4>
-      <p className="text-[8px] font-bold text-slate-300 uppercase mt-1 tracking-widest">
-        {subValue}
-      </p>
-    </div>
-  );
-}
-
-function TabButton({ active, onClick, label, icon, count }: any) {
+function TabButton({ active, onClick, label, icon, count, alertMode }: any) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-6 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:bg-slate-50"}`}
+      className={`relative flex items-center gap-2 px-6 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:bg-slate-50"}`}
     >
       {icon} {label}
       {count !== undefined && (
         <span
-          className={`ml-2 px-2.5 py-0.5 rounded-full text-[9px] ${active ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"}`}
+          className={`ml-2 px-2.5 py-0.5 rounded-full text-[9px] ${active ? (alertMode ? "bg-rose-500 text-white" : "bg-emerald-500 text-white") : alertMode ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"}`}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function SubTabButton({ active, onClick, label, count, alertMode }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border ${
+        active
+          ? alertMode
+            ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm"
+            : "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
+          : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50"
+      }`}
+    >
+      {label}
+      {count !== undefined && (
+        <span
+          className={`px-2 py-0.5 rounded-full text-[9px] ${active ? (alertMode ? "bg-rose-200" : "bg-emerald-200") : "bg-slate-100"}`}
         >
           {count}
         </span>
@@ -1077,10 +1240,18 @@ function EmptyState({ message }: { message: string }) {
     <tr>
       <td
         colSpan={3}
-        className="py-20 text-center opacity-30 font-black uppercase tracking-[0.3em] text-[10px] italic"
+        className="py-20 text-center opacity-40 font-black uppercase tracking-[0.3em] text-[10px] italic"
       >
         {message}
       </td>
     </tr>
+  );
+}
+
+function EmptyCardState({ message }: { message: string }) {
+  return (
+    <div className="py-20 text-center opacity-40 font-black uppercase tracking-[0.3em] text-[10px] italic w-full">
+      {message}
+    </div>
   );
 }
