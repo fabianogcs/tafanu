@@ -32,6 +32,8 @@ export default function Footer() {
             </Link>
             <Link
               href="/termos"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm"
             >
               Termos de Uso

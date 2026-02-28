@@ -1266,7 +1266,7 @@ export async function incrementInstallCount(slug: string) {
 
 export async function getHomeBusinesses(userId?: string) {
   try {
-    // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO
+    // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO (MANTIDO)
     let isVerified = false;
     if (userId) {
       const u = await db.user.findUnique({
@@ -1276,6 +1276,7 @@ export async function getHomeBusinesses(userId?: string) {
       isVerified = !!u?.emailVerified;
     }
 
+    // 2. BUSCA OS NEGÓCIOS ELEGÍVEIS (MANTIDO)
     const businesses = await db.business.findMany({
       where: {
         published: true,
@@ -1296,11 +1297,20 @@ export async function getHomeBusinesses(userId?: string) {
           select: { favorites: true },
         },
       },
-      orderBy: [{ views: "desc" }, { favorites: { _count: "desc" } }],
-      take: 12,
+      // ⬅️ Tiramos o orderBy (mais vistos) e o take: 12 daqui para pegar a base toda
     });
 
-    return businesses.map((b) => ({
+    // 3. 🎲 O SEGREDO: EMBARALHA TUDO ALEATORIAMENTE (Algoritmo Fisher-Yates)
+    for (let i = businesses.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [businesses[i], businesses[j]] = [businesses[j], businesses[i]];
+    }
+
+    // 4. PEGA SÓ OS 12 PRIMEIROS DA LISTA JÁ EMBARALHADA
+    const randomBusinesses = businesses.slice(0, 12);
+
+    // 5. DEVOLVE PRO FRONTEND COM A LÓGICA DE FAVORITOS (MANTIDO)
+    return randomBusinesses.map((b) => ({
       ...b,
       isFavorited: userId ? b.favorites.length > 0 : false,
       favoritesCount: b._count.favorites,

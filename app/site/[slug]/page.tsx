@@ -38,7 +38,7 @@ export async function generateViewport({
   };
 }
 
-// --- 1. SEO DINÂMICO & PWA (AQUI ESTÁ A MUDANÇA) ---
+// --- 1. SEO DINÂMICO & PWA (VERSÃO FINAL: LOGO OU TAFANU) ---
 export async function generateMetadata({
   params,
 }: {
@@ -53,11 +53,13 @@ export async function generateMetadata({
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
 
-  const rawImage = business.imageUrl || business.heroImage;
-  const displayImage = rawImage
-    ? rawImage.startsWith("http")
-      ? rawImage
-      : `${siteUrl}${rawImage}`
+  // 🎯 O ALVO: imageUrl (que é a Logo do assinante no seu Schema)
+  const logoAssinante = business.imageUrl;
+
+  const displayImage = logoAssinante
+    ? logoAssinante.startsWith("http")
+      ? logoAssinante
+      : `${siteUrl}${logoAssinante}`
     : `${siteUrl}/og-default.png`;
 
   return {
@@ -66,9 +68,7 @@ export async function generateMetadata({
       business.description?.slice(0, 160) ||
       "Confira este anúncio exclusivo no Tafanu.",
     keywords: business.keywords,
-    alternates: {
-      canonical: fullUrl,
-    },
+    alternates: { canonical: fullUrl },
     applicationName: business.name,
     appleWebApp: {
       capable: true,
@@ -82,23 +82,21 @@ export async function generateMetadata({
     },
     openGraph: {
       title: `${business.name.toUpperCase()} - Guia Tafanu`,
-      description:
-        business.description?.slice(0, 160) ||
-        "Veja mais fotos e informações no nosso site oficial.",
+      description: "Veja fotos, informações e entre em contato agora mesmo.",
       url: fullUrl,
-      siteName: business.name,
+      siteName: "Tafanu",
       images: [
         {
           url: displayImage,
-          width: 1200,
-          height: 630,
-          alt: `Foto de ${business.name}`,
+          width: 800,
+          height: 800,
+          alt: `Logo de ${business.name}`,
         },
       ],
       type: "website",
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title: business.name,
       description: business.description?.slice(0, 160),
       images: [displayImage],

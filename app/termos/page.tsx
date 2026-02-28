@@ -1,6 +1,13 @@
 "use client";
 import Link from "next/link";
-import { ShieldCheck, AlertOctagon, Scale, Ban } from "lucide-react";
+import {
+  ShieldCheck,
+  AlertOctagon,
+  Scale,
+  Ban,
+  FileWarning,
+  RefreshCcw,
+} from "lucide-react"; // ⬅️ IMPORTAÇÕES CORRIGIDAS AQUI
 
 export default function TermosPage() {
   const currentYear = new Date().getFullYear();
@@ -48,8 +55,8 @@ export default function TermosPage() {
               </h2>
             </div>
             <p className="text-slate-700 text-sm mb-4 font-medium">
-              Para manter a segurança da comunidade, é terminantemente proibido
-              publicar conteúdos que envolvam:
+              Para manter a segurança e o foco comercial da comunidade, é
+              terminantemente proibido publicar conteúdos que envolvam:
             </p>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px] font-bold text-slate-600 list-none p-0">
               <li className="flex items-center gap-2">
@@ -60,6 +67,9 @@ export default function TermosPage() {
               </li>
               <li className="flex items-center gap-2">
                 ❌ Informações falsas ou enganosas
+              </li>
+              <li className="flex items-center gap-2">
+                ❌ Propaganda política ou eleitoral
               </li>
               <li className="flex items-center gap-2">
                 ❌ Spam, golpes ou pirâmides
@@ -85,6 +95,7 @@ export default function TermosPage() {
               definitivo do anunciante da plataforma.
             </p>
           </section>
+
           {/* 4. PLANOS E CANCELAMENTO - Versão Corrigida */}
           <section className="p-6 bg-slate-50 rounded-3xl border border-slate-200">
             <div className="flex items-center gap-2 mb-4 text-slate-900">
@@ -129,6 +140,41 @@ export default function TermosPage() {
             </div>
           </section>
 
+          {/* 5. ISENÇÃO DE RESPONSABILIDADE (NOVO E VITAL) */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 text-tafanu-blue">
+              <FileWarning size={20} />
+              <h2 className="text-xl font-black uppercase italic m-0">
+                5. Isenção de Responsabilidade
+              </h2>
+            </div>
+            <p className="text-slate-600 leading-relaxed text-sm">
+              Qualquer transação, comunicação ou negociação realizada através da
+              plataforma é de inteira responsabilidade das partes envolvidas
+              (cliente e anunciante). O TAFANU não garante a qualidade dos
+              produtos ou serviços anunciados, não faz intermediação de
+              pagamentos por fora da assinatura da plataforma, e não se
+              responsabiliza por danos físicos, morais ou prejuízos financeiros
+              decorrentes do uso dos serviços listados.
+            </p>
+          </section>
+
+          {/* 6. MUDANÇAS NOS TERMOS (NOVO E VITAL) */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 text-tafanu-blue">
+              <RefreshCcw size={20} />
+              <h2 className="text-xl font-black uppercase italic m-0">
+                6. Atualização dos Termos
+              </h2>
+            </div>
+            <p className="text-slate-600 leading-relaxed text-sm">
+              O TAFANU poderá alterar estes Termos de Uso a qualquer momento
+              para refletir melhorias no sistema ou mudanças na legislação
+              aplicável. O uso continuado da plataforma após as alterações
+              constituirá o seu consentimento com as novas regras.
+            </p>
+          </section>
+
           <div className="pt-10 border-t border-slate-100 flex flex-col items-center gap-4">
             <button
               onClick={() => window.close()}
@@ -136,11 +182,8 @@ export default function TermosPage() {
             >
               Concordar e Fechar
             </button>
-            <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase">
-              (Após fechar, continue seu cadastro na aba anterior)
-            </p>
             <p className="text-[10px] text-slate-400 font-bold uppercase">
-              &copy; {currentYear} TAFANU - Conectando Cidades
+              &copy; {currentYear} TAFANU
             </p>
           </div>
         </div>

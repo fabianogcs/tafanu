@@ -33,13 +33,13 @@ export default async function Home() {
                 <Sparkles size={14} />
               </span>
               <span className="text-tafanu-blue font-black text-[10px] uppercase tracking-[0.3em]">
-                Em Alta
+                DESCUBRA
               </span>
             </div>
             <h2 className="text-3xl md:text-5xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
-              Destaques{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-blue to-cyan-500">
-                do dia
+              VITRINE{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-blue to-cyan-500 pr-2">
+                TAFANU
               </span>
             </h2>
           </div>
