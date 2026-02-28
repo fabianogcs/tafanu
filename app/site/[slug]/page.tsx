@@ -53,15 +53,20 @@ export async function generateMetadata({
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
 
-  // 🎯 O ALVO: imageUrl (que é a Logo do assinante no seu Schema)
+  // 🎯 O ALVO: imageUrl
   const logoAssinante = business.imageUrl;
 
-  const displayImage = logoAssinante
-    ? logoAssinante.startsWith("http")
-      ? logoAssinante
-      : `${siteUrl}${logoAssinante}`
-    : `${siteUrl}/og-default.png`;
+  let displayImage = `${siteUrl}/og-default.png`; // Começa com o padrão do Tafanu
 
+  if (logoAssinante) {
+    if (logoAssinante.startsWith("http")) {
+      // Se for Cloudinary (http), usa o link puro!
+      displayImage = logoAssinante;
+    } else {
+      // Se for imagem local, monta o link com o seu domínio
+      displayImage = `${siteUrl}${logoAssinante.startsWith("/") ? "" : "/"}${logoAssinante}`;
+    }
+  }
   return {
     title: `${business.name.toUpperCase()} | Tafanu`,
     description:
