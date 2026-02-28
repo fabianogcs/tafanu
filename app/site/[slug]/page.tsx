@@ -13,6 +13,7 @@ import ShowroomLayout from "@/components/templates/ShowroomLayout";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
+export const revalidate = 0; // Isso força o Next.js a sempre buscar dados novos do banco
 // --- 0. VIEWPORT DINÂMICO ---
 export async function generateViewport({
   params,

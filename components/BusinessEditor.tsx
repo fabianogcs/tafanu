@@ -447,7 +447,7 @@ export default function BusinessEditor({
           updateFullBusiness(business.slug, payload),
           updateBusinessHours(business.slug, businessHours),
         ]);
-
+        router.refresh();
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
         toast.success("Alterações salvas com sucesso!");

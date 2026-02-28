@@ -661,11 +661,14 @@ export async function updateFullBusiness(slug: string, payload: any) {
     });
 
     // 9. LIMPA O CACHE (Para o navegador e Google verem a mudança)
-    revalidatePath("/");
+    revalidatePath("/", "layout"); // Força a atualização dos metadados globais
     revalidatePath("/busca");
     revalidatePath("/dashboard");
-    revalidatePath(`/site/${slug}`); // Link antigo
-    revalidatePath(`/site/${novoSlug}`); // Link novo
+    revalidatePath(`/site/${slug}`);
+
+    if (novoSlug !== slug) {
+      revalidatePath(`/site/${novoSlug}`);
+    }
 
     return { success: true, newSlug: novoSlug };
   } catch (error) {
