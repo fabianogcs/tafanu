@@ -145,6 +145,7 @@ export default function LuxeLayout({
   fullAddress,
   isLoggedIn,
   isFavorited,
+  emailVerified,
 }: any) {
   const {
     business,
@@ -269,6 +270,7 @@ export default function LuxeLayout({
               businessId={business.id}
               isLoggedIn={isLoggedIn}
               initialIsFavorited={isFavorited}
+              emailVerified={emailVerified}
             />
           </div>
         </div>

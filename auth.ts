@@ -101,7 +101,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
   },
+
   events: {
+    async linkAccount({ user }) {
+      if (user.id) {
+        await db.user.update({
+          where: { id: user.id },
+          data: { emailVerified: new Date() }, // Preenche com a data/hora atual!
+        });
+      }
+    },
     async signIn({ user }) {
       const cookieStore = await cookies();
       if (user.id) {

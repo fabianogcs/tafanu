@@ -119,20 +119,24 @@ export default async function BusinessPage({
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  // 1. BUSCA O NEGÓCIO + DADOS DO DONO (User)
-  const business = await db.business.findUnique({
-    where: { slug },
-    include: {
-      user: {
-        select: { role: true, expiresAt: true },
+  // 1. BUSCA O NEGÓCIO + DADOS DO DONO E O USUÁRIO LOGADO AO MESMO TEMPO
+  const [business, loggedUser] = await Promise.all([
+    db.business.findUnique({
+      where: { slug },
+      include: {
+        user: { select: { role: true, expiresAt: true } },
+        hours: true,
+        favorites: userId ? { where: { userId } } : false,
+        _count: { select: { favorites: true } },
       },
-      hours: true,
-      favorites: userId ? { where: { userId } } : false,
-      _count: {
-        select: { favorites: true },
-      },
-    },
-  });
+    }),
+    userId
+      ? db.user.findUnique({
+          where: { id: userId },
+          select: { emailVerified: true },
+        })
+      : null,
+  ]);
 
   // 2. TRAVA DE SEGURANÇA: Se não existe ou se o dono expirou
   if (!business) return notFound();
@@ -221,6 +225,7 @@ export default async function BusinessPage({
     isOpen,
     isLoggedIn: !!userId,
     isFavorited: business.favorites && business.favorites.length > 0,
+    emailVerified: loggedUser ? !!loggedUser.emailVerified : false,
   };
 
   return (

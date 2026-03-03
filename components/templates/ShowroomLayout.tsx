@@ -116,6 +116,7 @@ export default function ShowroomLayout({
   fullAddress,
   isLoggedIn,
   isFavorited,
+  emailVerified,
 }: any) {
   const {
     business,
@@ -239,6 +240,7 @@ export default function ShowroomLayout({
               businessId={business.id}
               isLoggedIn={isLoggedIn}
               initialIsFavorited={isFavorited}
+              emailVerified={emailVerified}
             />
           </div>
         </div>

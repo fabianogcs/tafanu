@@ -174,6 +174,7 @@ export default function ComercialLayout({
   fullAddress,
   isLoggedIn,
   isFavorited,
+  emailVerified,
 }: any) {
   const {
     business,
@@ -310,6 +311,7 @@ export default function ComercialLayout({
                 isLoggedIn={isLoggedIn}
                 initialIsFavorited={isFavorited}
                 key={isFavorited ? "favorited" : "not-favorited"}
+                emailVerified={emailVerified}
               />
             </div>
           </div>
