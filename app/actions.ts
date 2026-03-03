@@ -513,6 +513,11 @@ export async function createBusiness(formData: FormData) {
           instagram: cleanSocialLink(validatedData.instagram || ""),
           facebook: cleanSocialLink(validatedData.facebook || ""),
           tiktok: cleanSocialLink(validatedData.tiktok || ""),
+          // --- NOVOS CANAIS DE VENDA ---
+          shopee: validatedData.shopee?.trim() || "",
+          mercadoLivre: validatedData.mercadoLivre?.trim() || "",
+          shein: validatedData.shein?.trim() || "",
+          ifood: validatedData.ifood?.trim() || "",
           faqs,
           urban_tag: (formData.get("urban_tag") as string) || null,
           luxe_quote: (formData.get("luxe_quote") as string) || null,
@@ -646,6 +651,11 @@ export async function updateFullBusiness(slug: string, payload: any) {
       instagram: cleanSocialLink(validatedData.instagram || ""),
       facebook: cleanSocialLink(validatedData.facebook || ""),
       tiktok: cleanSocialLink(validatedData.tiktok || ""),
+      // --- NOVOS CANAIS DE VENDA ---
+      shopee: validatedData.shopee?.trim() || "",
+      mercadoLivre: validatedData.mercadoLivre?.trim() || "",
+      shein: validatedData.shein?.trim() || "",
+      ifood: validatedData.ifood?.trim() || "",
       subcategory: payload.subcategory,
       urban_tag: payload.urban_tag,
       luxe_quote: payload.luxe_quote,

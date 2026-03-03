@@ -45,6 +45,11 @@ export function normalizeBusiness(raw: any) {
     facebook: b.facebook || "",
     tiktok: b.tiktok || "",
     website: b.website || "",
+    // --- Novos Canais de Venda ---
+    shopee: b.shopee || "",
+    mercadoLivre: b.mercadoLivre || "",
+    shein: b.shein || "",
+    ifood: b.ifood || "",
 
     // Localização
     address: b.address || "",

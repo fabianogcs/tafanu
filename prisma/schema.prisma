@@ -86,6 +86,11 @@ model Business {
   instagram           String?
   facebook            String?
   tiktok              String?
+  // --- NOVOS CANAIS DE VENDA ---
+  shopee              String?
+  mercadoLivre        String?
+  shein               String?
+  ifood               String?
   
   // Métricas de Popularidade
   views               Int            @default(0)

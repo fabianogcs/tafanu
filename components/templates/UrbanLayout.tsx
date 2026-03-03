@@ -20,6 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Camera,
+  ShoppingBag,
+  Store,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
 import { toast } from "sonner";
@@ -32,6 +34,32 @@ import FavoriteButton from "@/components/FavoriteButton";
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
+  </svg>
+);
+
+// Ícones Oficiais Customizados
+const MeliIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+  </svg>
+);
+
+const ShopeeIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.5 8H17V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H4.5v13c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V8zM9 6c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9V6zm6 5c0 1.1-.9 2-2 2s-2-.9-2-2H9c0 2.21 1.79 4 4 4s4-1.79 4-4h-2z" />
+  </svg>
+);
+
+const IfoodIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5c-2.5 0-4.5-1.5-4.5-3.5h2c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2h2c0 2-2 3.5-4.5 3.5zm-2-6c-.83 0-1.5-.67-1.5-1.5S8.17 7.5 9 7.5s1.5.67 1.5 1.5S9.83 10.5 9 10.5zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 7.5 15 7.5s1.5.67 1.5 1.5S15.83 10.5 15 10.5z" />
+  </svg>
+);
+
+const SheinIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
 
@@ -76,8 +104,8 @@ export default function UrbanLayout({
   theme: propTheme,
   realHours: rawHours,
   fullAddress,
-  isLoggedIn, // ⬅️ Adicione aqui
-  isFavorited, // ⬅️ Adicione aqui
+  isLoggedIn,
+  isFavorited,
 }: any) {
   const {
     business,
@@ -115,6 +143,37 @@ export default function UrbanLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
+
+  const salesChannels = [
+    {
+      key: "mercadoLivre",
+      name: "Mercado Livre",
+      icon: <MeliIcon className="w-4 h-4" />,
+      url: business.mercadoLivre,
+      colorClass: "text-[#FFE600] group-hover:text-[#FFE600]",
+    },
+    {
+      key: "shopee",
+      name: "Shopee",
+      icon: <ShopeeIcon className="w-4 h-4" />,
+      url: business.shopee,
+      colorClass: "text-[#EE4D2D] group-hover:text-[#EE4D2D]",
+    },
+    {
+      key: "ifood",
+      name: "iFood",
+      icon: <IfoodIcon className="w-4 h-4" />,
+      url: business.ifood,
+      colorClass: "text-[#EA1D2C] group-hover:text-[#EA1D2C]",
+    },
+    {
+      key: "shein",
+      name: "Shein",
+      icon: <SheinIcon className="w-4 h-4" />,
+      url: business.shein,
+      colorClass: "text-white group-hover:text-white",
+    },
+  ].filter((c) => c.url && c.url.trim() !== "");
 
   const safeSetIndex = useCallback(
     (next: number) => {
@@ -177,8 +236,6 @@ export default function UrbanLayout({
         </div>
 
         <div className="relative z-20 w-full max-w-7xl mx-auto text-center flex flex-col items-center">
-          {/* CORREÇÃO 1: Wrapper estático para o Logo */}
-          {/* Criamos uma div que segura o espaço (w-24 h-24) para o conteúdo não pular */}
           {business.imageUrl && (
             <div className="w-24 h-24 md:w-36 md:h-36 mb-6 relative">
               <motion.div
@@ -196,8 +253,6 @@ export default function UrbanLayout({
             </div>
           )}
 
-          {/* CORREÇÃO 2: Wrapper com altura mínima para o Título */}
-          {/* Isso impede que o texto "empurre" o resto da página quando a fonte carrega */}
           <div className="min-h-[4rem] md:min-h-[9rem] flex items-center justify-center">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -247,6 +302,35 @@ export default function UrbanLayout({
                   </a>
                 );
               })}
+            </motion.div>
+          )}
+
+          {/* LOJAS (Pílulas Discretas) */}
+          {salesChannels.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-wrap justify-center gap-3 mt-6 w-full max-w-xl mx-auto"
+            >
+              {salesChannels.map((channel) => (
+                <a
+                  key={channel.key}
+                  href={formatExternalLink(channel.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full ${glassEffect} border border-white/10 hover:bg-white/10 hover:scale-105 hover:border-white/30 transition-all duration-300 group shadow-lg`}
+                >
+                  <div
+                    className={`transition-transform duration-300 group-hover:scale-110 ${channel.colorClass} opacity-80 group-hover:opacity-100`}
+                  >
+                    {channel.icon}
+                  </div>
+                  <span className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase opacity-60 group-hover:opacity-100 transition-opacity">
+                    {channel.name}
+                  </span>
+                </a>
+              ))}
             </motion.div>
           )}
         </div>

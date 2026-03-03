@@ -11,6 +11,8 @@ interface LayoutSwitcherProps {
   theme: any;
   realHours: any;
   fullAddress: string;
+  isLoggedIn: boolean; // ⬅️ Adicionado
+  isFavorited: boolean; // ⬅️ Adicionado
 }
 
 export default function MainLayoutSwitcher({
@@ -18,6 +20,8 @@ export default function MainLayoutSwitcher({
   theme,
   realHours,
   fullAddress,
+  isLoggedIn, // ⬅️ Adicionado
+  isFavorited, // ⬅️ Adicionado
 }: LayoutSwitcherProps) {
   // --- REDE DE PROTEÇÃO: Busca o objeto do tema ou usa o padrão 'porcelain_white' ---
   const safeTheme =
@@ -34,7 +38,7 @@ export default function MainLayoutSwitcher({
     );
   }
 
-  // Lógica de seleção passando o safeTheme (nosso tema oficial garantido)
+  // Lógica de seleção passando o safeTheme (nosso tema oficial garantido) e os estados de Favorito
   switch (business.layout) {
     case "editorial":
       return (
@@ -43,6 +47,8 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
+          isLoggedIn={isLoggedIn} // ⬅️ Repassando
+          isFavorited={isFavorited} // ⬅️ Repassando
         />
       );
 
@@ -54,6 +60,8 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
+          isLoggedIn={isLoggedIn} // ⬅️ Repassando
+          isFavorited={isFavorited} // ⬅️ Repassando
         />
       );
 
@@ -64,6 +72,8 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
+          isLoggedIn={isLoggedIn} // ⬅️ Repassando
+          isFavorited={isFavorited} // ⬅️ Repassando
         />
       );
 
@@ -74,6 +84,8 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
+          isLoggedIn={isLoggedIn} // ⬅️ Repassando
+          isFavorited={isFavorited} // ⬅️ Repassando
         />
       );
 
@@ -84,6 +96,8 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
+          isLoggedIn={isLoggedIn} // ⬅️ Repassando
+          isFavorited={isFavorited} // ⬅️ Repassando
         />
       );
   }

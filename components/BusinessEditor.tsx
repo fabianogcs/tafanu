@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Hash,
   X,
+  ShoppingCart,
 } from "lucide-react";
 
 import {
@@ -275,6 +276,11 @@ export default function BusinessEditor({
     facebook: cleanHandle(safeBusiness.facebook, /.*facebook\.com\//),
     tiktok: cleanHandle(safeBusiness.tiktok, /.*tiktok\.com\/@?/),
     website: safeBusiness.website || "",
+    // --- NOVOS CANAIS ---
+    shopee: safeBusiness.shopee || "",
+    mercadoLivre: safeBusiness.mercadoLivre || "",
+    shein: safeBusiness.shein || "",
+    ifood: safeBusiness.ifood || "",
   });
 
   const filteredThemeKeys = useMemo(() => {
@@ -397,6 +403,11 @@ export default function BusinessEditor({
           : "",
         tiktok: socials.tiktok ? `https://tiktok.com/@${socials.tiktok}` : "",
         website: socials.website,
+        // --- NOVOS CANAIS ---
+        shopee: socials.shopee,
+        mercadoLivre: socials.mercadoLivre,
+        shein: socials.shein,
+        ifood: socials.ifood,
         videoUrl: "",
         heroImage: "",
         gallery: validGallery,
@@ -600,7 +611,11 @@ export default function BusinessEditor({
                 </button>
               )}
             </div>
-
+            <div className="mb-8 px-4 py-2 bg-indigo-50/50 border border-indigo-100 rounded-full">
+              <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-500 text-center">
+                💡 Use img quadrada 800x800 com espaço nas bordas
+              </p>
+            </div>
             {/* NOME DO NEGÓCIO */}
             <div className="w-full relative group mb-2">
               <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1 block opacity-60 group-hover:opacity-100 transition-opacity">
@@ -1070,7 +1085,54 @@ export default function BusinessEditor({
               </div>
             </div>
           </div>
-
+          {/* CANAIS DE VENDA / E-COMMERCE */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
+              <ShoppingCart size={18} className="text-amber-500" /> Canais de
+              Venda (Lojas)
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  key: "mercadoLivre",
+                  label: "MERCADO LIVRE",
+                  placeholder: "Link da sua loja ou produto principal",
+                },
+                {
+                  key: "shopee",
+                  label: "SHOPEE",
+                  placeholder: "Link da sua loja na Shopee",
+                },
+                {
+                  key: "shein",
+                  label: "SHEIN",
+                  placeholder: "Link da sua loja na Shein",
+                },
+                {
+                  key: "ifood",
+                  label: "IFOOD",
+                  placeholder: "Link do seu cardápio no iFood",
+                },
+              ].map((store) => (
+                <div
+                  key={store.key}
+                  className="bg-slate-50 p-4 rounded-xl border border-slate-100 focus-within:border-amber-300 focus-within:ring-4 ring-amber-50 transition-all"
+                >
+                  <label className="text-[8px] font-black uppercase text-slate-500 mb-1 block">
+                    {store.label}
+                  </label>
+                  <input
+                    value={(socials as any)[store.key]}
+                    onChange={(e) =>
+                      setSocials({ ...socials, [store.key]: e.target.value })
+                    }
+                    className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none placeholder:font-normal placeholder:text-slate-400"
+                    placeholder={store.placeholder}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             {/* CABEÇALHO DA SEÇÃO COM TÍTULO E BOTÃO NA MESMA LINHA */}
             <div className="flex items-center justify-between mb-6">

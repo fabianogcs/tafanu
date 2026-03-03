@@ -49,6 +49,11 @@ export const businessSchema = z.object({
   facebook: z.string().optional().nullable(),
   tiktok: z.string().optional().nullable(),
   website: z.string().optional().nullable(),
+  // --- Novos Canais de Venda ---
+  shopee: z.string().optional().nullable(),
+  mercadoLivre: z.string().optional().nullable(),
+  shein: z.string().optional().nullable(),
+  ifood: z.string().optional().nullable(),
 
   // --- Mídia ---
   imageUrl: z.string().optional().or(z.literal("")),
