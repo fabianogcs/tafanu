@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 // Inicializa o NextAuth só com a config leve (sem bcrypt/prisma)
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
   const user = req.auth?.user;
