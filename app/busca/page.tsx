@@ -159,11 +159,44 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
     let score = !query ? 1 : 0;
     if (query) {
-      const name = normalize(b.name);
-      const cat = normalize(b.category);
-      if (name === query) score += 50;
-      else if (name.includes(query)) score += 20;
-      if (cat.includes(query)) score += 30;
+      const name = normalize(b.name || "");
+      const cat = normalize(b.category || "");
+
+      // 1. Prepara as Subcategorias (seja em formato de lista ou texto corrido)
+      let subs = "";
+      if (Array.isArray(b.subcategory)) {
+        subs = normalize(b.subcategory.join(" "));
+      } else if (typeof b.subcategory === "string") {
+        subs = normalize(b.subcategory);
+      }
+
+      // 2. Prepara as Palavras-chave (Keywords) do painel do assinante
+      let keys = "";
+      if (Array.isArray(b.keywords)) {
+        keys = normalize(b.keywords.join(" "));
+      } else if (typeof b.keywords === "string") {
+        keys = normalize(b.keywords);
+      }
+
+      // 3. Fatiador de termos (ex: "pizza calabresa" vira ["pizza", "calabresa"])
+      // Ignora palavras pequeninas como "de", "e", "da"
+      const searchTerms = query.split(" ").filter((t) => t.length > 2);
+      const termsToSearch = searchTerms.length > 0 ? searchTerms : [query];
+
+      // 4. Pontuação Direta (Match Exato tem prioridade máxima)
+      if (name === query) score += 100;
+      else if (name.includes(query)) score += 50;
+
+      if (cat === query) score += 40;
+
+      // 5. O SEGREDO DA BUSCA INTELIGENTE (Procura as fatias da palavra)
+      // Se digitar "pizza", ele vai encontrar dentro de "pizzaria" nas keywords!
+      termsToSearch.forEach((term) => {
+        if (name.includes(term)) score += 20;
+        if (subs.includes(term)) score += 30; // Peso forte para subcategorias
+        if (keys.includes(term)) score += 30; // Peso forte para as 10 palavras-chave
+        if (cat.includes(term)) score += 10;
+      });
     }
 
     return {
@@ -197,7 +230,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-[#0f172a] text-white py-10 px-4 shadow-xl relative overflow-hidden">
+      <div className="bg-[#0f172a] text-white py-10 px-4 shadow-xl relative overflow-hidden z-[100]">
         <div className="absolute top-0 right-0 w-96 h-96 bg-tafanu-action rounded-full blur-[120px] opacity-10 -mr-20 -mt-20" />
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
           <div className="space-y-2">
@@ -241,7 +274,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
           </aside>
 
           <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
               {businesses.length === 0 ? (
                 <div className="col-span-full py-20 text-center opacity-50">
                   <p className="font-bold text-gray-400">

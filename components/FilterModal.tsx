@@ -137,11 +137,11 @@ export default function FilterModal({
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[48]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9998]"
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="fixed left-0 right-0 bottom-0 top-16 md:top-24 md:left-auto md:right-10 md:bottom-10 md:w-[450px] z-[49] bg-white flex flex-col w-full shadow-2xl animate-in slide-in-from-right duration-300 md:rounded-[2.5rem] overflow-hidden border border-white/20">
+          <div className="fixed left-0 right-0 bottom-0 top-0 md:top-24 md:left-auto md:right-10 md:bottom-10 md:w-[450px] z-[9999] bg-white flex flex-col w-full shadow-2xl animate-in slide-in-from-right duration-300 md:rounded-[2.5rem] overflow-hidden border border-white/20">
             {/* HEADER */}
             <div className="bg-[#0f172a] text-white flex justify-between items-center px-8 py-7 shrink-0">
               <div className="flex flex-col">

@@ -3,67 +3,78 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
 
-// 1. LISTA DE OURO (E-mails que mandam em tudo)
 const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"];
 
 export default async function AdminPage() {
   const session = await auth();
 
-  // 2. CHECA SE ESTÁ LOGADO
   if (!session?.user?.email) {
     redirect("/login?callbackUrl=/admin");
   }
 
   const emailSessao = session.user.email.toLowerCase();
 
-  // 3. BUSCA O USUÁRIO ATUAL NO BANCO
   const currentUser = await db.user.findFirst({
     where: {
-      email: {
-        equals: emailSessao,
-        mode: "insensitive",
-      },
+      email: { equals: emailSessao, mode: "insensitive" },
     },
   });
 
-  // 4. VALIDAÇÃO DE ADMIN (E-mail ou Role)
   const isEmailAutorizado = ADMIN_EMAILS.includes(emailSessao);
   const isAdminNoBanco = currentUser?.role === "ADMIN";
 
   if (!isEmailAutorizado && !isAdminNoBanco) {
-    console.log(`Acesso negado para: ${emailSessao}`);
     redirect("/");
   }
 
-  // 5. BUSCA OS DADOS (Usuários e Denúncias)
-  // ⬅️ MUDANÇA AQUI: Pedimos pro banco trazer os dados do afiliado (O "Pai" da conta)
-  const usersData = await db.user.findMany({
-    include: {
-      businesses: true,
-      affiliate: {
-        select: { name: true, referralCode: true },
+  // --- BUSCA GERAL DE DADOS ---
+  const [usersData, reports, flaggedComments] = await Promise.all([
+    // 1. Todos os Usuários + Negócios + Contagem de Indicações
+    db.user.findMany({
+      include: {
+        businesses: true,
+        referrals: { select: { id: true } }, // Quantas pessoas ele indicou
+        affiliate: { select: { name: true, referralCode: true } }, // Quem indicou ele
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    // 2. Denúncias de Negócios (Abuso, Plágio, etc)
+    db.report.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { business: { select: { name: true, slug: true } } },
+    }),
+    // 3. NOVO: Comentários Denunciados (Moderação)
+    db.comment.findMany({
+      where: { isFlagged: true },
+      include: {
+        user: { select: { name: true, image: true } },
+        business: { select: { name: true, slug: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  // ⬅️ MUDANÇA AQUI: Formatamos a etiqueta bonitinha "Nome (CÓDIGO)" pro seu painel
+  // --- ORGANIZAÇÃO DOS DADOS ---
+  const agora = new Date();
+
   const users = usersData.map((u: any) => ({
     ...u,
     referredBy: u.affiliate
       ? `${u.affiliate.name} (${u.affiliate.referralCode})`
       : null,
+    referralCount: u.referrals.length,
   }));
 
-  const reports = await db.report.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { business: { select: { name: true, slug: true } } },
-  });
+  // Filtramos os Afiliados (quem tem código de afiliado ou indicações)
+  const affiliates = users.filter((u) => u.referralCode || u.referralCount > 0);
 
-  // 6. CÁLCULO DE RECEITA DINÂMICA (Soma real de lastPrice)
-  const agora = new Date();
+  // Filtramos os Assinantes (quem tem negócios cadastrados)
+  const subscribers = users.filter(
+    (u) => u.businesses.length > 0 || u.role === "ASSINANTE",
+  );
+
+  // Cálculo de Receita (apenas assinantes ativos)
   const receitaTotal = users.reduce((acc, user) => {
-    // Só conta na receita se: for assinante, não estiver vencido e NÃO estiver banido
     if (
       user.role === "ASSINANTE" &&
       user.expiresAt &&
@@ -75,10 +86,12 @@ export default async function AdminPage() {
     return acc;
   }, 0);
 
-  // 7. PREPARA OS DADOS PARA O COMPONENTE VISUAL
   const adminData = {
     users: users,
-    reports: reports as any[],
+    subscribers: subscribers,
+    affiliates: affiliates,
+    reports: reports,
+    flaggedComments: flaggedComments, // Dados para a nova aba de moderação
     receita: receitaTotal,
   };
 

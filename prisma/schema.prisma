@@ -40,6 +40,7 @@ model User {
   // RELAÇÕES
   businesses       Business[] 
   favorites        Favorite[] 
+  comments         Comment[]
 }
 
 // --- TABELA DE NEGÓCIOS ---
@@ -106,6 +107,7 @@ model Business {
   hours               BusinessHour[]
   favorites           Favorite[]
   reports             Report[]
+  comments         Comment[]
 
   // ÍNDICES PARA BUSCA RÁPIDA
   @@index([city])
@@ -191,4 +193,31 @@ model PasswordResetToken {
   expires DateTime
 
   @@unique([email, token])
+}
+// --- SISTEMA DE COMENTÁRIOS E AVALIAÇÕES ---
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Flag de Moderação (Se o lojista denunciar, fica true até o admin resolver)
+  isFlagged Boolean  @default(false)
+  flaggedBy String?
+
+  // Quem escreveu
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Onde escreveu
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Sistema de Respostas (Thread)
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+
+  @@index([businessId])
+  @@index([userId])
 }

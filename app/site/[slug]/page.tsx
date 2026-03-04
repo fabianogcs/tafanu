@@ -128,12 +128,28 @@ export default async function BusinessPage({
         hours: true,
         favorites: userId ? { where: { userId } } : false,
         _count: { select: { favorites: true } },
+        // --- BUSCA OS COMENTÁRIOS E QUEM OS ESCREVEU ---
+        // --- BUSCA OS COMENTÁRIOS, QUEM ESCREVEU E AS RESPOSTAS DO DONO ---
+        comments: {
+          where: { parentId: null }, // 🛡️ Segurança: Pega apenas comentários "pai" (não pega respostas soltas)
+          include: {
+            user: { select: { name: true, image: true, role: true } },
+            replies: {
+              // 🚀 A MÁGICA: Aqui ele busca as respostas vinculadas
+              include: {
+                user: { select: { name: true, image: true, role: true } },
+              },
+              orderBy: { createdAt: "asc" }, // Respostas em ordem de conversa (mais antiga primeiro)
+            },
+          },
+          orderBy: { createdAt: "desc" }, // Comentários novos no topo
+        },
       },
     }),
     userId
       ? db.user.findUnique({
           where: { id: userId },
-          select: { emailVerified: true },
+          select: { emailVerified: true, role: true },
         })
       : null,
   ]);
@@ -143,6 +159,7 @@ export default async function BusinessPage({
 
   const now = new Date();
   const isOwnerAdmin = business.user?.role === "ADMIN";
+  const isVisitorAdmin = loggedUser?.role === "ADMIN";
   const isExpired = business.user?.expiresAt
     ? new Date(business.user.expiresAt) < now
     : true;
@@ -220,6 +237,8 @@ export default async function BusinessPage({
   const layoutProps = {
     business,
     theme,
+    currentUserId: userId,
+    isAdmin: isVisitorAdmin,
     realHours,
     fullAddress,
     isOpen,

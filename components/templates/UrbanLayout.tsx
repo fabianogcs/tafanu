@@ -29,6 +29,7 @@ import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
+import CommentsSection from "../CommentsSection";
 
 // --- HELPERS ---
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -107,6 +108,8 @@ export default function UrbanLayout({
   isLoggedIn,
   isFavorited,
   emailVerified,
+  currentUserId,
+  isAdmin,
 }: any) {
   const {
     business,
@@ -677,6 +680,18 @@ export default function UrbanLayout({
           filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
         }
       `}</style>
+      {/* SEÇÃO DE COMENTÁRIOS */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pb-20">
+        <CommentsSection
+          businessId={rawBusiness.id}
+          businessOwnerId={rawBusiness.userId}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          emailVerified={emailVerified}
+          themeColor={theme.primary}
+          comments={rawBusiness.comments || []} // Usamos o rawBusiness para garantir que os dados do banco cheguem aqui
+        />
+      </div>
     </div>
   );
 }

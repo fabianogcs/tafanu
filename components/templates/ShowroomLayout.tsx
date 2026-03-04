@@ -27,6 +27,7 @@ import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
+import CommentsSection from "../CommentsSection";
 
 // --- HELPERS E ÍCONES ---
 const TikTokIcon = ({
@@ -117,6 +118,8 @@ export default function ShowroomLayout({
   isLoggedIn,
   isFavorited,
   emailVerified,
+  currentUserId,
+  isAdmin,
 }: any) {
   const {
     business,
@@ -513,9 +516,24 @@ export default function ShowroomLayout({
           </div>
         )}
 
+        {/* MODAL DE REPORTAR (DISCRETO) */}
         <div className="w-full flex justify-center py-12 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
+
+        {/* --- SEÇÃO DE AVALIAÇÕES (AGORA NO FINAL) --- */}
+        <div className="max-w-4xl mx-auto w-full pb-20">
+          <CommentsSection
+            businessId={rawBusiness.id}
+            businessOwnerId={rawBusiness.userId}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            emailVerified={emailVerified}
+            themeColor={theme.primary}
+            comments={rawBusiness.comments || []}
+          />
+        </div>
+
         <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
       </main>
 

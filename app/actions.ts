@@ -1986,3 +1986,118 @@ export async function resendVerificationEmail(email: string) {
     return { error: "Erro ao reenviar e-mail." };
   }
 }
+// ==========================================
+// SISTEMA DE COMENTÁRIOS (UGC)
+// ==========================================
+
+export async function addComment(
+  businessId: string,
+  userId: string,
+  content: string,
+  parentId?: string,
+) {
+  try {
+    const newComment = await db.comment.create({
+      data: {
+        content,
+        businessId,
+        userId,
+        parentId: parentId || null,
+      },
+    });
+
+    // Revalidar a página do negócio para mostrar o novo comentário imediatamente
+    // Como não sabemos o slug aqui, o ideal é revalidar tudo ou passar o slug
+    // Se quiser ser específico, passe o slug como parâmetro. Vou revalidar o path genérico.
+    revalidatePath(`/site/[slug]`, "page");
+    return { success: true, comment: newComment };
+  } catch (error) {
+    console.error("Erro ao adicionar comentário:", error);
+    return { success: false, error: "Falha ao adicionar comentário." };
+  }
+}
+
+export async function deleteComment(commentId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) return { success: false, error: "Não autorizado." };
+
+    const userId = session.user.id;
+    const userRole = session.user.role; // Pego o cargo real do banco/sessão
+
+    const comment = await db.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) return { success: false, error: "Comentário não existe." };
+
+    // 🛡️ REGRA DE OURO: Só apaga se for o dono DO comentário OU se for ADMIN
+    const isOwner = comment.userId === userId;
+    const isAdmin = userRole === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: "Você não tem permissão para apagar isso.",
+      };
+    }
+
+    await db.comment.delete({ where: { id: commentId } });
+
+    revalidatePath("/site/[slug]", "page");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Erro ao deletar." };
+  }
+}
+
+export async function flagComment(commentId: string) {
+  try {
+    const session = await auth(); // 🛡️ Pegamos a identidade real do servidor
+    if (!session?.user)
+      return { success: false, error: "Logue para denunciar." };
+
+    const comment = await db.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment)
+      return { success: false, error: "Comentário não encontrado." };
+
+    // Atualiza o comentário como denunciado e salva quem denunciou (opcional)
+    await db.comment.update({
+      where: { id: commentId },
+      data: {
+        isFlagged: true,
+        flaggedBy: session.user.id, // Auditoria: saber quem denunciou
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Erro na denúncia." };
+  }
+}
+// 🛡️ MODERAÇÃO DE COMENTÁRIOS: Limpa a denúncia e mantém o comentário no site
+export async function approveComment(commentId: string) {
+  // 1. Validação de Segurança (Garante que só você, o Admin, faça isso)
+  const session = await auth();
+  const emailSessao = session?.user?.email?.toLowerCase();
+  const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"]; // Seu e-mail de poder
+
+  if (!emailSessao || !ADMIN_EMAILS.includes(emailSessao)) {
+    return { error: "Acesso negado. Apenas o Admin pode aprovar comentários." };
+  }
+
+  try {
+    await db.comment.update({
+      where: { id: commentId },
+      data: { isFlagged: false }, // 🔓 Remove o "alerta vermelho" do comentário
+    });
+
+    return { success: true, message: "Comentário aprovado e mantido no site!" };
+  } catch (error) {
+    console.error("Erro ao aprovar comentário:", error);
+    return { success: false, error: "Erro interno ao processar a aprovação." };
+  }
+}

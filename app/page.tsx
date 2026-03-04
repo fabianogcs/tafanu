@@ -26,7 +26,7 @@ export default async function Home() {
 
       {/* SEÇÃO DE DESTAQUES */}
       <section className="max-w-7xl mx-auto px-4 md:px-6 py-12">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-tafanu-blue/10 text-tafanu-blue p-1.5 rounded-lg">
@@ -58,7 +58,7 @@ export default async function Home() {
         </div>
 
         {/* GRID DE CARDS PREMIUM (VIDRO) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
           {businesses.map((item: any) => (
             <BusinessCard
               key={item.id}

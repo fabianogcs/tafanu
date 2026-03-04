@@ -29,9 +29,12 @@ import {
   CreditCard,
   AlertTriangle,
   User, // ⬅️ Ícone do Usuário para o card de denúncias
+  MessageSquare,
+  Trash2,
 } from "lucide-react";
 
 import {
+  approveComment,
   resolveReport,
   adminAddDaysToUser,
   adminAddExactDaysToUser,
@@ -41,6 +44,7 @@ import {
   markAffiliateAsPaid,
   banUserAction,
   unbanUserAction,
+  deleteComment,
 } from "@/app/actions";
 
 export default function AdminDashboard({ data }: { data: any }) {
@@ -79,6 +83,7 @@ export default function AdminDashboard({ data }: { data: any }) {
     partners,
     pendingReports,
     bannedUsers,
+    flaggedComments,
   } = useMemo(() => {
     const users = data.users.filter((u: any) => u.email !== ADMIN_EMAIL);
     const now = new Date();
@@ -155,8 +160,9 @@ export default function AdminDashboard({ data }: { data: any }) {
       partners: affs,
       bannedUsers: banned,
       pendingReports: reports,
+      flaggedComments: data.flaggedComments || [],
     };
-  }, [data]);
+  }, [data, , ADMIN_EMAIL]);
 
   // --- BUSCA GLOBAL ---
   const filteredData = useMemo(() => {
@@ -235,6 +241,34 @@ export default function AdminDashboard({ data }: { data: any }) {
         ? toast.success("Caso encerrado com sucesso!")
         : toast.error("Erro ao resolver.");
       router.refresh();
+    });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!confirm("Apagar esse comentário permanentemente?")) return;
+    startTransition(async () => {
+      // ✅ AGORA ESTÁ CERTO: Só o ID. O servidor faz o resto!
+      const res = await deleteComment(commentId);
+
+      if (res.success) {
+        toast.success("Comentário removido!");
+        router.refresh();
+      } else {
+        toast.error(res.error || "Erro ao apagar");
+      }
+    });
+  };
+
+  const handleApproveComment = (commentId: string) => {
+    startTransition(async () => {
+      const res = await approveComment(commentId); // Chama a lógica do banco
+
+      if (res.success) {
+        toast.success("Denúncia ignorada e comentário mantido!");
+        router.refresh();
+      } else {
+        toast.error(res.error || "Erro ao processar.");
+      }
     });
   };
 
@@ -507,6 +541,13 @@ export default function AdminDashboard({ data }: { data: any }) {
               alertMode
             />
             <SubTabButton
+              active={activeTab === "comments"}
+              onClick={() => setActiveTab("comments")}
+              label="Moderação"
+              count={flaggedComments.length}
+              alertMode
+            />
+            <SubTabButton
               active={activeTab === "banned"}
               onClick={() => setActiveTab("banned")}
               label="Lista Negra (Banidos)"
@@ -517,10 +558,96 @@ export default function AdminDashboard({ data }: { data: any }) {
 
         {/* --- ÁREA DE CONTEÚDO --- */}
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+          {/* ABA DE MODERAÇÃO DE COMENTÁRIOS */}
+          {activeTab === "comments" && (
+            <div className="p-8 space-y-4 animate-in fade-in duration-500">
+              {flaggedComments.length === 0 ? (
+                <EmptyCardState message="Nenhum comentário denunciado." />
+              ) : (
+                flaggedComments.map((comment: any) => (
+                  <div
+                    key={comment.id}
+                    className="p-6 bg-white border border-slate-200 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm hover:border-orange-200 transition-all group"
+                  >
+                    <div className="flex gap-5 w-full">
+                      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shrink-0 group-hover:bg-orange-50 transition-colors">
+                        <MessageSquare
+                          className="text-slate-400 group-hover:text-orange-500"
+                          size={24}
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
+                              Conteúdo Denunciado:
+                            </p>
+                            <p className="text-sm font-bold text-slate-800 italic mt-1 bg-slate-50 p-3 rounded-xl border-l-4 border-orange-500">
+                              "{comment.content}"
+                            </p>
+                          </div>
+
+                          {/* 🚀 O BOTÃO DE AVERIGUAÇÃO QUE VOCÊ PEDIU */}
+                          <a
+                            href={`/site/${comment.business?.slug}`}
+                            target="_blank"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 text-orange-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all shadow-sm border border-orange-100 shrink-0"
+                          >
+                            <ExternalLink size={14} />
+                            Averiguar Local
+                          </a>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 mt-2">
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md">
+                            <User size={10} className="text-slate-500" />
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">
+                              Autor: {comment.user?.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md">
+                            <LayoutGrid size={10} className="text-slate-500" />
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">
+                              Anúncio: {comment.business?.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md">
+                            <Clock size={10} className="text-slate-500" />
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">
+                              {new Date(comment.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 shrink-0 w-full md:w-auto">
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="flex-1 md:flex-none p-4 bg-rose-100 text-rose-600 rounded-2xl hover:bg-rose-600 hover:text-white transition-all shadow-sm flex justify-center"
+                        title="Apagar Comentário Definitivamente"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleApproveComment(comment.id)} // ✅ AGORA CHAMA A FUNÇÃO CERTA
+                        className="flex-1 md:flex-none p-4 bg-emerald-100 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex justify-center"
+                        title="Manter Comentário (Ignorar Denúncia)"
+                      >
+                        <CheckCircle2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
           {/* TABELA PADRÃO */}
           {activeTab !== "overview" &&
             activeTab !== "reports" &&
-            activeTab !== "payouts" && (
+            activeTab !== "payouts" &&
+            activeTab !== "comments" && (
               <div className="overflow-x-auto animate-in fade-in duration-500">
                 {searchTerm && (
                   <div className="bg-emerald-50 text-emerald-700 p-3 text-center text-xs font-black tracking-widest uppercase">
