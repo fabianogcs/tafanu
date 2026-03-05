@@ -582,16 +582,20 @@ export async function updateFullBusiness(slug: string, payload: any) {
 
     const { hours: _ignoredHours, ...validatedData } = validatedFields.data;
 
-    // 3. GERA O NOVO SLUG (LINK) BASEADO NO NOME
-    const novoSlug = generateSlug(payload.name);
+    // 3. USA O SLUG (LINK) DIGITADO PELO USUÁRIO (E limpa espaços)
+    const novoSlug = payload.slug.trim().toLowerCase();
 
-    // Verifica se o novo link já existe em outro lugar
+    // Verifica se o usuário tentou mudar o link e se o novo já existe
     if (novoSlug !== slug) {
       const exists = await db.business.findUnique({
         where: { slug: novoSlug },
       });
-      if (exists)
-        return { error: "Este nome já gera um link em uso. Tente outro." };
+      if (exists) {
+        return {
+          success: false,
+          error: "Este nome de link já está em uso por outra loja.",
+        };
+      }
     }
 
     // 4. PROCESSA AS KEYWORDS (ESTAVA FALTANDO ESSA ORDEM)

@@ -213,6 +213,10 @@ export default function BusinessEditor({
 }) {
   const cepController = useRef<AbortController | null>(null);
   const router = useRouter();
+  const slugRef = useRef<HTMLInputElement>(null); // A âncora
+  const [slugError, setSlugError] = useState(false); // O controle do "pisca vermelho"
+  const nameRef = useRef<HTMLInputElement>(null);
+  const [nameError, setNameError] = useState(false);
 
   // Memoizações
   const safeBusiness = useMemo(() => normalizeBusiness(business), [business]);
@@ -350,6 +354,16 @@ export default function BusinessEditor({
 
   const handleUpdate = async () => {
     if (isLoading) return;
+    if (!name || name.trim() === "") {
+      toast.error("Por favor, digite o nome do negócio antes de salvar.", {
+        id: "erro-nome-vazio",
+      });
+      setNameError(true);
+      nameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      nameRef.current?.focus();
+      setTimeout(() => setNameError(false), 4000);
+      return; // Para tudo aqui!
+    }
     // Trava de Segurança para o Link (Slug)
     if (!isNew && slug !== safeBusiness.slug) {
       const confirmChange = window.confirm(
@@ -445,6 +459,15 @@ export default function BusinessEditor({
           if (result.error?.toLowerCase().includes("slug")) {
             toast.warning("Este nome de link já está em uso. Tente outro.");
             setIsLoading(false);
+            setSlugError(true); // Fica vermelho
+            slugRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            }); // Desliza pra lá
+            slugRef.current?.focus(); // Coloca o cursor piscando dentro do campo!
+
+            // Tira o alerta vermelho depois de 4 segundos pra não irritar o usuário
+            setTimeout(() => setSlugError(false), 4000);
             return;
           }
           throw new Error(result.error);
@@ -454,10 +477,28 @@ export default function BusinessEditor({
           (f) => f.q.trim() !== "" && f.a.trim() !== "",
         );
 
-        const [updateResult] = await Promise.all([
-          updateFullBusiness(business.slug, payload),
-          updateBusinessHours(business.slug, businessHours),
-        ]);
+        // 1. Tira o Promise.all para podermos ler o erro do update principal
+        const updateResult = await updateFullBusiness(business.slug, payload);
+
+        // 🚀 2. SE DEU ERRO DE LINK REPETIDO:
+        if (!updateResult.success) {
+          toast.warning(
+            updateResult.error || "Este nome de link já está em uso.",
+          );
+          setSlugError(true);
+          slugRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          slugRef.current?.focus();
+          setTimeout(() => setSlugError(false), 4000);
+          return; // Para a execução (sem confete, sem mensagem de sucesso)
+        }
+
+        // 3. Se passou do link, salva os horários normalmente
+        await updateBusinessHours(business.slug, businessHours);
+
+        // 4. O resto continua igual (Confete e Sucesso)
         router.refresh();
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
@@ -622,9 +663,17 @@ export default function BusinessEditor({
                 Nome do Negócio (Clique para editar)
               </label>
               <input
+                ref={nameRef} // ⬅️ 1. LIGAMOS A ÂNCORA AQUI
                 value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                className="w-full text-center bg-transparent hover:bg-slate-50 text-2xl md:text-3xl font-black outline-none border-b-2 border-dashed border-slate-300 focus:border-indigo-500 focus:bg-white transition-all py-2 rounded-t-lg italic tracking-tighter placeholder:text-slate-300"
+                onChange={(e) => {
+                  handleNameChange(e.target.value);
+                  setNameError(false); // ⬅️ 2. Limpa o vermelho se ele digitar algo
+                }}
+                className={`w-full text-center bg-transparent text-2xl md:text-3xl font-black outline-none border-b-2 py-2 rounded-t-lg italic tracking-tighter placeholder:text-slate-300 transition-all ${
+                  nameError
+                    ? "border-rose-500 text-rose-600 bg-rose-50 animate-pulse" // 🚨 3. ESTILO DE ERRO (Vermelho)
+                    : "border-dashed border-slate-300 focus:border-indigo-500 hover:bg-slate-50 focus:bg-white text-slate-900" // Estilo Normal
+                }`}
                 placeholder="Digite o Nome Aqui..."
               />
             </div>
@@ -635,22 +684,30 @@ export default function BusinessEditor({
                   Link do seu site: tafanu.com.br/site/
                 </span>
               </label>
-
               <div className="relative">
                 <input
+                  ref={slugRef} // ⬅️ 1. LIGAMOS O GPS (ÂNCORA) AQUI
                   value={slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
+                  onChange={(e) => {
+                    handleSlugChange(e.target.value);
+                    setSlugError(false); // ⬅️ 2. Limpa o vermelho se ele começar a digitar outro nome
+                  }}
                   onFocus={() => {
-                    if (!isNew) {
+                    // A MÁGICA: Só mostra o aviso se o link na caixinha AINDA FOR o link original.
+                    // Assim, o "foco automático" do erro não vai disparar isso aqui!
+                    if (!isNew && slug === safeBusiness.slug) {
                       toast.warning(
                         "Cuidado: Mudar o link quebrará seus QR Codes antigos!",
+                        { id: "aviso-qr" }, // Colocamos um ID pra ele não empilhar também!
                       );
                     }
                   }}
                   className={`w-full text-center text-sm md:text-base font-bold font-mono outline-none border-2 py-3 rounded-xl transition-all ${
-                    slug !== safeBusiness.slug && !isNew
-                      ? "bg-amber-50 border-amber-300 text-amber-700 focus:ring-4 ring-amber-100" // Estilo de Alerta
-                      : "bg-slate-50 border-slate-200 text-slate-600 focus:border-indigo-400" // Estilo Normal
+                    slugError
+                      ? "bg-rose-50 border-rose-500 text-rose-700 ring-4 ring-rose-200 animate-pulse" // 🚨 3. ESTILO DE ERRO (Pisca em Vermelho)
+                      : slug !== safeBusiness.slug && !isNew
+                        ? "bg-amber-50 border-amber-300 text-amber-700 focus:ring-4 ring-amber-100" // Estilo de Alerta
+                        : "bg-slate-50 border-slate-200 text-slate-600 focus:border-indigo-400" // Estilo Normal
                   }`}
                   placeholder="seu-link-aqui"
                 />

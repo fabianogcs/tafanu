@@ -93,14 +93,6 @@ export default async function EditBusinessPage({
             </div>
             Voltar ao Painel
           </Link>
-
-          <Link
-            href={`/site/${business.slug}`}
-            target="_blank"
-            className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-200 text-indigo-600 hover:bg-indigo-50 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
-          >
-            Ver página ao vivo <ExternalLink size={14} />
-          </Link>
         </div>
 
         {/* BANNER DE STATUS COM AVISO DE ADMIN */}
