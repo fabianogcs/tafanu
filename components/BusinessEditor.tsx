@@ -1,6 +1,7 @@
 "use client";
 // Damos um apelido (UTButton) para evitar conflito com seu componente local
 import { toast } from "sonner";
+import MobilePreview from "@/components/MobilePreview";
 import { UploadButton as UTButton } from "@uploadthing/react";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -790,6 +791,21 @@ export default function BusinessEditor({
                 </button>
               ))}
             </div>
+          </div>
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 mt-8">
+            <MobilePreview
+              themeKey={selectedTheme}
+              name={name}
+              description={description}
+              profileImage={profileImage}
+              gallery={gallery}
+              layoutLabel={currentLayoutData.label}
+              // 🚀 Agora usando a variável correta que você criou (layoutText):
+              comercial_badge={layoutText}
+              luxe_quote={layoutText}
+              urban_tag={layoutText}
+              showroom_collection={layoutText} // Adicionamos o showroom aqui também!
+            />
           </div>
 
           {/* SEGMENTAÇÃO E TAGS */}
