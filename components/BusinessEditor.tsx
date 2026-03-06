@@ -208,7 +208,18 @@ const cleanHandle = (url: string = "", regex: RegExp) => {
   const clean = (url || "").trim();
   return clean.replace(regex, "").replace(/^@+/, "").replace(/\/+$/, "");
 };
-
+// 🚀 FUNÇÃO DE MÁSCARA PARA TELEFONE
+const formatPhoneNumber = (value: string) => {
+  if (!value) return "";
+  const numbers = value.replace(/\D/g, ""); // Remove tudo que não é número
+  if (numbers.length <= 11) {
+    // Formata (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+    return numbers
+      .replace(/^(\d{2})(\d)/g, "($1) $2")
+      .replace(/(\d)(\d{4})$/, "$1-$2");
+  }
+  return numbers.slice(0, 11); // Limita ao tamanho máximo de celular com DDD
+};
 // --- COMPONENTE PRINCIPAL ---
 export default function BusinessEditor({
   business,
@@ -254,14 +265,23 @@ export default function BusinessEditor({
   });
 
   const [selectedTheme, setSelectedTheme] = useState(safeBusiness.theme);
-  const [whatsapp, setWhatsapp] = useState(safeBusiness.whatsapp);
-  const [phone, setPhone] = useState(safeBusiness.phone);
+
+  // 🚀 APLICANDO MÁSCARA NA LARGADA PARA NÃO CONFUNDIR O RADAR
+  const [whatsapp, setWhatsapp] = useState(
+    formatPhoneNumber(safeBusiness.whatsapp || ""),
+  );
+  const [phone, setPhone] = useState(
+    formatPhoneNumber(safeBusiness.phone || ""),
+  );
+
   const [description, setDescription] = useState(safeBusiness.description);
+
   const [layoutText, setLayoutText] = useState(
     safeBusiness.urban_tag ||
       safeBusiness.luxe_quote ||
       safeBusiness.showroom_collection ||
-      safeBusiness.comercial_badge,
+      safeBusiness.comercial_badge ||
+      "", // 🚀 GARANTINDO QUE NÃO SEJA UNDEFINED
   );
 
   const [features, setFeatures] = useState<string[]>(safeBusiness.features);
@@ -272,13 +292,14 @@ export default function BusinessEditor({
     safeBusiness.hours,
   );
 
+  // 🚀 PROTEGENDO OS ENDEREÇOS VAZIOS COM || ""
   const [addressData, setAddressData] = useState({
     address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
     cep: safeBusiness.cep || "",
-    neighborhood: safeBusiness.neighborhood,
-    city: safeBusiness.city,
-    state: safeBusiness.state,
-    number: safeBusiness.number,
+    neighborhood: safeBusiness.neighborhood || "",
+    city: safeBusiness.city || "",
+    state: safeBusiness.state || "",
+    number: safeBusiness.number || "",
   });
 
   const [socials, setSocials] = useState({
@@ -291,7 +312,92 @@ export default function BusinessEditor({
     shein: safeBusiness.shein || "",
     ifood: safeBusiness.ifood || "",
   });
+  // 🚀 RADAR DE ALTERAÇÕES (Verifica se algo mudou para ativar o botão Salvar)
+  const hasChanges = useMemo(() => {
+    if (isNew) return true;
 
+    const initialLayoutText =
+      safeBusiness.urban_tag ||
+      safeBusiness.luxe_quote ||
+      safeBusiness.showroom_collection ||
+      safeBusiness.comercial_badge ||
+      "";
+
+    const isBasicDifferent =
+      name !== safeBusiness.name ||
+      slug !== safeBusiness.slug ||
+      isPublished !== safeBusiness.published ||
+      profileImage !== safeBusiness.imageUrl ||
+      categoria !== safeBusiness.category ||
+      selectedTheme !== safeBusiness.theme ||
+      selectedLayout !==
+        (layoutInfo[
+          safeBusiness.layout === "influencer" ? "urban" : safeBusiness.layout
+        ]
+          ? safeBusiness.layout === "influencer"
+            ? "urban"
+            : safeBusiness.layout
+          : "urban") ||
+      description !== safeBusiness.description ||
+      layoutText !== initialLayoutText ||
+      whatsapp !== formatPhoneNumber(safeBusiness.whatsapp) ||
+      phone !== formatPhoneNumber(safeBusiness.phone);
+
+    const isArraysDifferent =
+      JSON.stringify(gallery) !== JSON.stringify(safeBusiness.gallery) ||
+      JSON.stringify(selectedSubs) !==
+        JSON.stringify(safeBusiness.subcategory) ||
+      JSON.stringify(keywords) !== JSON.stringify(safeBusiness.keywords) ||
+      JSON.stringify(features) !== JSON.stringify(safeBusiness.features) ||
+      JSON.stringify(faqs) !== JSON.stringify(safeBusiness.faqs) ||
+      JSON.stringify(businessHours) !== JSON.stringify(safeBusiness.hours);
+
+    const isSocialsDifferent =
+      socials.instagram !==
+        cleanHandle(safeBusiness.instagram, /.*instagram\.com\//) ||
+      socials.tiktok !==
+        cleanHandle(safeBusiness.tiktok, /.*tiktok\.com\/@?/) ||
+      socials.facebook !==
+        cleanHandle(safeBusiness.facebook, /.*facebook\.com\//) ||
+      socials.shopee !== (safeBusiness.shopee || "") ||
+      socials.ifood !== (safeBusiness.ifood || "") ||
+      socials.mercadoLivre !== (safeBusiness.mercadoLivre || "") ||
+      socials.shein !== (safeBusiness.shein || "") ||
+      socials.website !== (safeBusiness.website || "");
+
+    const isAddressDifferent =
+      addressData.cep !== (safeBusiness.cep || "") ||
+      addressData.number !== (safeBusiness.number || "");
+
+    return (
+      isBasicDifferent ||
+      isArraysDifferent ||
+      isSocialsDifferent ||
+      isAddressDifferent
+    );
+  }, [
+    name,
+    slug,
+    isPublished,
+    profileImage,
+    categoria,
+    selectedTheme,
+    selectedLayout,
+    description,
+    layoutText,
+    whatsapp,
+    phone,
+    gallery,
+    selectedSubs,
+    keywords,
+    features,
+    faqs,
+    businessHours,
+    socials,
+    addressData,
+    isNew,
+    safeBusiness,
+  ]);
   const filteredThemeKeys = useMemo(() => {
     return Object.keys(businessThemes).filter(
       (key) => businessThemes[key].layout === selectedLayout,
@@ -326,6 +432,11 @@ export default function BusinessEditor({
       setGallery(safeBusiness.gallery);
       setProfileImage(safeBusiness.imageUrl);
       setIsPublished(safeBusiness.published);
+
+      // 🚀 ADICIONADO: Mantém as máscaras nos telefones ao salvar/recarregar
+      setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
+      setPhone(formatPhoneNumber(safeBusiness.phone || ""));
+
       setAddressData({
         address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
         cep: safeBusiness.cep || "",
@@ -618,10 +729,15 @@ export default function BusinessEditor({
             )}
             <button
               onClick={handleUpdate}
-              disabled={isLoading}
-              className="hidden md:flex items-center gap-3 bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-indigo-600 transition-all"
+              disabled={isLoading || !hasChanges}
+              className={`hidden md:flex items-center gap-3 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-sm ${
+                !hasChanges && !isNew && !isLoading
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                  : "bg-slate-900 text-white hover:bg-indigo-600 shadow-xl"
+              }`}
             >
-              <Save size={16} /> Salvar
+              <Save size={16} />
+              {!hasChanges && !isNew && !isLoading ? "Atualizado" : "Salvar"}
             </button>
           </div>
         </div>
@@ -657,9 +773,10 @@ export default function BusinessEditor({
                       }
                       return files;
                     }}
-                    onClientUploadComplete={(res) =>
-                      setProfileImage(res[0].ufsUrl)
-                    }
+                    onClientUploadComplete={(res) => {
+                      if (!res || res.length === 0) return; // 🛡️ ESCUDO: Se não subiu nada, não faz nada e não dá erro!
+                      setProfileImage(res[0].ufsUrl);
+                    }}
                     content={{
                       button: <Plus size={40} className="text-slate-300" />,
                     }}
@@ -1043,7 +1160,7 @@ export default function BusinessEditor({
                       return validFiles; // Retorna só as fotos que têm menos de 4MB!
                     }}
                     onClientUploadComplete={(res) => {
-                      if (!res) return;
+                      if (!res || res.length === 0) return; // 🛡️ ESCUDO: Protege contra o erro de 'undefined'
                       setGallery((prev) =>
                         [...prev, ...res.map((f) => f.ufsUrl)].slice(0, 8),
                       );
@@ -1205,8 +1322,11 @@ export default function BusinessEditor({
                   </div>
                   <input
                     value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
+                    onChange={(e) =>
+                      setWhatsapp(formatPhoneNumber(e.target.value))
+                    } // 🚀 APLICA MÁSCARA AQUI
                     placeholder="(00) 00000-0000"
+                    maxLength={15} // Limite visual da máscara
                     className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-emerald-200"
                   />
                 </div>
@@ -1223,8 +1343,11 @@ export default function BusinessEditor({
                   </div>
                   <input
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) =>
+                      setPhone(formatPhoneNumber(e.target.value))
+                    } // 🚀 APLICA MÁSCARA AQUI
                     placeholder="(00) 0000-0000"
+                    maxLength={15}
                     className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-indigo-200"
                   />
                 </div>
@@ -1483,23 +1606,34 @@ export default function BusinessEditor({
             </AnimatePresence>
             <button
               onClick={handleUpdate}
-              disabled={isLoading}
-              className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50 tracking-[0.2em] italic ${!isPublished ? "bg-slate-700 text-slate-300" : "bg-slate-900 text-white hover:bg-indigo-600"}`}
+              disabled={isLoading || !hasChanges}
+              className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic ${
+                isLoading || (!hasChanges && !isNew)
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  : !isPublished
+                    ? "bg-slate-700 text-slate-300 shadow-xl active:scale-95"
+                    : "bg-slate-900 text-white hover:bg-indigo-600 shadow-2xl active:scale-95"
+              }`}
             >
               {isLoading ? (
                 <Loader2 className="animate-spin" size={18} />
+              ) : !hasChanges && !isNew ? (
+                <CheckCircle2 size={20} className="text-slate-400" />
               ) : isPublished ? (
                 <CheckCircle2 size={20} />
               ) : (
                 <Power size={20} />
               )}
+
               {isLoading
                 ? "Salvando..."
-                : isPublished
-                  ? isNew
-                    ? "Criar Perfil"
-                    : "Gravar Mudanças"
-                  : "Salvar em Modo Offline"}
+                : !hasChanges && !isNew
+                  ? "Tudo Atualizado"
+                  : isPublished
+                    ? isNew
+                      ? "Criar Perfil"
+                      : "Gravar Mudanças"
+                    : "Salvar em Modo Offline"}
             </button>
           </div>
         </div>
