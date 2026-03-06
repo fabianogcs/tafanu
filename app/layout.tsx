@@ -14,7 +14,7 @@ import { Suspense } from "react"; // ⬅️ FUSÃO: Adicionado
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
-  description: "Encontre serviços e comércios locais em Guarulhos.",
+  description: "Encontre os melhores serviços e comércios.",
   manifest: "/manifest.json",
 };
 

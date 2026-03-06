@@ -230,9 +230,8 @@ export default function LuxeLayout({
           ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
           : `tel:${cleanNumber}`;
       try {
-        if (type === "whatsapp")
-          await (Actions as any).incrementWhatsappClicks?.(business.id);
-        else await (Actions as any).incrementPhoneClicks?.(business.id);
+        // 🚀 O NOVO ESPIÃO ENTRA AQUI!
+        await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         window.location.href = targetUrl;
       }
@@ -468,6 +467,12 @@ export default function LuxeLayout({
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() =>
+                          Actions.registerClickEvent(
+                            business.id,
+                            s.toUpperCase(),
+                          )
+                        } // 🚀 ESPIÃO AQUI
                         className={`w-14 h-14 flex items-center justify-center rounded-full border ${theme.border} hover:bg-black/5 transition-all ${theme.primary}`}
                       >
                         {s === "instagram" ? (
@@ -498,6 +503,12 @@ export default function LuxeLayout({
                         href={formatExternalLink(channel.url)}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() =>
+                          Actions.registerClickEvent(
+                            business.id,
+                            channel.key.toUpperCase(),
+                          )
+                        } // 🚀 ESPIÃO AQUI
                         className={`flex items-center gap-3 px-5 py-2.5 rounded-full border border-black/10 ${theme.textColor} opacity-70 hover:opacity-100 ${channel.hoverClass} hover:bg-black/5 transition-all duration-300 font-sans group`}
                       >
                         <div
@@ -523,6 +534,7 @@ export default function LuxeLayout({
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => Actions.registerClickEvent(business.id, "MAP")} // 🚀 ESPIÃO AQUI
                   className="block group"
                 >
                   <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">

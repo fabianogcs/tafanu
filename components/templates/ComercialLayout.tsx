@@ -273,9 +273,8 @@ export default function ComercialLayout({
           ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
           : `tel:${cleanNumber}`;
       try {
-        if (type === "whatsapp")
-          await (Actions as any).incrementWhatsappClicks?.(business.id);
-        else await (Actions as any).incrementPhoneClicks?.(business.id);
+        // 🚀 NOVO ESPIÃO AQUI!
+        await Actions.registerClickEvent(business.id, type.toUpperCase());
       } catch (e) {
       } finally {
         window.location.href = targetUrl;
@@ -592,6 +591,12 @@ export default function ComercialLayout({
                                 href={finalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() =>
+                                  Actions.registerClickEvent(
+                                    business.id,
+                                    s.toUpperCase(),
+                                  )
+                                } // 🚀 ESPIÃO AQUI
                                 whileHover={{ y: -3 }}
                                 className="opacity-60 hover:opacity-100 transition-opacity"
                               >
@@ -623,6 +628,12 @@ export default function ComercialLayout({
                                 href={formatExternalLink(channel.url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() =>
+                                  Actions.registerClickEvent(
+                                    business.id,
+                                    channel.key.toUpperCase(),
+                                  )
+                                } // 🚀 ESPIÃO AQUI
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-sm transition-all duration-300 font-sans group ${channel.colorClass}`}
                               >
                                 <div className="transition-transform duration-300 group-hover:scale-110">
@@ -644,6 +655,9 @@ export default function ComercialLayout({
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() =>
+                        Actions.registerClickEvent(business.id, "MAP")
+                      } // 🚀 ESPIÃO AQUI
                       className={`${theme.cardBg} p-8 rounded-[2.5rem] border ${theme.border} flex items-center gap-5 shadow-md block hover:border-black/20 transition-all`}
                     >
                       <div

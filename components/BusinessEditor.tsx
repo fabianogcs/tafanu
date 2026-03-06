@@ -219,8 +219,8 @@ export default function BusinessEditor({
 }) {
   const cepController = useRef<AbortController | null>(null);
   const router = useRouter();
-  const slugRef = useRef<HTMLInputElement>(null); // A âncora
-  const [slugError, setSlugError] = useState(false); // O controle do "pisca vermelho"
+  const slugRef = useRef<HTMLInputElement>(null);
+  const [slugError, setSlugError] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const [nameError, setNameError] = useState(false);
 
@@ -286,7 +286,6 @@ export default function BusinessEditor({
     facebook: cleanHandle(safeBusiness.facebook, /.*facebook\.com\//),
     tiktok: cleanHandle(safeBusiness.tiktok, /.*tiktok\.com\/@?/),
     website: safeBusiness.website || "",
-    // --- NOVOS CANAIS ---
     shopee: safeBusiness.shopee || "",
     mercadoLivre: safeBusiness.mercadoLivre || "",
     shein: safeBusiness.shein || "",
@@ -308,7 +307,6 @@ export default function BusinessEditor({
     setIsMounted(true);
   }, []);
 
-  // Lógica de troca de tema automática ao trocar layout
   useEffect(() => {
     const temaAtual = businessThemes[selectedTheme];
     if (temaAtual?.layout !== selectedLayout) {
@@ -321,7 +319,6 @@ export default function BusinessEditor({
     }
   }, [selectedLayout]);
 
-  // Sincroniza dados com o banco ao carregar
   useEffect(() => {
     if (!isNew && safeBusiness) {
       setName(safeBusiness.name);
@@ -331,7 +328,7 @@ export default function BusinessEditor({
       setIsPublished(safeBusiness.published);
       setAddressData({
         address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
-        cep: safeBusiness.cep || "", // GARANTE QUE O CEP CARREGUE DO BANCO
+        cep: safeBusiness.cep || "",
         neighborhood: safeBusiness.neighborhood || "",
         city: safeBusiness.city || "",
         state: safeBusiness.state || "",
@@ -354,7 +351,7 @@ export default function BusinessEditor({
       setKeywords([...keywords, val]);
       setTagInput("");
     } else {
-      setTagInput(""); // Limpa mesmo se for repetida
+      setTagInput("");
     }
   };
   const removeTag = (tagToRemove: string) =>
@@ -370,9 +367,8 @@ export default function BusinessEditor({
       nameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       nameRef.current?.focus();
       setTimeout(() => setNameError(false), 4000);
-      return; // Para tudo aqui!
+      return;
     }
-    // Trava de Segurança para o Link (Slug)
     if (!isNew && slug !== safeBusiness.slug) {
       const confirmChange = window.confirm(
         "⚠️ PERIGO: Você alterou o LINK do seu negócio.\n\n" +
@@ -381,7 +377,7 @@ export default function BusinessEditor({
           `"${safeBusiness.slug}" para "${slug}"?`,
       );
       if (!confirmChange) {
-        setSlug(safeBusiness.slug); // Cancela e volta o link antigo
+        setSlug(safeBusiness.slug);
         return;
       }
     }
@@ -392,8 +388,6 @@ export default function BusinessEditor({
     setIsLoading(true);
 
     try {
-      // CORREÇÃO AQUI: Agora montamos o endereço completo INCLUINDO O CEP e CIDADE
-      // Isso garante que no site do assinante apareça tudo.
       const fullAddress = `${addressData.address}${addressData.number ? ", " + addressData.number : ""}${addressData.neighborhood ? " - " + addressData.neighborhood : ""}${addressData.city ? " - " + addressData.city : ""}${addressData.cep ? " - CEP " + addressData.cep : ""}`;
 
       const payload: any = {
@@ -411,8 +405,8 @@ export default function BusinessEditor({
         showroom_collection: layoutText,
         comercial_badge: layoutText,
         features: features.filter((f) => f.trim() !== ""),
-        address: fullAddress, // Endereço completo com CEP
-        cep: addressData.cep, // Campo CEP separado para o input lembrar
+        address: fullAddress,
+        cep: addressData.cep,
         city: addressData.city,
         state: addressData.state,
         whatsapp: onlyNumbers(whatsapp),
@@ -488,14 +482,12 @@ export default function BusinessEditor({
           if (result.error?.toLowerCase().includes("slug")) {
             toast.warning("Este nome de link já está em uso. Tente outro.");
             setIsLoading(false);
-            setSlugError(true); // Fica vermelho
+            setSlugError(true);
             slugRef.current?.scrollIntoView({
               behavior: "smooth",
               block: "center",
-            }); // Desliza pra lá
-            slugRef.current?.focus(); // Coloca o cursor piscando dentro do campo!
-
-            // Tira o alerta vermelho depois de 4 segundos pra não irritar o usuário
+            });
+            slugRef.current?.focus();
             setTimeout(() => setSlugError(false), 4000);
             return;
           }
@@ -506,10 +498,8 @@ export default function BusinessEditor({
           (f) => f.q.trim() !== "" && f.a.trim() !== "",
         );
 
-        // 1. Tira o Promise.all para podermos ler o erro do update principal
         const updateResult = await updateFullBusiness(business.slug, payload);
 
-        // 🚀 2. SE DEU ERRO DE LINK REPETIDO:
         if (!updateResult.success) {
           toast.warning(
             updateResult.error || "Este nome de link já está em uso.",
@@ -521,13 +511,11 @@ export default function BusinessEditor({
           });
           slugRef.current?.focus();
           setTimeout(() => setSlugError(false), 4000);
-          return; // Para a execução (sem confete, sem mensagem de sucesso)
+          return;
         }
 
-        // 3. Se passou do link, salva os horários normalmente
         await updateBusinessHours(business.slug, businessHours);
 
-        // 4. O resto continua igual (Confete e Sucesso)
         router.refresh();
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
@@ -558,19 +546,16 @@ export default function BusinessEditor({
 
   const handleNameChange = (val: string) => {
     setName(val);
-    // Se for novo, gera o link automático. Se for edição, NÃO mexe no link.
     if (isNew) {
       setSlug(toSlug(val));
     }
   };
 
-  // 2. Função que cuida SÓ do Link (Transforma em minúsculo p/ funcionar na web)
   const handleSlugChange = (val: string) => {
-    const newSlug = toSlug(val); // Força padrão de URL (joao-pizza)
+    const newSlug = toSlug(val);
     setSlug(newSlug);
   };
 
-  // --- FIM DAS FUNÇÕES ---
   if (!isMounted) return null;
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-32">
@@ -658,7 +643,20 @@ export default function BusinessEditor({
                   />
                 ) : (
                   <UTButton<OurFileRouter, any>
-                    endpoint="imageUploader"
+                    endpoint="logoUploader" // 🚀 CORRIGIDO AQUI PARA USAR O LIMITE DE 2MB DO SEU BACKEND
+                    onBeforeUploadBegin={(files) => {
+                      // 🚀 TRAVA CLIENT-SIDE PARA A LOGO (2MB)
+                      const isOverLimit = files.some(
+                        (f) => f.size > 2 * 1024 * 1024,
+                      );
+                      if (isOverLimit) {
+                        toast.error(
+                          "A imagem é muito pesada! O limite para a Logo é 2MB.",
+                        );
+                        return []; // Interrompe o envio na hora!
+                      }
+                      return files;
+                    }}
                     onClientUploadComplete={(res) =>
                       setProfileImage(res[0].ufsUrl)
                     }
@@ -682,8 +680,9 @@ export default function BusinessEditor({
               )}
             </div>
             <div className="mb-8 px-4 py-2 bg-indigo-50/50 border border-indigo-100 rounded-full">
+              {/* 🚀 TEXTO DE APOIO ATUALIZADO */}
               <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-500 text-center">
-                💡 Use img quadrada 800x800 com espaço nas bordas
+                💡 Dica: Imagem Quadrada (MÁX: 2MB)
               </p>
             </div>
             {/* NOME DO NEGÓCIO */}
@@ -692,21 +691,21 @@ export default function BusinessEditor({
                 Nome do Negócio (Clique para editar)
               </label>
               <input
-                ref={nameRef} // ⬅️ 1. LIGAMOS A ÂNCORA AQUI
+                ref={nameRef}
                 value={name}
                 onChange={(e) => {
                   handleNameChange(e.target.value);
-                  setNameError(false); // ⬅️ 2. Limpa o vermelho se ele digitar algo
+                  setNameError(false);
                 }}
                 className={`w-full text-center bg-transparent text-2xl md:text-3xl font-black outline-none border-b-2 py-2 rounded-t-lg italic tracking-tighter placeholder:text-slate-300 transition-all ${
                   nameError
-                    ? "border-rose-500 text-rose-600 bg-rose-50 animate-pulse" // 🚨 3. ESTILO DE ERRO (Vermelho)
-                    : "border-dashed border-slate-300 focus:border-indigo-500 hover:bg-slate-50 focus:bg-white text-slate-900" // Estilo Normal
+                    ? "border-rose-500 text-rose-600 bg-rose-50 animate-pulse"
+                    : "border-dashed border-slate-300 focus:border-indigo-500 hover:bg-slate-50 focus:bg-white text-slate-900"
                 }`}
                 placeholder="Digite o Nome Aqui..."
               />
             </div>
-            {/* LINK DO NEGÓCIO (SLUG) - NOVO */}
+            {/* LINK DO NEGÓCIO (SLUG) */}
             <div className="w-full relative group mb-8 px-4 mt-4">
               <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block tracking-widest flex items-center justify-center gap-2">
                 <span className="bg-slate-100 px-2 py-1 rounded text-slate-500">
@@ -715,28 +714,26 @@ export default function BusinessEditor({
               </label>
               <div className="relative">
                 <input
-                  ref={slugRef} // ⬅️ 1. LIGAMOS O GPS (ÂNCORA) AQUI
+                  ref={slugRef}
                   value={slug}
                   onChange={(e) => {
                     handleSlugChange(e.target.value);
-                    setSlugError(false); // ⬅️ 2. Limpa o vermelho se ele começar a digitar outro nome
+                    setSlugError(false);
                   }}
                   onFocus={() => {
-                    // A MÁGICA: Só mostra o aviso se o link na caixinha AINDA FOR o link original.
-                    // Assim, o "foco automático" do erro não vai disparar isso aqui!
                     if (!isNew && slug === safeBusiness.slug) {
                       toast.warning(
                         "Cuidado: Mudar o link quebrará seus links antigos!",
-                        { id: "aviso-qr" }, // Colocamos um ID pra ele não empilhar também!
+                        { id: "aviso-qr" },
                       );
                     }
                   }}
                   className={`w-full text-center text-sm md:text-base font-bold font-mono outline-none border-2 py-3 rounded-xl transition-all ${
                     slugError
-                      ? "bg-rose-50 border-rose-500 text-rose-700 ring-4 ring-rose-200 animate-pulse" // 🚨 3. ESTILO DE ERRO (Pisca em Vermelho)
+                      ? "bg-rose-50 border-rose-500 text-rose-700 ring-4 ring-rose-200 animate-pulse"
                       : slug !== safeBusiness.slug && !isNew
-                        ? "bg-amber-50 border-amber-300 text-amber-700 focus:ring-4 ring-amber-100" // Estilo de Alerta
-                        : "bg-slate-50 border-slate-200 text-slate-600 focus:border-indigo-400" // Estilo Normal
+                        ? "bg-amber-50 border-amber-300 text-amber-700 focus:ring-4 ring-amber-100"
+                        : "bg-slate-50 border-slate-200 text-slate-600 focus:border-indigo-400"
                   }`}
                   placeholder="seu-link-aqui"
                 />
@@ -782,7 +779,6 @@ export default function BusinessEditor({
                 <label className="text-[9px] font-black uppercase text-indigo-500 block tracking-widest">
                   {currentLayoutData.label} - Texto Especial
                 </label>
-                {/* Contador visual de caracteres - Fica vermelho a partir de 35 */}
                 <span
                   className={`text-[9px] font-bold ${layoutText.length >= 35 ? "text-rose-500" : "text-slate-400"}`}
                 >
@@ -792,7 +788,7 @@ export default function BusinessEditor({
 
               <input
                 value={layoutText}
-                onChange={(e) => setLayoutText(e.target.value.slice(0, 40))} // Trava no 40
+                onChange={(e) => setLayoutText(e.target.value.slice(0, 40))}
                 maxLength={40}
                 className={`w-full h-12 md:h-14 px-5 rounded-xl bg-white border font-bold text-xs md:text-sm shadow-sm outline-none transition-all ${
                   layoutText.length >= 40
@@ -848,11 +844,10 @@ export default function BusinessEditor({
               profileImage={profileImage}
               gallery={gallery}
               layoutLabel={currentLayoutData.label}
-              // 🚀 Agora usando a variável correta que você criou (layoutText):
               comercial_badge={layoutText}
               luxe_quote={layoutText}
               urban_tag={layoutText}
-              showroom_collection={layoutText} // Adicionamos o showroom aqui também!
+              showroom_collection={layoutText}
             />
           </div>
 
@@ -887,7 +882,7 @@ export default function BusinessEditor({
               </div>
             </div>
 
-            {/* 2. SELETOR DE SUBCATEGORIAS (DENTRO DE UM BOX) */}
+            {/* 2. SELETOR DE SUBCATEGORIAS */}
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8">
               <label className="text-[9px] font-black uppercase text-slate-400 mb-3 block tracking-widest flex justify-between">
                 <span>2. O que você oferece? (Nichos)</span>
@@ -896,7 +891,6 @@ export default function BusinessEditor({
                 </span>
               </label>
 
-              {/* Se não tiver subcategorias, avisa */}
               {!(TAFANU_CATEGORIES as any)[categoria] ? (
                 <p className="text-xs text-slate-400 italic py-2">
                   Selecione uma categoria acima primeiro.
@@ -960,8 +954,6 @@ export default function BusinessEditor({
                   value={tagInput}
                   onChange={(e) => {
                     const val = e.target.value;
-                    // 🚀 A MÁGICA PARA MOBILE:
-                    // Se o último caractere digitado for um espaço ou vírgula, ele fecha a tag na hora!
                     if (val.endsWith(" ") || val.endsWith(",")) {
                       addTag();
                     } else {
@@ -969,7 +961,6 @@ export default function BusinessEditor({
                     }
                   }}
                   onKeyDown={(e) => {
-                    // Mantemos o Enter para desktop
                     if (e.key === "Enter") {
                       e.preventDefault();
                       addTag();
@@ -1003,8 +994,12 @@ export default function BusinessEditor({
           {/* GALERIA */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             <div className="flex items-center justify-between mb-6">
+              {/* 🚀 TEXTO DE APOIO ATUALIZADO (MAX 4MB) */}
               <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
                 <Layout size={18} className="text-indigo-500" /> Galeria Vitrine
+                <span className="text-[8px] text-slate-400 normal-case tracking-normal ml-1">
+                  (Máx: 4MB/foto)
+                </span>
               </h2>
               <span className="text-[10px] font-black text-indigo-600 block uppercase">
                 {validGallery.length} / 8
@@ -1035,6 +1030,18 @@ export default function BusinessEditor({
                   />
                   <UTButton<OurFileRouter, any>
                     endpoint="imageUploader"
+                    onBeforeUploadBegin={(files) => {
+                      // 🚀 TRAVA CLIENT-SIDE PARA A GALERIA (4MB)
+                      const validFiles = files.filter(
+                        (f) => f.size <= 4 * 1024 * 1024,
+                      );
+                      if (validFiles.length !== files.length) {
+                        toast.error(
+                          "Algumas imagens excederam o limite de 4MB e foram bloqueadas.",
+                        );
+                      }
+                      return validFiles; // Retorna só as fotos que têm menos de 4MB!
+                    }}
                     onClientUploadComplete={(res) => {
                       if (!res) return;
                       setGallery((prev) =>
@@ -1058,7 +1065,6 @@ export default function BusinessEditor({
               <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
                 <AlignLeft size={16} /> Sobre o Negócio
               </label>
-              {/* Contador de caracteres que muda de cor ao chegar no limite */}
               <span
                 className={`text-[10px] font-bold ${description.length >= 550 ? "text-rose-500" : "text-slate-400"}`}
               >
@@ -1185,7 +1191,7 @@ export default function BusinessEditor({
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
 
-          {/* CONTATOS PRINCIPAIS - Estilo Clean Profissional */}
+          {/* CONTATOS PRINCIPAIS */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 relative overflow-hidden">
             <div className="flex flex-col md:flex-row gap-6 mb-8">
               {/* WhatsApp */}
@@ -1225,7 +1231,7 @@ export default function BusinessEditor({
               </div>
             </div>
 
-            {/* Redes Sociais - Grid Compacto */}
+            {/* Redes Sociais */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
@@ -1275,7 +1281,7 @@ export default function BusinessEditor({
             </div>
           </div>
 
-          {/* CANAIS DE VENDA - Branded Style */}
+          {/* CANAIS DE VENDA */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             <h2 className="text-[10px] font-black uppercase mb-8 flex items-center gap-2 text-slate-400 tracking-[0.2em]">
               <ShoppingCart size={16} /> Marketplaces & Apps
@@ -1349,15 +1355,12 @@ export default function BusinessEditor({
             </div>
           </div>
 
-          {/* LOCALIZAÇÃO - Mantendo sua funcionalidade original COMPLETA */}
+          {/* LOCALIZAÇÃO */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-            {/* CABEÇALHO DA SEÇÃO COM TÍTULO E BOTÃO NA MESMA LINHA */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
                 <MapPin size={18} className="text-rose-500" /> Localização
               </h2>
-
-              {/* SÓ MOSTRA O BOTÃO SE HOUVER ALGO PARA APAGAR */}
               {(addressData.address || addressData.cep) && (
                 <button
                   type="button"

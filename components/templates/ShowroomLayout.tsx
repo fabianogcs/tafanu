@@ -205,9 +205,8 @@ export default function ShowroomLayout({
           ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
           : `tel:${cleanNumber}`;
       try {
-        if (type === "whatsapp")
-          await (Actions as any).incrementWhatsappClicks?.(business.id);
-        else await (Actions as any).incrementPhoneClicks?.(business.id);
+        // 🚀 O NOVO ESPIÃO ENTRA AQUI!
+        await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         window.location.href = targetUrl;
       }
@@ -296,6 +295,9 @@ export default function ShowroomLayout({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() =>
+                      Actions.registerClickEvent(business.id, s.toUpperCase())
+                    } // 🚀 ESPIÃO AQUI
                     className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all border border-black/5"
                   >
                     {s === "instagram" ? (
@@ -327,6 +329,12 @@ export default function ShowroomLayout({
                   href={formatExternalLink(channel.url)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() =>
+                    Actions.registerClickEvent(
+                      business.id,
+                      channel.key.toUpperCase(),
+                    )
+                  } // 🚀 ESPIÃO AQUI
                   className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-black/5 hover:shadow-md hover:scale-105 hover:border-black/10 transition-all duration-300 group"
                 >
                   <div
@@ -475,6 +483,7 @@ export default function ShowroomLayout({
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress || business.address)}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => Actions.registerClickEvent(business.id, "MAP")} // 🚀 ESPIÃO AQUI
               className="p-8 bg-neutral-100 rounded-[2.5rem] flex flex-col justify-between h-64 group border border-black/5"
             >
               <StickerTitle text="Location" theme={theme} />

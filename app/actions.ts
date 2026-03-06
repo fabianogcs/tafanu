@@ -222,7 +222,7 @@ export async function registerUser(formData: FormData) {
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
             <h2 style="color: #0f172a;">Bem-vindo ao Tafanu, ${name}!</h2>
-            <p>Falta pouco para você começar a explorar e favoritar os melhores locais de Guarulhos.</p>
+            <p>Falta pouco para você começar a explorar e favoritar os melhores locais e serviços.</p>
             <p>Clique no botão abaixo para confirmar seu e-mail e liberar todas as funções do site:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${confirmLink}" style="background-color: #0070f3; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">CONFIRMAR MEU E-MAIL</a>
@@ -840,25 +840,72 @@ export async function toggleFavorite(businessId: string) {
   }
 }
 
-export async function incrementWhatsappClicks(businessId: string) {
-  try {
-    await db.business.update({
-      where: { id: businessId },
-      data: { whatsapp_clicks: { increment: 1 } },
-    });
-  } catch (error) {
-    console.error(error);
-  }
-}
+// ==============================================================================
+// 📊 SISTEMA DE ANALYTICS (SAAS) - O "Espião" de Cliques
+// ==============================================================================
 
-export async function incrementPhoneClicks(businessId: string) {
+export async function registerClickEvent(
+  businessId: string,
+  eventType: string,
+) {
+  // 1. TRAVA DE SEGURANÇA: Só aceita cliques nestes botões (evita lixo no banco)
+  const validEvents = [
+    "WHATSAPP",
+    "PHONE",
+    "INSTAGRAM",
+    "FACEBOOK",
+    "TIKTOK",
+    "WEBSITE",
+    "SHOPEE",
+    "MERCADOLIVRE",
+    "SHEIN",
+    "IFOOD",
+    "MAP",
+  ];
+
+  const upperEvent = eventType.toUpperCase();
+  if (!validEvents.includes(upperEvent)) return { error: "Evento inválido." };
+
+  // 2. MAPEAMENTO: Qual coluna da tabela Business vamos somar +1?
+  const columnMap: Record<string, string> = {
+    WHATSAPP: "whatsapp_clicks",
+    PHONE: "phone_clicks",
+    INSTAGRAM: "instagram_clicks",
+    FACEBOOK: "facebook_clicks",
+    TIKTOK: "tiktok_clicks",
+    WEBSITE: "website_clicks",
+    SHOPEE: "shopee_clicks",
+    MERCADOLIVRE: "mercadolivre_clicks",
+    SHEIN: "shein_clicks",
+    IFOOD: "ifood_clicks",
+    MAP: "map_clicks",
+  };
+
+  const columnToIncrement = columnMap[upperEvent];
+
   try {
-    await db.business.update({
-      where: { id: businessId },
-      data: { phone_clicks: { increment: 1 } },
-    });
+    // 3. TRANSAÇÃO MÁGICA: Faz duas coisas ao mesmo tempo.
+    // Se uma falhar, ele cancela a outra para não dar erro nos gráficos depois.
+    await db.$transaction([
+      // A) Soma +1 no número total do painel (Para a visão rápida)
+      db.business.update({
+        where: { id: businessId },
+        data: { [columnToIncrement]: { increment: 1 } },
+      }),
+
+      // B) Cria a "Caixa Preta": Anota o clique exato com data e hora para o gráfico
+      db.analyticsEvent.create({
+        data: {
+          eventType: upperEvent,
+          businessId: businessId,
+        },
+      }),
+    ]);
+
+    return { success: true };
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao registrar evento de clique:", error);
+    return { error: "Erro interno ao registrar clique." };
   }
 }
 

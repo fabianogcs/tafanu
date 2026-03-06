@@ -57,6 +57,15 @@ model Business {
   whatsapp_clicks Int @default(0)  // <--- ADICIONAR
   phone_clicks    Int @default(0)  // <--- ADICIONAR
   installs    Int       @default(0) // <--- ADICIONE ISSO
+  instagram_clicks    Int @default(0)
+  facebook_clicks     Int @default(0)
+  tiktok_clicks       Int @default(0)
+  website_clicks      Int @default(0)
+  shopee_clicks       Int @default(0)
+  mercadolivre_clicks Int @default(0)
+  shein_clicks        Int @default(0)
+  ifood_clicks        Int @default(0)
+  map_clicks          Int @default(0) // Cliques no endereço/rota
   
   // Mídia Principal
   heroImage           String?        @db.Text
@@ -108,7 +117,7 @@ model Business {
   favorites           Favorite[]
   reports             Report[]
   comments         Comment[]
-
+  analytics           AnalyticsEvent[] // <--- ADICIONE ISSO AQUI
   // ÍNDICES PARA BUSCA RÁPIDA
   @@index([city])
   @@index([state])
@@ -220,4 +229,23 @@ model Comment {
 
   @@index([businessId])
   @@index([userId])
+}
+// --- SISTEMA DE MÉTRICAS E GRÁFICOS (ANALYTICS) ---
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  
+  // O que aconteceu? ("VIEW", "WHATSAPP", "IFOOD", "INSTAGRAM", "MAP", etc.)
+  eventType   String   
+  
+  // Quando aconteceu? (Isso é o que permite fazer o gráfico de 7/30 dias)
+  createdAt   DateTime @default(now())
+
+  // De quem é esse evento?
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Índices para o banco puxar os dados do gráfico na velocidade da luz
+  @@index([businessId])
+  @@index([eventType])
+  @@index([createdAt])
 }
