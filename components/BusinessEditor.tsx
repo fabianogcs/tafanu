@@ -35,6 +35,11 @@ import {
   Hash,
   X,
   ShoppingCart,
+  Instagram,
+  Facebook,
+  Music2,
+  Globe,
+  MessageCircle,
 } from "lucide-react";
 
 import {
@@ -348,7 +353,9 @@ export default function BusinessEditor({
     if (val && !keywords.includes(val) && keywords.length < 10) {
       setKeywords([...keywords, val]);
       setTagInput("");
-    } else if (keywords.includes(val)) setTagInput("");
+    } else {
+      setTagInput(""); // Limpa mesmo se for repetida
+    }
   };
   const removeTag = (tagToRemove: string) =>
     setKeywords(keywords.filter((tag) => tag !== tagToRemove));
@@ -369,7 +376,7 @@ export default function BusinessEditor({
     if (!isNew && slug !== safeBusiness.slug) {
       const confirmChange = window.confirm(
         "⚠️ PERIGO: Você alterou o LINK do seu negócio.\n\n" +
-          "Isso fará com que seus QR Codes antigos e links compartilhados PAREM DE FUNCIONAR imediatamente.\n\n" +
+          "Isso fará com que seus links compartilhados antigos PAREM DE FUNCIONAR imediatamente.\n\n" +
           "Tem certeza absoluta que deseja mudar de:\n" +
           `"${safeBusiness.slug}" para "${slug}"?`,
       );
@@ -411,18 +418,39 @@ export default function BusinessEditor({
         whatsapp: onlyNumbers(whatsapp),
         phone: onlyNumbers(phone),
         instagram: socials.instagram
-          ? `https://instagram.com/${socials.instagram}`
+          ? `https://instagram.com/${cleanHandle(socials.instagram, /.*instagram\.com\//)}`
           : "",
         facebook: socials.facebook
-          ? `https://facebook.com/${socials.facebook}`
+          ? `https://facebook.com/${socials.facebook.replace(/.*facebook\.com\//, "")}`
           : "",
-        tiktok: socials.tiktok ? `https://tiktok.com/@${socials.tiktok}` : "",
-        website: socials.website,
-        // --- NOVOS CANAIS ---
-        shopee: socials.shopee,
-        mercadoLivre: socials.mercadoLivre,
-        shein: socials.shein,
-        ifood: socials.ifood,
+        tiktok: socials.tiktok
+          ? `https://tiktok.com/@${socials.tiktok.replace(/.*tiktok\.com\/@?/, "")}`
+          : "",
+        shopee: socials.shopee
+          ? socials.shopee.startsWith("http")
+            ? socials.shopee
+            : `https://${socials.shopee}`
+          : "",
+        mercadoLivre: socials.mercadoLivre
+          ? socials.mercadoLivre.startsWith("http")
+            ? socials.mercadoLivre
+            : `https://${socials.mercadoLivre}`
+          : "",
+        shein: socials.shein
+          ? socials.shein.startsWith("http")
+            ? socials.shein
+            : `https://${socials.shein}`
+          : "",
+        ifood: socials.ifood
+          ? socials.ifood.startsWith("http")
+            ? socials.ifood
+            : `https://${socials.ifood}`
+          : "",
+        website: socials.website
+          ? socials.website.startsWith("http")
+            ? socials.website
+            : `https://${socials.website}`
+          : "",
         videoUrl: "",
         heroImage: "",
         gallery: validGallery,
@@ -698,7 +726,7 @@ export default function BusinessEditor({
                     // Assim, o "foco automático" do erro não vai disparar isso aqui!
                     if (!isNew && slug === safeBusiness.slug) {
                       toast.warning(
-                        "Cuidado: Mudar o link quebrará seus QR Codes antigos!",
+                        "Cuidado: Mudar o link quebrará seus links antigos!",
                         { id: "aviso-qr" }, // Colocamos um ID pra ele não empilhar também!
                       );
                     }
@@ -750,15 +778,35 @@ export default function BusinessEditor({
 
             {/* INPUT DE TEXTO ESPECIAL DO LAYOUT */}
             <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.2rem] border border-dashed border-slate-200 w-full mt-6">
-              <label className="text-[9px] font-black uppercase text-indigo-500 mb-2 block tracking-widest">
-                {currentLayoutData.label} - Texto Especial
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-[9px] font-black uppercase text-indigo-500 block tracking-widest">
+                  {currentLayoutData.label} - Texto Especial
+                </label>
+                {/* Contador visual de caracteres - Fica vermelho a partir de 35 */}
+                <span
+                  className={`text-[9px] font-bold ${layoutText.length >= 35 ? "text-rose-500" : "text-slate-400"}`}
+                >
+                  {layoutText.length} / 40
+                </span>
+              </div>
+
               <input
                 value={layoutText}
-                onChange={(e) => setLayoutText(e.target.value)}
-                className="w-full h-12 md:h-14 px-5 rounded-xl bg-white border font-bold text-xs md:text-sm shadow-sm outline-none"
+                onChange={(e) => setLayoutText(e.target.value.slice(0, 40))} // Trava no 40
+                maxLength={40}
+                className={`w-full h-12 md:h-14 px-5 rounded-xl bg-white border font-bold text-xs md:text-sm shadow-sm outline-none transition-all ${
+                  layoutText.length >= 40
+                    ? "border-rose-300 ring-4 ring-rose-50"
+                    : "focus:border-indigo-400"
+                }`}
                 placeholder={currentLayoutData.placeholder}
               />
+
+              <p className="text-[8px] text-slate-400 mt-2 font-medium uppercase tracking-tighter">
+                {layoutText.length >= 40
+                  ? "⚠️ Limite atingido! Menos texto = mais impacto no visual."
+                  : "Dica: Use palavras fortes que resumam seu diferencial."}
+              </p>
             </div>
           </div>
 
@@ -910,14 +958,29 @@ export default function BusinessEditor({
                 ))}
                 <input
                   value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // 🚀 A MÁGICA PARA MOBILE:
+                    // Se o último caractere digitado for um espaço ou vírgula, ele fecha a tag na hora!
+                    if (val.endsWith(" ") || val.endsWith(",")) {
+                      addTag();
+                    } else {
+                      setTagInput(val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // Mantemos o Enter para desktop
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTag();
+                    }
+                  }}
                   disabled={keywords.length >= 10}
                   className="bg-transparent text-xs font-bold outline-none flex-1 min-w-[120px] h-8 px-2 placeholder:font-normal placeholder:text-slate-400 disabled:cursor-not-allowed"
                   placeholder={
                     keywords.length >= 10
                       ? "Limite atingido"
-                      : "Digite e aperte Espaço ou Enter..."
+                      : "Digite e aperte Espaço..."
                   }
                 />
               </div>
@@ -991,16 +1054,39 @@ export default function BusinessEditor({
 
           {/* SOBRE O NEGÓCIO */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-            <label className="text-[10px] font-black uppercase text-slate-400 mb-6 block flex items-center gap-2">
-              <AlignLeft size={16} /> Sobre o Negócio
-            </label>
+            <div className="flex justify-between items-center mb-6">
+              <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+                <AlignLeft size={16} /> Sobre o Negócio
+              </label>
+              {/* Contador de caracteres que muda de cor ao chegar no limite */}
+              <span
+                className={`text-[10px] font-bold ${description.length >= 550 ? "text-rose-500" : "text-slate-400"}`}
+              >
+                {description.length} / 600
+              </span>
+            </div>
+
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value.slice(0, 600))}
+              maxLength={600}
               rows={6}
-              className="w-full bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-50"
-              placeholder="Conte sua história..."
+              className={`w-full bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border text-sm font-medium outline-none transition-all ${
+                description.length >= 600
+                  ? "border-rose-300 ring-4 ring-rose-50"
+                  : "focus:ring-2 ring-indigo-50 focus:border-indigo-200"
+              }`}
+              placeholder="Conte sua história de forma breve e atraente..."
             />
+
+            <div className="mt-3 flex gap-2 items-start">
+              <span className="text-[10px]">💡</span>
+              <p className="text-[9px] text-slate-400 font-medium uppercase tracking-tight leading-relaxed">
+                {description.length >= 600
+                  ? "Limite atingido. Tente ser mais direto para prender a atenção do cliente!"
+                  : "Dica: Fale sobre o que você resolve, não apenas o que você vende. Textos curtos convertem mais."}
+              </p>
+            </div>
 
             {/* DIFERENCIAIS */}
             <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
@@ -1088,124 +1174,182 @@ export default function BusinessEditor({
         </div>
 
         {/* =========================================================
-            SEÇÃO 3: CONTATO E LOCALIZAÇÃO
-           ========================================================= */}
-
+    SEÇÃO 3: CONEXÕES, VENDAS E LOCALIZAÇÃO
+    ========================================================= */}
         <div className="space-y-8">
           <div className="flex items-center gap-4 py-4">
             <div className="h-px bg-slate-200 flex-1"></div>
             <span className="text-xs font-black text-slate-300 uppercase tracking-widest">
-              Contato
+              Conexões
             </span>
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
 
-          <div className="bg-slate-900 text-white rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 shrink-0">
-              <Share2 size={120} />
-            </div>
-            <h2 className="text-[10px] font-black uppercase tracking-widest mb-8 text-emerald-400 flex items-center gap-3 relative z-10">
-              <Phone size={20} /> Conexões Digitais
-            </h2>
-            <div className="space-y-6 relative z-10">
-              <div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow-inner">
-                <label className="text-[9px] font-black uppercase text-emerald-400 mb-2 block">
-                  WhatsApp Business (Chat)
+          {/* CONTATOS PRINCIPAIS - Estilo Clean Profissional */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row gap-6 mb-8">
+              {/* WhatsApp */}
+              <div className="flex-1 bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100/50 transition-all focus-within:ring-4 ring-emerald-50 focus-within:border-emerald-200">
+                <label className="text-[9px] font-black uppercase text-emerald-600 mb-2 block tracking-widest">
+                  WhatsApp Business
                 </label>
                 <div className="flex items-center gap-3">
-                  <Smartphone className="text-emerald-400/50" size={20} />
+                  <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200">
+                    <MessageCircle size={20} fill="currentColor" />
+                  </div>
                   <input
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="(00) 00000-0000"
-                    className="bg-transparent w-full text-2xl md:text-3xl font-mono text-white outline-none"
+                    className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-emerald-200"
                   />
                 </div>
               </div>
-              <div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow-inner">
-                <label className="text-[9px] font-black uppercase text-indigo-400 mb-2 block">
-                  Telefone para Ligações
+
+              {/* Telefone */}
+              <div className="flex-1 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/50 transition-all focus-within:ring-4 ring-indigo-50 focus-within:border-indigo-200">
+                <label className="text-[9px] font-black uppercase text-indigo-600 mb-2 block tracking-widest">
+                  Ligações
                 </label>
                 <div className="flex items-center gap-3">
-                  <PhoneCall className="text-indigo-400/50" size={20} />
+                  <div className="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <PhoneCall size={18} />
+                  </div>
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(00) 0000-0000"
-                    className="bg-transparent w-full text-xl md:text-2xl font-mono text-white outline-none"
+                    className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-indigo-200"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {["instagram", "tiktok", "facebook", "website"].map((s) => (
-                  <div
-                    key={s}
-                    className="bg-white/5 p-4 rounded-xl border border-white/10 focus-within:bg-white/10 transition-all"
-                  >
-                    <label className="text-[8px] font-black uppercase text-slate-500 mb-1 block">
-                      {s.toUpperCase()}
-                    </label>
-                    <input
-                      value={(socials as any)[s]}
-                      onChange={(e) =>
-                        setSocials({ ...socials, [s]: e.target.value })
-                      }
-                      className="bg-transparent w-full text-xs font-bold text-white outline-none"
-                      placeholder={contactPlaceholders[s]}
-                    />
-                  </div>
-                ))}
-              </div>
             </div>
-          </div>
-          {/* CANAIS DE VENDA / E-COMMERCE */}
-          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-            <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
-              <ShoppingCart size={18} className="text-amber-500" /> Canais de
-              Venda (Lojas)
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Redes Sociais - Grid Compacto */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
-                  key: "mercadoLivre",
-                  label: "MERCADO LIVRE",
-                  placeholder: "Link da sua loja ou produto principal",
+                  id: "instagram",
+                  icon: <Instagram size={16} />,
+                  color: "hover:text-pink-500",
+                  label: "Instagram",
                 },
                 {
-                  key: "shopee",
-                  label: "SHOPEE",
-                  placeholder: "Link da sua loja na Shopee",
+                  id: "tiktok",
+                  icon: <Music2 size={16} />,
+                  color: "hover:text-black",
+                  label: "TikTok",
                 },
                 {
-                  key: "shein",
-                  label: "SHEIN",
-                  placeholder: "Link da sua loja na Shein",
+                  id: "facebook",
+                  icon: <Facebook size={16} />,
+                  color: "hover:text-blue-600",
+                  label: "Facebook",
                 },
                 {
-                  key: "ifood",
-                  label: "IFOOD",
-                  placeholder: "Link do seu cardápio no iFood",
+                  id: "website",
+                  icon: <Globe size={16} />,
+                  color: "hover:text-indigo-500",
+                  label: "Website",
                 },
-              ].map((store) => (
+              ].map((social) => (
                 <div
-                  key={store.key}
-                  className="bg-slate-50 p-4 rounded-xl border border-slate-100 focus-within:border-amber-300 focus-within:ring-4 ring-amber-50 transition-all"
+                  key={social.id}
+                  className="group bg-slate-50 p-3 rounded-2xl border border-transparent hover:border-slate-200 hover:bg-white transition-all flex items-center gap-3"
                 >
-                  <label className="text-[8px] font-black uppercase text-slate-500 mb-1 block">
-                    {store.label}
-                  </label>
+                  <div
+                    className={`p-2 rounded-lg bg-white shadow-sm text-slate-400 transition-colors ${social.color}`}
+                  >
+                    {social.icon}
+                  </div>
                   <input
-                    value={(socials as any)[store.key]}
+                    value={(socials as any)[social.id]}
                     onChange={(e) =>
-                      setSocials({ ...socials, [store.key]: e.target.value })
+                      setSocials({ ...socials, [social.id]: e.target.value })
                     }
-                    className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none placeholder:font-normal placeholder:text-slate-400"
-                    placeholder={store.placeholder}
+                    placeholder={contactPlaceholders[social.id]}
+                    className="bg-transparent w-full text-xs font-bold text-slate-600 outline-none placeholder:font-normal placeholder:opacity-30"
                   />
                 </div>
               ))}
             </div>
           </div>
+
+          {/* CANAIS DE VENDA - Branded Style */}
+          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+            <h2 className="text-[10px] font-black uppercase mb-8 flex items-center gap-2 text-slate-400 tracking-[0.2em]">
+              <ShoppingCart size={16} /> Marketplaces & Apps
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  key: "shopee",
+                  label: "Shopee",
+                  color: "orange",
+                  icon: "S",
+                  placeholder: "shopee.com.br/sualoja",
+                },
+                {
+                  key: "ifood",
+                  label: "iFood",
+                  color: "red",
+                  icon: "i",
+                  placeholder: "ifood.com.br/delivery/...",
+                },
+                {
+                  key: "mercadoLivre",
+                  label: "M. Livre",
+                  color: "yellow",
+                  icon: "M",
+                  placeholder: "perfil.mercadolivre.com.br/...",
+                },
+                {
+                  key: "shein",
+                  label: "Shein",
+                  color: "black",
+                  icon: "S",
+                  placeholder: "shein.com/br/store/...",
+                },
+              ].map((store) => {
+                const colors: any = {
+                  orange: "bg-[#EE4D2D] text-white ring-orange-100",
+                  red: "bg-[#EA1D2C] text-white ring-red-100",
+                  yellow: "bg-[#FFF159] text-slate-900 ring-yellow-100",
+                  black: "bg-black text-white ring-slate-100",
+                };
+                return (
+                  <div
+                    key={store.key}
+                    className="flex items-center gap-3 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all focus-within:bg-white focus-within:ring-4 focus-within:border-transparent group"
+                  >
+                    <div
+                      className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-black text-xl shadow-sm ${colors[store.color]}`}
+                    >
+                      {store.icon}
+                    </div>
+                    <div className="flex-1 pr-4">
+                      <label className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
+                        {store.label}
+                      </label>
+                      <input
+                        value={(socials as any)[store.key]}
+                        onChange={(e) =>
+                          setSocials({
+                            ...socials,
+                            [store.key]: e.target.value,
+                          })
+                        }
+                        placeholder={store.placeholder}
+                        className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* LOCALIZAÇÃO - Mantendo sua funcionalidade original COMPLETA */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             {/* CABEÇALHO DA SEÇÃO COM TÍTULO E BOTÃO NA MESMA LINHA */}
             <div className="flex items-center justify-between mb-6">
@@ -1301,6 +1445,7 @@ export default function BusinessEditor({
             </div>
           </div>
 
+          {/* HORÁRIOS */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
               <Clock size={18} className="text-emerald-500" /> Horários de
