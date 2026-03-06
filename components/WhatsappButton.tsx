@@ -1,7 +1,7 @@
 "use client";
 
 import { Phone } from "lucide-react";
-import { incrementWhatsappClicks } from "@/app/actions";
+import { registerClickEvent } from "@/app/actions";
 
 export default function WhatsappButton({
   businessId,
@@ -15,7 +15,7 @@ export default function WhatsappButton({
   const handleContact = async () => {
     // 1. Avisa o banco que houve um clique (sem travar o usuário)
     try {
-      await incrementWhatsappClicks(businessId);
+      await registerClickEvent(businessId, "WHATSAPP");
     } catch (e) {
       console.error("Erro ao contar clique", e);
     }
