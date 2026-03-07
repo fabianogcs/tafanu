@@ -127,9 +127,9 @@ export default async function DashboardPage() {
                   const analytics = business.analytics || [];
 
                   // Cálculos individuais para este negócio
-                  const views = analytics.filter(
-                    (e) => e.eventType === "VIEW",
-                  ).length;
+                  // 1. VISITAS: Agora ele pega o número real e direto da coluna da loja!
+                  const views = business.views || 0;
+
                   const whats = analytics.filter(
                     (e) => e.eventType === "WHATSAPP",
                   ).length;
@@ -141,8 +141,9 @@ export default async function DashboardPage() {
                   ).length;
                   const favs = business._count?.favorites || 0;
 
+                  // 2. SOCIAL: Trocamos "LINK" por "WEBSITE" para bater com o banco de dados!
                   const socials = analytics.filter((e) =>
-                    ["INSTAGRAM", "FACEBOOK", "TIKTOK", "LINK"].includes(
+                    ["INSTAGRAM", "FACEBOOK", "TIKTOK", "WEBSITE"].includes(
                       e.eventType,
                     ),
                   ).length;

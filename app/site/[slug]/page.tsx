@@ -249,7 +249,7 @@ export default async function BusinessPage({
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <ViewCounter businessId={business.id} userId={userId} />
+      <ViewCounter businessId={business.id} />
 
       {/* SCRIPT DE SEGURANÇA: Garante que o navegador atualize o manifesto ao entrar aqui */}
       <script
