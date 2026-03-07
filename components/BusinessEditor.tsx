@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import MobilePreview from "@/components/MobilePreview";
 import { UploadButton as UTButton } from "@uploadthing/react";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
+import ImageCropperModal from "@/components/ImageCropperModal";
+import { generateReactHelpers } from "@uploadthing/react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -60,6 +62,7 @@ type BusinessHour = {
   closed?: boolean;
 };
 
+const { useUploadThing } = generateReactHelpers<OurFileRouter>();
 // --- DADOS ESTÁTICOS ---
 const TAFANU_CATEGORIES = {
   Alimentação: [
@@ -242,6 +245,43 @@ export default function BusinessEditor({
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
+  // 👇 COLOQUE ESTE BLOCO AQUI (O MOTOR DO CROPPER E UPLOAD)
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { startUpload, isUploading: isUploadingLogo } = useUploadThing(
+    "logoUploader",
+    {
+      onClientUploadComplete: (res) => {
+        if (!res || res.length === 0) return;
+        setProfileImage(res[0].ufsUrl);
+        toast.success("Logo recortada e atualizada com sucesso!");
+      },
+      onUploadError: (error) => {
+        toast.error(`Erro ao subir imagem: ${error.message}`);
+      },
+    },
+  );
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem é muito pesada! O limite é 2MB.");
+      return;
+    }
+    // Cria um link temporário da foto para mostrar no Modal de Recorte
+    const objectUrl = URL.createObjectURL(file);
+    setRawImageSrc(objectUrl);
+    e.target.value = ""; // Limpa a memória do input
+  };
+
+  const handleCropComplete = async (croppedFile: File) => {
+    setRawImageSrc(null); // Só isso!
+    await startUpload([croppedFile]);
+  };
+
   // Estados
   const [name, setName] = useState(safeBusiness.name);
   const [slug, setSlug] = useState(safeBusiness.slug);
@@ -412,6 +452,14 @@ export default function BusinessEditor({
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  // 🛡️ Vigia de Memória
+  useEffect(() => {
+    return () => {
+      if (rawImageSrc) {
+        URL.revokeObjectURL(rawImageSrc);
+      }
+    };
+  }, [rawImageSrc]);
 
   useEffect(() => {
     const temaAtual = businessThemes[selectedTheme];
@@ -751,45 +799,50 @@ export default function BusinessEditor({
           <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col items-center text-center">
             {/* FOTO DE PERFIL */}
             <div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 group">
-              <div className="w-full h-full rounded-full bg-slate-50 border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center relative">
-                {profileImage ? (
+              <div
+                className="w-full h-full rounded-full bg-slate-50 border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center relative cursor-pointer"
+                onClick={() =>
+                  !isUploadingLogo && fileInputRef.current?.click()
+                }
+              >
+                {isUploadingLogo ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2
+                      className="animate-spin text-indigo-500"
+                      size={24}
+                    />
+                    <span className="text-[8px] font-black uppercase text-indigo-500">
+                      Enviando...
+                    </span>
+                  </div>
+                ) : profileImage ? (
                   <img
                     src={profileImage}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <UTButton<OurFileRouter, any>
-                    endpoint="logoUploader" // 🚀 CORRIGIDO AQUI PARA USAR O LIMITE DE 2MB DO SEU BACKEND
-                    onBeforeUploadBegin={(files) => {
-                      // 🚀 TRAVA CLIENT-SIDE PARA A LOGO (2MB)
-                      const isOverLimit = files.some(
-                        (f) => f.size > 2 * 1024 * 1024,
-                      );
-                      if (isOverLimit) {
-                        toast.error(
-                          "A imagem é muito pesada! O limite para a Logo é 2MB.",
-                        );
-                        return []; // Interrompe o envio na hora!
-                      }
-                      return files;
-                    }}
-                    onClientUploadComplete={(res) => {
-                      if (!res || res.length === 0) return; // 🛡️ ESCUDO: Se não subiu nada, não faz nada e não dá erro!
-                      setProfileImage(res[0].ufsUrl);
-                    }}
-                    content={{
-                      button: <Plus size={40} className="text-slate-300" />,
-                    }}
-                    appearance={{
-                      button: "w-full h-full bg-transparent",
-                      allowedContent: "hidden",
-                    }}
+                  <Plus
+                    size={40}
+                    className="text-slate-300 group-hover:text-indigo-400 transition-colors"
                   />
                 )}
               </div>
-              {profileImage && (
+
+              {/* INPUT INVISÍVEL QUE ABRE A GALERIA DO CELULAR/PC */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
+              {profileImage && !isUploadingLogo && (
                 <button
-                  onClick={() => setProfileImage("")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProfileImage("");
+                  }}
                   className="absolute bottom-1 right-1 bg-rose-500 text-white p-2.5 rounded-full shadow-lg hover:scale-110 transition-transform"
                 >
                   <Trash2 size={16} />
@@ -797,9 +850,8 @@ export default function BusinessEditor({
               )}
             </div>
             <div className="mb-8 px-4 py-2 bg-indigo-50/50 border border-indigo-100 rounded-full">
-              {/* 🚀 TEXTO DE APOIO ATUALIZADO */}
               <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-500 text-center">
-                💡 Dica: Imagem Quadrada (MÁX: 2MB)
+                💡 Clique na bola para enviar e ajustar (MÁX: 2MB)
               </p>
             </div>
             {/* NOME DO NEGÓCIO */}
@@ -1637,6 +1689,13 @@ export default function BusinessEditor({
             </button>
           </div>
         </div>
+        {rawImageSrc && (
+          <ImageCropperModal
+            imageSrc={rawImageSrc}
+            onCropComplete={handleCropComplete}
+            onClose={() => setRawImageSrc(null)} // Só isso aqui também!
+          />
+        )}
       </main>
     </div>
   );
