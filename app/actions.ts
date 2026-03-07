@@ -18,18 +18,6 @@ const client = new MercadoPagoConfig({
 const utapi = new UTApi();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-function generateSlug(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .normalize("NFD") // Decompõe caracteres acentuados
-    .replace(/[\u0300-\u036f]/g, "") // Remove os acentos
-    .replace(/\s+/g, "-") // Substitui espaços por hífen
-    .replace(/[^\w-]+/g, "") // Remove caracteres especiais
-    .replace(/--+/g, "-"); // Remove hífens duplicados
-}
-
 // ==============================================================================
 // 1. HELPERS INTERNOS (Proteção e Utilidades)
 // ==============================================================================
@@ -1166,7 +1154,7 @@ export async function resetPassword(token: string | null, formData: FormData) {
 
   return { success: true };
 }
-export async function getRandomBusinesses(userId?: string) {
+export async function getHomeBusinesses(userId?: string) {
   try {
     // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO
     let isVerified = false;
@@ -1324,65 +1312,6 @@ export async function incrementInstallCount(slug: string) {
   } catch (error) {
     console.error("Erro ao contar instalação:", error);
     return { success: false };
-  }
-}
-// Adicione no final de app/actions.ts
-
-export async function getHomeBusinesses(userId?: string) {
-  try {
-    // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO (MANTIDO)
-    let isVerified = false;
-    if (userId) {
-      const u = await db.user.findUnique({
-        where: { id: userId },
-        select: { emailVerified: true },
-      });
-      isVerified = !!u?.emailVerified;
-    }
-
-    // 2. BUSCA OS NEGÓCIOS ELEGÍVEIS (MANTIDO)
-    const businesses = await db.business.findMany({
-      where: {
-        published: true,
-        isActive: true,
-        user: {
-          OR: [
-            { role: "ADMIN" },
-            {
-              role: "ASSINANTE",
-              expiresAt: { gt: new Date() },
-            },
-          ],
-        },
-      },
-      include: {
-        favorites: userId ? { where: { userId } } : false,
-        _count: {
-          select: { favorites: true },
-        },
-      },
-      // ⬅️ Tiramos o orderBy (mais vistos) e o take: 12 daqui para pegar a base toda
-    });
-
-    // 3. 🎲 O SEGREDO: EMBARALHA TUDO ALEATORIAMENTE (Algoritmo Fisher-Yates)
-    for (let i = businesses.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [businesses[i], businesses[j]] = [businesses[j], businesses[i]];
-    }
-
-    // 4. PEGA SÓ OS 12 PRIMEIROS DA LISTA JÁ EMBARALHADA
-    const randomBusinesses = businesses.slice(0, 12);
-
-    // 5. DEVOLVE PRO FRONTEND COM A LÓGICA DE FAVORITOS (MANTIDO)
-    return randomBusinesses.map((b) => ({
-      ...b,
-      isFavorited: userId ? b.favorites.length > 0 : false,
-      favoritesCount: b._count.favorites,
-      userLoggedInVerified: isVerified, // ⬅️ AQUI ESTÁ A "CARTA" PRO CARTEIRO
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar destaques:", error);
-    return [];
   }
 }
 
