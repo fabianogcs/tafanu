@@ -1,16 +1,23 @@
 "use client";
 
-import React from "react";
-import {
-  Smartphone,
-  Camera,
-  Instagram,
-  MessageCircle,
-  Globe,
-} from "lucide-react";
+import { memo } from "react";
+import { Camera } from "lucide-react";
 import { businessThemes } from "@/lib/themes";
 
-export default function MobilePreview({
+interface MobilePreviewProps {
+  themeKey: string;
+  name: string;
+  description: string;
+  profileImage: string;
+  gallery: string[];
+  comercial_badge?: string;
+  luxe_quote?: string;
+  urban_tag?: string;
+  showroom_collection?: string;
+  layoutLabel: string;
+}
+
+function MobilePreview({
   themeKey,
   name,
   description,
@@ -19,9 +26,10 @@ export default function MobilePreview({
   comercial_badge,
   luxe_quote,
   urban_tag,
-  showroom_collection, // 👈 Showroom agora está aqui!
+  showroom_collection,
   layoutLabel,
-}: any) {
+}: MobilePreviewProps) {
+  // Garantia de um tema padrão caso o themeKey venha vazio ou errado
   const theme = businessThemes[themeKey] || businessThemes["comercial_neutral"];
   const layout = theme.layout;
 
@@ -34,6 +42,7 @@ export default function MobilePreview({
         <div
           className={`w-full h-full overflow-y-auto no-scrollbar ${theme.bgPage} transition-all duration-700`}
         >
+          {/* O "Notch" do celular */}
           <div className="sticky top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-50 mb-[-24px]" />
 
           <div className="pt-12 px-5 pb-10 flex flex-col items-center">
@@ -48,6 +57,7 @@ export default function MobilePreview({
                 <img
                   src={profileImage}
                   className="w-full h-full object-cover"
+                  alt={`Logo de ${name}`}
                 />
               ) : (
                 <div className="w-full h-full bg-slate-200 opacity-50" />
@@ -121,7 +131,7 @@ export default function MobilePreview({
               </p>
             </div>
 
-            {/* GALERIA (Mosaico Showroom) */}
+            {/* GALERIA (Mosaico Showroom / Vitrine normal) */}
             <div className="w-full">
               <h3
                 className={`text-[9px] font-black uppercase mb-3 opacity-30 flex items-center gap-2 ${theme.textColor}`}
@@ -130,12 +140,16 @@ export default function MobilePreview({
                 {layout === "showroom" ? "Showroom" : "Vitrine"}
               </h3>
               <div className="grid grid-cols-2 gap-2">
-                {gallery.slice(0, 4).map((img: any, i: any) => (
+                {gallery.slice(0, 4).map((img, i) => (
                   <div
                     key={i}
                     className={`aspect-square overflow-hidden bg-slate-200/20 ${theme.radius || "rounded-2xl"} ${layout === "showroom" && i === 0 ? "col-span-2 h-32" : ""}`}
                   >
-                    <img src={img} className="w-full h-full object-cover" />
+                    <img
+                      src={img}
+                      className="w-full h-full object-cover"
+                      alt={`Galeria ${i + 1}`}
+                    />
                   </div>
                 ))}
               </div>
@@ -146,3 +160,6 @@ export default function MobilePreview({
     </div>
   );
 }
+
+// 🚀 A otimização mágica: O memo impede que o celular recarregue quando não deve.
+export default memo(MobilePreview);

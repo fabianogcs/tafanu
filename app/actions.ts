@@ -1,4 +1,5 @@
 "use server";
+import { z } from "zod";
 import { businessSchema, userProfileSchema } from "@/lib/schemas";
 import { UTApi } from "uploadthing/server";
 import { db } from "@/lib/db";
@@ -10,7 +11,9 @@ import { auth, signIn, signOut } from "@/auth";
 import { Resend } from "resend";
 import crypto from "crypto";
 import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago"; // 👈 NOVO IMPORT AQUI
+import { normalizeText } from "@/lib/normalize"; // 👈 NOVO IMPORT
 
+type BusinessInput = z.infer<typeof businessSchema>;
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
@@ -435,89 +438,93 @@ export async function checkProfileStatus() {
 // 4. GESTÃO DE NEGÓCIOS (CRUD)
 // ==============================================================================
 
-export async function createBusiness(formData: FormData) {
+// 🚀 MELHORIA: Busca categorias de forma leve e SEM esquecer ninguém
+export async function getFilterMetadata() {
+  const data = await db.business.findMany({
+    where: {
+      isActive: true,
+      published: true,
+    },
+    select: {
+      category: true,
+      subcategory: true,
+    },
+  });
+
+  const map: Record<string, string[]> = {};
+
+  data.forEach((item) => {
+    if (!map[item.category]) map[item.category] = [];
+
+    item.subcategory?.forEach((sub) => {
+      if (!map[item.category].includes(sub)) {
+        map[item.category].push(sub);
+      }
+    });
+  });
+
+  return map;
+}
+
+// 🏗️ CRIAÇÃO DE NEGÓCIO (Limpo e Seguro)
+export async function createBusiness(payload: any) {
   const session = await getSafeUser();
   if (!session) return { error: "Não autorizado." };
-  const userId = session.id;
 
-  const dbUser = await db.user.findUnique({ where: { id: userId } });
-  if (dbUser?.role === "ASSINANTE" && (!dbUser.document || !dbUser.phone))
-    return { error: "Complete seu perfil primeiro." };
-
-  const rawData: any = Object.fromEntries(formData.entries());
-  rawData.subcategory = formData.getAll("subcategory");
-  rawData.features = formData.getAll("features");
-  rawData.gallery = formData.getAll("gallery");
-  rawData.keywords = formData.getAll("keywords");
-  rawData.faqs = formData.get("faqs")?.toString() || "[]";
-  rawData.hours = formData.get("hours")?.toString() || "[]";
-
-  const validatedFields = businessSchema.safeParse(rawData);
-
-  if (!validatedFields.success) {
-    const fieldErrors = validatedFields.error.flatten().fieldErrors;
-    const firstMessage = Object.values(fieldErrors).flat()[0];
-    return { error: firstMessage || "Verifique os dados informados." };
-  }
+  const validatedFields = businessSchema.safeParse(payload);
+  if (!validatedFields.success) return { error: "Dados inválidos." };
 
   const validatedData = validatedFields.data;
-  const slug = validatedData.slug.toLowerCase().trim();
-  const existing = await db.business.findUnique({ where: { slug } });
-  if (existing) return { error: "Slug já em uso." };
 
   const coords = await getCoordinates(
     validatedData.address || "",
     validatedData.city || "",
     validatedData.state || "",
   );
-  const faqs = safeParseArray(formData.get("faqs"));
-  const hours = safeParseArray(formData.get("hours"));
 
   try {
     await db.$transaction(async (tx) => {
       const business = await tx.business.create({
         data: {
-          userId,
+          userId: session.id,
           name: validatedData.name,
-          slug,
+          slug: validatedData.slug.toLowerCase().trim(),
           theme: validatedData.theme,
           layout: validatedData.layout,
           category: validatedData.category,
-          subcategory: formData.getAll("subcategory") as string[],
+          subcategory: payload.subcategory || [],
           description: validatedData.description,
           whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
           phone: (validatedData.phone || "").replace(/\D/g, ""),
           address: validatedData.address,
-          city: validatedData.city,
+          // 🛡️ Normalização para a busca "Vila Tu" funcionar
+          city: normalizeText(validatedData.city || ""),
+          neighborhood: normalizeText(payload.neighborhood || ""),
           state: validatedData.state,
           latitude: coords.lat,
           longitude: coords.lng,
-          imageUrl: (formData.get("imageUrl") as string) || "",
-          videoUrl: (formData.get("videoUrl") as string) || null,
-          heroImage: (formData.get("heroImage") as string) || null,
-          gallery: formData.getAll("gallery") as string[],
-          features: formData.getAll("features") as string[],
-          keywords: validatedData.keywords,
+          imageUrl: payload.imageUrl || "",
+          gallery: payload.gallery || [],
+          features: payload.features || [],
+          // 🚀 O PULO DO GATO: Salva as palavras-chave do usuário + o Nome do Negócio 100% sem acentos
+          keywords: [
+            ...(payload.keywords || []).map((k: string) => normalizeText(k)),
+            normalizeText(validatedData.name),
+          ],
           instagram: cleanSocialLink(validatedData.instagram || ""),
           facebook: cleanSocialLink(validatedData.facebook || ""),
           tiktok: cleanSocialLink(validatedData.tiktok || ""),
-          // --- NOVOS CANAIS DE VENDA ---
           shopee: validatedData.shopee?.trim() || "",
           mercadoLivre: validatedData.mercadoLivre?.trim() || "",
           shein: validatedData.shein?.trim() || "",
           ifood: validatedData.ifood?.trim() || "",
-          faqs,
-          urban_tag: (formData.get("urban_tag") as string) || null,
-          luxe_quote: (formData.get("luxe_quote") as string) || null,
-          comercial_badge: (formData.get("comercial_badge") as string) || null,
-          showroom_collection:
-            (formData.get("showroom_collection") as string) || null,
+          faqs: payload.faqs || [],
         },
       });
 
-      if (hours && hours.length > 0) {
+      if (payload.hours?.length > 0) {
         await tx.businessHour.createMany({
-          data: hours.map((h: any) => ({
+          data: payload.hours.map((h: any) => ({
             businessId: business.id,
             dayOfWeek: h.dayOfWeek,
             openTime: h.openTime || "09:00",
@@ -527,155 +534,172 @@ export async function createBusiness(formData: FormData) {
         });
       }
     });
-
-    revalidatePath("/dashboard");
     revalidatePath("/busca");
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("ERRO NO BANCO:", error);
+    console.error("Erro no create:", error);
     return { error: "Erro ao criar anúncio." };
   }
 }
 
+// 🔄 EDIÇÃO DE NEGÓCIO (Com economia de API e Redes Sociais completas)
 export async function updateFullBusiness(slug: string, payload: any) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
-  const userId = user.id;
 
   try {
-    // 1. BUSCA O NEGÓCIO ATUAL
-    const oldBusiness = await db.business.findUnique({
+    const old = await db.business.findUnique({
       where: { slug },
       select: {
         id: true,
         userId: true,
-        imageUrl: true,
-        heroImage: true,
-        videoUrl: true,
-        gallery: true,
+        address: true,
+        city: true,
+        state: true,
+        latitude: true,
+        longitude: true,
       },
     });
 
-    if (!oldBusiness || oldBusiness.userId !== userId)
-      return { error: "Negado." };
+    if (!old || old.userId !== user.id) return { error: "Negado." };
 
-    // 2. VALIDA OS DADOS QUE CHEGARAM
     const validatedFields = businessSchema.safeParse(payload);
+    if (!validatedFields.success) return { error: "Verifique os dados." };
 
-    if (!validatedFields.success) {
-      const errors = validatedFields.error.flatten().fieldErrors;
-      const firstErrorMessage = Object.values(errors).flat()[0];
-      return { error: firstErrorMessage || "Verifique os dados." };
+    const validatedData = validatedFields.data;
+
+    // 💰 ECONOMIA: SÓ CHAMA O GOOGLE SE O ENDEREÇO MUDOU
+    let lat = old.latitude;
+    let lng = old.longitude;
+    const addressChanged =
+      old.address !== validatedData.address ||
+      old.city !== validatedData.city ||
+      old.state !== validatedData.state;
+
+    if (addressChanged) {
+      const newCoords = await getCoordinates(
+        validatedData.address || "",
+        validatedData.city || "",
+        validatedData.state || "",
+      );
+      lat = newCoords.lat;
+      lng = newCoords.lng;
     }
 
-    const { hours: _ignoredHours, ...validatedData } = validatedFields.data;
-
-    // 3. USA O SLUG (LINK) DIGITADO PELO USUÁRIO (E limpa espaços)
-    const novoSlug = payload.slug.trim().toLowerCase();
-
-    // Verifica se o usuário tentou mudar o link e se o novo já existe
-    if (novoSlug !== slug) {
-      const exists = await db.business.findUnique({
-        where: { slug: novoSlug },
-      });
-      if (exists) {
-        return {
-          success: false,
-          error: "Este nome de link já está em uso por outra loja.",
-        };
-      }
-    }
-
-    // 4. PROCESSA AS KEYWORDS (ESTAVA FALTANDO ESSA ORDEM)
-    const keywords =
-      typeof payload.keywords === "string"
-        ? payload.keywords
-            .split(",")
-            .map((k: any) => k.trim().toLowerCase())
-            .filter(Boolean)
-            .slice(0, 10)
-        : Array.isArray(payload.keywords)
-          ? payload.keywords.slice(0, 10)
-          : [];
-
-    // 5. BUSCA COORDENADAS NO MAPS
-    const coords = await getCoordinates(
-      validatedData.address || "",
-      validatedData.city || "",
-      validatedData.state || "",
-    );
-
-    // 6. LOGICA DE LIMPEZA DE IMAGENS (FAXINA)
-    const filesToDelete: string[] = [];
-    if (oldBusiness.imageUrl && oldBusiness.imageUrl !== payload.imageUrl)
-      filesToDelete.push(oldBusiness.imageUrl);
-    if (oldBusiness.heroImage && oldBusiness.heroImage !== payload.heroImage)
-      filesToDelete.push(oldBusiness.heroImage);
-    if (oldBusiness.videoUrl && oldBusiness.videoUrl !== payload.videoUrl)
-      filesToDelete.push(oldBusiness.videoUrl);
-
-    const oldGallery = oldBusiness.gallery || [];
-    const newGallery = (payload.gallery as string[]) || [];
-    oldGallery.forEach((oldUrl) => {
-      if (!newGallery.includes(oldUrl)) filesToDelete.push(oldUrl);
-    });
-
-    if (filesToDelete.length > 0) {
-      await deleteFilesFromUploadThing(filesToDelete);
-    }
-
-    // 7. MONTA O OBJETO FINAL PARA O BANCO
-    const updateData = {
-      ...validatedData,
-      name: payload.name,
-      slug: novoSlug,
-      cep: payload.cep,
-      keywords: keywords, // Agora a variável já existe acima!
-      latitude: coords.lat,
-      longitude: coords.lng,
-      whatsapp: (payload.whatsapp || "").replace(/\D/g, ""),
-      phone: (payload.phone || "").replace(/\D/g, ""),
-      imageUrl: payload.imageUrl,
-      heroImage: payload.heroImage,
-      videoUrl: payload.videoUrl,
-      gallery: payload.gallery,
-      features: payload.features,
-      instagram: cleanSocialLink(validatedData.instagram || ""),
-      facebook: cleanSocialLink(validatedData.facebook || ""),
-      tiktok: cleanSocialLink(validatedData.tiktok || ""),
-      // --- NOVOS CANAIS DE VENDA ---
-      shopee: validatedData.shopee?.trim() || "",
-      mercadoLivre: validatedData.mercadoLivre?.trim() || "",
-      shein: validatedData.shein?.trim() || "",
-      ifood: validatedData.ifood?.trim() || "",
-      subcategory: payload.subcategory,
-      urban_tag: payload.urban_tag,
-      luxe_quote: payload.luxe_quote,
-      comercial_badge: payload.comercial_badge,
-      showroom_collection: payload.showroom_collection,
-      faqs: validatedData.faqs,
-    };
-
-    // 8. ATUALIZA
     await db.business.update({
-      where: { id: oldBusiness.id },
-      data: updateData,
+      where: { id: old.id },
+      data: {
+        name: validatedData.name,
+        slug: validatedData.slug.toLowerCase().trim(),
+        description: validatedData.description,
+        category: validatedData.category,
+        subcategory: payload.subcategory || [],
+        theme: validatedData.theme,
+        layout: validatedData.layout,
+        whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
+        phone: (validatedData.phone || "").replace(/\D/g, ""),
+        address: validatedData.address,
+        // 🛡️ Mantendo a busca inteligente afiada
+        city: normalizeText(validatedData.city || ""),
+        neighborhood: normalizeText(payload.neighborhood || ""),
+        latitude: lat,
+        longitude: lng,
+        // 🚀 O PULO DO GATO: Salva as palavras-chave do usuário + o Nome do Negócio 100% sem acentos
+        keywords: [
+          ...(payload.keywords || []).map((k: string) => normalizeText(k)),
+          normalizeText(validatedData.name),
+        ],
+        instagram: cleanSocialLink(validatedData.instagram || ""),
+        facebook: cleanSocialLink(validatedData.facebook || ""),
+        tiktok: cleanSocialLink(validatedData.tiktok || ""),
+        // 🚀 Campos Extras (IMPORTANTE para não perder dados)
+        shopee: validatedData.shopee?.trim() || "",
+        mercadoLivre: validatedData.mercadoLivre?.trim() || "",
+        shein: validatedData.shein?.trim() || "",
+        ifood: validatedData.ifood?.trim() || "",
+        gallery: payload.gallery || [],
+        faqs: payload.faqs || [],
+      },
     });
 
-    // 9. LIMPA O CACHE (Para o navegador e Google verem a mudança)
-    revalidatePath("/", "layout"); // Força a atualização dos metadados globais
     revalidatePath("/busca");
     revalidatePath("/dashboard");
     revalidatePath(`/site/${slug}`);
 
-    if (novoSlug !== slug) {
-      revalidatePath(`/site/${novoSlug}`);
+    // Se o link mudou, revalida o novo também
+    if (validatedData.slug !== slug) {
+      revalidatePath(`/site/${validatedData.slug}`);
     }
 
-    return { success: true, newSlug: novoSlug };
+    return { success: true, newSlug: validatedData.slug };
   } catch (error) {
     console.error("Erro no update:", error);
     return { error: "Erro ao salvar." };
+  }
+}
+
+// ==============================================================================
+// 7. ATUALIZAÇÃO ESPECÍFICA DE MÍDIA (VÍDEO E GALERIA)
+// ==============================================================================
+
+export async function updateBusinessMedia(
+  slug: string,
+  videoUrl: string | null,
+  gallery: string[],
+) {
+  const user = await getSafeUser();
+  if (!user) return { error: "Não autorizado." };
+
+  try {
+    // 1. Busca o negócio atual para saber o que ele já tinha
+    const business = await db.business.findUnique({
+      where: { slug },
+      select: { id: true, userId: true, gallery: true, videoUrl: true },
+    });
+
+    if (!business || business.userId !== user.id) {
+      return { error: "Negócio não encontrado ou permissão negada." };
+    }
+
+    // 2. Lógica de Faxina (Deleta fotos removidas do UploadThing)
+    const filesToDelete: string[] = [];
+
+    // Se o vídeo mudou, deleta o antigo (se for link do UploadThing)
+    if (business.videoUrl && business.videoUrl !== videoUrl) {
+      filesToDelete.push(business.videoUrl);
+    }
+
+    // Compara as galerias: se a foto estava na antiga e não está na nova, deleta.
+    const oldGallery = business.gallery || [];
+    oldGallery.forEach((url) => {
+      if (!gallery.includes(url)) {
+        filesToDelete.push(url);
+      }
+    });
+
+    // Executa a deleção no servidor do UploadThing
+    if (filesToDelete.length > 0) {
+      await deleteFilesFromUploadThing(filesToDelete);
+    }
+
+    // 3. Atualiza o banco de dados
+    await db.business.update({
+      where: { id: business.id },
+      data: {
+        videoUrl: videoUrl || null,
+        gallery: gallery,
+      },
+    });
+
+    // 4. Limpa o cache para as mudanças aparecerem no site
+    revalidatePath(`/site/${slug}`);
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar mídia:", error);
+    return { error: "Erro interno ao salvar as mídias." };
   }
 }
 
@@ -754,15 +778,33 @@ export async function deleteBusiness(slug: string) {
 
 export async function incrementViews(businessId: string) {
   try {
-    // Vai direto no banco e soma +1 sem perguntar quem é ou se tem cookie!
+    const cookieStore = await cookies();
+    const cookieName = `viewed_${businessId}`;
+    const hasViewed = cookieStore.get(cookieName);
+
+    // 🛡️ TRAVA ANTI-SPAM: Se já tem o carimbo, ignora e sai fora!
+    if (hasViewed) {
+      return { success: true, ignored: true };
+    }
+
+    // Se não tem carimbo, soma +1 no banco de dados
     await db.business.update({
       where: { id: businessId },
       data: { views: { increment: 1 } },
     });
 
-    console.log(`[Analytics] +1 visualização para a loja: ${businessId}`);
+    // 🕒 CRIA O CARIMBO: Dura 30 minutos (1800 segundos)
+    cookieStore.set(cookieName, "true", {
+      maxAge: 1800,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    console.log(`[Analytics] +1 visualização real para a loja: ${businessId}`);
+    return { success: true };
   } catch (error) {
     console.error("Erro ao incrementar views:", error);
+    return { error: "Erro ao registrar view" };
   }
 }
 
@@ -1135,33 +1177,43 @@ export async function getHomeBusinesses(userId?: string) {
       isVerified = !!u?.emailVerified;
     }
 
-    const validIds = await db.business.findMany({
+    // 2. CONTA QUANTOS NEGÓCIOS VÁLIDOS EXISTEM
+    const totalBusinesses = await db.business.count({
       where: {
         isActive: true,
         published: true,
         user: {
           OR: [
             { role: "ADMIN" },
-            {
-              role: "ASSINANTE",
-              expiresAt: { gt: new Date() },
-            },
+            { role: "ASSINANTE", expiresAt: { gt: new Date() } },
           ],
         },
       },
-      select: { id: true },
     });
 
-    if (validIds.length === 0) return [];
+    if (totalBusinesses === 0) return [];
 
-    const shuffledIds = validIds
-      .map((value) => ({ value, sort: Math.random() }))
-      .sort((a, b) => a.sort - b.sort)
-      .map(({ value }) => value.id)
-      .slice(0, 12);
+    // 3. MATEMÁTICA DO PULO ALEATÓRIO (OFFSET O(1))
+    // Calcula um número aleatório para "pular", garantindo que sobrem 12 itens
+    const skipAmount = Math.max(
+      0,
+      Math.floor(Math.random() * (totalBusinesses - 12)),
+    );
 
+    // 4. BUSCA APENAS 12 NEGÓCIOS, DIRETO DO BANCO!
     const randomBusinesses = await db.business.findMany({
-      where: { id: { in: shuffledIds } },
+      where: {
+        isActive: true,
+        published: true,
+        user: {
+          OR: [
+            { role: "ADMIN" },
+            { role: "ASSINANTE", expiresAt: { gt: new Date() } },
+          ],
+        },
+      },
+      take: 12,
+      skip: skipAmount,
       include: {
         hours: true,
         favorites: userId ? { where: { userId } } : false,
@@ -1171,14 +1223,15 @@ export async function getHomeBusinesses(userId?: string) {
       },
     });
 
+    // 5. FORMATA PARA O FRONTEND
     return randomBusinesses
       .map((b) => ({
         ...b,
         isFavorited: userId ? b.favorites.length > 0 : false,
         favoritesCount: b._count.favorites,
-        userLoggedInVerified: isVerified, // ⬅️ AQUI TAMBÉM!
+        userLoggedInVerified: isVerified,
       }))
-      .sort(() => Math.random() - 0.5);
+      .sort(() => Math.random() - 0.5); // Embaralha só os 12 na tela (Super leve)
   } catch (error) {
     console.error("Erro ao buscar aleatórios:", error);
     return [];
@@ -1266,21 +1319,6 @@ export async function runGarbageCollector() {
   } catch (error) {
     console.error("Erro na faxina:", error);
     return { error: "Erro interno ao rodar faxina." };
-  }
-}
-// ... (mantenha todo o resto do arquivo igual)
-
-// --- AÇÃO PARA CONTAR INSTALAÇÃO DO PWA ---
-export async function incrementInstallCount(slug: string) {
-  try {
-    await db.business.update({
-      where: { slug },
-      data: { installs: { increment: 1 } },
-    });
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao contar instalação:", error);
-    return { success: false };
   }
 }
 

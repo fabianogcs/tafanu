@@ -1,10 +1,9 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 👈 Adicionamos useEffect
 import { UploadDropzone } from "@/lib/uploadthing";
 import { X, Video, Image as ImageIcon, Save, Loader2 } from "lucide-react";
-// @ts-ignore
 import { updateBusinessMedia } from "@/app/actions";
 import { useRouter } from "next/navigation";
 
@@ -23,106 +22,110 @@ export default function MediaForm({
   const [videoUrl, setVideoUrl] = useState(initialVideo || "");
   const [gallery, setGallery] = useState<string[]>(initialGallery || []);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // 👈 Filtro de segurança SSR
 
-  // Função para remover uma foto da lista antes de salvar
+  // 🛡️ Garante que o componente só renderize no cliente
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const removeImage = (indexToRemove: number) => {
     setGallery((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  // Função para salvar tudo no banco
   const handleSave = async () => {
     setIsSaving(true);
-    // Adicionamos o "as any" aqui:
-    const result = await (updateBusinessMedia as any)(
-      businessSlug,
-      videoUrl,
-      gallery,
-    );
-    setIsSaving(false);
+    try {
+      const result = await updateBusinessMedia(businessSlug, videoUrl, gallery);
 
-    if (result.success) {
-      toast.success("Mídia atualizada com sucesso!");
-      router.refresh();
-    } else {
-      toast.error("Erro ao salvar mídia. Tente novamente.");
+      if (result.success) {
+        toast.success("Mídia atualizada com sucesso!");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Erro ao salvar mídia.");
+      }
+    } catch (error) {
+      toast.error("Ocorreu um erro inesperado.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  if (!isMounted) return null; // 👈 Evita o erro de "null reading useState"
+
   return (
-    <div className="space-y-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 max-w-4xl mx-auto">
+    <div className="space-y-8 bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 max-w-4xl mx-auto">
       {/* --- SEÇÃO 1: VÍDEO --- */}
       <div>
-        <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-3">
-          <Video className="text-tafanu-blue" size={20} />
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
+          <Video className="text-indigo-500" size={18} />
           Vídeo de Apresentação
         </h3>
         <input
           type="text"
           placeholder="Cole aqui o link do YouTube (ex: https://youtube.com/watch...)"
-          className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-medium text-slate-700 transition-all"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
         />
-        <p className="text-xs text-gray-400 mt-2">
-          Recomendamos vídeos curtos (até 2 min) mostrando o ambiente.
+        <p className="text-[10px] text-slate-400 mt-3 font-medium uppercase px-2">
+          💡 Dica: Vídeos do YouTube aumentam a confiança do cliente.
         </p>
       </div>
 
-      <hr className="border-gray-100" />
+      <div className="h-px bg-slate-100" />
 
       {/* --- SEÇÃO 2: GALERIA DE FOTOS --- */}
       <div>
-        <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-3">
-          <ImageIcon className="text-tafanu-blue" size={20} />
-          Galeria de Fotos ({gallery.length}/8)
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+            <ImageIcon className="text-indigo-500" size={18} />
+            Galeria de Fotos
+          </h3>
+          <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+            {gallery.length} / 8
+          </span>
+        </div>
 
-        {/* ÁREA DE UPLOAD (Só aparece se tiver espaço) */}
         {gallery.length < 8 ? (
           <UploadDropzone
             endpoint="imageUploader"
             onClientUploadComplete={(res) => {
-              const newPhotos = res.map((r) => r.url);
-              setGallery((prev) => [...prev, ...newPhotos]);
-              toast.success(
-                `${newPhotos.length} foto(s) carregada(s)! Clique em Salvar para confirmar.`,
-              );
+              // 🚀 Usamos ufsUrl que é o padrão novo e permanente
+              const newPhotos = res.map((r) => r.ufsUrl);
+              setGallery((prev) => [...prev, ...newPhotos].slice(0, 8));
+              toast.success("Fotos carregadas! Não esqueça de salvar.");
             }}
             onUploadError={(error: Error) => {
-              console.error(error);
-              toast.error(
-                "Erro no upload. Verifique se as fotos são menores que 4MB.",
-              );
+              toast.error("Erro: Verifique se a foto tem menos de 4MB.");
             }}
-            className="ut-label:text-blue-500 ut-button:bg-blue-600 ut-button:hover:bg-blue-700 border-dashed border-2 border-gray-300 bg-gray-50 rounded-xl p-8 transition-all hover:bg-gray-100"
+            className="ut-label:text-indigo-500 ut-button:bg-indigo-600 ut-button:hover:bg-indigo-700 border-dashed border-2 border-slate-200 bg-slate-50 rounded-[2rem] p-8 transition-all hover:bg-slate-100/50 ut-allowed-content:text-[10px] ut-allowed-content:uppercase ut-allowed-content:font-bold"
           />
         ) : (
-          <p className="text-red-500 text-sm font-medium p-4 bg-red-50 rounded-xl text-center">
-            Limite de 8 fotos atingido. Remova alguma para adicionar novas.
-          </p>
+          <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-center">
+            <p className="text-amber-700 text-xs font-bold uppercase tracking-tight">
+              Limite de 8 fotos atingido.
+            </p>
+          </div>
         )}
 
-        {/* PRÉ-VISUALIZAÇÃO DAS FOTOS (Grid) */}
         {gallery.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             {gallery.map((url, index) => (
               <div
                 key={index}
-                className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square"
+                className="relative group rounded-[1.5rem] overflow-hidden border-4 border-white shadow-md aspect-square"
               >
                 <img
                   src={url}
                   alt="Galeria"
                   className="w-full h-full object-cover"
                 />
-
-                {/* Botão de Remover (X) */}
                 <button
                   onClick={() => removeImage(index)}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                  title="Remover foto"
+                  className="absolute top-2 right-2 bg-rose-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </div>
             ))}
@@ -130,21 +133,19 @@ export default function MediaForm({
         )}
       </div>
 
-      <hr className="border-gray-100" />
+      <div className="h-px bg-slate-100" />
 
       {/* --- BOTÃO SALVAR --- */}
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-100 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full h-16 bg-slate-900 hover:bg-indigo-600 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[1.8rem] shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95"
       >
         {isSaving ? (
-          <>
-            <Loader2 className="animate-spin" /> Salvando...
-          </>
+          <Loader2 className="animate-spin" size={20} />
         ) : (
           <>
-            <Save size={20} /> Salvar Alterações
+            <Save size={20} /> Gravar Galeria
           </>
         )}
       </button>

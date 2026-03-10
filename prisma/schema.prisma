@@ -9,38 +9,35 @@ datasource db {
 
 // --- TABELA DE USUÁRIOS ---
 model User {
-  id               String    @id @default(cuid())
-  name             String?
-  email            String?    @unique
-  emailVerified DateTime? // Necessário para o NextAuth
-  image         String?   // <--- NOVO: Foto do Google
-  password         String?
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime? 
+  image           String?   
+  password        String?
   
-  // ROLE: VISITANTE, ASSINANTE ou ADMIN
-  role             String    @default("VISITANTE") 
-  referralCode  String?   @unique // Código único do parceiro (ex: joao001)
-  affiliateId   String?           // ID de quem indicou este usuário
-  affiliate     User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id])
-  affiliateSince DateTime? // Data em que ele se tornou afiliado
-  lastPayoutDate DateTime?
-  lastPrice      Float?    @default(0)    // Valor pago na última renovação
-  planType       String?   @default("monthly") // monthly, quarterly ou yearly
-  referrals     User[]    @relation("AffiliateToUser")
-  expiresAt     DateTime?  // Data de vencimento da assinatura
+  role            String    @default("VISITANTE") 
+  referralCode    String?   @unique 
+  affiliateId     String?           
+  affiliate       User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id])
+  affiliateSince  DateTime? 
+  lastPayoutDate  DateTime?
+  lastPrice       Float?    @default(0)    
+  planType        String?   @default("monthly") 
+  referrals       User[]    @relation("AffiliateToUser")
+  expiresAt       DateTime?  
   mpSubscriptionId String?
-  document         String?   @unique
-  phone            String?
-  createdAt        DateTime  @default(now())
+  document        String?   @unique
+  phone           String?
+  createdAt       DateTime  @default(now())
+  isBanned        Boolean   @default(false)
 
-  isBanned         Boolean   @default(false)
+  accounts      Account[] 
+  sessions      Session[] 
 
-  accounts      Account[] // <--- NOVO: Relacionamento
-  sessions      Session[] // <--- NOVO: Relacionamento
-
-  // RELAÇÕES
-  businesses       Business[] 
-  favorites        Favorite[] 
-  comments         Comment[]
+  businesses    Business[] 
+  favorites     Favorite[] 
+  comments      Comment[]
 }
 
 // --- TABELA DE NEGÓCIOS ---
@@ -53,10 +50,11 @@ model Business {
   layout              String         @default("influencer")
   category            String
   subcategory         String[]
-  keywords            String[]     @default([])
-  whatsapp_clicks Int @default(0)  // <--- ADICIONAR
-  phone_clicks    Int @default(0)  // <--- ADICIONAR
-  installs    Int       @default(0) // <--- ADICIONE ISSO
+  keywords            String[]       @default([])
+  
+  // Contadores Desnormalizados (Performance)
+  whatsapp_clicks     Int @default(0)  
+  phone_clicks        Int @default(0)  
   instagram_clicks    Int @default(0)
   facebook_clicks     Int @default(0)
   tiktok_clicks       Int @default(0)
@@ -65,12 +63,13 @@ model Business {
   mercadolivre_clicks Int @default(0)
   shein_clicks        Int @default(0)
   ifood_clicks        Int @default(0)
-  map_clicks          Int @default(0) // Cliques no endereço/rota
-  
-  // Mídia Principal
+  map_clicks          Int @default(0) 
+  views               Int            @default(0) // Centralizado aqui
+
+  // Mídia
   heroImage           String?        @db.Text
   videoUrl            String?        @db.Text
-  imageUrl            String?        @db.Text // Foto de Perfil/Logo
+  imageUrl            String?        @db.Text 
   gallery             String[]       @default([])
 
   // Tags e Conteúdo Extra
@@ -78,14 +77,13 @@ model Business {
   luxe_quote          String?
   comercial_badge     String?
   showroom_collection String?
-  
   features            String[]       @default([])
   faqs                Json[]         @default([])
 
   // Localização e Contato
   address             String?
-  cep           String?
-  neighborhood        String?        // Adicionado para suportar sua busca
+  cep                 String?
+  neighborhood        String?        
   city                String?   
   state               String?   
   latitude            Float?
@@ -96,35 +94,40 @@ model Business {
   instagram           String?
   facebook            String?
   tiktok              String?
-  // --- NOVOS CANAIS DE VENDA ---
   shopee              String?
   mercadoLivre        String?
   shein               String?
   ifood               String?
   
-  // Métricas de Popularidade
-  views               Int            @default(0)
   published           Boolean        @default(true) 
   isActive            Boolean        @default(true) 
-  createdAt           DateTime       @default(now())
+  createdAt           DateTime       @default(now()) // Centralizado aqui
   updatedAt           DateTime       @updatedAt
 
-  // RELAÇÃO COM O DONO
   userId              String
   user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   hours               BusinessHour[]
   favorites           Favorite[]
   reports             Report[]
-  comments         Comment[]
-  analytics           AnalyticsEvent[] // <--- ADICIONE ISSO AQUI
-  // ÍNDICES PARA BUSCA RÁPIDA
-  @@index([city])
-  @@index([state])
+  comments            Comment[]
+  analytics           AnalyticsEvent[]
+
+  // 🚀 ÍNDICES DE ALTA PERFORMANCE
   @@index([category])
+  @@index([name])
+  @@index([neighborhood])
+  @@index([city])
+  @@index([views])       
+  @@index([createdAt])   
+
+  // Índices Compostos (Acelera buscas tipo: "Pizzaria em São Paulo")
+  @@index([city, category])            
+  @@index([city, neighborhood])        
+  @@index([city, isActive, published]) 
+  @@index([category, isActive, published]) 
 }
 
-// --- HORÁRIOS DE FUNCIONAMENTO ---
 model BusinessHour {
   id          String   @id @default(cuid())
   businessId  String
@@ -135,7 +138,6 @@ model BusinessHour {
   isClosed    Boolean  @default(false)
 }
 
-// --- SISTEMA DE FAVORITOS ---
 model Favorite {
   id          String   @id @default(cuid())
   createdAt   DateTime @default(now())
@@ -149,16 +151,13 @@ model Favorite {
 
 model Report {
   id          String   @id @default(cuid())
-  reason      String   // Motivo: "Conteúdo Impróprio", "Plágio", etc.
-  details     String?  // Detalhes opcionais
-  status      String   @default("PENDING") // PENDING (Pendente) ou RESOLVED (Resolvido)
+  reason      String   
+  details     String?  
+  status      String   @default("PENDING") 
   createdAt   DateTime @default(now())
-
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
-
-// --- ADICIONAR ISTO PARA O GOOGLE LOGIN ---
 
 model Account {
   id                 String  @id @default(cuid())
@@ -173,8 +172,7 @@ model Account {
   scope              String?
   id_token           String? @db.Text
   session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -194,7 +192,7 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
-// --- RECUPERAÇÃO DE SENHA (NOVO) ---
+
 model PasswordResetToken {
   id      String   @id @default(cuid())
   email   String
@@ -203,49 +201,33 @@ model PasswordResetToken {
 
   @@unique([email, token])
 }
-// --- SISTEMA DE COMENTÁRIOS E AVALIAÇÕES ---
+
 model Comment {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Flag de Moderação (Se o lojista denunciar, fica true até o admin resolver)
-  isFlagged Boolean  @default(false)
-  flaggedBy String?
-
-  // Quem escreveu
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Onde escreveu
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isFlagged  Boolean  @default(false)
+  flaggedBy  String?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // Sistema de Respostas (Thread)
-  parentId  String?
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
+  parentId   String?
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("CommentReplies")
 
   @@index([businessId])
   @@index([userId])
 }
-// --- SISTEMA DE MÉTRICAS E GRÁFICOS (ANALYTICS) ---
+
 model AnalyticsEvent {
   id          String   @id @default(cuid())
-  
-  // O que aconteceu? ("VIEW", "WHATSAPP", "IFOOD", "INSTAGRAM", "MAP", etc.)
   eventType   String   
-  
-  // Quando aconteceu? (Isso é o que permite fazer o gráfico de 7/30 dias)
   createdAt   DateTime @default(now())
-
-  // De quem é esse evento?
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  // Índices para o banco puxar os dados do gráfico na velocidade da luz
-  @@index([businessId])
+  @@index([businessId, createdAt]) // Busca range de datas por loja (Muito rápido)
   @@index([eventType])
-  @@index([createdAt])
 }

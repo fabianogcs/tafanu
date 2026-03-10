@@ -4,10 +4,11 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "./auth.config";
-import { compareSync } from "bcrypt-ts"; // 👈 NOVA BIBLIOTECA COMPATÍVEL!
+import { compareSync } from "bcrypt-ts";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(db) as any,
+  // 1. Tiramos o "as any" aqui (O PrismaAdapter agora será reconhecido)
+  adapter: PrismaAdapter(db),
   trustHost: true,
   session: { strategy: "jwt" },
   ...authConfig,
@@ -24,7 +25,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.password) return null;
 
-        // Agora usamos o compareSync da bcrypt-ts que não trava o Edge!
         const isValid = compareSync(
           credentials.password as string,
           user.password,
@@ -41,26 +41,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  // ... mantenha seus callbacks e events exatamente como estão agora ...
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) return { ...token, ...session };
 
-      // 1. Garantia: Se for o primeiro login, user existe.
-      // Se não, usamos o sub (que é o ID padrão que o NextAuth guarda)
       if (user) {
         token.id = user.id;
         token.role = user.role;
       } else if (!token.id && token.sub) {
-        token.id = token.sub; // 👈 ISSO AQUI SALVA O ID NAS NAVEGAÇÕES
+        token.id = token.sub;
       }
 
-      // 🛑 RECUPERANDO DADOS EXTRAS DO BANCO
       if (token.id && process.env.NEXT_RUNTIME !== "edge") {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },
-            // 👇 AQUI A MÁGICA: Adicionamos o expiresAt na busca!
             select: {
               role: true,
               phone: true,
@@ -75,7 +70,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.phone = dbUser.phone;
             token.document = dbUser.document;
             token.hasPassword = !!dbUser.password;
-            // 👇 Salvamos a data no token
             token.expiresAt = dbUser.expiresAt;
           }
         } catch (e) {
@@ -87,15 +81,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
     async session({ session, token }) {
       if (token && session.user) {
-        // Agora o token.id terá valor sempre!
         session.user.id = (token.id || token.sub) as string;
         session.user.role = token.role as string;
-        // @ts-ignore
+
+        // 2. Apagamos todos os @ts-ignore daqui para baixo:
         session.user.phone = token.phone;
-        // @ts-ignore
         session.user.hasPassword = token.hasPassword;
-        // 👇 FINALMENTE: Repassamos a data para a Sessão (Frontend)
-        // @ts-ignore
         session.user.expiresAt = token.expiresAt;
       }
       return session;
@@ -107,7 +98,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user.id) {
         await db.user.update({
           where: { id: user.id },
-          data: { emailVerified: new Date() }, // Preenche com a data/hora atual!
+          data: { emailVerified: new Date() },
         });
       }
     },
@@ -127,7 +118,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         path: "/",
       });
     },
-    // 🛑 ADICIONANDO O LOGOUT PARA LIMPAR COOKIES
     async signOut() {
       const cookieStore = await cookies();
       cookieStore.delete("userId");

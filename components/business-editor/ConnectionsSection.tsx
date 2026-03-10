@@ -1,0 +1,201 @@
+"use client";
+
+import {
+  Instagram,
+  Music2,
+  Facebook,
+  Globe,
+  ShoppingCart,
+  MessageCircle,
+  PhoneCall,
+} from "lucide-react";
+import { contactPlaceholders } from "./constants";
+import { formatPhoneNumber } from "@/lib/normalize"; // 🚀 Importando a máscara que centralizamos
+
+interface Socials {
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+  website: string;
+  shopee: string;
+  mercadoLivre: string;
+  shein: string;
+  ifood: string;
+}
+
+interface ConnectionsSectionProps {
+  socials: Socials;
+  setSocials: (socials: Socials) => void;
+  whatsapp: string;
+  setWhatsapp: (val: string) => void;
+  phone: string;
+  setPhone: (val: string) => void;
+}
+
+export function ConnectionsSection({
+  socials,
+  setSocials,
+  whatsapp,
+  setWhatsapp,
+  phone,
+  setPhone,
+}: ConnectionsSectionProps) {
+  const updateSocial = (id: keyof Socials, value: string) => {
+    setSocials({ ...socials, [id]: value });
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* CONTATOS PRINCIPAIS (Moveram para cá!) */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* WhatsApp */}
+        <div className="flex-1 bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100/50 transition-all focus-within:ring-4 ring-emerald-50 focus-within:border-emerald-200">
+          <label className="text-[9px] font-black uppercase text-emerald-600 mb-2 block tracking-widest">
+            WhatsApp Business
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200">
+              <MessageCircle size={20} fill="currentColor" />
+            </div>
+            <input
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(formatPhoneNumber(e.target.value))}
+              placeholder="(00) 00000-0000"
+              maxLength={15}
+              className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-emerald-200"
+            />
+          </div>
+        </div>
+
+        {/* Telefone */}
+        <div className="flex-1 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/50 transition-all focus-within:ring-4 ring-indigo-50 focus-within:border-indigo-200">
+          <label className="text-[9px] font-black uppercase text-indigo-600 mb-2 block tracking-widest">
+            Ligações
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
+              <PhoneCall size={18} />
+            </div>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
+              placeholder="(00) 0000-0000"
+              maxLength={15}
+              className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-indigo-200"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* REDES SOCIAIS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            id: "instagram",
+            icon: <Instagram size={16} />,
+            color: "hover:text-pink-500",
+            label: "Instagram",
+          },
+          {
+            id: "tiktok",
+            icon: <Music2 size={16} />,
+            color: "hover:text-black",
+            label: "TikTok",
+          },
+          {
+            id: "facebook",
+            icon: <Facebook size={16} />,
+            color: "hover:text-blue-600",
+            label: "Facebook",
+          },
+          {
+            id: "website",
+            icon: <Globe size={16} />,
+            color: "hover:text-indigo-500",
+            label: "Website",
+          },
+        ].map((social) => (
+          <div
+            key={social.id}
+            className="group bg-slate-50 p-3 rounded-2xl border border-transparent hover:border-slate-200 hover:bg-white transition-all flex items-center gap-3 shadow-sm"
+          >
+            <div
+              className={`p-2 rounded-lg bg-white shadow-sm text-slate-400 transition-colors ${social.color}`}
+            >
+              {social.icon}
+            </div>
+            <input
+              value={(socials as any)[social.id]}
+              onChange={(e) => updateSocial(social.id as any, e.target.value)}
+              placeholder={contactPlaceholders[social.id]}
+              className="bg-transparent w-full text-xs font-bold text-slate-600 outline-none placeholder:font-normal placeholder:opacity-30"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* MARKETPLACES */}
+      <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+        <h2 className="text-[10px] font-black uppercase mb-8 flex items-center gap-2 text-slate-400 tracking-[0.2em]">
+          <ShoppingCart size={16} /> Marketplaces & Apps
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            {
+              key: "shopee",
+              label: "Shopee",
+              color: "bg-[#EE4D2D] text-white",
+              icon: "S",
+              placeholder: "shopee.com.br/...",
+            },
+            {
+              key: "ifood",
+              label: "iFood",
+              color: "bg-[#EA1D2C] text-white",
+              icon: "i",
+              placeholder: "ifood.com.br/...",
+            },
+            {
+              key: "mercadoLivre",
+              label: "M. Livre",
+              color: "bg-[#FFF159] text-slate-900",
+              icon: "M",
+              placeholder: "mercadolivre.com.br/...",
+            },
+            {
+              key: "shein",
+              label: "Shein",
+              color: "bg-black text-white",
+              icon: "S",
+              placeholder: "shein.com/...",
+            },
+          ].map((store) => (
+            <div
+              key={store.key}
+              className="flex items-center gap-3 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all focus-within:bg-white focus-within:ring-4 focus-within:border-transparent group"
+            >
+              <div
+                className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-black text-xl shadow-sm ${store.color}`}
+              >
+                {store.icon}
+              </div>
+              <div className="flex-1 pr-4">
+                <label className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
+                  {store.label}
+                </label>
+                <input
+                  value={(socials as any)[store.key]}
+                  onChange={(e) =>
+                    updateSocial(store.key as any, e.target.value)
+                  }
+                  placeholder={store.placeholder}
+                  className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -16,6 +16,7 @@ import {
   Square,
   CheckSquare,
   RotateCcw,
+  MapPin,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -35,21 +36,25 @@ export default function FilterModal({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // --- ESTADOS ---
+  // --- ESTADOS (Os "Rascunhos" do que o usuário está escolhendo) ---
   const [draftCategory, setDraftCategory] = useState("");
   const [draftSubs, setDraftSubs] = useState<string[]>([]);
   const [draftStatus, setDraftStatus] = useState("all");
   const [draftSort, setDraftSort] = useState("distance");
+
+  // 🚀 NOVO: Campo para o usuário digitar onde ele quer buscar
+  const [draftCity, setDraftCity] = useState("");
   const [isLoadingGPS, setIsLoadingGPS] = useState(false);
 
+  // Sincroniza o Modal com a URL sempre que ele for aberto
   useEffect(() => {
     if (isOpen) {
       setDraftCategory(searchParams.get("category") || "");
       const subsParam = searchParams.get("subcategory");
       setDraftSubs(subsParam ? subsParam.split(",") : []);
       setDraftStatus(searchParams.get("status") || "all");
-      // Prioriza o currentSort vindo das props, se não houver, usa o da URL ou default
       setDraftSort(currentSort || searchParams.get("sort") || "distance");
+      setDraftCity(searchParams.get("city") || ""); // 🚀 Recupera a cidade da URL
       setCatStep("main");
     }
   }, [isOpen, searchParams, currentSort]);
@@ -92,7 +97,11 @@ export default function FilterModal({
   };
 
   const finalizePush = () => {
+    // Pegamos a URL atual (para não perder o termo que o cara digitou na barra principal)
     const params = new URLSearchParams(searchParams.toString());
+
+    // 🚀 SEMPRE reseta a página para 1 quando o usuário aplica um novo filtro
+    params.set("page", "1");
 
     if (draftCategory) params.set("category", draftCategory);
     else params.delete("category");
@@ -100,7 +109,10 @@ export default function FilterModal({
     if (draftSubs.length > 0) params.set("subcategory", draftSubs.join(","));
     else params.delete("subcategory");
 
-    params.set("radius", "9999");
+    // 🚀 Aplica o filtro de Cidade (O "Aonde")
+    if (draftCity.trim()) params.set("city", draftCity.trim());
+    else params.delete("city");
+
     params.set("status", draftStatus);
     params.set("sort", draftSort);
 
@@ -108,16 +120,29 @@ export default function FilterModal({
     router.push(`/busca?${params.toString()}`);
   };
 
+  // 🚀 CORREÇÃO: O Botão Limpar precisa limpar a URL e não só os estados internos
   const clearAll = () => {
     setDraftCategory("");
     setDraftSubs([]);
     setDraftStatus("all");
     setDraftSort("distance");
+    setDraftCity("");
     setCatStep("main");
+
+    // Pega só o que o cara buscou (a palavra principal) e limpa todo o resto
+    const query = searchParams.get("q");
+    setIsOpen(false);
+
+    if (query) {
+      router.push(`/busca?q=${query}&page=1`);
+    } else {
+      router.push(`/busca`);
+    }
   };
 
   const isFilterActive =
     !!searchParams.get("category") ||
+    !!searchParams.get("city") || // Se tem cidade, a bolinha pula
     searchParams.get("status") !== "all" ||
     searchParams.get("sort") === "popular";
 
@@ -161,10 +186,25 @@ export default function FilterModal({
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-10 pb-36">
-              {/* SEÇÃO ORDENAÇÃO (NOVA) */}
+              {/* 🚀 NOVA SEÇÃO: LOCALIZAÇÃO (O "AONDE") */}
               <section className="space-y-4">
                 <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                  <Navigation size={14} className="text-tafanu-blue" />{" "}
+                  <MapPin size={14} className="text-rose-500" />
+                  Onde você procura?
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: São Paulo, Santos, RJ..."
+                  value={draftCity}
+                  onChange={(e) => setDraftCity(e.target.value)}
+                  className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none placeholder:text-slate-300"
+                />
+              </section>
+
+              {/* SEÇÃO ORDENAÇÃO */}
+              <section className="space-y-4">
+                <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                  <Navigation size={14} className="text-tafanu-blue" />
                   Prioridade de Exibição
                 </label>
                 <div className="grid grid-cols-1 gap-2">
@@ -222,7 +262,7 @@ export default function FilterModal({
               {/* SEÇÃO STATUS */}
               <section className="space-y-4">
                 <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                  <Clock size={14} className="text-emerald-500" />{" "}
+                  <Clock size={14} className="text-emerald-500" />
                   Disponibilidade
                 </label>
                 <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">

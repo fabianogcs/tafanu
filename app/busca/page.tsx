@@ -4,8 +4,12 @@ import LocationTracker from "@/components/LocationTracker";
 import FilterModal from "@/components/FilterModal";
 import BusinessCard from "@/components/BusinessCard";
 import { auth } from "@/auth";
+import Link from "next/link";
+import { normalizeText } from "@/lib/normalize";
 
-// Função de cálculo de distância (Haversine)
+const PAGE_SIZE = 12;
+const STOPWORDS = ["na", "no", "em", "de", "do", "da", "com", "para", "o", "a"];
+
 function calculateDistance(
   lat1: number,
   lon1: number,
@@ -25,13 +29,6 @@ function calculateDistance(
   return R * c;
 }
 
-const normalize = (text: string) => {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-};
-
 interface BuscaProps {
   searchParams: Promise<{
     q?: string;
@@ -39,9 +36,12 @@ interface BuscaProps {
     subcategory?: string;
     lat?: string;
     lng?: string;
-    radius?: string;
     sort?: string;
     status?: string;
+    page?: string;
+    city?: string;
+    state?: string;
+    neighborhood?: string;
   }>;
 }
 
@@ -49,35 +49,32 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const session = await auth();
   const userId = session?.user?.id;
 
-  const filters = await searchParams;
-  const rawQuery = (filters.q || "").trim();
-  const query = normalize(rawQuery);
+  const params = await searchParams;
+  const rawQuery = (params.q || "").trim();
+  const query = normalizeText(rawQuery);
+  const page = Number(params.page) || 1;
+  const skip = (page - 1) * PAGE_SIZE;
 
-  const category = filters.category || "";
-  const subcategory = filters.subcategory || "";
-  const sort = filters.sort || "distance";
-  const status = filters.status || "all";
+  // 📍 PARÂMETROS DE LOCALIZAÇÃO E FILTROS
+  const category = params.category || "";
+  const rawCityFilter = params.city || "";
+  const cityFilter = normalizeText(rawCityFilter); // Limpa "São Paulo" para "sao paulo"
+  const stateFilter = params.state || "";
+  const neighborhoodFilter = params.neighborhood || "";
+  const sort = params.sort || "relevance";
 
-  const userLat = filters.lat ? parseFloat(String(filters.lat)) : null;
-  const userLng = filters.lng ? parseFloat(String(filters.lng)) : null;
+  const userLat = params.lat ? parseFloat(String(params.lat)) : null;
+  const userLng = params.lng ? parseFloat(String(params.lng)) : null;
 
-  // 1. BUSCA METADADOS (MAPA DE CATEGORIAS)
-  const allMeta = await db.business.findMany({
-    where: {
-      isActive: true,
-      published: true,
-      user: {
-        OR: [
-          { role: "ADMIN" },
-          { role: "ASSINANTE", expiresAt: { gt: new Date() } },
-        ],
-      },
-    },
+  // --- 1. METADADOS PARA O MODAL ---
+  const categoriesData = await db.business.findMany({
+    where: { isActive: true, published: true },
     select: { category: true, subcategory: true },
+    distinct: ["category"],
   });
 
   const filterMap: Record<string, string[]> = {};
-  allMeta.forEach((item) => {
+  categoriesData.forEach((item) => {
     if (!filterMap[item.category]) filterMap[item.category] = [];
     item.subcategory.forEach((sub) => {
       if (!filterMap[item.category].includes(sub))
@@ -92,54 +89,91 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       orderedFilterMap[key] = filterMap[key].sort();
     });
 
-  // 2. BUSCA NEGÓCIOS FILTRADOS
-  const businessesData = await db.business.findMany({
-    where: {
-      isActive: true,
-      published: true,
-      user: {
-        OR: [
-          { role: "ADMIN" },
-          { role: "ASSINANTE", expiresAt: { gt: new Date() } },
-        ],
-      },
-      AND: [
-        ...(category
-          ? [{ category: { equals: category, mode: "insensitive" as const } }]
-          : []),
-        ...(subcategory
-          ? [{ subcategory: { hasSome: subcategory.split(",") } }]
-          : []),
+  // --- 2. PREPARAÇÃO DA BARRA DE PESQUISA ---
+  // O usuário digita "Espaço" -> vira "espaco"
+  const searchTerms = query
+    .split(" ")
+    .filter((w) => w.length > 0 && !STOPWORDS.includes(w));
+
+  const whereClause: any = {
+    isActive: true,
+    published: true,
+    user: {
+      OR: [
+        { role: "ADMIN" },
+        { role: "ASSINANTE", expiresAt: { gt: new Date() } },
       ],
     },
-    include: {
-      hours: true,
-      favorites: userId ? { where: { userId } } : false,
-      _count: { select: { favorites: true } },
-    },
-  });
+    AND: [
+      // 📍 ONDE ESTÁ?
+      ...(category
+        ? [{ category: { equals: category, mode: "insensitive" as const } }]
+        : []),
+      ...(cityFilter
+        ? [
+            {
+              OR: [
+                {
+                  city: { contains: cityFilter, mode: "insensitive" as const },
+                },
+                {
+                  state: { contains: cityFilter, mode: "insensitive" as const },
+                },
+                {
+                  neighborhood: {
+                    contains: cityFilter,
+                    mode: "insensitive" as const,
+                  },
+                },
+              ],
+            },
+          ]
+        : []),
 
-  // 3. ALGORITMO DE PROCESSAMENTO
+      // 🍕 O QUE É?
+      ...(searchTerms.length > 0
+        ? searchTerms.map((term) => ({
+            OR: [
+              { name: { contains: term, mode: "insensitive" as const } },
+              { category: { contains: term, mode: "insensitive" as const } },
+              // 🚀 A MÁGICA AQUI: O banco vai achar "espaco mulher" escondido nas keywords!
+              { keywords: { hasSome: [term] } },
+              { subcategory: { hasSome: [term] } },
+            ],
+          }))
+        : []),
+    ],
+  };
+
+  // --- 3. BUSCA NO BANCO ---
+  const [businessesData, totalCount] = await Promise.all([
+    db.business.findMany({
+      where: whereClause,
+      take: 150,
+      include: {
+        hours: true,
+        favorites: userId ? { where: { userId } } : false,
+        _count: { select: { favorites: true } },
+      },
+    }),
+    db.business.count({ where: whereClause }),
+  ]);
+
+  // --- 4. RANKING E SCORE (Apenas para Identidade) ---
   const now = new Date();
   const currentDay = now.getDay();
   const currentTime = now.getHours() * 100 + now.getMinutes();
 
   let businesses = businessesData.map((b) => {
+    // Calcula distância SE a loja tiver latitude salva no banco (resolve o erro do null)
     let distanceValue: number | null = null;
-    let internalSortKey: number = 999999;
-
-    if (userLat && userLng) {
-      if (b.latitude && b.longitude) {
-        distanceValue = calculateDistance(
-          userLat,
-          userLng,
-          b.latitude,
-          b.longitude,
-        );
-        internalSortKey = distanceValue;
-      } else {
-        internalSortKey = 10000 + Math.random() * 5000;
-      }
+    if (userLat && userLng && b.latitude && b.longitude) {
+      distanceValue = calculateDistance(
+        userLat,
+        userLng,
+        b.latitude,
+        b.longitude,
+      );
     }
 
     let isOpen = false;
@@ -150,59 +184,36 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       todayHours.openTime &&
       todayHours.closeTime
     ) {
-      const [openH, openM] = todayHours.openTime.split(":").map(Number);
-      const [closeH, closeM] = todayHours.closeTime.split(":").map(Number);
-      isOpen =
-        currentTime >= openH * 100 + openM &&
-        currentTime < closeH * 100 + closeM;
+      const [oH, oM] = todayHours.openTime.split(":").map(Number);
+      const [cH, cM] = todayHours.closeTime.split(":").map(Number);
+      isOpen = currentTime >= oH * 100 + oM && currentTime < cH * 100 + cM;
     }
 
-    let score = !query ? 1 : 0;
+    let score = 0;
     if (query) {
-      const name = normalize(b.name || "");
-      const cat = normalize(b.category || "");
+      const nName = normalizeText(b.name);
+      const nCat = normalizeText(b.category);
 
-      // 1. Prepara as Subcategorias (seja em formato de lista ou texto corrido)
-      let subs = "";
-      if (Array.isArray(b.subcategory)) {
-        subs = normalize(b.subcategory.join(" "));
-      } else if (typeof b.subcategory === "string") {
-        subs = normalize(b.subcategory);
-      }
+      // Transforma as listas em frases para achar "pizza" dentro de "pizzaria"
+      const nSubs = b.subcategory.map((s) => normalizeText(s)).join(" ");
+      const nKeys = b.keywords.map((k) => normalizeText(k)).join(" ");
 
-      // 2. Prepara as Palavras-chave (Keywords) do painel do assinante
-      let keys = "";
-      if (Array.isArray(b.keywords)) {
-        keys = normalize(b.keywords.join(" "));
-      } else if (typeof b.keywords === "string") {
-        keys = normalize(b.keywords);
-      }
+      if (nName === query) score += 100;
+      if (nName.includes(query)) score += 60;
 
-      // 3. Fatiador de termos (ex: "pizza calabresa" vira ["pizza", "calabresa"])
-      // Ignora palavras pequeninas como "de", "e", "da"
-      const searchTerms = query.split(" ").filter((t) => t.length > 2);
-      const termsToSearch = searchTerms.length > 0 ? searchTerms : [query];
-
-      // 4. Pontuação Direta (Match Exato tem prioridade máxima)
-      if (name === query) score += 100;
-      else if (name.includes(query)) score += 50;
-
-      if (cat === query) score += 40;
-
-      // 5. O SEGREDO DA BUSCA INTELIGENTE (Procura as fatias da palavra)
-      // Se digitar "pizza", ele vai encontrar dentro de "pizzaria" nas keywords!
-      termsToSearch.forEach((term) => {
-        if (name.includes(term)) score += 20;
-        if (subs.includes(term)) score += 30; // Peso forte para subcategorias
-        if (keys.includes(term)) score += 30; // Peso forte para as 10 palavras-chave
-        if (cat.includes(term)) score += 10;
+      searchTerms.forEach((t) => {
+        if (nName.includes(t)) score += 40;
+        if (nSubs.includes(t)) score += 50;
+        if (nKeys.includes(t)) score += 45;
+        if (nCat.includes(t)) score += 30;
       });
+    } else {
+      score = 1;
     }
 
     return {
       ...b,
-      distance: distanceValue,
-      internalSortKey,
+      distance: distanceValue as number | null,
       isOpen,
       score,
       isFavorited: userId ? b.favorites.length > 0 : false,
@@ -210,44 +221,33 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     };
   });
 
-  // 4. ORDENAÇÃO FINAL
-  if (query) {
-    businesses = businesses.filter((b) => b.score > 0);
-    businesses.sort((a, b) => b.score - a.score);
-  } else {
-    businesses.sort((a, b) => {
-      if (sort === "popular") {
-        if (b.favoritesCount !== a.favoritesCount) {
-          return b.favoritesCount - a.favoritesCount;
-        }
-        return a.internalSortKey - b.internalSortKey;
-      }
-      return a.internalSortKey - b.internalSortKey;
-    });
+  // --- 5. ORDENAÇÃO E PAGINAÇÃO ---
+  if (query && sort === "relevance") {
+    businesses = businesses
+      .filter((b) => b.score > 0)
+      .sort((a, b) => b.score - a.score);
+  } else if (sort === "distance" && userLat && userLng) {
+    // Coloca quem não tem distância (null) no final da lista
+    businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
+  } else if (sort === "popular") {
+    businesses.sort((a, b) => b.views - a.views);
+  } else if (sort === "newest") {
+    businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  if (status === "open") businesses = businesses.filter((b) => b.isOpen);
+  const paginatedResults = businesses.slice(skip, skip + PAGE_SIZE);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-[#0f172a] text-white py-10 px-4 shadow-xl relative overflow-hidden z-[100]">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-tafanu-action rounded-full blur-[120px] opacity-10 -mr-20 -mt-20" />
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-tafanu-action/80 text-xs font-black uppercase tracking-widest">
-              <SlidersHorizontal size={14} />
-              {category || "Resultados"}
-            </div>
             <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter">
-              {rawQuery
-                ? `"${rawQuery}"`
-                : subcategory
-                  ? subcategory.split(",")[0]
-                  : "Explorar"}
+              {rawQuery ? `"${rawQuery}"` : "Explorar"}
             </h1>
             <p className="text-gray-400 font-medium text-sm">
-              Encontramos{" "}
-              <strong className="text-white">{businesses.length}</strong>{" "}
+              Encontramos <strong className="text-white">{totalCount}</strong>{" "}
               negócios.
             </p>
           </div>
@@ -260,29 +260,18 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
       <div className="max-w-7xl mx-auto px-4 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <aside className="hidden lg:block lg:col-span-1 space-y-6">
+          <aside className="hidden lg:block lg:col-span-1">
             <LocationTracker />
-            <div className="bg-blue-50 border border-blue-100 p-5 rounded-[2rem]">
-              <p className="text-[10px] uppercase font-black text-blue-400 mb-1">
-                Dica de Busca:
-              </p>
-              <p className="text-xs text-blue-900 font-medium leading-relaxed">
-                Use os filtros para alternar entre os locais **mais próximos**
-                ou os **mais favoritados**.
-              </p>
-            </div>
           </aside>
 
           <div className="lg:col-span-3">
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
-              {businesses.length === 0 ? (
-                <div className="col-span-full py-20 text-center opacity-50">
-                  <p className="font-bold text-gray-400">
-                    Nenhum resultado encontrado.
-                  </p>
+              {paginatedResults.length === 0 ? (
+                <div className="col-span-full py-20 text-center opacity-50 font-bold text-gray-400">
+                  Nenhum resultado encontrado.
                 </div>
               ) : (
-                businesses.map((item) => (
+                paginatedResults.map((item) => (
                   <BusinessCard
                     key={item.id}
                     business={item}
@@ -291,6 +280,34 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                 ))
               )}
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex gap-2 mt-12 justify-center">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const pNum = i + 1;
+                  const active = pNum === page;
+                  const urlParams = new URLSearchParams();
+                  Object.entries(params).forEach(([k, v]) => {
+                    if (v) urlParams.set(k, String(v));
+                  });
+                  urlParams.set("page", String(pNum));
+
+                  return (
+                    <Link
+                      key={pNum}
+                      href={`/busca?${urlParams.toString()}`}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-black transition-all ${
+                        active
+                          ? "bg-tafanu-action text-white scale-110 shadow-lg"
+                          : "bg-white text-gray-400 hover:bg-gray-100"
+                      }`}
+                    >
+                      {pNum}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
