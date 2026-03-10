@@ -7,7 +7,6 @@ import {
   MoreVertical,
   Smartphone,
 } from "lucide-react";
-import { incrementInstallCount } from "@/app/actions";
 import { toast } from "sonner";
 
 interface InstallButtonProps {
@@ -78,7 +77,6 @@ export default function InstallButton({
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === "accepted") {
-        await incrementInstallCount(businessSlug);
         toast.success(`App ${businessName} instalado!`);
         setShowInstructions(false);
         (window as any).deferredPrompt = null; // Limpa após sucesso
