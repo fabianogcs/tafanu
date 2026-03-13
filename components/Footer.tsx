@@ -16,8 +16,7 @@ export default function Footer() {
               TAFANU
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
-              Conectando você aos melhores serviços e comércios da sua região.
-              Simples, rápido e local.
+              "Onde bons negócios encontram grandes oportunidades."
             </p>
           </div>
 

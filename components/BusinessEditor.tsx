@@ -312,15 +312,18 @@ export default function BusinessEditor({
     }
   }, [selectedLayout]);
 
+  // 1. Criamos a trava (ela começa como 'false')
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
-    if (!isNew && safeBusiness) {
+    // 2. SÓ ENTRA AQUI SE: Não for novo, tiver dados E a trava for 'false' (!hasInitialized.current)
+    if (!isNew && safeBusiness && !hasInitialized.current) {
       setName(safeBusiness.name);
       setSlug(safeBusiness.slug);
       setGallery(safeBusiness.gallery);
       setProfileImage(safeBusiness.imageUrl);
       setIsPublished(safeBusiness.published);
 
-      // 🚀 ADICIONADO: Mantém as máscaras nos telefones ao salvar/recarregar
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
 
@@ -332,8 +335,12 @@ export default function BusinessEditor({
         state: safeBusiness.state || "",
         number: safeBusiness.number || "",
       });
+
+      // 3. AQUI ESTÁ O SEGREDO: Agora a gente muda a trava para 'true'
+      // Uma vez que isso acontece, esse bloco NUNCA MAIS roda, protegendo sua logo nova.
+      hasInitialized.current = true;
     }
-  }, [safeBusiness, isNew]);
+  }, [safeBusiness, isNew]); // Deixe as dependências assim mesmo
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
