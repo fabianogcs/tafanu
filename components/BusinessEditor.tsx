@@ -371,8 +371,8 @@ export default function BusinessEditor({
         slug,
         name,
         description,
-        category: normalizeText(categoria),
-        subcategory: selectedSubs.map((s) => normalizeText(s)), // Limpa cada item da lista
+        category: categoria,
+        subcategory: selectedSubs,
         keywords: keywords.map((k) => normalizeText(k)), // Limpa as palavras-chave
         theme: selectedTheme,
         layout: layoutInfo[selectedLayout] ? selectedLayout : "urban",

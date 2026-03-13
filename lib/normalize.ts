@@ -38,6 +38,35 @@ export const formatPhoneNumber = (value: string) => {
 
 export function normalizeBusiness(raw: any) {
   const b = raw || {};
+
+  // 🚀 1. IDENTIFICA AS PALAVRAS FANTASMAS DO SISTEMA (Agora com as picotadas!)
+  const baseSubcategories = Array.isArray(b.subcategory)
+    ? b.subcategory.map((s: string) => normalizeText(s))
+    : [];
+
+  const splitSubcategories = baseSubcategories.flatMap((s: string) =>
+    s.split(" "),
+  ); // As palavras soltas
+
+  const systemTags = [
+    normalizeText(b.name),
+    normalizeText(b.category),
+    ...baseSubcategories,
+    ...splitSubcategories, // 👈 Adicionamos as palavras picotadas na capa de invisibilidade!
+  ];
+
+  // 🚀 2. PEGA TODAS AS PALAVRAS-CHAVE DO BANCO
+  const rawKeywords = Array.isArray(b.keywords)
+    ? b.keywords
+    : typeof b.keywords === "string"
+      ? b.keywords.split(",").map((k: string) => k.trim())
+      : [];
+
+  // 🚀 3. FILTRA: Entrega pra tela SÓ o que o usuário digitou (esconde as do sistema)
+  const userOnlyKeywords = rawKeywords.filter(
+    (k: string) => k !== "" && !systemTags.includes(k),
+  );
+
   return {
     ...b,
     id: b.id || "",
@@ -75,14 +104,10 @@ export function normalizeBusiness(raw: any) {
     faqs: Array.isArray(b.faqs) ? b.faqs : [],
     hours: Array.isArray(b.hours) ? b.hours : [],
     favorites: Array.isArray(b.favorites) ? b.favorites : [],
-    keywords: Array.isArray(b.keywords)
-      ? b.keywords
-      : typeof b.keywords === "string"
-        ? b.keywords
-            .split(",")
-            .map((k: string) => k.trim())
-            .filter((k: string) => k !== "")
-        : [],
+
+    // 🚀 4. INJETA SÓ AS PALAVRAS DO USUÁRIO NO EDITOR
+    keywords: userOnlyKeywords,
+
     theme: b.theme || "urban_gold",
     layout: b.layout || "urban",
   };

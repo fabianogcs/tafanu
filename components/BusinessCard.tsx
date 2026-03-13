@@ -13,7 +13,8 @@ import FavoriteButton from "./FavoriteButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
-export default function BusinessCard({ business }: any) {
+// 🚀 1. RECEBENDO O AVISO "showDistance" DO PAI
+export default function BusinessCard({ business, showDistance }: any) {
   const favoriteCount = business._count?.favorites || 0;
 
   // --- 2. SUBCATEGORIAS (MECÂNICA NOVA: 1 POR VEZ) ---
@@ -88,19 +89,24 @@ export default function BusinessCard({ business }: any) {
             {/* Sombreamento inferior para dar leitura nas tags */}
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
 
-            {/* BADGE DE DISTÂNCIA */}
-            {business.distance !== null && business.distance !== undefined && (
-              <div className="absolute top-2 left-2 md:top-3 md:left-3">
-                <div className="bg-tafanu-blue/90 backdrop-blur-sm text-white px-2.5 md:px-3 py-1 md:py-1.5 rounded-full flex items-center gap-1 shadow-lg border border-white/20">
-                  <Navigation size={10} className="fill-white md:w-3 md:h-3" />
-                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide">
-                    {business.distance < 1
-                      ? `${(business.distance * 1000).toFixed(0)}m`
-                      : `${business.distance.toFixed(1)}km`}
-                  </span>
+            {/* 🚀 2. BADGE DE DISTÂNCIA (Travado pelo showDistance) */}
+            {showDistance &&
+              business.distance !== null &&
+              business.distance !== undefined && (
+                <div className="absolute top-2 left-2 md:top-3 md:left-3 z-20">
+                  <div className="bg-blue-600/90 backdrop-blur-sm text-white px-2.5 md:px-3 py-1 md:py-1.5 rounded-full flex items-center gap-1 shadow-lg border border-white/20">
+                    <Navigation
+                      size={10}
+                      className="fill-white md:w-3 md:h-3"
+                    />
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide">
+                      {business.distance < 1
+                        ? `${(business.distance * 1000).toFixed(0)}m`
+                        : `${business.distance.toFixed(1)}km`}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* BADGE CATEGORIA PRINCIPAL */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-max max-w-[90%] z-20">
@@ -117,7 +123,7 @@ export default function BusinessCard({ business }: any) {
 
         {/* --- CONTEÚDO DO CARD --- */}
         <div className="px-3 pt-4 pb-3 md:p-5 flex flex-col flex-1 items-center text-center">
-          {/* ANIMAÇÃO SUBCATEGORIAS (Apenas 1 por vez, sem ícone, máximo de espaço) */}
+          {/* ANIMAÇÃO SUBCATEGORIAS */}
           <div className="h-5 md:h-6 mb-2 overflow-hidden relative w-full flex justify-center items-center px-1">
             <AnimatePresence mode="wait">
               {currentSub && (
@@ -138,7 +144,7 @@ export default function BusinessCard({ business }: any) {
           </div>
 
           {/* NOME DO NEGÓCIO */}
-          <h3 className="text-[15px] md:text-xl font-black text-slate-900 leading-[1.1] mb-2 md:mb-3 group-hover:text-tafanu-blue transition-colors line-clamp-2 px-1">
+          <h3 className="text-[15px] md:text-xl font-black text-slate-900 leading-[1.1] mb-2 md:mb-3 group-hover:text-blue-600 transition-colors line-clamp-2 px-1">
             {business.name}
           </h3>
 
@@ -146,7 +152,7 @@ export default function BusinessCard({ business }: any) {
           <div className="flex items-center justify-center gap-1 text-slate-400 mt-auto px-1">
             <MapPin
               size={10}
-              className="text-tafanu-blue shrink-0 md:w-3 md:h-3"
+              className="text-blue-600 shrink-0 md:w-3 md:h-3"
             />
             <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
               {locationText}
@@ -155,7 +161,7 @@ export default function BusinessCard({ business }: any) {
         </div>
       </Link>
 
-      {/* --- BOTÃO WHATSAPP (ÚNICO E DESTACADO) --- */}
+      {/* --- BOTÃO WHATSAPP --- */}
       {wppLink ? (
         <div className="px-2 md:px-3 pb-2 md:pb-3 relative z-20 mt-auto">
           <a

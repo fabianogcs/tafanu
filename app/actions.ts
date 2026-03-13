@@ -91,24 +91,45 @@ async function deleteFilesFromUploadThing(fileUrls: string[]) {
 async function getCoordinates(address: string, city: string, state: string) {
   try {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    if (!apiKey || !address || !city || !state) return { lat: null, lng: null };
+
+    // Se faltar algum dado essencial, já cancela
+    if (!apiKey || !address || !city || !state) {
+      console.log(
+        "❌ getCoordinates: Faltando chave de API ou dados de endereço.",
+      );
+      return { lat: null, lng: null };
+    }
+
+    // 🚀 O PULO DO GATO: Monta o endereço completo pro Google não se perder!
+    const fullAddress = `${address}, ${city} - ${state}, Brasil`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
 
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`,
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`,
       { signal: controller.signal },
     );
 
     clearTimeout(timeout);
     const data = await response.json();
+
+    // 🕵️ Deixando um espião aqui para a gente ver o que o Google respondeu
+    console.log(`📡 Resposta do Google para "${fullAddress}":`, data.status);
+
     if (data.status === "OK") {
       const { lat, lng } = data.results[0].geometry.location;
       return { lat: Number(lat), lng: Number(lng) };
     }
+
+    // Se o status não for OK (ex: REQUEST_DENIED ou ZERO_RESULTS), ele avisa o porquê
+    console.log(
+      "❌ Erro do Google:",
+      data.error_message || "Endereço não encontrado",
+    );
     return { lat: null, lng: null };
   } catch (error) {
+    console.error("❌ Erro fatal no getCoordinates:", error);
     return { lat: null, lng: null };
   }
 }
@@ -507,10 +528,20 @@ export async function createBusiness(payload: any) {
           gallery: payload.gallery || [],
           features: payload.features || [],
           // 🚀 O PULO DO GATO: Salva as palavras-chave do usuário + o Nome do Negócio 100% sem acentos
-          keywords: [
-            ...(payload.keywords || []).map((k: string) => normalizeText(k)),
-            normalizeText(validatedData.name),
-          ],
+          keywords: Array.from(
+            new Set([
+              ...(payload.keywords || []).map((k: string) => normalizeText(k)),
+              normalizeText(validatedData.name),
+              normalizeText(validatedData.category),
+              ...(payload.subcategory || []).map((s: string) =>
+                normalizeText(s),
+              ),
+              // 👇 ESSA É A LINHA NOVA QUE RESOLVE TUDO 👇
+              ...(payload.subcategory || []).flatMap((s: string) =>
+                normalizeText(s).split(" "),
+              ),
+            ]),
+          ).filter(Boolean),
           instagram: cleanSocialLink(validatedData.instagram || ""),
           facebook: cleanSocialLink(validatedData.facebook || ""),
           tiktok: cleanSocialLink(validatedData.tiktok || ""),
@@ -605,11 +636,18 @@ export async function updateFullBusiness(slug: string, payload: any) {
         neighborhood: normalizeText(payload.neighborhood || ""),
         latitude: lat,
         longitude: lng,
-        // 🚀 O PULO DO GATO: Salva as palavras-chave do usuário + o Nome do Negócio 100% sem acentos
-        keywords: [
-          ...(payload.keywords || []).map((k: string) => normalizeText(k)),
-          normalizeText(validatedData.name),
-        ],
+        keywords: Array.from(
+          new Set([
+            ...(payload.keywords || []).map((k: string) => normalizeText(k)),
+            normalizeText(validatedData.name),
+            normalizeText(validatedData.category),
+            ...(payload.subcategory || []).map((s: string) => normalizeText(s)),
+            // 👇 ESSA É A LINHA NOVA QUE RESOLVE TUDO 👇
+            ...(payload.subcategory || []).flatMap((s: string) =>
+              normalizeText(s).split(" "),
+            ),
+          ]),
+        ).filter(Boolean),
         instagram: cleanSocialLink(validatedData.instagram || ""),
         facebook: cleanSocialLink(validatedData.facebook || ""),
         tiktok: cleanSocialLink(validatedData.tiktok || ""),

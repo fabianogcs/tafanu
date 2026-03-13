@@ -26,7 +26,8 @@ function calculateDistance(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  // Multiplicamos por 1.3 para simular as curvas das ruas da cidade
+  return R * c * 1.3;
 }
 
 interface BuscaProps {
@@ -90,10 +91,14 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     });
 
   // --- 2. PREPARAÇÃO DA BARRA DE PESQUISA ---
-  // O usuário digita "Espaço" -> vira "espaco"
   const searchTerms = query
     .split(" ")
     .filter((w) => w.length > 0 && !STOPWORDS.includes(w));
+
+  // 🚀 Pegamos também as palavras originais (com acentos e cedilhas)
+  const rawTerms = rawQuery
+    .split(" ")
+    .filter((w) => w.length > 0 && !STOPWORDS.includes(w.toLowerCase()));
 
   const whereClause: any = {
     isActive: true,
@@ -105,7 +110,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       ],
     },
     AND: [
-      // 📍 ONDE ESTÁ?
+      // 📍 ONDE ESTÁ? (Filtros de Localização)
       ...(category
         ? [{ category: { equals: category, mode: "insensitive" as const } }]
         : []),
@@ -130,21 +135,25 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
           ]
         : []),
 
-      // 🍕 O QUE É?
+      // 🍕 O QUE É? (Busca Dupla Blindada)
       ...(searchTerms.length > 0
-        ? searchTerms.map((term) => ({
-            OR: [
-              { name: { contains: term, mode: "insensitive" as const } },
-              { category: { contains: term, mode: "insensitive" as const } },
-              // 🚀 A MÁGICA AQUI: O banco vai achar "espaco mulher" escondido nas keywords!
-              { keywords: { hasSome: [term] } },
-              { subcategory: { hasSome: [term] } },
-            ],
-          }))
+        ? searchTerms.map((term, index) => {
+            const rTerm = rawTerms[index] || term; // Pega a palavra correspondente COM acento
+
+            return {
+              OR: [
+                { name: { contains: term, mode: "insensitive" as const } }, // Ex: "espaco"
+                { name: { contains: rTerm, mode: "insensitive" as const } }, // Ex: "Espaço"
+                { category: { contains: term, mode: "insensitive" as const } },
+                { category: { contains: rTerm, mode: "insensitive" as const } },
+                { keywords: { hasSome: [term, rTerm] } },
+                { subcategory: { hasSome: [term, rTerm] } },
+              ],
+            };
+          })
         : []),
     ],
   };
-
   // --- 3. BUSCA NO BANCO ---
   const [businessesData, totalCount] = await Promise.all([
     db.business.findMany({
@@ -276,6 +285,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     key={item.id}
                     business={item}
                     isLoggedIn={!!userId}
+                    // 🚀 O AVISO PARA O CARD: Só é true se o filtro for "distance"
+                    showDistance={sort === "distance"}
                   />
                 ))
               )}
