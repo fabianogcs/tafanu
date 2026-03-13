@@ -549,6 +549,12 @@ export async function createBusiness(payload: any) {
           mercadoLivre: validatedData.mercadoLivre?.trim() || "",
           shein: validatedData.shein?.trim() || "",
           ifood: validatedData.ifood?.trim() || "",
+          website: payload.website || "",
+          published: payload.published !== undefined ? payload.published : true,
+          urban_tag: payload.urban_tag || "",
+          luxe_quote: payload.luxe_quote || "",
+          showroom_collection: payload.showroom_collection || "",
+          comercial_badge: payload.comercial_badge || "",
           faqs: payload.faqs || [],
         },
       });
@@ -631,9 +637,10 @@ export async function updateFullBusiness(slug: string, payload: any) {
         whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
         phone: (validatedData.phone || "").replace(/\D/g, ""),
         address: validatedData.address,
-        // 🛡️ Mantendo a busca inteligente afiada
+        cep: payload.cep || "", // 🚀 TAVA FALTANDO
         city: normalizeText(validatedData.city || ""),
         neighborhood: normalizeText(payload.neighborhood || ""),
+        state: validatedData.state, // 🚀 TAVA FALTANDO
         latitude: lat,
         longitude: lng,
         keywords: Array.from(
@@ -642,7 +649,6 @@ export async function updateFullBusiness(slug: string, payload: any) {
             normalizeText(validatedData.name),
             normalizeText(validatedData.category),
             ...(payload.subcategory || []).map((s: string) => normalizeText(s)),
-            // 👇 ESSA É A LINHA NOVA QUE RESOLVE TUDO 👇
             ...(payload.subcategory || []).flatMap((s: string) =>
               normalizeText(s).split(" "),
             ),
@@ -651,7 +657,17 @@ export async function updateFullBusiness(slug: string, payload: any) {
         instagram: cleanSocialLink(validatedData.instagram || ""),
         facebook: cleanSocialLink(validatedData.facebook || ""),
         tiktok: cleanSocialLink(validatedData.tiktok || ""),
-        // 🚀 Campos Extras (IMPORTANTE para não perder dados)
+
+        // 🚀 AQUI ESTÃO OS DESAPARECIDOS!
+        imageUrl: payload.imageUrl || "", // Garante que a logo salva
+        website: payload.website || "", // O Seu Site de volta!
+        features: payload.features || [], // Os seus Destaques de volta!
+        published: payload.published, // O botão Online/Pausado de volta!
+        urban_tag: payload.urban_tag || "",
+        luxe_quote: payload.luxe_quote || "",
+        showroom_collection: payload.showroom_collection || "",
+        comercial_badge: payload.comercial_badge || "",
+
         shopee: validatedData.shopee?.trim() || "",
         mercadoLivre: validatedData.mercadoLivre?.trim() || "",
         shein: validatedData.shein?.trim() || "",
