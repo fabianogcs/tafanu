@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { SlidersHorizontal } from "lucide-react";
 import LocationTracker from "@/components/LocationTracker";
+import SearchBar from "@/components/SearchBar";
 import FilterModal from "@/components/FilterModal";
 import BusinessCard from "@/components/BusinessCard";
 import { auth } from "@/auth";
@@ -249,21 +250,29 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-[#0f172a] text-white py-10 px-4 shadow-xl relative overflow-hidden z-[100]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter">
-              {rawQuery ? `"${rawQuery}"` : "Explorar"}
-            </h1>
-            <p className="text-gray-400 font-medium text-sm">
-              Encontramos <strong className="text-white">{totalCount}</strong>{" "}
-              negócios.
-            </p>
+      <div className="bg-[#0f172a] text-white py-8 md:py-10 px-4 shadow-xl relative overflow-hidden z-[100]">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
+          {/* TÍTULO E BOTÃO DE FILTRO */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter">
+                {rawQuery ? `"${rawQuery}"` : "Explorar"}
+              </h1>
+              <p className="text-gray-400 font-medium text-sm">
+                Encontramos <strong className="text-white">{totalCount}</strong>{" "}
+                negócios.
+              </p>
+            </div>
+            <FilterModal
+              availableCategories={orderedFilterMap}
+              currentSort={sort}
+            />
           </div>
-          <FilterModal
-            availableCategories={orderedFilterMap}
-            currentSort={sort}
-          />
+
+          {/* 🚀 A NOSSA NOVA BARRA DE BUSCA DE VIDRO AQUI! */}
+          <div className="w-full">
+            <SearchBar initialQuery={rawQuery} />
+          </div>
         </div>
       </div>
 
