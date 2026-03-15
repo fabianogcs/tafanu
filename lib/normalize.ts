@@ -77,8 +77,6 @@ export function normalizeBusiness(raw: any) {
     category: b.category || "Alimentação",
     subcategory: Array.isArray(b.subcategory) ? b.subcategory : [],
     imageUrl: b.imageUrl || "",
-    heroImage: b.heroImage || "",
-    videoUrl: b.videoUrl || "",
     whatsapp: b.whatsapp || "",
     phone: b.phone || "",
     instagram: b.instagram || "",

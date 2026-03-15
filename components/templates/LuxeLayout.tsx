@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Heart,
   Share2,
-  Loader2,
   X,
   Instagram,
   Facebook,
@@ -14,12 +12,9 @@ import {
   PhoneCall,
   ChevronLeft,
   ChevronRight,
-  MapPin,
   Plus,
   Minus,
-  Check,
   Maximize2,
-  Camera,
   Quote,
   MessageCircle,
 } from "lucide-react";
@@ -293,54 +288,117 @@ export default function LuxeLayout({
           )}
           <motion.h1
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={`text-5xl md:text-9xl font-thin tracking-tighter italic leading-none ${theme.primary} drop-shadow-sm`}
+            animate={{
+              opacity: [0.8, 1, 0.8], // 🚀 O efeito de respiração
+            }}
+            transition={{
+              opacity: {
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              },
+            }}
+            className="text-5xl md:text-9xl font-thin tracking-tighter italic leading-none drop-shadow-sm opacity-90"
           >
             {business.name}
           </motion.h1>
-          {business.luxe_quote && (
-            <p className="mt-6 text-sm md:text-2xl font-light tracking-[0.2em] uppercase opacity-40 italic">
-              {business.luxe_quote}
-            </p>
-          )}
         </div>
       </header>
 
       <main className="relative z-10 px-4 container mx-auto max-w-7xl pb-20 pt-16">
-        {/* STORY (CONSERTO DO VAZAMENTO E QUEBRA DE LINHA) */}
-        {hasDescription && (
-          <section className="pb-24 md:pb-32 border-b border-black/5 flex flex-col items-center max-w-5xl mx-auto text-center">
-            <span
-              className={`text-[10px] uppercase tracking-[0.5em] font-bold block mb-8 ${theme.primary}`}
+        {/* STORY & QUOTE (Layout Elegante Invertido - Ajustado) */}
+        {(hasDescription || business.luxe_quote) && (
+          <section className="pt-8 pb-12 md:pt-10 md:pb-16 border-b border-black/5 px-4 md:px-0 overflow-hidden">
+            <div
+              className={`w-full max-w-7xl mx-auto ${
+                business.luxe_quote && hasDescription
+                  ? "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center"
+                  : "flex flex-col items-center text-center max-w-5xl mx-auto"
+              }`}
             >
-              Editorial
-            </span>
-            <div className={`w-12 h-[1px] ${theme.bgAction} mb-12`} />
-            <p className="text-2xl md:text-5xl font-light leading-tight italic opacity-90 whitespace-pre-line break-words w-full">
-              {business.description}
-            </p>
+              {/* LADO ESQUERDO: O Texto Editorial */}
+              {hasDescription && (
+                <div
+                  className={`flex flex-col ${business.luxe_quote ? "md:col-span-7 text-left md:border-r border-black/10 md:pr-12" : "items-center text-center"}`}
+                >
+                  <span
+                    className={`text-xs md:text-sm uppercase tracking-[0.4em] font-bold block mb-4 md:mb-6 opacity-80 ${theme.primary}`}
+                  >
+                    Editorial
+                  </span>
+
+                  {/* Linha divisória charmosa */}
+                  <div
+                    className={`w-12 h-[1px] ${theme.bgAction} mb-6 md:mb-8 opacity-50 ${!business.luxe_quote ? "mx-auto" : ""}`}
+                  />
+
+                  <p className="text-lg md:text-xl font-light leading-relaxed opacity-90 whitespace-pre-wrap break-words">
+                    {business.description}
+                  </p>
+                </div>
+              )}
+
+              {/* LADO DIREITO: A Frase de Impacto (Centralizada e Expandida) */}
+              {business.luxe_quote && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  /* 🚀 Removi o md:text-right e deixei text-center total, sem paddings laterais */
+                  className={`relative z-0 ${!hasDescription ? "text-center" : "md:col-span-5 text-center mt-12 md:mt-0 px-0"}`}
+                >
+                  {/* Ícone de Aspas - Posicionado para não roubar espaço do texto */}
+                  <Quote
+                    className={`absolute -top-6 left-1/2 -translate-x-1/2 md:-top-10 md:right-[-20px] md:left-auto md:translate-x-0 w-20 h-20 md:w-32 md:h-32 opacity-5 ${theme.primary} -z-10`}
+                  />
+
+                  <h2
+                    /* 🚀 Fonte em 4xl (menor como pedido) e leading-[1.2] para o texto respirar e expandir */
+                    className={`text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-serif italic leading-[1.2] opacity-95 ${theme.primary} w-full inline-block px-0`}
+                  >
+                    "{business.luxe_quote}"
+                  </h2>
+                </motion.div>
+              )}
+            </div>
           </section>
         )}
 
-        {/* FEATURES */}
+        {/* FEATURES (Mobile 2 Colunas, Desktop Flex Centralizado) - APENAS UMA VEZ AGORA! */}
         {hasFeatures && (
-          <section className="py-24 border-b border-black/5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {business.features.filter(Boolean).map((f: string, i: number) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center text-center space-y-4 p-8 rounded-3xl bg-neutral-50/50 border border-black/5"
+          <section className="py-16 md:py-24 border-b border-black/5 px-4 md:px-0">
+            <div className="max-w-5xl mx-auto flex flex-col items-center">
+              {/* Título Elegante da Seção */}
+              <div className="text-center mb-12 md:mb-16">
+                <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
+                  Exclusividade
+                </span>
+                <h3
+                  className={`text-4xl md:text-5xl lg:text-6xl font-serif italic mb-6 opacity-90 ${theme.primary}`}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-full ${theme.bgAction} text-white flex items-center justify-center shadow-lg`}
-                  >
-                    <Check size={16} strokeWidth={3} />
-                  </div>
-                  <span className="text-sm md:text-lg uppercase tracking-widest font-semibold">
-                    {f}
-                  </span>
-                </div>
-              ))}
+                  Destaques
+                </h3>
+                <div
+                  className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
+                />
+              </div>
+
+              {/* grid no mobile, flex no desktop */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:flex md:flex-wrap md:justify-center md:gap-6 w-full">
+                {rawBusiness.features
+                  .filter((f: string) => f.trim() !== "")
+                  .map((f: string, i: number) => (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center justify-center text-center w-full md:w-[220px] lg:w-[240px] min-h-[90px] sm:min-h-[100px] md:min-h-[130px] p-3 sm:p-4 md:p-8 rounded-2xl md:rounded-3xl bg-white/40 backdrop-blur-md border border-black/5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08)] hover:bg-white/80 transition-all duration-500 cursor-default group"
+                    >
+                      <span className="text-[9px] sm:text-[10px] md:text-xs uppercase tracking-[0.15em] md:tracking-[0.2em] font-semibold opacity-70 group-hover:opacity-100 transition-opacity leading-relaxed md:leading-loose text-balance break-words">
+                        {f}
+                      </span>
+                    </div>
+                  ))}
+              </div>
             </div>
           </section>
         )}
@@ -380,17 +438,25 @@ export default function LuxeLayout({
           </section>
         )}
 
-        {/* FAQ */}
+        {/* FAQ (Ajustado: Menos espaço superior e Título Editorial) */}
         {hasFaqs && (
-          <section className="py-24 border-b border-black/5 max-w-5xl mx-auto">
-            <div className="text-center mb-16">
+          <section className="pt-10 pb-24 md:pt-16 md:pb-32 border-b border-black/5 max-w-5xl mx-auto px-4 md:px-0">
+            {/* Título Padronizado (Estilo Editorial) */}
+            <div className="text-center mb-10 md:mb-16">
+              <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
+                Informações
+              </span>
               <h3
-                className={`text-4xl md:text-6xl font-serif italic mb-6 ${theme.primary}`}
+                className={`text-4xl md:text-6xl font-serif italic mb-6 opacity-95 ${theme.primary}`}
               >
                 Perguntas
               </h3>
-              <div className={`w-12 h-[1px] ${theme.bgAction} mx-auto`} />
+              <div
+                className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
+              />
             </div>
+
+            {/* Grid de Acordeons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 items-start">
               {faqs.map((f: any, i: number) => (
                 <LuxeAccordion
@@ -403,180 +469,180 @@ export default function LuxeLayout({
             </div>
           </section>
         )}
-
-        {/* CONTATO (DOBRADINHA CARD + BOTÃO) */}
-        <section className="pt-24">
+        {/* CONTATO & PRESENÇA (True Colors & Full Schedule) */}
+        <section className="pt-24 pb-12">
           <div
-            className={`p-8 md:p-24 ${theme.bgSecondary} border ${theme.border} rounded-[3rem] shadow-2xl grid md:grid-cols-2 gap-16 items-start`}
+            className={`p-8 md:p-16 ${theme.bgSecondary} border ${theme.border} rounded-[3rem] shadow-2xl`}
           >
-            <div className="space-y-12">
-              <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40">
-                Atendimento Exclusivo
-              </span>
-
-              {hasPhone && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 items-start">
+              {/* BLOCO 1: CONEXÃO (Cores Reais) */}
+              <div className="space-y-10 md:border-r border-black/5 md:pr-8">
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest opacity-40 mb-4">
-                    Ligar para
-                  </p>
-                  <button
-                    onClick={() => handleTrackLead("phone")}
-                    className={`text-3xl md:text-5xl font-serif italic hover:opacity-70 transition-opacity underline decoration-1 underline-offset-[8px] ${theme.primary}`}
-                  >
-                    {formatPhoneNumber(business.phone)}
-                  </button>
-                </div>
-              )}
-
-              {hasWhatsapp && (
-                <button
-                  onClick={() => handleTrackLead("whatsapp")}
-                  className="flex items-center gap-4 group"
-                >
-                  <div
-                    className={`w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110`}
-                  >
-                    <MessageCircle size={24} fill="currentColor" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[10px] uppercase tracking-widest opacity-40">
-                      Direct Chat
-                    </p>
-                    <p className="text-xl font-bold uppercase tracking-widest">
-                      Iniciar Conversa
-                    </p>
-                  </div>
-                </button>
-              )}
-
-              {availableSocials.length > 0 && (
-                <div className="flex gap-6 flex-wrap pt-8 border-t border-black/5">
-                  {availableSocials.map((s) => {
-                    const user = business[s];
-                    const url =
-                      s === "instagram"
-                        ? `https://instagram.com/${user}`
-                        : s === "facebook"
-                          ? `https://facebook.com/${user}`
-                          : s === "tiktok"
-                            ? `https://tiktok.com/@${user}`
-                            : formatExternalLink(user);
-                    return (
-                      <a
-                        key={s}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          Actions.registerClickEvent(
-                            business.id,
-                            s.toUpperCase(),
-                          )
-                        } // 🚀 ESPIÃO AQUI
-                        className={`w-14 h-14 flex items-center justify-center rounded-full border ${theme.border} hover:bg-black/5 transition-all ${theme.primary}`}
-                      >
-                        {s === "instagram" ? (
-                          <Instagram size={22} />
-                        ) : s === "facebook" ? (
-                          <Facebook size={22} />
-                        ) : s === "tiktok" ? (
-                          <TikTokIcon className="w-5 h-5" />
-                        ) : (
-                          <Globe size={22} />
-                        )}
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* LOJAS OFICIAIS (Movido do header para cá) */}
-              {salesChannels.length > 0 && (
-                <div className="pt-8 border-t border-black/5">
                   <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                    Lojas Oficiais
+                    Concierge
                   </span>
-                  <div className="flex flex-wrap gap-3">
-                    {salesChannels.map((channel) => (
-                      <a
-                        key={channel.key}
-                        href={formatExternalLink(channel.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          Actions.registerClickEvent(
-                            business.id,
-                            channel.key.toUpperCase(),
-                          )
-                        } // 🚀 ESPIÃO AQUI
-                        className={`flex items-center gap-3 px-5 py-2.5 rounded-full border border-black/10 ${theme.textColor} opacity-70 hover:opacity-100 ${channel.hoverClass} hover:bg-black/5 transition-all duration-300 font-sans group`}
+                  <div className="space-y-6">
+                    {hasWhatsapp && (
+                      <button
+                        onClick={() => handleTrackLead("whatsapp")}
+                        className="flex items-center gap-4 group"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                          <MessageCircle size={18} fill="currentColor" />
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-widest text-[#25D366]">
+                          WhatsApp Direct
+                        </span>
+                      </button>
+                    )}
+                    {hasPhone && (
+                      <button
+                        onClick={() => handleTrackLead("phone")}
+                        className="flex items-center gap-4 group"
                       >
                         <div
-                          className={`transition-transform duration-300 group-hover:scale-110`}
+                          className={`w-10 h-10 rounded-full border border-black/10 flex items-center justify-center transition-transform group-hover:scale-110`}
                         >
-                          {channel.icon}
+                          <PhoneCall size={18} className="text-slate-600" />
                         </div>
-                        <span className="text-[9px] md:text-[10px] font-bold tracking-[0.2em] uppercase">
-                          {channel.name}
+                        <span className="text-sm font-bold uppercase tracking-widest opacity-70">
+                          {formatPhoneNumber(business.phone)}
                         </span>
-                      </a>
-                    ))}
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
 
-            <div
-              className={`space-y-12 md:pl-16 border-t md:border-t-0 md:border-l ${theme.border} pt-12 md:pt-0`}
-            >
-              {hasAddress && (
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => Actions.registerClickEvent(business.id, "MAP")} // 🚀 ESPIÃO AQUI
-                  className="block group"
-                >
-                  <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                    Localização
-                  </span>
-                  <div className="flex gap-4">
-                    <MapPin size={24} className={theme.primary} />
-                    <div>
-                      <p className="text-xl md:text-3xl font-light leading-snug group-hover:underline break-words">
-                        {business.address}
-                      </p>
-                      <p className="text-sm opacity-60 mt-2 uppercase tracking-widest">
-                        {business.city} — {business.state}
-                      </p>
+                {availableSocials.length > 0 && (
+                  <div className="pt-6">
+                    <span className="text-[9px] uppercase tracking-[0.3em] font-bold opacity-30 block mb-4">
+                      Social Media
+                    </span>
+                    <div className="flex gap-4 flex-wrap">
+                      {availableSocials.map((s) => {
+                        const colors: any = {
+                          instagram:
+                            "text-[#E4405F] border-[#E4405F]/20 bg-[#E4405F]/5",
+                          facebook:
+                            "text-[#1877F2] border-[#1877F2]/20 bg-[#1877F2]/5",
+                          tiktok: "text-black border-black/20 bg-black/5",
+                          website:
+                            "text-blue-500 border-blue-500/20 bg-blue-500/5",
+                        };
+                        return (
+                          <a
+                            key={s}
+                            href={
+                              s === "instagram"
+                                ? `https://instagram.com/${business[s]}`
+                                : formatExternalLink(business[s])
+                            }
+                            target="_blank"
+                            className={`w-11 h-11 flex items-center justify-center rounded-full border transition-all hover:scale-110 ${colors[s] || "border-black/10"}`}
+                          >
+                            {s === "instagram" ? (
+                              <Instagram size={20} />
+                            ) : s === "facebook" ? (
+                              <Facebook size={20} />
+                            ) : s === "tiktok" ? (
+                              <TikTokIcon className="w-5 h-5" />
+                            ) : (
+                              <Globe size={20} />
+                            )}
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
-                </a>
-              )}
-              {hasHours && (
-                <div>
-                  <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                    Horários
-                  </span>
-                  <div className="space-y-4">
-                    {realHours.map((h: any, i: number) => (
-                      <div
-                        key={i}
-                        className={`flex justify-between font-light border-b border-dashed ${theme.border} pb-3 last:border-0`}
-                      >
-                        <span className="uppercase opacity-60 text-xs tracking-widest">
-                          {h.day}
-                        </span>
-                        <span
-                          className={`text-sm md:text-lg italic ${h.isClosed ? "text-rose-500" : ""}`}
-                        >
-                          {h.time}
-                        </span>
-                      </div>
-                    ))}
+                )}
+              </div>
+
+              {/* 🚀 BLOCO 2: SÓ APARECE SE TIVER LOJAS CADASTRADAS */}
+              {salesChannels.length > 0 && (
+                <div className="space-y-8 md:border-r border-black/5 md:px-8">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
+                      Boutique Online
+                    </span>
+                    <div className="flex flex-col gap-3">
+                      {salesChannels.map((channel) => {
+                        const storeColors: any = {
+                          mercadoLivre:
+                            "border-[#FFE600] bg-[#FFE600]/10 text-[#2D3277]",
+                          shopee:
+                            "border-[#EE4D2D] bg-[#EE4D2D]/5 text-[#EE4D2D]",
+                          ifood:
+                            "border-[#EA1D2C] bg-[#EA1D2C]/5 text-[#EA1D2C]",
+                          shein: "border-black bg-black/5 text-black",
+                        };
+                        return (
+                          <a
+                            key={channel.key}
+                            href={formatExternalLink(channel.url)}
+                            target="_blank"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 hover:shadow-md ${storeColors[channel.key] || "border-black/5"}`}
+                          >
+                            <div className="scale-110">{channel.icon}</div>
+                            <span className="text-[10px] font-bold tracking-[0.1em] uppercase">
+                              {channel.name}
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
+
+              {/* BLOCO 3: PRESENÇA (Agenda Completa) */}
+              <div className="space-y-10 md:pl-8">
+                {hasAddress && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
+                      Localização
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
+                      target="_blank"
+                      className="group block"
+                    >
+                      <p className="text-lg font-serif italic leading-snug group-hover:underline">
+                        {business.address}
+                      </p>
+                      <p className="text-[10px] opacity-50 mt-2 uppercase tracking-widest">
+                        {business.city} — {business.state}
+                      </p>
+                    </a>
+                  </div>
+                )}
+                {hasHours && (
+                  <div className="pt-6">
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
+                      Agenda Semanal
+                    </span>
+                    <div className="space-y-3">
+                      {realHours.map((h: any, i: number) => (
+                        <div
+                          key={i}
+                          className="flex justify-between items-center border-b border-black/5 pb-2 last:border-0"
+                        >
+                          {/* Dia da semana: Maior e menos opaco */}
+                          <span className="text-xs md:text-sm uppercase tracking-widest font-medium opacity-70">
+                            {h.day}
+                          </span>
+
+                          {/* Horário: Serifado, Itálico e com Destaque */}
+                          <span
+                            className={`text-sm md:text-base font-serif italic ${h.isClosed ? "text-rose-500 font-bold" : "opacity-90 font-semibold"}`}
+                          >
+                            {h.time}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>

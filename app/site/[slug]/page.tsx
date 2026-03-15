@@ -172,7 +172,7 @@ export default async function BusinessPage({
   // ... (Daqui para baixo o seu código continua exatamente igual)
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
-  const rawImage = business.imageUrl || business.heroImage;
+  const rawImage = business.imageUrl;
 
   const appIcon = rawImage
     ? rawImage.startsWith("http")

@@ -3,23 +3,20 @@
 import { toast } from "sonner";
 import { useState, useEffect } from "react"; // 👈 Adicionamos useEffect
 import { UploadDropzone } from "@/lib/uploadthing";
-import { X, Video, Image as ImageIcon, Save, Loader2 } from "lucide-react";
+import { X, Image as ImageIcon, Save, Loader2 } from "lucide-react";
 import { updateBusinessMedia } from "@/app/actions";
 import { useRouter } from "next/navigation";
 
 interface MediaFormProps {
   businessSlug: string;
-  initialVideo?: string | null;
   initialGallery?: string[];
 }
 
 export default function MediaForm({
   businessSlug,
-  initialVideo,
   initialGallery,
 }: MediaFormProps) {
   const router = useRouter();
-  const [videoUrl, setVideoUrl] = useState(initialVideo || "");
   const [gallery, setGallery] = useState<string[]>(initialGallery || []);
   const [isSaving, setIsSaving] = useState(false);
   const [isMounted, setIsMounted] = useState(false); // 👈 Filtro de segurança SSR
@@ -36,7 +33,7 @@ export default function MediaForm({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const result = await updateBusinessMedia(businessSlug, videoUrl, gallery);
+      const result = await updateBusinessMedia(businessSlug, gallery);
 
       if (result.success) {
         toast.success("Mídia atualizada com sucesso!");
@@ -55,26 +52,6 @@ export default function MediaForm({
 
   return (
     <div className="space-y-8 bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 max-w-4xl mx-auto">
-      {/* --- SEÇÃO 1: VÍDEO --- */}
-      <div>
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
-          <Video className="text-indigo-500" size={18} />
-          Vídeo de Apresentação
-        </h3>
-        <input
-          type="text"
-          placeholder="Cole aqui o link do YouTube (ex: https://youtube.com/watch...)"
-          className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-medium text-slate-700 transition-all"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-        />
-        <p className="text-[10px] text-slate-400 mt-3 font-medium uppercase px-2">
-          💡 Dica: Vídeos do YouTube aumentam a confiança do cliente.
-        </p>
-      </div>
-
-      <div className="h-px bg-slate-100" />
-
       {/* --- SEÇÃO 2: GALERIA DE FOTOS --- */}
       <div>
         <div className="flex items-center justify-between mb-4">

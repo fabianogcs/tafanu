@@ -57,8 +57,6 @@ export const businessSchema = z.object({
 
   // --- Mídia ---
   imageUrl: z.string().optional().or(z.literal("")),
-  heroImage: z.string().optional().nullable(),
-  videoUrl: z.string().optional().nullable(),
   gallery: z
     .array(z.string().url())
     .max(8, "O limite é de 8 fotos na galeria")

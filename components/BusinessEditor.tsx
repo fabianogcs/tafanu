@@ -430,8 +430,6 @@ export default function BusinessEditor({
             ? socials.website
             : `https://${socials.website}`
           : "",
-        videoUrl: "",
-        heroImage: "",
         gallery: validGallery,
         imageUrl: profileImage,
         hours: businessHours,

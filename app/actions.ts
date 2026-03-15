@@ -596,6 +596,8 @@ export async function updateFullBusiness(slug: string, payload: any) {
         state: true,
         latitude: true,
         longitude: true,
+        imageUrl: true,
+        gallery: true,
       },
     });
 
@@ -623,7 +625,26 @@ export async function updateFullBusiness(slug: string, payload: any) {
       lat = newCoords.lat;
       lng = newCoords.lng;
     }
+    // ✂️ CIRURGIA: Faxina do UploadThing
+    const linksParaDeletar = [];
 
+    // Se a logo antiga existe e mudou, vai para o lixo
+    if (old.imageUrl && old.imageUrl !== payload.imageUrl) {
+      linksParaDeletar.push(old.imageUrl);
+    }
+
+    // Se fotos da galeria antiga não estão na nova, vão para o lixo
+    const galeriaAntiga = (old.gallery as string[]) || [];
+    galeriaAntiga.forEach((url) => {
+      if (!payload.gallery?.includes(url)) {
+        linksParaDeletar.push(url);
+      }
+    });
+
+    if (linksParaDeletar.length > 0) {
+      await deleteFilesFromUploadThing(linksParaDeletar);
+    }
+    // ---------------------------------
     await db.business.update({
       where: { id: old.id },
       data: {
@@ -697,11 +718,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
 // 7. ATUALIZAÇÃO ESPECÍFICA DE MÍDIA (VÍDEO E GALERIA)
 // ==============================================================================
 
-export async function updateBusinessMedia(
-  slug: string,
-  videoUrl: string | null,
-  gallery: string[],
-) {
+export async function updateBusinessMedia(slug: string, gallery: string[]) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
@@ -709,7 +726,7 @@ export async function updateBusinessMedia(
     // 1. Busca o negócio atual para saber o que ele já tinha
     const business = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true, gallery: true, videoUrl: true },
+      select: { id: true, userId: true, gallery: true },
     });
 
     if (!business || business.userId !== user.id) {
@@ -718,11 +735,6 @@ export async function updateBusinessMedia(
 
     // 2. Lógica de Faxina (Deleta fotos removidas do UploadThing)
     const filesToDelete: string[] = [];
-
-    // Se o vídeo mudou, deleta o antigo (se for link do UploadThing)
-    if (business.videoUrl && business.videoUrl !== videoUrl) {
-      filesToDelete.push(business.videoUrl);
-    }
 
     // Compara as galerias: se a foto estava na antiga e não está na nova, deleta.
     const oldGallery = business.gallery || [];
@@ -741,7 +753,6 @@ export async function updateBusinessMedia(
     await db.business.update({
       where: { id: business.id },
       data: {
-        videoUrl: videoUrl || null,
         gallery: gallery,
       },
     });
@@ -791,8 +802,6 @@ export async function deleteBusiness(slug: string) {
         userId: true,
         imageUrl: true,
         gallery: true,
-        heroImage: true,
-        videoUrl: true,
       },
     });
 
@@ -808,8 +817,6 @@ export async function deleteBusiness(slug: string) {
     // --- COLETA TUDO QUE PRECISA SER DELETADO ---
     const filesToDelete: string[] = [];
     if (b.imageUrl) filesToDelete.push(b.imageUrl);
-    if (b.heroImage) filesToDelete.push(b.heroImage);
-    if (b.videoUrl) filesToDelete.push(b.videoUrl);
     if (b.gallery && b.gallery.length > 0) {
       filesToDelete.push(...b.gallery);
     }
@@ -1303,8 +1310,6 @@ export async function runGarbageCollector() {
     const businesses = await db.business.findMany({
       select: {
         imageUrl: true,
-        heroImage: true,
-        videoUrl: true,
         gallery: true,
       },
     });
@@ -1319,8 +1324,6 @@ export async function runGarbageCollector() {
       };
 
       add(b.imageUrl);
-      add(b.heroImage);
-      add(b.videoUrl);
       if (b.gallery && Array.isArray(b.gallery)) {
         b.gallery.forEach((img) => add(img));
       }

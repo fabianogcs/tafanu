@@ -67,8 +67,6 @@ model Business {
   views               Int            @default(0) // Centralizado aqui
 
   // Mídia
-  heroImage           String?        @db.Text
-  videoUrl            String?        @db.Text
   imageUrl            String?        @db.Text 
   gallery             String[]       @default([])
 
