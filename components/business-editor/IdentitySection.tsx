@@ -1,7 +1,16 @@
 "use client";
 
 import React from "react";
-import { Loader2, Plus, Trash2, Smartphone, Palette } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  Smartphone,
+  Palette,
+  Lock,
+  Unlock,
+  AlertTriangle,
+} from "lucide-react";
 import { layoutInfo } from "./constants";
 import { businessThemes } from "@/lib/themes";
 
@@ -56,6 +65,7 @@ export function IdentitySection({
   filteredThemeKeys,
 }: IdentitySectionProps) {
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
+  const isChanged = !isNew && slug !== safeBusinessSlug;
 
   return (
     <div className="space-y-8">
@@ -128,10 +138,17 @@ export function IdentitySection({
 
         {/* SLUG (LINK) */}
         <div className="w-full relative group mb-8 px-4 mt-4">
-          <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block tracking-widest">
+          <label className="text-[10px] font-black uppercase text-slate-400 mb-2 flex items-center justify-center gap-2 tracking-widest">
             <span className="bg-slate-100 px-2 py-1 rounded">
               tafanu.com.br/site/
             </span>
+            {/* Mostra cadeado aberto se mudou, ou fechado se está original */}
+            {!isNew &&
+              (isChanged ? (
+                <Unlock size={12} className="text-amber-500" />
+              ) : (
+                <Lock size={12} className="text-slate-300" />
+              ))}
           </label>
           <input
             ref={slugRef}
@@ -140,9 +157,19 @@ export function IdentitySection({
             className={`w-full text-center text-sm font-bold font-mono outline-none border-2 py-3 rounded-xl transition-all ${
               slugError
                 ? "bg-rose-50 border-rose-500 text-rose-700 animate-pulse"
-                : "bg-slate-50 border-slate-200 text-slate-600"
+                : isChanged
+                  ? "bg-amber-50 border-amber-400 text-amber-700 ring-4 ring-amber-100"
+                  : "bg-slate-50 border-slate-200 text-slate-600"
             }`}
           />
+
+          {/* Este é o aviso que "pula" embaixo do input quando você mexe */}
+          {isChanged && (
+            <div className="mt-2 text-[10px] font-black uppercase text-amber-600 flex items-center justify-center gap-1 animate-pulse">
+              <AlertTriangle size={12} /> Cuidado: Links antigos vão parar de
+              funcionar!
+            </div>
+          )}
         </div>
 
         {/* LAYOUTS */}

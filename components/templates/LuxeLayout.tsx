@@ -273,35 +273,27 @@ export default function LuxeLayout({
         </div>
 
         <div className="max-w-6xl mx-auto px-6 flex flex-col items-center">
+          {/* LOGO: Fixa e Estável, sem animações */}
           {business.imageUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-24 h-24 md:w-40 md:h-40 rounded-full border border-black/5 shadow-2xl overflow-hidden mb-8"
-            >
+            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full border border-black/5 shadow-2xl overflow-hidden mb-8">
               <img
                 src={business.imageUrl}
                 className="w-full h-full object-cover"
                 alt="Logo"
               />
-            </motion.div>
+            </div>
           )}
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{
-              opacity: [0.8, 1, 0.8], // 🚀 O efeito de respiração
+
+          {/* NOME: Fixo e Estável, sem animações */}
+          <h1
+            style={{
+              fontFamily:
+                "'Playfair Display', 'Didot', 'Bodoni MT', 'Times New Roman', serif",
             }}
-            transition={{
-              opacity: {
-                duration: 6,
-                repeat: Infinity,
-                ease: "easeInOut",
-              },
-            }}
-            className="text-5xl md:text-9xl font-thin tracking-tighter italic leading-none drop-shadow-sm opacity-90"
+            className={`text-3xl md:text-5xl lg:text-6xl font-normal uppercase tracking-[0.15em] leading-tight opacity-95 ${theme.textColor}`}
           >
             {business.name}
-          </motion.h1>
+          </h1>
         </div>
       </header>
 
@@ -477,41 +469,44 @@ export default function LuxeLayout({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 items-start">
               {/* BLOCO 1: CONEXÃO (Cores Reais) */}
               <div className="space-y-10 md:border-r border-black/5 md:pr-8">
-                <div>
-                  <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                    Concierge
-                  </span>
-                  <div className="space-y-6">
-                    {hasWhatsapp && (
-                      <button
-                        onClick={() => handleTrackLead("whatsapp")}
-                        className="flex items-center gap-4 group"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                          <MessageCircle size={18} fill="currentColor" />
-                        </div>
-                        <span className="text-sm font-bold uppercase tracking-widest text-[#25D366]">
-                          WhatsApp Direct
-                        </span>
-                      </button>
-                    )}
-                    {hasPhone && (
-                      <button
-                        onClick={() => handleTrackLead("phone")}
-                        className="flex items-center gap-4 group"
-                      >
-                        <div
-                          className={`w-10 h-10 rounded-full border border-black/10 flex items-center justify-center transition-transform group-hover:scale-110`}
+                {/* 👇 A CIRURGIA É SÓ ESTA LINHA AQUI */}
+                {(hasWhatsapp || hasPhone) && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
+                      Concierge
+                    </span>
+                    <div className="space-y-6">
+                      {hasWhatsapp && (
+                        <button
+                          onClick={() => handleTrackLead("whatsapp")}
+                          className="flex items-center gap-4 group"
                         >
-                          <PhoneCall size={18} className="text-slate-600" />
-                        </div>
-                        <span className="text-sm font-bold uppercase tracking-widest opacity-70">
-                          {formatPhoneNumber(business.phone)}
-                        </span>
-                      </button>
-                    )}
+                          <div className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                            <MessageCircle size={18} fill="currentColor" />
+                          </div>
+                          <span className="text-sm font-bold uppercase tracking-widest text-[#25D366]">
+                            WhatsApp Direct
+                          </span>
+                        </button>
+                      )}
+                      {hasPhone && (
+                        <button
+                          onClick={() => handleTrackLead("phone")}
+                          className="flex items-center gap-4 group"
+                        >
+                          <div
+                            className={`w-10 h-10 rounded-full border border-black/10 flex items-center justify-center transition-transform group-hover:scale-110`}
+                          >
+                            <PhoneCall size={18} className="text-slate-600" />
+                          </div>
+                          <span className="text-sm font-bold uppercase tracking-widest opacity-70">
+                            {formatPhoneNumber(business.phone)}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {availableSocials.length > 0 && (
                   <div className="pt-6">
@@ -593,7 +588,6 @@ export default function LuxeLayout({
                   </div>
                 </div>
               )}
-
               {/* BLOCO 3: PRESENÇA (Agenda Completa) */}
               <div className="space-y-10 md:pl-8">
                 {hasAddress && (
@@ -606,9 +600,12 @@ export default function LuxeLayout({
                       target="_blank"
                       className="group block"
                     >
-                      <p className="text-lg font-serif italic leading-snug group-hover:underline">
-                        {business.address}
+                      {/* Pegamos só as 2 primeiras partes (Rua e Bairro) e forçamos Iniciais Maiúsculas */}
+                      <p className="text-lg font-serif italic leading-snug capitalize group-hover:underline opacity-90">
+                        {business.address?.split("-").slice(0, 2).join(" - ")}
                       </p>
+
+                      {/* O seu amado Cidade - Estado intacto aqui embaixo! */}
                       <p className="text-[10px] opacity-50 mt-2 uppercase tracking-widest">
                         {business.city} — {business.state}
                       </p>

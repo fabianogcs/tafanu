@@ -5,21 +5,20 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Heart,
   Share2,
-  Loader2,
   X,
   Instagram,
   Facebook,
   Globe,
   PhoneCall,
   MapPin,
-  Maximize2,
   ChevronLeft,
   ChevronRight,
-  Phone,
   Camera,
   MessageCircle,
-  ShoppingBag,
-  Store,
+  Clock,
+  CheckCircle2,
+  HelpCircle,
+  Plus,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
 import { toast } from "sonner";
@@ -42,7 +41,6 @@ const TikTokIcon = ({
   </svg>
 );
 
-// Ícones Oficiais Customizados
 const MeliIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
@@ -74,7 +72,7 @@ const handleShare = async (businessName: string) => {
     try {
       await navigator.share({
         title: businessName,
-        text: `Confira ${businessName}:`,
+        text: `Confira o perfil de ${businessName}:`,
         url,
       });
       return;
@@ -82,7 +80,7 @@ const handleShare = async (businessName: string) => {
   }
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(url);
-    toast.success("Link copiado!");
+    toast.success("Link copiado para a área de transferência!");
   }
 };
 
@@ -90,6 +88,8 @@ const formatPhoneNumber = (phone: string) => {
   const cleaned = (phone || "").replace(/\D/g, "");
   const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
   if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
+  const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
+  if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
   return phone;
 };
 
@@ -99,16 +99,41 @@ const formatExternalLink = (url: string) => {
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
 };
 
-const StickerTitle = ({ text, theme }: any) => (
-  <div className="inline-flex items-center gap-2 mt-10 mb-8">
-    <div className={`w-3 h-3 ${theme.bgAction}`} />
-    <span
-      className={`text-sm font-black uppercase tracking-[0.2em] ${theme.subTextColor}`}
-    >
-      {text}
-    </span>
-  </div>
-);
+const AccordionItem = ({ q, a, theme }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className={`border-b ${theme.border} transition-all duration-300`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full py-4 flex justify-between items-center text-left gap-4 outline-none bg-transparent"
+      >
+        <span
+          className={`text-sm font-semibold ${isOpen ? "opacity-100" : "opacity-70"}`}
+        >
+          {q}
+        </span>
+        <Plus
+          size={16}
+          className={`shrink-0 transition-transform duration-300 opacity-50 ${isOpen ? "rotate-45" : ""}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="pb-5 text-sm leading-relaxed opacity-60">{a}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function ShowroomLayout({
   business: rawBusiness,
@@ -134,6 +159,7 @@ export default function ShowroomLayout({
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const theme =
@@ -149,35 +175,34 @@ export default function ShowroomLayout({
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
 
-  // LISTA INTELIGENTE DE LOJAS
   const salesChannels = [
     {
       key: "mercadoLivre",
       name: "Mercado Livre",
-      icon: <MeliIcon className="w-4 h-4" />,
+      icon: <MeliIcon className="w-5 h-5" />,
       url: business.mercadoLivre,
-      colorClass: "text-[#FFE600] group-hover:text-[#F3DB00]",
+      colorClass: "hover:text-[#2D3277] hover:bg-[#FFE600]/10",
     },
     {
       key: "shopee",
       name: "Shopee",
-      icon: <ShopeeIcon className="w-4 h-4" />,
+      icon: <ShopeeIcon className="w-5 h-5" />,
       url: business.shopee,
-      colorClass: "text-[#EE4D2D] group-hover:text-[#EE4D2D]",
+      colorClass: "hover:text-[#EE4D2D] hover:bg-[#EE4D2D]/10",
     },
     {
       key: "ifood",
       name: "iFood",
-      icon: <IfoodIcon className="w-4 h-4" />,
+      icon: <IfoodIcon className="w-5 h-5" />,
       url: business.ifood,
-      colorClass: "text-[#EA1D2C] group-hover:text-[#EA1D2C]",
+      colorClass: "hover:text-[#EA1D2C] hover:bg-[#EA1D2C]/10",
     },
     {
       key: "shein",
       name: "Shein",
-      icon: <SheinIcon className="w-4 h-4" />,
+      icon: <SheinIcon className="w-5 h-5" />,
       url: business.shein,
-      colorClass: "text-slate-900 group-hover:text-black", // PRETO para combinar com o tema claro
+      colorClass: "hover:text-black hover:bg-black/10",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
@@ -205,7 +230,6 @@ export default function ShowroomLayout({
           ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
           : `tel:${cleanNumber}`;
       try {
-        // 🚀 O NOVO ESPIÃO ENTRA AQUI!
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         window.location.href = targetUrl;
@@ -222,385 +246,397 @@ export default function ShowroomLayout({
 
   return (
     <div
-      className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans pb-0 selection:bg-black selection:text-white transition-colors duration-700`}
+      className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
     >
-      {/* --- HEADER --- */}
-      <header
-        className={`relative pt-28 pb-10 w-full ${theme.bgPage} border-b border-black/10`}
-      >
-        {/* Pílula de Ações */}
-        <div className="absolute top-4 right-4 z-10">
-          <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-xl">
-            <button
-              onClick={() => handleShare(business.name)}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all text-slate-700"
-            >
-              <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-            </button>
-            <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
-            <FavoriteButton
-              businessId={business.id}
-              isLoggedIn={isLoggedIn}
-              initialIsFavorited={isFavorited}
-              emailVerified={emailVerified}
-            />
-          </div>
-        </div>
-
-        <div className="max-w-[1600px] mx-auto px-6 flex flex-col items-center md:items-start text-center md:text-left gap-6">
+      {/* --- HEADER CORPORATIVO (Sem botões flutuando) --- */}
+      <header className={`pt-12 md:pt-20 pb-10 border-b ${theme.border}`}>
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center md:items-start gap-8">
           {business.imageUrl && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-white"
+            <div
+              className={`w-28 h-28 md:w-36 md:h-36 rounded-2xl border ${theme.border} shadow-sm overflow-hidden bg-white shrink-0`}
             >
               <img
                 src={business.imageUrl}
                 className="w-full h-full object-cover"
                 alt="Logo"
               />
-            </motion.div>
-          )}
-          <div className="space-y-2">
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl md:text-8xl font-black tracking-tighter leading-[0.9] text-slate-900"
-            >
-              {business.name}
-            </motion.h1>
-            {business.luxe_quote && (
-              <p className="text-sm md:text-xl font-medium italic opacity-40">
-                {business.luxe_quote}
-              </p>
-            )}
-          </div>
-
-          {/* REDES SOCIAIS INTELIGENTES */}
-          {availableSocials.length > 0 && (
-            <div className="flex flex-wrap gap-3">
-              {availableSocials.map((s) => {
-                const user = business[s];
-                const url =
-                  s === "instagram"
-                    ? `https://instagram.com/${user}`
-                    : s === "facebook"
-                      ? `https://facebook.com/${user}`
-                      : s === "tiktok"
-                        ? `https://tiktok.com/@${user}`
-                        : formatExternalLink(user);
-                return (
-                  <a
-                    key={s}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      Actions.registerClickEvent(business.id, s.toUpperCase())
-                    } // 🚀 ESPIÃO AQUI
-                    className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all border border-black/5"
-                  >
-                    {s === "instagram" ? (
-                      <Instagram size={20} color="#E1306C" />
-                    ) : s === "facebook" ? (
-                      <Facebook size={20} color="#1877F2" />
-                    ) : s === "tiktok" ? (
-                      <TikTokIcon className="w-5 h-5" color="#000" />
-                    ) : (
-                      <Globe size={20} color="#06b6d4" />
-                    )}
-                  </a>
-                );
-              })}
             </div>
           )}
 
-          {/* LOJAS (Pílulas Estilo Showroom - Brancas) */}
-          {salesChannels.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2"
-            >
-              {salesChannels.map((channel) => (
-                <a
-                  key={channel.key}
-                  href={formatExternalLink(channel.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    Actions.registerClickEvent(
-                      business.id,
-                      channel.key.toUpperCase(),
-                    )
-                  } // 🚀 ESPIÃO AQUI
-                  className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-black/5 hover:shadow-md hover:scale-105 hover:border-black/10 transition-all duration-300 group"
-                >
-                  <div
-                    className={`transition-transform duration-300 group-hover:scale-110 ${channel.colorClass}`}
-                  >
-                    {channel.icon}
-                  </div>
-                  <span className="text-[11px] font-bold tracking-widest uppercase text-slate-600 group-hover:text-slate-900 transition-colors">
-                    {channel.name}
-                  </span>
-                </a>
-              ))}
-            </motion.div>
-          )}
+          <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-2">
+            {/* NOME DA EMPRESA */}
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-none mb-1">
+              {business.name}
+            </h1>
+
+            {/* MARCAÇÃO ÚNICA (A frase que vem do editor, elegante e com borda) */}
+            {business.comercial_badge && (
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-60 border border-black/10 px-3 py-1 rounded-md inline-block mb-2">
+                {business.comercial_badge}
+              </span>
+            )}
+
+            {/* Ações Alinhadas e Elegantes */}
+            <div className="flex items-center gap-3 pt-4">
+              <button
+                onClick={() => handleShare(business.name)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full border ${theme.border} hover:bg-black/5 transition-colors text-xs font-bold uppercase tracking-wider`}
+              >
+                <Share2 size={14} /> Compartilhar
+              </button>
+              <div
+                className={`w-10 h-10 flex items-center justify-center rounded-full border ${theme.border} hover:bg-black/5 transition-colors`}
+              >
+                <FavoriteButton
+                  businessId={business.id}
+                  isLoggedIn={isLoggedIn}
+                  initialIsFavorited={isFavorited}
+                  emailVerified={emailVerified}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-12 mt-8">
-        {/* --- SOBRE (FIX DO VAZAMENTO E ENTERS) --- */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-          {hasDescription && (
-            <section className="md:col-span-8 p-8 md:p-12 bg-white border border-black/5 shadow-sm rounded-3xl overflow-hidden">
-              <StickerTitle text="Concept" theme={theme} />
-              <p className="text-xl md:text-3xl font-light leading-snug whitespace-pre-line break-words w-full">
-                {business.description}
-              </p>
+      {/* --- ESTRUTURA DE COLUNAS (Layout de Painel SaaS) --- */}
+      <main className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
+        {/* COLUNA ESQUERDA (Principal) - Ocupa 8 colunas no PC */}
+        <div className="md:col-span-8 space-y-16">
+          {/* Descrição e Destaques */}
+          {(hasDescription || hasFeatures) && (
+            <section className="space-y-8">
+              {hasDescription && (
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
+                    Sobre a Empresa
+                  </h3>
+                  <p className="text-base md:text-lg font-normal leading-relaxed opacity-90 whitespace-pre-line break-words">
+                    {business.description}
+                  </p>
+                </div>
+              )}
+
+              {hasFeatures && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                  {business.features
+                    .filter(Boolean)
+                    .map((f: string, i: number) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <CheckCircle2
+                          size={16}
+                          className={`shrink-0 ${theme.primary} opacity-60`}
+                        />
+                        <span className="text-sm font-semibold opacity-90">
+                          {f}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
             </section>
           )}
-          {hasFeatures && (
-            <section className="md:col-span-4 p-8 md:p-12 bg-slate-50 border border-black/5 shadow-sm rounded-3xl">
-              <StickerTitle text="Spec" theme={theme} />
-              <ul className="space-y-4">
-                {business.features
-                  .filter(Boolean)
-                  .map((f: string, i: number) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 font-bold uppercase text-xs md:text-sm tracking-widest opacity-70"
-                    >
-                      <div className={`w-2 h-2 ${theme.bgAction}`} /> {f}
-                    </li>
-                  ))}
-              </ul>
+
+          {/* Galeria Limpa */}
+          {hasGallery && (
+            <section>
+              <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
+                <Camera size={14} /> Catálogo Visual
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {gallery.map((img: string, i: number) => (
+                  <motion.div
+                    key={i}
+                    onClick={() => setSelectedIndex(i)}
+                    whileHover={{ scale: 0.98 }}
+                    className={`aspect-square rounded-2xl overflow-hidden cursor-pointer bg-black/5 border ${theme.border}`}
+                  >
+                    <img
+                      src={img}
+                      className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                      alt="Vitrine"
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* FAQ Minimalista */}
+          {hasFaqs && (
+            <section>
+              <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
+                <HelpCircle size={14} /> Dúvidas Frequentes
+              </h3>
+              <div className="flex flex-col">
+                {faqs.map((f: any, i: number) => (
+                  <AccordionItem
+                    key={i}
+                    q={f.q || f.question}
+                    a={f.a || f.answer}
+                    theme={theme}
+                  />
+                ))}
+              </div>
             </section>
           )}
         </div>
 
-        {/* GALERIA MOSAICO */}
-        {hasGallery && (
-          <section className="space-y-8">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
-                <Camera size={20} /> Showroom
+        {/* COLUNA DIREITA (Sidebar Comercial) - Ocupa 4 colunas no PC */}
+        <div className="md:col-span-4 space-y-8">
+          {/* Card de Atendimento Direto */}
+          {(hasWhatsapp || hasPhone || availableSocials.length > 0) && (
+            <div
+              className={`p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm space-y-6`}
+            >
+              <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
+                Atendimento Rápido
               </h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[250px]">
-              {gallery.map((img: string, i: number) => (
-                <motion.div
-                  key={i}
-                  onClick={() => setSelectedIndex(i)}
-                  whileHover={{ scale: 0.99 }}
-                  className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-lg border border-black/5 group ${i === 0 ? "col-span-2 row-span-2" : ""} ${i === 3 ? "md:row-span-2" : ""}`}
-                >
-                  <img
-                    src={img}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    alt="Showroom"
-                  />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="text-white" size={32} />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
 
-        {/* FAQ (COM FIX DE TEXTO) */}
-        {hasFaqs && (
-          <section className="space-y-6">
-            <StickerTitle text="Perguntas Frequentes" theme={theme} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-              {faqs.map((f: any, i: number) => (
-                <div
-                  key={i}
-                  className="p-8 bg-white border border-black/5 rounded-3xl hover:shadow-md transition-shadow overflow-hidden"
-                >
-                  <h4
-                    className={`font-black uppercase text-sm mb-3 ${theme.primary} break-words`}
+              <div className="space-y-3">
+                {hasWhatsapp && (
+                  <button
+                    onClick={() => handleTrackLead("whatsapp")}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors group border border-emerald-100"
                   >
-                    {f.q || f.question}
-                  </h4>
-                  <p className="text-sm opacity-60 leading-relaxed italic whitespace-pre-line break-words">
-                    {f.a || f.answer}
-                  </p>
+                    <div className="flex items-center gap-3">
+                      <MessageCircle size={20} />
+                      <span className="text-sm font-bold">
+                        Chamar no WhatsApp
+                      </span>
+                    </div>
+                    <ChevronRight
+                      size={16}
+                      className="opacity-40 group-hover:translate-x-1 transition-transform"
+                    />
+                  </button>
+                )}
+
+                {hasPhone && (
+                  <button
+                    onClick={() => handleTrackLead("phone")}
+                    className={`w-full flex items-center justify-between p-4 rounded-2xl border ${theme.border} hover:bg-black/5 transition-colors group`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <PhoneCall size={20} className="opacity-60" />
+                      <span className="text-sm font-bold opacity-90">
+                        {formatPhoneNumber(business.phone)}
+                      </span>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {availableSocials.length > 0 && (
+                <div className="pt-4 border-t border-black/5 flex justify-center gap-4">
+                  {availableSocials.map((s) => {
+                    const user = business[s];
+                    const url =
+                      s === "instagram"
+                        ? `https://instagram.com/${user}`
+                        : s === "facebook"
+                          ? `https://facebook.com/${user}`
+                          : s === "tiktok"
+                            ? `https://tiktok.com/@${user}`
+                            : formatExternalLink(user);
+                    return (
+                      <a
+                        key={s}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          Actions.registerClickEvent(
+                            business.id,
+                            s.toUpperCase(),
+                          )
+                        }
+                        className={`w-10 h-10 rounded-full border ${theme.border} flex items-center justify-center hover:bg-black/5 transition-colors opacity-70 hover:opacity-100`}
+                      >
+                        {s === "instagram" ? (
+                          <Instagram size={18} />
+                        ) : s === "facebook" ? (
+                          <Facebook size={18} />
+                        ) : s === "tiktok" ? (
+                          <TikTokIcon className="w-4 h-4" />
+                        ) : (
+                          <Globe size={18} />
+                        )}
+                      </a>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
-          </section>
-        )}
-
-        {/* CONTATOS (DOBRADINHA: CARD + BOTÃO) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {hasPhone && (
-            <button
-              onClick={() => handleTrackLead("phone")}
-              className="p-8 bg-slate-900 text-white rounded-[2.5rem] flex flex-col justify-between h-64 group border-none"
-            >
-              <StickerTitle text="Call" theme={theme} />
-              <div className="text-left">
-                <p className="text-3xl font-black italic mb-2">
-                  {formatPhoneNumber(business.phone)}
-                </p>
-                <p className="text-[10px] uppercase opacity-40 tracking-[0.3em]">
-                  Toque para ligar
-                </p>
-              </div>
-              <div
-                className={`w-12 h-12 rounded-full ${theme.bgAction} flex items-center justify-center self-end group-hover:scale-110 transition-transform`}
-              >
-                <PhoneCall size={20} />
-              </div>
-            </button>
           )}
 
-          {hasWhatsapp && (
-            <button
-              onClick={() => handleTrackLead("whatsapp")}
-              className="p-8 bg-[#25D366]/5 border border-[#25D366]/20 text-slate-900 rounded-[2.5rem] flex flex-col justify-between h-64 group hover:border-[#25D366] transition-all"
-            >
-              <StickerTitle text="Direct" theme={theme} />
-              <div className="text-left">
-                <p className="text-3xl font-black italic mb-2">WhatsApp</p>
-                <p className="text-[10px] uppercase opacity-40 tracking-[0.3em]">
-                  Chamar Agora
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center self-end group-hover:scale-110 transition-transform">
-                <MessageCircle size={20} fill="currentColor" />
-              </div>
-            </button>
-          )}
-
+          {/* Endereço Seguro e Oficial */}
           {hasAddress && (
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress || business.address)}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => Actions.registerClickEvent(business.id, "MAP")} // 🚀 ESPIÃO AQUI
-              className="p-8 bg-neutral-100 rounded-[2.5rem] flex flex-col justify-between h-64 group border border-black/5"
+              onClick={() => Actions.registerClickEvent(business.id, "MAP")}
+              className={`block p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm hover:border-black/20 transition-colors group`}
             >
-              <StickerTitle text="Location" theme={theme} />
-              <div className="text-left">
-                <p className="text-xl font-black uppercase leading-tight mb-2 break-words">
-                  {business.address}
-                </p>
-                <p className="text-[10px] opacity-40 uppercase tracking-widest">
-                  {business.city} — {business.state}
-                </p>
+              <div className="flex items-center gap-3 mb-4 opacity-40">
+                <MapPin size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest">
+                  Localização
+                </h3>
               </div>
-              <div
-                className={`w-12 h-12 rounded-full ${theme.bgAction} text-white flex items-center justify-center self-end group-hover:scale-110 transition-transform`}
-              >
-                <MapPin size={20} />
-              </div>
+
+              {/* PARTE DE CIMA: Limpa para não repetir a cidade */}
+              <p className="text-sm font-bold leading-relaxed mb-1 opacity-90 break-words">
+                {business.address?.split(" - ").slice(0, 2).join(" - ")}
+              </p>
+
+              {/* PARTE DE BAIXO: Cidade e Estado que você já tem */}
+              <p className="text-[10px] uppercase tracking-widest opacity-50">
+                {business.city} {business.state ? `— ${business.state}` : ""}
+              </p>
             </a>
           )}
-        </div>
 
-        {hasHours && (
-          <div
-            className={`max-w-xl mx-auto w-full p-8 bg-white border border-black/5 rounded-[2.5rem] shadow-sm`}
-          >
-            <StickerTitle text="Hours" theme={theme} />
-            <div className="space-y-3">
-              {safeHours.map((h: any, i: number) => (
-                <div
-                  key={i}
-                  className="flex justify-between items-center text-xs font-bold uppercase tracking-tight pb-2 border-b border-black/5 last:border-0"
-                >
-                  <span className="opacity-40">{h.day}</span>
-                  <span className={h.isClosed ? "text-rose-500" : ""}>
-                    {h.time}
-                  </span>
-                </div>
-              ))}
+          {/* Horários */}
+          {hasHours && (
+            <div
+              className={`p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm`}
+            >
+              <div className="flex items-center gap-3 mb-4 opacity-40">
+                <Clock size={16} />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest">
+                  Horários
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {safeHours.map((h: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center text-xs pb-2 border-b border-black/5 last:border-0"
+                  >
+                    <span className="font-semibold opacity-60 uppercase">
+                      {h.day}
+                    </span>
+                    <span
+                      className={`font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
+                    >
+                      {h.time}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* MODAL DE REPORTAR (DISCRETO) */}
-        <div className="w-full flex justify-center py-12 opacity-30 hover:opacity-100 transition-opacity">
-          <ReportModal businessSlug={business.slug} />
+          {/* Canais de Vendas Oficiais */}
+          {salesChannels.length > 0 && (
+            <div
+              className={`p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm`}
+            >
+              <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4 text-center">
+                Lojas Oficiais
+              </h3>
+              <div className="flex flex-col gap-2">
+                {salesChannels.map((channel) => (
+                  <a
+                    key={channel.key}
+                    href={formatExternalLink(channel.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      Actions.registerClickEvent(
+                        business.id,
+                        channel.key.toUpperCase(),
+                      )
+                    }
+                    className={`flex items-center gap-3 p-3 rounded-xl border ${theme.border} transition-all font-sans group opacity-80 hover:opacity-100 ${channel.colorClass}`}
+                  >
+                    <div className="transition-transform duration-300 group-hover:scale-110">
+                      {channel.icon}
+                    </div>
+                    <span className="text-[11px] font-bold tracking-widest uppercase">
+                      {channel.name}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* --- SEÇÃO DE AVALIAÇÕES (AGORA NO FINAL) --- */}
-        <div className="max-w-4xl mx-auto w-full pb-20">
-          <CommentsSection
-            businessId={rawBusiness.id}
-            businessOwnerId={rawBusiness.userId}
-            currentUserId={currentUserId}
-            isAdmin={isAdmin}
-            emailVerified={emailVerified}
-            themeColor={theme.primary}
-            comments={rawBusiness.comments || []}
-          />
-        </div>
-
-        <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
       </main>
 
-      {/* WHATSAPP FLUTUANTE (Z-INDEX 30) */}
+      {/* --- SEÇÃO FINAL (Avaliações e Report) --- */}
+      <div className="max-w-4xl mx-auto w-full px-6 pb-20">
+        <div className="w-full flex justify-center py-10 opacity-30 hover:opacity-100 transition-opacity">
+          <ReportModal businessSlug={business.slug} />
+        </div>
+        <CommentsSection
+          businessId={rawBusiness.id}
+          businessOwnerId={rawBusiness.userId}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          emailVerified={emailVerified}
+          themeColor={theme.primary}
+          comments={rawBusiness.comments || []}
+        />
+      </div>
+
+      <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
+
+      {/* WHATSAPP FLUTUANTE (Discreto no canto) */}
       {hasWhatsapp && (
         <motion.button
           animate={
             isFooterVisible
-              ? { opacity: 0, scale: 0.8 }
-              : { opacity: 1, scale: 1 }
+              ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
+              : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-8 right-8 z-30 w-14 h-14 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/20 hover:bg-emerald-600 transition-colors`}
+          className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl border-4 border-white/50 hover:bg-emerald-600 transition-colors"
         >
-          <MessageCircle
-            className="w-8 h-8 md:w-10 md:h-10"
-            fill="currentColor"
-          />
+          <MessageCircle size={26} fill="currentColor" />
         </motion.button>
       )}
 
-      {/* LIGHTBOX (Z-INDEX 200) */}
+      {/* LIGHTBOX DE ALTA PERFORMANCE */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col bg-black/98 backdrop-blur-xl"
+            className="fixed inset-0 z-[200] flex flex-col bg-black/95 backdrop-blur-sm"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-8 right-8 text-white z-[210] hover:scale-110 transition-transform">
+            <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[210]">
               <X size={32} />
             </button>
-            <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4">
+            <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4 pt-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
                 }}
-                className="hidden md:flex absolute left-8 w-16 h-16 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
+                className="hidden md:flex absolute left-8 w-14 h-14 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
               >
-                <ChevronLeft size={32} />
+                <ChevronLeft size={28} />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
                 }}
-                className="hidden md:flex absolute right-8 w-16 h-16 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
+                className="hidden md:flex absolute right-8 w-14 h-14 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
               >
-                <ChevronRight size={32} />
+                <ChevronRight size={28} />
               </button>
               <motion.img
                 key={selectedIndex}
                 src={gallery[selectedIndex]}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.2}
@@ -608,9 +644,27 @@ export default function ShowroomLayout({
                   if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
                   else if (info.offset.x < -80) safeSetIndex(selectedIndex + 1);
                 }}
-                className="max-w-full max-h-[70vh] object-contain shadow-2xl rounded-2xl cursor-grab active:cursor-grabbing"
+                className="max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               />
+            </div>
+            <div
+              className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-6 pb-6 overflow-x-auto no-scrollbar snap-x"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {gallery.map((img: string, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedIndex(idx)}
+                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-300 snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-105 opacity-100" : "opacity-40 hover:opacity-100"}`}
+                >
+                  <img
+                    src={img}
+                    className="w-full h-full object-cover"
+                    alt="Thumbnail"
+                  />
+                </button>
+              ))}
             </div>
           </motion.div>
         )}

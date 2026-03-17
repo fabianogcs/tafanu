@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+
 import { motion, AnimatePresence, useInView } from "framer-motion";
+
 import {
   Instagram,
   Facebook,
@@ -23,15 +25,23 @@ import {
   ShoppingBag,
   Store,
 } from "lucide-react";
+
 import * as Actions from "@/app/actions";
+
 import { toast } from "sonner";
+
 import ReportModal from "@/components/ReportModal";
+
 import { businessThemes } from "@/lib/themes";
+
 import { useBusiness } from "@/lib/useBusiness";
+
 import FavoriteButton from "@/components/FavoriteButton";
+
 import CommentsSection from "../CommentsSection";
 
 // --- HELPERS ---
+
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
@@ -39,9 +49,11 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 );
 
 // Ícones Oficiais Customizados
+
 const MeliIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
+
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
   </svg>
 );
@@ -66,68 +78,107 @@ const SheinIcon = ({ className }: { className?: string }) => (
 
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
+
   if (navigator.share) {
     try {
       await navigator.share({
         title: businessName,
+
         text: `Confira ${businessName}:`,
+
         url,
       });
+
       return;
     } catch (err) {}
   }
+
   const textArea = document.createElement("textarea");
+
   textArea.value = url;
+
   document.body.appendChild(textArea);
+
   textArea.select();
+
   document.execCommand("copy");
+
   document.body.removeChild(textArea);
+
   toast.success("Link copiado!");
 };
 
 const formatPhoneNumber = (phone: string) => {
   const cleaned = (phone || "").replace(/\D/g, "");
+
   const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
+
   if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
+
   const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
+
   if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
+
   return phone;
 };
 
 const formatExternalLink = (url: string) => {
   if (!url) return "";
+
   const clean = url.trim();
+
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
 };
 
 export default function UrbanLayout({
   business: rawBusiness,
+
   theme: propTheme,
+
   realHours: rawHours,
+
   fullAddress,
+
   isLoggedIn,
+
   isFavorited,
+
   emailVerified,
+
   currentUserId,
+
   isAdmin,
 }: any) {
   const {
     business,
+
     realHours,
+
     hasWhatsapp,
+
     hasPhone,
+
     hasFaqs,
+
     hasFeatures,
+
     hasHours,
+
     hasAddress,
+
     hasGallery,
+
     hasDescription,
+
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const footerTriggerRef = useRef(null);
+
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
   });
@@ -136,14 +187,19 @@ export default function UrbanLayout({
     propTheme ||
     businessThemes[business.theme] ||
     businessThemes["urban_cyber"];
+
   const radius = theme.radius || "rounded-xl";
+
   const shadow = theme.shadow || "shadow-2xl";
-  const glassEffect = "bg-white/5 backdrop-blur-md";
+
+  const glassEffect = "bg-white/5 md:backdrop-blur-md";
 
   const safeAddress = fullAddress || business.address;
+
   const gallery = Array.isArray(business.gallery)
     ? business.gallery.filter(Boolean)
     : [];
+
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
@@ -151,30 +207,49 @@ export default function UrbanLayout({
   const salesChannels = [
     {
       key: "mercadoLivre",
+
       name: "Mercado Livre",
+
       icon: <MeliIcon className="w-4 h-4" />,
+
       url: business.mercadoLivre,
+
       colorClass: "text-[#FFE600] group-hover:text-[#FFE600]",
     },
+
     {
       key: "shopee",
+
       name: "Shopee",
+
       icon: <ShopeeIcon className="w-4 h-4" />,
+
       url: business.shopee,
+
       colorClass: "text-[#EE4D2D] group-hover:text-[#EE4D2D]",
     },
+
     {
       key: "ifood",
+
       name: "iFood",
+
       icon: <IfoodIcon className="w-4 h-4" />,
+
       url: business.ifood,
+
       colorClass: "text-[#EA1D2C] group-hover:text-[#EA1D2C]",
     },
+
     {
       key: "shein",
+
       name: "Shein",
+
       icon: <SheinIcon className="w-4 h-4" />,
+
       url: business.shein,
+
       colorClass: "text-white group-hover:text-white",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
@@ -182,8 +257,10 @@ export default function UrbanLayout({
   const safeSetIndex = useCallback(
     (next: number) => {
       if (gallery.length === 0) return;
+
       setSelectedIndex((next + gallery.length) % gallery.length);
     },
+
     [gallery.length],
   );
 
@@ -191,19 +268,25 @@ export default function UrbanLayout({
     async (type: "whatsapp" | "phone") => {
       const rawNumber =
         type === "whatsapp" ? business.whatsapp : business.phone;
+
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
+
       if (!cleanNumber) return;
+
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
           : `tel:${cleanNumber}`;
+
       try {
         // 🚀 O NOVO ESPIÃO ENTRA AQUI!
+
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         window.location.href = targetUrl;
       }
     },
+
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
@@ -215,12 +298,13 @@ export default function UrbanLayout({
 
   return (
     <div
-      className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-white/20 selection:text-white transition-all duration-500`}
+      className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-white/20 selection:text-white`}
     >
-      <div className="fixed inset-0 pointer-events-none z-[10] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="hidden md:block fixed inset-0 pointer-events-none z-[10] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      <header className="relative pt-32 pb-24 flex flex-col items-center justify-center overflow-hidden w-full px-4 border-b border-white/10">
+      <header className="relative pt-20 md:pt-32 pb-0 flex flex-col items-center justify-center overflow-hidden w-full px-4 border-b border-white/10">
         {/* Pílula de Ações (Fixo e Estável) */}
+
         <div className="absolute top-4 right-4 z-10">
           <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-xl">
             <button
@@ -229,7 +313,9 @@ export default function UrbanLayout({
             >
               <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
             </button>
+
             <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
+
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -241,43 +327,63 @@ export default function UrbanLayout({
 
         <div className="relative z-20 w-full max-w-7xl mx-auto text-center flex flex-col items-center">
           {business.imageUrl && (
-            <div className="w-24 h-24 md:w-36 md:h-36 mb-6 relative">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                transition={{ type: "spring", duration: 0.8 }}
-                className={`w-full h-full border-2 ${theme.border} overflow-hidden ${radius} ${shadow} bg-black`}
+            <div className="w-24 h-24 md:w-36 md:h-36 mb-4 md:mb-6 relative">
+              <div
+                className={`w-full h-full border border-white/10 overflow-hidden ${radius} ${shadow} bg-black`}
               >
                 <img
                   src={business.imageUrl}
                   className="w-full h-full object-cover"
                   alt="Logo"
                 />
-              </motion.div>
+              </div>
             </div>
           )}
 
-          <div className="min-h-[4rem] md:min-h-[9rem] flex items-center justify-center">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className={`text-urban-raw font-black italic leading-[0.85] tracking-tighter ${theme.textColor}`}
+          <div className="py-8 flex items-center justify-center w-full">
+            <h1
+              className={`font-black uppercase italic tracking-tight ${theme.textColor} break-words px-2 text-[clamp(2.5rem,10vw,6rem)] leading-[0.9] -skew-x-[3deg] drop-shadow-[2px_2px_0px_rgba(0,0,0,0.1)]`}
             >
               {business.name}
-            </motion.h1>
+            </h1>
           </div>
+        </div>
 
+        {business.urban_tag && (
+          <div
+            className={`relative mt-12 w-full overflow-hidden ${glassEffect} py-3 border-y border-white/10`}
+          >
+            <div className="inline-block animate-marquee whitespace-nowrap">
+              {Array(8)
+                .fill(null)
+
+                .map((_, i) => (
+                  <span
+                    key={i}
+                    className={`text-2xl md:text-5xl font-black uppercase italic mx-12 opacity-80 ${theme.primary}`}
+                  >
+                    {business.urban_tag} ///
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
+      </header>
+
+      <main className="container mx-auto px-4 md:px-6 relative z-30 space-y-20 md:space-y-32 pb-24 mt-10 md:mt-20">
+        <div className="flex flex-col gap-4">
           {/* REDES SOCIAIS (Carregam suavemente) */}
+
           {availableSocials.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="flex gap-4 flex-wrap justify-center mt-8"
+              className="flex gap-4 flex-wrap justify-center"
             >
               {availableSocials.map((s) => {
                 const user = business[s];
+
                 const url =
                   s === "instagram"
                     ? `https://instagram.com/${user}`
@@ -286,6 +392,7 @@ export default function UrbanLayout({
                       : s === "tiktok"
                         ? `https://tiktok.com/@${user}`
                         : formatExternalLink(user);
+
                 return (
                   <a
                     key={s}
@@ -313,12 +420,13 @@ export default function UrbanLayout({
           )}
 
           {/* LOJAS (Pílulas Discretas) */}
+
           {salesChannels.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap justify-center gap-3 mt-6 w-full max-w-xl mx-auto"
+              className="flex flex-wrap justify-center gap-3 mt-4 w-full max-w-xl mx-auto"
             >
               {salesChannels.map((channel) => (
                 <a
@@ -329,6 +437,7 @@ export default function UrbanLayout({
                   onClick={() =>
                     Actions.registerClickEvent(
                       business.id,
+
                       channel.key.toUpperCase(),
                     )
                   } // 🚀 ESPIÃO AQUI
@@ -339,6 +448,7 @@ export default function UrbanLayout({
                   >
                     {channel.icon}
                   </div>
+
                   <span className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase opacity-60 group-hover:opacity-100 transition-opacity">
                     {channel.name}
                   </span>
@@ -347,28 +457,6 @@ export default function UrbanLayout({
             </motion.div>
           )}
         </div>
-
-        {business.urban_tag && (
-          <div
-            className={`absolute bottom-0 left-0 w-full overflow-hidden ${glassEffect} py-3 border-y border-white/10`}
-          >
-            <div className="inline-block animate-marquee whitespace-nowrap">
-              {Array(8)
-                .fill(null)
-                .map((_, i) => (
-                  <span
-                    key={i}
-                    className={`text-2xl md:text-5xl font-black uppercase italic mx-12 opacity-80 ${theme.primary}`}
-                  >
-                    {business.urban_tag} ///
-                  </span>
-                ))}
-            </div>
-          </div>
-        )}
-      </header>
-
-      <main className="container mx-auto px-4 md:px-6 relative z-30 space-y-20 md:space-y-32 pb-24 mt-20">
         {hasDescription && (
           <section className="relative w-full max-w-5xl mx-auto">
             <div
@@ -377,6 +465,7 @@ export default function UrbanLayout({
               <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-8 border-b-2 border-white/10 pb-4 opacity-50 flex items-center gap-4">
                 <Terminal size={32} /> Sobre
               </h2>
+
               <p className="text-xl md:text-3xl font-light leading-snug whitespace-pre-line break-words">
                 {business.description}
               </p>
@@ -385,21 +474,30 @@ export default function UrbanLayout({
         )}
 
         {hasFeatures && (
-          <div className="flex flex-wrap justify-center gap-4">
-            {business.features.filter(Boolean).map((f: string, i: number) => (
-              <div
-                key={i}
-                className={`px-8 py-6 ${glassEffect} border border-white/10 ${radius} flex items-center gap-4 group hover:border-white/40 transition-all`}
-              >
+          <section className="w-full max-w-5xl mx-auto space-y-6 md:space-y-8">
+            {/* 1. O Título que faltava */}
+            <h3 className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter opacity-50 flex items-center gap-3 border-b-2 border-white/10 pb-4">
+              <Terminal size={24} /> DESTAQUES_
+            </h3>
+
+            {/* 2. O Grid que força o padrão (1 coluna no celular, 2 a 3 no PC) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+              {business.features.filter(Boolean).map((f: string, i: number) => (
                 <div
-                  className={`w-2 h-2 ${theme.bgAction} shadow-[0_0_10px_currentColor]`}
-                />
-                <span className="font-black text-sm md:text-lg uppercase italic tracking-widest">
-                  {f}
-                </span>
-              </div>
-            ))}
-          </div>
+                  key={i}
+                  /* 3. Ajuste do card: w-full obriga a preencher a grade, paddings menores */
+                  className={`w-full p-5 ${glassEffect} border border-white/10 ${radius} flex items-center gap-4 group hover:border-white/40 transition-all shadow-sm`}
+                >
+                  <div
+                    className={`w-1.5 h-1.5 shrink-0 rounded-full ${theme.bgAction} shadow-[0_0_10px_currentColor]`}
+                  />
+                  <span className="font-bold text-xs md:text-sm uppercase tracking-widest leading-tight opacity-90">
+                    {f}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {hasGallery && (
@@ -407,19 +505,23 @@ export default function UrbanLayout({
             <h3 className="text-4xl font-black uppercase italic tracking-tighter flex items-center gap-4">
               <Camera size={32} /> VISUAL_FEED_
             </h3>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {gallery.map((img: string, i: number) => (
                 <motion.div
                   key={i}
                   onClick={() => setSelectedIndex(i)}
-                  whileHover={{ scale: 1.02, rotate: 1 }}
+                  whileHover={{ scale: 1.02 }}
                   className={`aspect-square ${glassEffect} overflow-hidden cursor-pointer group relative border border-white/10 ${radius} ${shadow}`}
                 >
                   <img
                     src={img}
-                    className="w-full h-full object-cover transition-all duration-500 group-hover:brightness-125"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
                     alt="Gallery"
                   />
+
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Plus
                       size={40}
@@ -433,86 +535,137 @@ export default function UrbanLayout({
         )}
 
         {hasFaqs && (
-          <section className="space-y-10">
-            <h3 className="text-4xl font-black uppercase italic tracking-tighter opacity-50">
-              DÚVIDAS FREQUENTES
+          <section className="space-y-6 md:space-y-8">
+            {/* Título menor e com a linha divisória padronizada */}
+            <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter opacity-50 flex items-center gap-3 border-b-2 border-white/10 pb-4">
+              <MessageCircle size={24} /> DÚVIDAS FREQUENTES
             </h3>
+
+            {/* O SEGREDO DEFINITIVO: Duas colunas reais e separadas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-              {faqs.map((f: any, i: number) => (
-                <div
-                  key={i}
-                  className={`${glassEffect} border border-white/10 ${radius} overflow-hidden`}
-                >
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between p-6 text-left group"
-                  >
-                    <span className="text-lg font-black uppercase italic tracking-tight">
-                      {f.q || f.question}
-                    </span>
-                    <ChevronDown
-                      className={`transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  <AnimatePresence>
-                    {openFaq === i && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
+              {/* COLUNA ESQUERDA (Pega a pergunta 1, 3, 5...) */}
+              <div className="flex flex-col gap-4">
+                {faqs.map((f: any, i: number) => {
+                  if (i % 2 !== 0) return null; // Pula as perguntas ímpares (que vão pra direita)
+                  return (
+                    <div
+                      key={i}
+                      className={`${glassEffect} border border-white/10 ${radius} overflow-hidden`}
+                    >
+                      <button
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
                       >
-                        <div className="px-6 pb-6 pt-2 text-white/70 border-t border-white/5 font-medium leading-relaxed italic uppercase text-sm">
-                          {f.a || f.answer}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
+                        <span className="text-base md:text-lg font-bold uppercase italic tracking-wide opacity-90">
+                          {f.q || f.question}
+                        </span>
+                        <ChevronDown
+                          className={`transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {openFaq === i && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                          >
+                            <div className="px-5 md:px-6 pb-6 pt-2 text-white/70 border-t border-white/5 font-medium leading-relaxed text-sm md:text-base">
+                              {f.a || f.answer}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* COLUNA DIREITA (Pega a pergunta 2, 4, 6...) */}
+              <div className="flex flex-col gap-4">
+                {faqs.map((f: any, i: number) => {
+                  if (i % 2 === 0) return null; // Pula as perguntas pares (que ficaram na esquerda)
+                  return (
+                    <div
+                      key={i}
+                      className={`${glassEffect} border border-white/10 ${radius} overflow-hidden`}
+                    >
+                      <button
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
+                      >
+                        <span className="text-base md:text-lg font-bold uppercase italic tracking-wide opacity-90">
+                          {f.q || f.question}
+                        </span>
+                        <ChevronDown
+                          className={`transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {openFaq === i && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                          >
+                            <div className="px-5 md:px-6 pb-6 pt-2 text-white/70 border-t border-white/5 font-medium leading-relaxed text-sm md:text-base">
+                              {f.a || f.answer}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </section>
         )}
 
         {/* --- CONTATO (DOBRADINHA: CARD + BOTÃO) --- */}
+
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7 space-y-4">
             {hasPhone && (
               <button
                 onClick={() => handleTrackLead("phone")}
-                className={`w-full ${glassEffect} border border-white/10 p-8 ${radius} ${shadow} flex items-center gap-6 group hover:border-white/40 transition-all`}
+                className={`w-full ${glassEffect} border border-white/10 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-white/40 transition-all`}
               >
                 <div
-                  className={`w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${theme.primary} group-hover:shadow-[0_0_20px_currentColor] transition-all`}
+                  className={`w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${theme.primary} group-hover:shadow-[0_0_20px_currentColor] transition-all`}
                 >
-                  <Phone size={28} />
+                  <Phone size={24} />
                 </div>
+
                 <div className="text-left">
-                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase">
+                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
                     Voice Line
                   </p>
-                  <p className="text-2xl md:text-4xl font-black italic uppercase">
+                  <p className="text-lg md:text-xl font-bold italic uppercase tracking-wide">
                     {formatPhoneNumber(business.phone)}
                   </p>
                 </div>
               </button>
             )}
 
-            {/* O CARD DO WHATSAPP (A Dobradinha Parte 1) */}
             {hasWhatsapp && (
               <button
                 onClick={() => handleTrackLead("whatsapp")}
-                className={`w-full ${glassEffect} border border-[#25D366]/30 p-8 ${radius} ${shadow} flex items-center gap-6 group hover:border-[#25D366] transition-all`}
+                className={`w-full ${glassEffect} border border-[#25D366]/30 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-[#25D366] transition-all`}
               >
                 <div
-                  className={`w-14 h-14 rounded-xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-[#25D366] group-hover:shadow-[0_0_20px_#25D366] transition-all`}
+                  className={`w-12 h-12 rounded-xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-[#25D366] group-hover:shadow-[0_0_20px_#25D366] transition-all`}
                 >
-                  <MessageCircle size={28} fill="currentColor" />
+                  <MessageCircle size={24} fill="currentColor" />
                 </div>
+
                 <div className="text-left">
-                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase">
+                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
                     Direct Chat
                   </p>
-                  <p className="text-2xl md:text-4xl font-black italic uppercase">
+                  <p className="text-lg md:text-xl font-bold italic uppercase tracking-wide">
                     Chamar no Whats
                   </p>
                 </div>
@@ -525,28 +678,28 @@ export default function UrbanLayout({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => Actions.registerClickEvent(business.id, "MAP")} // 🚀 ESPIÃO AQUI
-                className={`w-full ${glassEffect} border border-white/10 p-8 ${radius} ${shadow} flex items-center gap-6 group hover:border-white/40 transition-all block`}
+                className={`w-full ${glassEffect} border border-white/10 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-white/40 transition-all`}
               >
                 <div
-                  className={`w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${theme.primary}`}
+                  className={`w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${theme.primary}`}
                 >
-                  <MapPin size={28} />
+                  <MapPin size={24} />
                 </div>
+
                 <div className="text-left">
-                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase">
+                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
                     Location
                   </p>
-                  <p className="text-lg md:text-xl font-black italic uppercase">
-                    {business.address}
+                  <p className="text-base md:text-lg font-bold italic uppercase tracking-wide">
+                    {business.address?.split("-").slice(0, 2).join(" - ")}
                   </p>
-                  <p className="text-xs opacity-40">
-                    {business.city} {business.state}
+                  <p className="text-[10px] md:text-xs opacity-40 uppercase tracking-widest mt-1">
+                    {business.city} — {business.state}
                   </p>
                 </div>
               </a>
             )}
           </div>
-
           {hasHours && (
             <div
               className={`lg:col-span-5 ${glassEffect} p-8 border border-white/10 ${radius} ${shadow}`}
@@ -554,6 +707,7 @@ export default function UrbanLayout({
               <h3 className="text-2xl font-black uppercase italic mb-8 border-b-2 border-white/10 pb-2 flex items-center gap-3">
                 <Clock size={24} /> HORÁRIOS
               </h3>
+
               <div className="space-y-4">
                 {realHours.map((h: any, i: number) => (
                   <div
@@ -561,6 +715,7 @@ export default function UrbanLayout({
                     className="flex justify-between border-b border-white/5 font-black uppercase italic py-2 text-xs"
                   >
                     <span className="opacity-40">{h.day}</span>
+
                     <span
                       className={
                         h.isClosed ? "text-red-500 line-through" : "text-white"
@@ -578,53 +733,61 @@ export default function UrbanLayout({
         <div className="w-full flex justify-center py-6 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
+
         <div ref={footerTriggerRef} className="h-10 w-full" />
       </main>
 
       {/* BOTÃO FLUTUANTE (A Dobradinha Parte 2 - Ajuste z-30 para não cobrir Nav) */}
+
       {hasWhatsapp && (
         <motion.button
           animate={isFooterVisible ? { scale: 0 } : { scale: 1 }}
           whileHover={{ scale: 1.1, rotate: 5 }}
           onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-8 right-8 z-30 w-20 h-20 bg-emerald-500 text-white flex items-center justify-center border-4 border-black ${radius} shadow-[0_0_30px_rgba(16,185,129,0.5)]`}
+          className={`fixed bottom-8 right-8 z-30 w-20 h-20 bg-emerald-500 text-white flex items-center justify-center border-4 border-black ${radius} md:shadow-[0_0_30px_rgba(16,185,129,0.5)]`}
         >
           <MessageCircle size={36} fill="currentColor" />
         </motion.button>
       )}
 
       {/* LIGHTBOX PRO (z-200 para ficar sobre tudo) */}
+
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/98 backdrop-blur-3xl flex flex-col items-center justify-center"
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
             <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all">
               <X size={40} />
             </button>
+
             <div className="flex-grow flex items-center justify-center relative w-full px-4">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+
                   safeSetIndex(selectedIndex - 1);
                 }}
                 className="hidden md:flex absolute left-8 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
               >
                 <ChevronLeft size={40} />
               </button>
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+
                   safeSetIndex(selectedIndex + 1);
                 }}
                 className="hidden md:flex absolute right-8 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
               >
                 <ChevronRight size={40} />
               </button>
+
               <motion.img
                 key={selectedIndex}
                 src={gallery[selectedIndex]}
@@ -641,6 +804,7 @@ export default function UrbanLayout({
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
+
             <div
               className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-10 pb-10 overflow-x-auto no-scrollbar snap-x"
               onClick={(e) => e.stopPropagation()}
@@ -653,6 +817,8 @@ export default function UrbanLayout({
                 >
                   <img
                     src={img}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     alt="Thumb"
                   />
@@ -668,28 +834,35 @@ export default function UrbanLayout({
           0% {
             transform: translateX(0);
           }
+
           100% {
             transform: translateX(-50%);
           }
         }
+
         .animate-marquee {
           display: inline-block;
-          animation: marquee 30s linear infinite;
         }
+
+        @media (min-width: 768px) {
+          .animate-marquee {
+            animation: marquee 30s linear infinite;
+          }
+        }
+
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
+
         .no-scrollbar {
           -ms-overflow-style: none;
+
           scrollbar-width: none;
         }
-        .text-urban-raw {
-          font-size: clamp(3rem, 12vw, 9rem);
-          transform: skewX(-5deg);
-          filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
-        }
       `}</style>
+
       {/* SEÇÃO DE COMENTÁRIOS */}
+
       <div className="max-w-7xl mx-auto px-4 md:px-6 pb-20">
         <CommentsSection
           businessId={rawBusiness.id}

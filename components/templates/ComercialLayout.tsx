@@ -348,24 +348,31 @@ export default function ComercialLayout({
 
       {/* --- MENU TABS --- */}
       <div className="sticky top-4 z-40 px-4 my-8 md:my-12 flex justify-center">
-        <div className="bg-slate-950/90 backdrop-blur-2xl p-1 md:p-2 rounded-full border border-white/10 shadow-2xl flex">
+        {/* Adicionei gap-1 para separar os botões e deixei o fundo um pouco mais "visível" */}
+        <div className="bg-slate-900/95 backdrop-blur-xl p-1.5 md:p-2 rounded-full border border-black/10 shadow-2xl flex gap-1">
           {["perfil", "infos"].map((t: any) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`relative px-8 md:px-14 py-3 md:py-4 rounded-full text-[9px] md:text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === t ? "text-white" : "text-white/60 hover:text-white"}`}
+              /* O segredo: active:scale-95 (efeito clique) e hover:bg-white/10 (ilumina ao tocar) */
+              className={`relative px-8 md:px-14 py-3 md:py-3.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 active:scale-95 cursor-pointer ${
+                activeTab === t
+                  ? "text-white shadow-md"
+                  : "text-white/50 hover:text-white hover:bg-white/10"
+              }`}
             >
               {activeTab === t && (
                 <motion.div
                   layoutId="tab"
-                  className={`absolute inset-0 ${theme.bgAction} rounded-full z-0 shadow-lg`}
+                  className={`absolute inset-0 ${theme.bgAction} rounded-full z-0`}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 />
               )}
-              <span className="relative z-10 flex items-center gap-2 font-bold">
+              <span className="relative z-10 flex items-center justify-center gap-2 font-bold">
                 {t === "perfil" ? (
-                  <Layout size={14} />
+                  <Layout size={16} />
                 ) : (
-                  <ShieldCheck size={14} />
+                  <ShieldCheck size={16} />
                 )}{" "}
                 {t}
               </span>
@@ -403,32 +410,44 @@ export default function ComercialLayout({
                   </p>
                 </section>
               )}
-
               {hasFeatures && (
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {business.features
-                    .filter(Boolean)
-                    .map((f: string, i: number) => (
-                      <div
-                        key={i}
-                        className={`px-5 py-3 rounded-2xl border ${theme.border} ${theme.cardBg} flex items-center gap-3 shadow-md`}
-                      >
-                        <CheckCircle2 size={14} className={theme.primary} />
-                        <span className="text-[10px] md:text-xs font-black uppercase italic">
-                          {f}
-                        </span>
-                      </div>
-                    ))}
-                </div>
+                <section className="space-y-6">
+                  {/* 1. O Título Padronizado */}
+                  <div>
+                    <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
+                      Destaques
+                    </h3>
+                  </div>
+
+                  {/* 2. O Grid que trava o tamanho dos cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                    {business.features
+                      .filter(Boolean)
+                      .map((f: string, i: number) => (
+                        <div
+                          key={i}
+                          className={`w-full h-full px-4 py-3 md:px-5 md:py-4 rounded-2xl border ${theme.border} ${theme.cardBg} flex items-center gap-3 shadow-md hover:-translate-y-1 transition-transform`}
+                        >
+                          <CheckCircle2
+                            size={16}
+                            className={`shrink-0 ${theme.primary}`}
+                          />
+                          <span className="text-[10px] md:text-xs font-black uppercase italic leading-tight opacity-90">
+                            {f}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </section>
               )}
 
               {gallery.length > 0 && (
                 <section className="space-y-8">
-                  <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 italic">
+                  <div className="flex items-center justify-between px-2 mb-2">
+                    <h3 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
                       Vitrine
                     </h3>
-                    <Camera size={16} className="opacity-20" />
+                    <Camera size={20} className="opacity-40" />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     {gallery.map((img: string, i: number) => (
@@ -461,21 +480,45 @@ export default function ComercialLayout({
             >
               {faqs.length > 0 && (
                 <section className="w-full">
+                  {/* Título ajustado para o novo padrão legível */}
                   <div className="flex items-center gap-3 mb-6">
                     <HelpCircle size={20} className={theme.primary} />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">
-                      Dúvidas
+                    <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
+                      Dúvidas Frequentes
                     </h3>
                   </div>
+
+                  {/* O SEGREDO: Duas colunas independentes */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
-                    {faqs.map((f: any, i: number) => (
-                      <AccordionItem
-                        key={i}
-                        q={f.q || f.question}
-                        a={f.a || f.answer}
-                        theme={theme}
-                      />
-                    ))}
+                    {/* COLUNA ESQUERDA (Pega a pergunta 1, 3, 5...) */}
+                    <div className="flex flex-col">
+                      {faqs.map((f: any, i: number) => {
+                        if (i % 2 !== 0) return null; // Pula as ímpares
+                        return (
+                          <AccordionItem
+                            key={i}
+                            q={f.q || f.question}
+                            a={f.a || f.answer}
+                            theme={theme}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* COLUNA DIREITA (Pega a pergunta 2, 4, 6...) */}
+                    <div className="flex flex-col">
+                      {faqs.map((f: any, i: number) => {
+                        if (i % 2 === 0) return null; // Pula as pares
+                        return (
+                          <AccordionItem
+                            key={i}
+                            q={f.q || f.question}
+                            a={f.a || f.answer}
+                            theme={theme}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 </section>
               )}
@@ -557,10 +600,10 @@ export default function ComercialLayout({
                             </div>
                             <div className="text-left">
                               <h4 className="text-[10px] font-black uppercase opacity-40">
-                                WhatsApp
+                                Atendimento Online
                               </h4>
                               <p className="text-base md:text-xl font-black italic">
-                                Conversar
+                                Iniciar Conversa
                               </p>
                             </div>
                           </div>
@@ -652,27 +695,29 @@ export default function ComercialLayout({
 
                   {hasAddress && (
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress || business.address)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() =>
                         Actions.registerClickEvent(business.id, "MAP")
                       } // 🚀 ESPIÃO AQUI
-                      className={`${theme.cardBg} p-8 rounded-[2.5rem] border ${theme.border} flex items-center gap-5 shadow-md block hover:border-black/20 transition-all`}
+                      className="p-8 bg-neutral-100 rounded-[2.5rem] flex flex-col justify-between h-64 group border border-black/5"
                     >
                       <div
-                        className={`w-12 h-12 rounded-xl ${theme.bgAction} flex items-center justify-center text-white shadow-sm`}
+                        className={`w-12 h-12 rounded-xl ${theme.bgAction} flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0`}
                       >
                         <MapPin size={22} />
                       </div>
-                      <div className="text-left overflow-hidden">
-                        <h4 className="text-sm md:text-lg font-black uppercase italic truncate">
-                          {business.address}
+                      <div className="text-left">
+                        <h4 className="text-[10px] font-black uppercase opacity-40 mb-1">
+                          Localização
                         </h4>
-                        <p className="text-[9px] font-bold opacity-40 uppercase">
+                        <p className="text-base md:text-lg font-black uppercase italic leading-tight">
+                          {business.address?.split("-").slice(0, 2).join(" - ")}
+                        </p>
+                        <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-2">
                           {business.city}{" "}
-                          {business.state ? `— ${business.state}` : ""} | CEP:{" "}
-                          {business.cep}
+                          {business.state ? `— ${business.state}` : ""}
                         </p>
                       </div>
                     </a>
