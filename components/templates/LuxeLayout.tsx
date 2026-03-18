@@ -220,9 +220,14 @@ export default function LuxeLayout({
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
       if (!cleanNumber) return;
+
+      const numberWithDDI = cleanNumber.startsWith("55")
+        ? cleanNumber
+        : `55${cleanNumber}`;
+      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
       const targetUrl =
         type === "whatsapp"
-          ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
+          ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
       try {
         // 🚀 O NOVO ESPIÃO ENTRA AQUI!
@@ -278,6 +283,8 @@ export default function LuxeLayout({
             <div className="w-24 h-24 md:w-40 md:h-40 rounded-full border border-black/5 shadow-2xl overflow-hidden mb-8">
               <img
                 src={business.imageUrl}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
                 alt="Logo"
               />
@@ -418,6 +425,8 @@ export default function LuxeLayout({
                 >
                   <img
                     src={img}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-[1.5s] hover:scale-110"
                     alt="Galeria"
                   />
@@ -515,6 +524,24 @@ export default function LuxeLayout({
                     </span>
                     <div className="flex gap-4 flex-wrap">
                       {availableSocials.map((s) => {
+                        const username = business[s];
+                        if (!username) return null;
+
+                        const isUrl =
+                          username.startsWith("http") ||
+                          username.startsWith("www");
+                        const finalUrl = isUrl
+                          ? username.startsWith("http")
+                            ? username
+                            : `https://${username}`
+                          : s === "instagram"
+                            ? `https://instagram.com/${username.replace("@", "")}`
+                            : s === "facebook"
+                              ? `https://facebook.com/${username}`
+                              : s === "tiktok"
+                                ? `https://tiktok.com/@${username.replace("@", "")}`
+                                : formatExternalLink(username);
+
                         const colors: any = {
                           instagram:
                             "text-[#E4405F] border-[#E4405F]/20 bg-[#E4405F]/5",
@@ -524,14 +551,11 @@ export default function LuxeLayout({
                           website:
                             "text-blue-500 border-blue-500/20 bg-blue-500/5",
                         };
+
                         return (
                           <a
                             key={s}
-                            href={
-                              s === "instagram"
-                                ? `https://instagram.com/${business[s]}`
-                                : formatExternalLink(business[s])
-                            }
+                            href={finalUrl}
                             target="_blank"
                             className={`w-11 h-11 flex items-center justify-center rounded-full border transition-all hover:scale-110 ${colors[s] || "border-black/10"}`}
                           >
@@ -671,9 +695,9 @@ export default function LuxeLayout({
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8 }
-              : { opacity: 1, scale: [1, 1.05, 1] }
+              : { opacity: 1, scale: 1 }
           }
-          transition={{ scale: { repeat: Infinity, duration: 2 } }}
+          transition={{ duration: 0.2 }}
           onClick={() => handleTrackLead("whatsapp")}
           className={`fixed bottom-8 right-8 w-16 h-16 md:w-24 md:h-24 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl z-30 ring-4 ring-white/20`}
         >
@@ -688,7 +712,7 @@ export default function LuxeLayout({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col bg-black/98 backdrop-blur-xl"
+            className="fixed inset-0 z-[200] flex flex-col bg-black/98 md:backdrop-blur-xl"
             onClick={() => setSelectedIndex(null)}
           >
             <button className="absolute top-8 right-8 text-white z-[210] hover:scale-110 transition-transform">
@@ -713,21 +737,26 @@ export default function LuxeLayout({
               >
                 <ChevronRight size={40} />
               </button>
-              <motion.img
-                key={selectedIndex}
-                src={gallery[selectedIndex]}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(e, info) => {
-                  if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                  else if (info.offset.x < -80) safeSetIndex(selectedIndex + 1);
-                }}
-                className="max-w-full max-h-[75vh] object-contain shadow-2xl rounded-sm cursor-grab active:cursor-grabbing"
-                onClick={(e) => e.stopPropagation()}
-              />
+              {gallery[selectedIndex] && (
+                <motion.img
+                  key={selectedIndex}
+                  src={gallery[selectedIndex]}
+                  loading="eager"
+                  decoding="async"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, info) => {
+                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
+                    else if (info.offset.x < -80)
+                      safeSetIndex(selectedIndex + 1);
+                  }}
+                  className="max-w-full max-h-[75vh] object-contain shadow-2xl rounded-sm cursor-grab active:cursor-grabbing"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </div>
             <div
               className="h-40 w-full flex items-center justify-start md:justify-center gap-4 px-10 pb-10 overflow-x-auto no-scrollbar snap-x"
@@ -741,6 +770,8 @@ export default function LuxeLayout({
                 >
                   <img
                     src={img}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     alt="Thumb"
                   />

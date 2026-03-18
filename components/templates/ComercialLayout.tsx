@@ -208,7 +208,7 @@ export default function ComercialLayout({
     businessThemes[business.theme] ||
     businessThemes["comercial_blue"];
 
-  const safeAddress = fullAddress || business.address;
+  const address = fullAddress || business.address || "";
 
   const gallery = Array.isArray(business.gallery)
     ? business.gallery.filter(Boolean)
@@ -268,9 +268,16 @@ export default function ComercialLayout({
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
       if (!cleanNumber) return;
+
+      const formattedNumber = cleanNumber.startsWith("55")
+        ? cleanNumber
+        : `55${cleanNumber}`;
+
+      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+
       const targetUrl =
         type === "whatsapp"
-          ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
+          ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
       try {
         // 🚀 NOVO ESPIÃO AQUI!
@@ -325,6 +332,8 @@ export default function ComercialLayout({
               <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.2rem] border-4 border-white shadow-xl overflow-hidden bg-white shrink-0 flex items-center justify-center">
                 <img
                   src={business.imageUrl}
+                  loading="eager"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   alt="Logo"
                 />
@@ -459,6 +468,8 @@ export default function ComercialLayout({
                       >
                         <img
                           src={img}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           alt="Galeria"
                         />
@@ -618,15 +629,23 @@ export default function ComercialLayout({
                         <div className="flex items-center justify-center gap-6 pt-6 border-t border-black/5">
                           {availableSocials.map((s) => {
                             const username = business[s];
-                            let finalUrl = "";
+                            if (!username) return null;
 
-                            if (s === "instagram")
-                              finalUrl = `https://instagram.com/${username}`;
-                            else if (s === "facebook")
-                              finalUrl = `https://facebook.com/${username}`;
-                            else if (s === "tiktok")
-                              finalUrl = `https://tiktok.com/@${username}`;
-                            else finalUrl = formatExternalLink(username);
+                            const isUrl =
+                              username.startsWith("http") ||
+                              username.startsWith("www");
+
+                            let finalUrl = isUrl
+                              ? username.startsWith("http")
+                                ? username
+                                : `https://${username}`
+                              : s === "instagram"
+                                ? `https://instagram.com/${username.replace("@", "")}`
+                                : s === "facebook"
+                                  ? `https://facebook.com/${username}`
+                                  : s === "tiktok"
+                                    ? `https://tiktok.com/@${username.replace("@", "")}`
+                                    : formatExternalLink(username);
 
                             return (
                               <motion.a
@@ -634,12 +653,14 @@ export default function ComercialLayout({
                                 href={finalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={() =>
-                                  Actions.registerClickEvent(
-                                    business.id,
-                                    s.toUpperCase(),
-                                  )
-                                } // 🚀 ESPIÃO AQUI
+                                onClick={async () => {
+                                  try {
+                                    await Actions.registerClickEvent(
+                                      business.id,
+                                      s.toUpperCase(),
+                                    );
+                                  } catch (e) {}
+                                }} // 🚀 ESPIÃO AQUI
                                 whileHover={{ y: -3 }}
                                 className="opacity-60 hover:opacity-100 transition-opacity"
                               >
@@ -695,7 +716,7 @@ export default function ComercialLayout({
 
                   {hasAddress && (
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress || business.address)}`}
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() =>
@@ -800,22 +821,27 @@ export default function ComercialLayout({
                 <ChevronRight size={32} />
               </button>
 
-              <motion.img
-                key={selectedIndex}
-                src={gallery[selectedIndex]}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(e, info) => {
-                  if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                  else if (info.offset.x < -80) safeSetIndex(selectedIndex + 1);
-                }}
-                className="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain shadow-2xl rounded-lg pointer-events-auto cursor-grab active:cursor-grabbing"
-                onClick={(e) => e.stopPropagation()}
-              />
+              {gallery[selectedIndex] && (
+                <motion.img
+                  key={selectedIndex}
+                  src={gallery[selectedIndex]}
+                  loading="eager"
+                  decoding="async"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, info) => {
+                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
+                    else if (info.offset.x < -80)
+                      safeSetIndex(selectedIndex + 1);
+                  }}
+                  className="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain shadow-2xl rounded-lg pointer-events-auto cursor-grab active:cursor-grabbing"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </div>
 
             <div
@@ -830,6 +856,8 @@ export default function ComercialLayout({
                 >
                   <img
                     src={img}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     alt="Thumbnail"
                   />

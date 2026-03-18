@@ -13,6 +13,9 @@ interface LayoutSwitcherProps {
   fullAddress: string;
   isLoggedIn: boolean; // ⬅️ Adicionado
   isFavorited: boolean; // ⬅️ Adicionado
+  emailVerified: boolean;
+  currentUserId: string;
+  isAdmin: boolean;
 }
 
 export default function MainLayoutSwitcher({
@@ -22,10 +25,15 @@ export default function MainLayoutSwitcher({
   fullAddress,
   isLoggedIn, // ⬅️ Adicionado
   isFavorited, // ⬅️ Adicionado
+  emailVerified,
+  currentUserId,
+  isAdmin,
 }: LayoutSwitcherProps) {
   // --- REDE DE PROTEÇÃO: Busca o objeto do tema ou usa o padrão 'porcelain_white' ---
   const safeTheme =
-    businessThemes[business?.theme] || businessThemes.porcelain_white;
+    business && businessThemes[business.theme]
+      ? businessThemes[business.theme]
+      : businessThemes.porcelain_white;
 
   // TRAVA DE SEGURANÇA: Só barra se não houver os dados do business
   if (!business) {
@@ -49,6 +57,9 @@ export default function MainLayoutSwitcher({
           fullAddress={fullAddress}
           isLoggedIn={isLoggedIn} // ⬅️ Repassando
           isFavorited={isFavorited} // ⬅️ Repassando
+          emailVerified={emailVerified}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       );
 
@@ -62,6 +73,9 @@ export default function MainLayoutSwitcher({
           fullAddress={fullAddress}
           isLoggedIn={isLoggedIn} // ⬅️ Repassando
           isFavorited={isFavorited} // ⬅️ Repassando
+          emailVerified={emailVerified}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       );
 
@@ -74,6 +88,9 @@ export default function MainLayoutSwitcher({
           fullAddress={fullAddress}
           isLoggedIn={isLoggedIn} // ⬅️ Repassando
           isFavorited={isFavorited} // ⬅️ Repassando
+          emailVerified={emailVerified}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       );
 
@@ -86,6 +103,9 @@ export default function MainLayoutSwitcher({
           fullAddress={fullAddress}
           isLoggedIn={isLoggedIn} // ⬅️ Repassando
           isFavorited={isFavorited} // ⬅️ Repassando
+          emailVerified={emailVerified}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       );
 
@@ -98,6 +118,9 @@ export default function MainLayoutSwitcher({
           fullAddress={fullAddress}
           isLoggedIn={isLoggedIn} // ⬅️ Repassando
           isFavorited={isFavorited} // ⬅️ Repassando
+          emailVerified={emailVerified}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       );
   }

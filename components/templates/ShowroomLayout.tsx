@@ -225,9 +225,14 @@ export default function ShowroomLayout({
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
       if (!cleanNumber) return;
+      const numberWithDDI = cleanNumber.startsWith("55")
+        ? cleanNumber
+        : `55${cleanNumber}`;
+      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+
       const targetUrl =
         type === "whatsapp"
-          ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
+          ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
@@ -257,6 +262,8 @@ export default function ShowroomLayout({
             >
               <img
                 src={business.imageUrl}
+                loading="eager"
+                decoding="async"
                 className="w-full h-full object-cover"
                 alt="Logo"
               />
@@ -353,6 +360,8 @@ export default function ShowroomLayout({
                   >
                     <img
                       src={img}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                       alt="Vitrine"
                     />
@@ -430,19 +439,28 @@ export default function ShowroomLayout({
               {availableSocials.length > 0 && (
                 <div className="pt-4 border-t border-black/5 flex justify-center gap-4">
                   {availableSocials.map((s) => {
-                    const user = business[s];
-                    const url =
-                      s === "instagram"
-                        ? `https://instagram.com/${user}`
+                    const username = business[s];
+                    if (!username) return null;
+
+                    const isUrl =
+                      username.startsWith("http") || username.startsWith("www");
+
+                    const finalUrl = isUrl
+                      ? username.startsWith("http")
+                        ? username
+                        : `https://${username}`
+                      : s === "instagram"
+                        ? `https://instagram.com/${username.replace("@", "")}`
                         : s === "facebook"
-                          ? `https://facebook.com/${user}`
+                          ? `https://facebook.com/${username}`
                           : s === "tiktok"
-                            ? `https://tiktok.com/@${user}`
-                            : formatExternalLink(user);
+                            ? `https://tiktok.com/@${username.replace("@", "")}`
+                            : formatExternalLink(username);
+
                     return (
                       <a
                         key={s}
-                        href={url}
+                        href={finalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() =>
@@ -633,7 +651,9 @@ export default function ShowroomLayout({
               </button>
               <motion.img
                 key={selectedIndex}
-                src={gallery[selectedIndex]}
+                src={gallery[selectedIndex] || ""}
+                loading="eager"
+                decoding="async"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -660,6 +680,8 @@ export default function ShowroomLayout({
                 >
                   <img
                     src={img}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     alt="Thumbnail"
                   />

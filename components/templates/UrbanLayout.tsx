@@ -93,19 +93,10 @@ const handleShare = async (businessName: string) => {
     } catch (err) {}
   }
 
-  const textArea = document.createElement("textarea");
-
-  textArea.value = url;
-
-  document.body.appendChild(textArea);
-
-  textArea.select();
-
-  document.execCommand("copy");
-
-  document.body.removeChild(textArea);
-
-  toast.success("Link copiado!");
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(url);
+    toast.success("Link copiado!");
+  }
 };
 
 const formatPhoneNumber = (phone: string) => {
@@ -185,7 +176,7 @@ export default function UrbanLayout({
 
   const theme =
     propTheme ||
-    businessThemes[business.theme] ||
+    businessThemes[business?.theme] ||
     businessThemes["urban_cyber"];
 
   const radius = theme.radius || "rounded-xl";
@@ -194,7 +185,7 @@ export default function UrbanLayout({
 
   const glassEffect = "bg-white/5 md:backdrop-blur-md";
 
-  const safeAddress = fullAddress || business.address;
+  const safeAddress = fullAddress || business?.address || "";
 
   const gallery = Array.isArray(business.gallery)
     ? business.gallery.filter(Boolean)
@@ -273,9 +264,14 @@ export default function UrbanLayout({
 
       if (!cleanNumber) return;
 
+      const numberWithDDI = cleanNumber.startsWith("55")
+        ? cleanNumber
+        : `55${cleanNumber}`;
+      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu e gostaria de mais informações.`;
+
       const targetUrl =
         type === "whatsapp"
-          ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(`Olá! Vi o perfil de ${business.name} no Tafanu.`)}`
+          ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
 
       try {
@@ -333,6 +329,8 @@ export default function UrbanLayout({
               >
                 <img
                   src={business.imageUrl}
+                  loading="eager"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   alt="Logo"
                 />
@@ -382,21 +380,27 @@ export default function UrbanLayout({
               className="flex gap-4 flex-wrap justify-center"
             >
               {availableSocials.map((s) => {
-                const user = business[s];
+                const username = business[s];
+                if (!username) return null;
 
-                const url =
-                  s === "instagram"
-                    ? `https://instagram.com/${user}`
+                const isUrl =
+                  username.startsWith("http") || username.startsWith("www");
+                const finalUrl = isUrl
+                  ? username.startsWith("http")
+                    ? username
+                    : `https://${username}`
+                  : s === "instagram"
+                    ? `https://instagram.com/${username.replace("@", "")}`
                     : s === "facebook"
-                      ? `https://facebook.com/${user}`
+                      ? `https://facebook.com/${username.replace("@", "")}`
                       : s === "tiktok"
-                        ? `https://tiktok.com/@${user}`
-                        : formatExternalLink(user);
+                        ? `https://tiktok.com/@${username.replace("@", "")}`
+                        : formatExternalLink(username);
 
                 return (
                   <a
                     key={s}
-                    href={url}
+                    href={finalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>
@@ -788,21 +792,26 @@ export default function UrbanLayout({
                 <ChevronRight size={40} />
               </button>
 
-              <motion.img
-                key={selectedIndex}
-                src={gallery[selectedIndex]}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(e, info) => {
-                  if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                  else if (info.offset.x < -80) safeSetIndex(selectedIndex + 1);
-                }}
-                className={`max-w-full max-h-[70vh] object-contain border-4 ${theme.border} shadow-2xl ${radius}`}
-                onClick={(e) => e.stopPropagation()}
-              />
+              {gallery[selectedIndex] && (
+                <motion.img
+                  key={selectedIndex}
+                  src={gallery[selectedIndex]}
+                  loading="eager"
+                  decoding="async"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, info) => {
+                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
+                    else if (info.offset.x < -80)
+                      safeSetIndex(selectedIndex + 1);
+                  }}
+                  className={`max-w-full max-h-[70vh] object-contain border-4 ${theme.border} shadow-2xl ${radius}`}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </div>
 
             <div
