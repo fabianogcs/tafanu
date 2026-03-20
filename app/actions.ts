@@ -1772,12 +1772,12 @@ export async function createSubscription(
           },
         }),
       },
-      start_date: new Date(Date.now() + 60 * 1000).toISOString(),
+
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
-      status: "pending", // ⬅️ Importante: inicia como pendente até ele pagar
       payment_methods_allowed: {
         payment_types: [{ id: "credit_card" }],
+        payment_methods: [],
       },
     };
 
