@@ -11,7 +11,7 @@ import { cpf } from "cpf-cnpj-validator";
 import { auth, signIn, signOut } from "@/auth";
 import { Resend } from "resend";
 import crypto from "crypto";
-import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago"; // 👈 NOVO IMPORT AQUI
+import { MercadoPagoConfig, PreApproval } from "mercadopago"; // 👈 NOVO IMPORT AQUI
 import { normalizeText } from "@/lib/normalize"; // 👈 NOVO IMPORT
 
 type BusinessInput = z.infer<typeof businessSchema>;
@@ -1726,103 +1726,67 @@ export async function createSubscription(
   const dbUser = await db.user.findUnique({ where: { id: userId } });
 
   if (dbUser?.isBanned) {
-    return {
-      error:
-        "Sua conta possui restrições e não pode realizar assinaturas. Entre em contato com o suporte.",
-    };
+    return { error: "Sua conta possui restrições." };
   }
 
-  // 🚨 TRAVA ANTI-MALANDRO: Verifica se ele já teve assinatura antes
-  // Se ele tem qualquer data no expiresAt, significa que já usou o sistema!
   const hasUsedTrial = !!dbUser?.expiresAt;
 
-  // VOLTAMOS PARA A FERRAMENTA QUE FUNCIONA: PreApprovalPlan
-  const plan = new PreApprovalPlan(client);
+  // 🛡️ Mudança para PreApproval: Isso gera o checkout direto para o usuário
+  const subscriptionClient = new PreApproval(client);
 
   const planConfigs = {
     monthly: {
       amount: 29.9,
-      frequency: 1,
-      type: "months",
-      // 👇 AQUI A MÁGICA ACONTECE: Se já usou, trial é 0. Se é novo, ganha 7.
-      trialDays: hasUsedTrial ? 0 : 7,
       reason: "Assinatura Tafanu PRO - Mensal",
+      trialDays: hasUsedTrial ? 0 : 7,
     },
     quarterly: {
       amount: 74.7,
-      frequency: 3,
-      type: "months",
-      trialDays: 0,
       reason: "Assinatura Tafanu PRO - Trimestral",
+      trialDays: 0,
     },
     yearly: {
       amount: 238.8,
-      frequency: 12,
-      type: "months",
-      trialDays: 0,
       reason: "Assinatura Tafanu PRO - Anual",
+      trialDays: 0,
     },
   };
 
   const config = planConfigs[planType];
 
-  interface MPPlanBody {
-    reason: string;
-    auto_recurring: {
-      frequency: number;
-      frequency_type: string;
-      transaction_amount: number;
-      currency_id: string;
-      free_trial?: {
-        frequency: number;
-        frequency_type: string;
-      };
-    };
-    back_url: string;
-    external_reference: string;
-    payer_email: string;
-    payment_methods_allowed: {
-      payment_types: { id: string }[];
-    };
-  }
-
   try {
-    const body: MPPlanBody = {
+    const body = {
       reason: config.reason,
+      payer_email: userEmail, // ⬅️ Agora no lugar certo
       auto_recurring: {
-        frequency: config.frequency,
-        frequency_type: config.type,
+        frequency:
+          planType === "quarterly" ? 3 : planType === "yearly" ? 12 : 1,
+        frequency_type: "months",
         transaction_amount: config.amount,
         currency_id: "BRL",
+        // Só adiciona trial se for o caso
+        ...(config.trialDays > 0 && {
+          free_trial: {
+            frequency: config.trialDays,
+            frequency_type: "days",
+          },
+        }),
       },
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
-      payer_email: userEmail,
-
-      // 👇 TRAVA DE CARTÃO DE CRÉDITO MANTIDA INTACTA
+      status: "pending", // ⬅️ Importante: inicia como pendente até ele pagar
       payment_methods_allowed: {
-        payment_types: [
-          { id: "credit_card" }, // Aceita apenas cartão de crédito
-        ],
+        payment_types: [{ id: "credit_card" }],
       },
-      // 👆 FIM DA TRAVA
     };
 
-    // Adiciona o teste grátis APENAS se o trialDays for maior que 0 (novatos)
-    if (config.trialDays > 0) {
-      body.auto_recurring.free_trial = {
-        frequency: config.trialDays,
-        frequency_type: "days",
-      };
-    }
+    const response = await subscriptionClient.create({ body });
 
-    // Cria a intenção de pagamento e gera o Link (init_point)!
-    const subscription = await plan.create({ body });
-
-    return { success: true, init_point: subscription.init_point };
+    // O init_point aqui é o que abre o checkout pronto para o usuário
+    return { success: true, init_point: response.init_point };
   } catch (error) {
-    console.error("Erro ao criar assinatura:", error);
-    return { error: "Não foi possível gerar o link de assinatura." };
+    console.error("Erro MP:", error);
+    return { error: "Erro ao gerar checkout." };
   }
 }
 
