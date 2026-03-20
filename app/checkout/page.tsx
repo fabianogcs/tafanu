@@ -49,7 +49,7 @@ type PlanType = keyof typeof PLANS;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { data: session, status, update } = useSession() as any;
+  const { data: session, status, update } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("monthly");
 

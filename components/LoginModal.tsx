@@ -19,6 +19,7 @@ import {
   resendVerificationEmail,
 } from "@/app/actions";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
+import { getSession } from "next-auth/react";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -41,6 +42,13 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const searchParams = useSearchParams();
   const currentUrl =
     pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+
+  // 🛡️ Função inteligente para decidir o roteamento com base no cargo
+  const getDestination = (role?: string) => {
+    if (role === "ADMIN" || role === "ASSINANTE" || role === "AFILIADO")
+      return "/dashboard";
+    return "/"; // VISITANTE vai para a home
+  };
 
   useEffect(() => {
     setMounted(true); // ⬅️ Avisa que o componente carregou no navegador
@@ -87,7 +95,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         setIsLoading(false);
       } else {
         toast.success("Login realizado com sucesso!");
-        window.location.reload();
+        const session = await getSession();
+        const role = session?.user?.role as string | undefined;
+        window.location.assign(getDestination(role));
       }
     } else {
       const registerResult = await registerUser(formData);
@@ -110,7 +120,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           setIsLoading(false);
         } else {
           toast.success("Conta criada com sucesso!");
-          window.location.reload();
+          const session = await getSession();
+          const role = session?.user?.role as string | undefined;
+          window.location.assign(getDestination(role));
         }
       }
     }

@@ -34,32 +34,35 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // --- MANTIDA: LÓGICA DO GPS ---
+  // --- LÓGICA DO GPS REVISADA ---
   const success = searchParams.get("success");
-  const roleParam = searchParams.get("role");
   const intent = searchParams.get("intent");
   const callbackUrl = searchParams.get("callbackUrl");
 
-  const nextStep =
-    callbackUrl ||
-    (intent === "assinante" || roleParam === "ASSINANTE"
-      ? "/checkout"
-      : "/dashboard");
-
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // --- MANTIDA: VERIFICAÇÃO DE SESSÃO ---
+  // 🛡️ Função inteligente para decidir o roteamento com base no cargo real
+  const getDestination = (role?: string) => {
+    if (callbackUrl) return callbackUrl;
+    if (intent === "assinante") return "/checkout";
+    if (role === "ADMIN" || role === "ASSINANTE" || role === "AFILIADO")
+      return "/dashboard";
+    return "/"; // VISITANTE vai para a home
+  };
+
+  // --- VERIFICAÇÃO DE SESSÃO DINÂMICA ---
   useEffect(() => {
     async function checkSession() {
       const session = await getSession();
-      if (session) {
-        router.replace(nextStep);
+      if (session?.user) {
+        const role = session.user.role as string | undefined;
+        router.replace(getDestination(role));
       } else {
         setIsCheckingSession(false);
       }
     }
     checkSession();
-  }, [router, nextStep]);
+  }, [router, callbackUrl, intent]);
 
   // --- MANTIDA: CONFIGURAÇÃO DE LOGIN/CADASTRO ---
   useEffect(() => {
@@ -119,8 +122,10 @@ export default function LoginPage() {
         }
         setIsLoading(false);
       } else {
-        // Força um carregamento limpo da próxima página
-        window.location.assign(nextStep);
+        // Busca a sessão recém-criada para saber o cargo antes de redirecionar
+        const session = await getSession();
+        const role = session?.user?.role as string | undefined;
+        window.location.assign(getDestination(role));
       }
     } else {
       const registerResult = await registerUser(formData);
@@ -146,8 +151,10 @@ export default function LoginPage() {
         } else {
           // Caso você libere o cadastro sem trava no futuro (ex: via Google)
           toast.success("Conta criada! Redirecionando...");
-          setTimeout(() => {
-            window.location.assign(nextStep);
+          setTimeout(async () => {
+            const session = await getSession();
+            const role = session?.user?.role as string | undefined;
+            window.location.assign(getDestination(role));
           }, 500);
         }
       }
@@ -210,7 +217,7 @@ export default function LoginPage() {
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             {/* MANTIDO: O BILHETE DO GPS PARA O SERVIDOR */}
-            <input type="hidden" name="callbackUrl" value={nextStep} />
+            <input type="hidden" name="callbackUrl" value={getDestination()} />
             <input
               type="hidden"
               name="affiliateCode"
@@ -320,7 +327,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <GoogleLoginButton redirectTo={nextStep} />
+          <GoogleLoginButton redirectTo={getDestination()} />
         </div>
       </div>
 

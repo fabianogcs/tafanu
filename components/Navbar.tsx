@@ -17,6 +17,7 @@ import {
   UserPlus,
   Smartphone,
   Download,
+  Briefcase,
 } from "lucide-react";
 
 export default function Navbar({
@@ -75,8 +76,11 @@ export default function Navbar({
   }, [isOpen]);
 
   const isAdmin = isLoggedIn && userRole === "ADMIN";
+  const isAfiliado = isLoggedIn && userRole === "AFILIADO";
   const isSubscriber = isLoggedIn && userRole === "ASSINANTE";
-  const isVisitor = isLoggedIn && !isSubscriber && !isAdmin;
+
+  // Visitante é quem tá logado mas não é Assinante, nem Admin, nem Afiliado
+  const isVisitor = isLoggedIn && !isSubscriber && !isAdmin && !isAfiliado;
   const isGuest = !isLoggedIn;
 
   return (
@@ -148,6 +152,23 @@ export default function Navbar({
                     className="flex items-center gap-2 px-5 py-2 text-amber-400 font-black text-[11px] uppercase tracking-widest bg-amber-400/10 rounded-xl border border-amber-400/20"
                   >
                     <ShieldCheck size={14} /> Painel Mestre
+                  </Link>
+                </>
+              )}
+              {isAfiliado && (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
+                  >
+                    <Layers size={14} className="text-tafanu-action" />{" "}
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/dashboard/parceiro"
+                    className="flex items-center gap-2 px-5 py-2 text-emerald-400 font-black text-[11px] uppercase tracking-widest bg-emerald-400/10 rounded-xl border border-emerald-400/20"
+                  >
+                    <Briefcase size={14} /> Painel Parceiro
                   </Link>
                 </>
               )}
@@ -292,6 +313,24 @@ export default function Navbar({
               </>
             )}
 
+            {isAfiliado && (
+              <>
+                <MobileLink
+                  href="/dashboard"
+                  icon={<Layers size={20} />}
+                  label="Dashboard"
+                  onClick={() => setIsOpen(false)}
+                />
+                <MobileLink
+                  href="/dashboard/parceiro"
+                  icon={<Briefcase size={20} />}
+                  label="Painel Parceiro"
+                  color="text-emerald-400"
+                  onClick={() => setIsOpen(false)}
+                />
+              </>
+            )}
+
             {isGuest && (
               <MobileLink
                 href="/login"
@@ -331,13 +370,21 @@ export default function Navbar({
   );
 }
 
+interface MobileLinkProps {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  color?: string;
+}
+
 function MobileLink({
   href,
   icon,
   label,
   onClick,
   color = "text-tafanu-action",
-}: any) {
+}: MobileLinkProps) {
   return (
     <Link
       href={href}

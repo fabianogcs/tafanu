@@ -11,6 +11,7 @@ import {
   Home,
   Lock,
   AlertTriangle,
+  Briefcase,
 } from "lucide-react";
 import { logoutUser } from "@/app/actions";
 
@@ -24,18 +25,33 @@ export default async function DashboardLayout({
 
   if (!userId) redirect("/login");
 
-  // 1. Busca dados do usuário
+  // 1. Busca dados do usuário (Agora com a data de validade!)
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { name: true, role: true, document: true, phone: true },
+    select: {
+      name: true,
+      role: true,
+      document: true,
+      phone: true,
+      expiresAt: true,
+    },
   });
 
   if (!user) redirect("/login");
 
   const isAdmin = user.role === "ADMIN";
+  const isAfiliado = user.role === "AFILIADO";
   const isAssinante = user.role === "ASSINANTE";
 
-  // 2. LÓGICA DE TRAVA: Se é assinante E não tem dados, bloqueia o menu.
+  // Validação blindada da assinatura
+  const hasValidSubscription = user.expiresAt
+    ? new Date(user.expiresAt) > new Date()
+    : false;
+
+  // Quem é PRO? Admin, Afiliado ou Assinante dentro do prazo!
+  const isPro = isAdmin || isAfiliado || (isAssinante && hasValidSubscription);
+
+  // 2. LÓGICA DE TRAVA: Apenas Assinantes são bloqueados se não tiverem dados completos. Admin e Afiliado têm passe livre.
   const isLocked = isAssinante && (!user.document || !user.phone);
 
   const nameParts = user.name?.split(" ") ?? ["Usuário"];
@@ -52,9 +68,11 @@ export default async function DashboardLayout({
               <p className="text-[10px] font-black text-tafanu-action uppercase tracking-[0.2em] mb-1">
                 {isAdmin
                   ? "Admin Master"
-                  : isAssinante
-                    ? "Membro Premium"
-                    : "Visitante"}
+                  : isAfiliado
+                    ? "Parceiro Oficial"
+                    : isPro
+                      ? "Membro Premium"
+                      : "Visitante"}
               </p>
               <h1 className="text-lg font-bold text-white leading-tight truncate w-40">
                 {displayName}
@@ -123,8 +141,8 @@ export default async function DashboardLayout({
                 <span className="text-sm">Favoritos</span>
               </Link>
 
-              {/* Botões EXCLUSIVOS DE ASSINANTE OU ADMIN */}
-              {(isAssinante || isAdmin) && (
+              {/* Botões EXCLUSIVOS PRO (Assinantes, Afiliados e Admin) */}
+              {isPro && (
                 <>
                   <div className="my-2 border-t border-white/5 mx-4 hidden md:block opacity-50"></div>
 
@@ -160,6 +178,20 @@ export default async function DashboardLayout({
                     />
                     <span className="text-sm">Meus Dados</span>
                   </Link>
+
+                  {/* Menu Exclusivo para Afiliados e Admin */}
+                  {(isAfiliado || isAdmin) && (
+                    <Link
+                      href="/dashboard/parceiro"
+                      className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold group whitespace-nowrap"
+                    >
+                      <Briefcase
+                        size={20}
+                        className="group-hover:text-tafanu-action transition-colors"
+                      />
+                      <span className="text-sm">Painel Parceiro</span>
+                    </Link>
+                  )}
                 </>
               )}
             </>

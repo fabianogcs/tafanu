@@ -6,6 +6,40 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+enum EventType {
+  WHATSAPP
+  PHONE
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+  WEBSITE
+  MAP
+  SHOPEE
+  MERCADOLIVRE
+  SHEIN
+  IFOOD
+  VIEW
+}
+enum Role {
+  VISITANTE
+  CLIENTE
+  ADMIN
+  AFILIADO   // ⬅️ Faltava esse!
+  ASSINANTE
+}
+enum LayoutType {
+  editorial
+  urban
+  businessList
+  showroom
+  influencer
+}
+
+enum PlanType {
+  monthly
+  quarterly
+  yearly
+}
 
 // --- TABELA DE USUÁRIOS ---
 model User {
@@ -16,14 +50,14 @@ model User {
   image           String?   
   password        String?
   
-  role            String    @default("VISITANTE") 
+ role            Role      @default(VISITANTE)
   referralCode    String?   @unique 
   affiliateId     String?           
   affiliate       User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id])
   affiliateSince  DateTime? 
   lastPayoutDate  DateTime?
   lastPrice       Float?    @default(0)    
-  planType        String?   @default("monthly") 
+planType  PlanType?
   referrals       User[]    @relation("AffiliateToUser")
   expiresAt       DateTime?  
   mpSubscriptionId String?
@@ -46,10 +80,10 @@ model Business {
   name                String
   slug                String         @unique
   description         String?        @db.Text
-  theme               String         @default("carbon")
-  layout              String         @default("influencer")
+ theme      String         @default("showroom_nordic")
+  layout     LayoutType     @default(showroom)
   category            String
-  subcategory         String[]
+ subcategory         String[]       @default([])
   keywords            String[]       @default([])
   
   // Contadores Desnormalizados (Performance)
@@ -124,6 +158,7 @@ model Business {
   @@index([city, neighborhood])        
   @@index([city, isActive, published]) 
   @@index([category, isActive, published]) 
+  @@index([name, city])
 }
 
 model BusinessHour {
@@ -134,6 +169,7 @@ model BusinessHour {
   openTime    String   
   closeTime   String   
   isClosed    Boolean  @default(false)
+  @@index([businessId])
 }
 
 model Favorite {
@@ -221,7 +257,7 @@ model Comment {
 
 model AnalyticsEvent {
   id          String   @id @default(cuid())
-  eventType   String   
+ eventType   EventType
   createdAt   DateTime @default(now())
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

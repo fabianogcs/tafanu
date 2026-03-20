@@ -11,9 +11,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
   trustHost: true,
   session: { strategy: "jwt" },
-  ...authConfig,
+  // Removemos o spread global ...authConfig daqui
   providers: [
-    ...authConfig.providers,
+    ...authConfig.providers, // Trazemos o Google do auth.config.ts
     Credentials({
       name: "Credentials",
       async authorize(credentials) {

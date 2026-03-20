@@ -3,6 +3,7 @@ import { z } from "zod";
 import { businessSchema, userProfileSchema } from "@/lib/schemas";
 import { UTApi } from "uploadthing/server";
 import { db } from "@/lib/db";
+import { EventType, Role, LayoutType, PlanType } from "@prisma/client";
 import { hash, compare } from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -215,7 +216,7 @@ export async function registerUser(formData: FormData) {
         name,
         email,
         password: hashedPassword,
-        role,
+        role: role as Role,
         document: cleanDocument,
         affiliateId,
       },
@@ -291,13 +292,13 @@ export async function loginUser(formData: FormData) {
 
   // 4. LÓGICA DE EXPIRAÇÃO (Sua lógica original mantida abaixo)
   if (
-    dbUser.role === "ASSINANTE" &&
+    dbUser.role === ("ASSINANTE" as Role) &&
     dbUser.expiresAt &&
     new Date(dbUser.expiresAt) < new Date()
   ) {
     await db.user.update({
       where: { id: dbUser.id },
-      data: { role: "VISITANTE" },
+      data: { role: "VISITANTE" as Role },
     });
   }
 
@@ -306,8 +307,8 @@ export async function loginUser(formData: FormData) {
     let destino = callbackUrl || "/";
 
     if (!callbackUrl) {
-      if (dbUser?.role === "ADMIN") destino = "/admin";
-      else if (dbUser?.role === "ASSINANTE") destino = "/dashboard";
+      if (dbUser?.role === ("ADMIN" as Role)) destino = "/admin";
+      else if (dbUser?.role === ("ASSINANTE" as Role)) destino = "/dashboard";
     }
 
     // 6. REALIZA O LOGIN DE FATO
@@ -352,7 +353,7 @@ export async function upgradeUserToAssinante() {
   try {
     await db.user.update({
       where: { id: user.id },
-      data: { role: "ASSINANTE" },
+      data: { role: "ASSINANTE" as Role },
     });
 
     revalidatePath("/");
@@ -511,7 +512,7 @@ export async function createBusiness(payload: any) {
           name: validatedData.name,
           slug: validatedData.slug.toLowerCase().trim(),
           theme: validatedData.theme,
-          layout: validatedData.layout,
+          layout: validatedData.layout as LayoutType,
           category: validatedData.category,
           subcategory: payload.subcategory || [],
           description: validatedData.description,
@@ -654,7 +655,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         category: validatedData.category,
         subcategory: payload.subcategory || [],
         theme: validatedData.theme,
-        layout: validatedData.layout,
+        layout: validatedData.layout as LayoutType,
         whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
         phone: (validatedData.phone || "").replace(/\D/g, ""),
         address: validatedData.address,
@@ -956,7 +957,7 @@ export async function registerClickEvent(
       // B) Cria a "Caixa Preta": Anota o clique exato com data e hora para o gráfico
       db.analyticsEvent.create({
         data: {
-          eventType: upperEvent,
+          eventType: upperEvent as EventType,
           businessId: businessId,
         },
       }),
@@ -1051,7 +1052,7 @@ export async function adminAddDaysToUser(
     newDate.setMonth(newDate.getMonth() + monthsToAdd);
     await db.user.update({
       where: { id: userId },
-      data: { role: "ASSINANTE", expiresAt: newDate },
+      data: { role: "ASSINANTE" as Role, expiresAt: newDate },
     });
     revalidatePath("/admin");
     return { success: true };
@@ -1085,13 +1086,12 @@ export async function cancelSubscriptionAction() {
   if (!userId) return { error: "Não autorizado." };
 
   try {
-    // 1. Busca o ID da assinatura no banco
     const user = await db.user.findUnique({
       where: { id: userId },
       select: { mpSubscriptionId: true },
     });
 
-    // 2. Avisa o Mercado Pago para cancelar
+    // 1. Avisa o Mercado Pago para cancelar a recorrência
     if (user?.mpSubscriptionId) {
       const preApproval = new PreApproval(client);
       await preApproval.update({
@@ -1100,13 +1100,11 @@ export async function cancelSubscriptionAction() {
       });
     }
 
-    // 3. Atualiza o banco rebaixando o cara
+    // 2. ATUALIZAÇÃO GENTIL NO BANCO (Deixa ele usar até o fim)
     await db.user.update({
       where: { id: userId },
       data: {
-        role: "VISITANTE",
-        expiresAt: null,
-        mpSubscriptionId: null, // Limpa a gaveta
+        mpSubscriptionId: null, // Limpa apenas a gaveta de cobrança
       },
     });
 
@@ -1245,8 +1243,8 @@ export async function getHomeBusinesses(userId?: string) {
         published: true,
         user: {
           OR: [
-            { role: "ADMIN" },
-            { role: "ASSINANTE", expiresAt: { gt: new Date() } },
+            { role: "ADMIN" as Role },
+            { role: "ASSINANTE" as Role, expiresAt: { gt: new Date() } },
           ],
         },
       },
@@ -1268,8 +1266,8 @@ export async function getHomeBusinesses(userId?: string) {
         published: true,
         user: {
           OR: [
-            { role: "ADMIN" },
-            { role: "ASSINANTE", expiresAt: { gt: new Date() } },
+            { role: "ADMIN" as Role },
+            { role: "ASSINANTE" as Role, expiresAt: { gt: new Date() } },
           ],
         },
       },
@@ -1435,7 +1433,7 @@ export async function promoteToAffiliate(userId: string, code: string) {
     await db.user.update({
       where: { id: userId },
       data: {
-        role: "AFILIADO",
+        role: "AFILIADO" as Role,
         referralCode: cleanCode,
         affiliateSince: new Date(), // ⬅️ Adicione isso para começar a contar o "Mês 1"
       },
@@ -1527,7 +1525,12 @@ export async function getAffiliateStats() {
         pagoNesteCiclo = true;
       }
 
-      return u.role === "ASSINANTE" && isCobrado && isAtivo && !pagoNesteCiclo;
+      return (
+        u.role === ("ASSINANTE" as Role) &&
+        isCobrado &&
+        isAtivo &&
+        !pagoNesteCiclo
+      );
     });
 
     const emTeste = allReferrals.filter((u) => {
@@ -1540,7 +1543,10 @@ export async function getAffiliateStats() {
 
     const inativos = allReferrals.filter((u) => {
       const expirado = !u.expiresAt || u.expiresAt <= hoje;
-      return u.role === "VISITANTE" || (u.role === "ASSINANTE" && expirado);
+      return (
+        u.role === ("VISITANTE" as Role) ||
+        (u.role === ("ASSINANTE" as Role) && expirado)
+      );
     });
 
     // --- MATEMÁTICA PRO MAX (TAXAS E HIGH TICKET) ---
@@ -1614,7 +1620,7 @@ export async function getAffiliatePayouts() {
         lastPayoutDate: true,
         referrals: {
           where: {
-            role: "ASSINANTE",
+            role: "ASSINANTE" as Role,
             expiresAt: { gt: hoje },
           },
           select: { id: true, createdAt: true, lastPrice: true },
@@ -1760,8 +1766,28 @@ export async function createSubscription(
 
   const config = planConfigs[planType];
 
+  interface MPPlanBody {
+    reason: string;
+    auto_recurring: {
+      frequency: number;
+      frequency_type: string;
+      transaction_amount: number;
+      currency_id: string;
+      free_trial?: {
+        frequency: number;
+        frequency_type: string;
+      };
+    };
+    back_url: string;
+    external_reference: string;
+    payer_email: string;
+    payment_methods_allowed: {
+      payment_types: { id: string }[];
+    };
+  }
+
   try {
-    const body: any = {
+    const body: MPPlanBody = {
       reason: config.reason,
       auto_recurring: {
         frequency: config.frequency,
@@ -1842,7 +1868,7 @@ export async function banUserAction(userId: string) {
       where: { id: userId },
       data: {
         isBanned: true,
-        role: "VISITANTE", // Rebaixa na hora
+        role: "VISITANTE" as Role, // Rebaixa na hora
         mpSubscriptionId: null,
         expiresAt: null,
       },
@@ -1927,7 +1953,7 @@ export async function adminAddExactDaysToUser(
 
     await db.user.update({
       where: { id: userId },
-      data: { role: "ASSINANTE", expiresAt: newDate },
+      data: { role: "ASSINANTE" as Role, expiresAt: newDate },
     });
 
     revalidatePath("/admin");

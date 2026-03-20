@@ -14,11 +14,17 @@ export default async function NewBusinessPage() {
     select: { role: true, document: true, phone: true },
   });
 
-  // TRAVA DE SEGURANÇA: Se não for Assinante ou Admin, ou não estiver validado, bloqueia.
-  if (!user || (user.role !== "ASSINANTE" && user.role !== "ADMIN")) {
+  // TRAVA DE SEGURANÇA: Libera Assinante, Admin e Afiliado. Bloqueia o resto.
+  if (
+    !user ||
+    (user.role !== "ASSINANTE" &&
+      user.role !== "ADMIN" &&
+      user.role !== "AFILIADO")
+  ) {
     redirect("/anunciar");
   }
 
+  // Apenas o Assinante comum é obrigado a ter os dados completos para criar anúncio
   if (user.role === "ASSINANTE" && (!user.document || !user.phone)) {
     redirect("/dashboard/perfil?error=validacao");
   }

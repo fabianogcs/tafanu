@@ -29,11 +29,12 @@ export default function MainLayoutSwitcher({
   currentUserId,
   isAdmin,
 }: LayoutSwitcherProps) {
-  // --- REDE DE PROTEÇÃO: Busca o objeto do tema ou usa o padrão 'porcelain_white' ---
+  // --- REDE DE PROTEÇÃO ---
   const safeTheme =
     business && businessThemes[business.theme]
       ? businessThemes[business.theme]
-      : businessThemes.porcelain_white;
+      : // 👇 AGORA O SEU PADRÃO É O NORDIC 👇
+        businessThemes.showroom_nordic;
 
   // TRAVA DE SEGURANÇA: Só barra se não houver os dados do business
   if (!business) {
