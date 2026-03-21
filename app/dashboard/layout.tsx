@@ -14,6 +14,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { logoutUser } from "@/app/actions";
+import { Role } from "@prisma/client"; // Adicionado para tipagem correta
 
 export default async function DashboardLayout({
   children,
@@ -25,10 +26,11 @@ export default async function DashboardLayout({
 
   if (!userId) redirect("/login");
 
-  // 1. Busca dados do usuário (Agora com a data de validade!)
+  // 1. Busca dados do usuário
   const user = await db.user.findUnique({
     where: { id: userId },
     select: {
+      id: true, // Precisamos do ID para dar o update se a guilhotina cair
       name: true,
       role: true,
       document: true,
@@ -39,19 +41,50 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/login");
 
-  const isAdmin = user.role === "ADMIN";
-  const isAfiliado = user.role === "AFILIADO";
-  const isAssinante = user.role === "ASSINANTE";
+  // ==============================================================================
+  // 1.5 🛡️ O GUARDIÃO DA CARÊNCIA (A Guilhotina das 48 Horas)
+  // ==============================================================================
+  let currentRole = user.role;
 
-  // Validação blindada da assinatura
-  const hasValidSubscription = user.expiresAt
-    ? new Date(user.expiresAt) > new Date()
-    : false;
+  if (currentRole === "ASSINANTE" && user.expiresAt) {
+    const dataExpiracao = new Date(user.expiresAt);
 
-  // Quem é PRO? Admin, Afiliado ou Assinante dentro do prazo!
+    // Adiciona as 48 horas (2 dias) de carência
+    const dataComCarencia = new Date(
+      dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
+    );
+
+    // Se passou do tempo da carência, a guilhotina cai!
+    if (new Date() > dataComCarencia) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { role: "VISITANTE" as Role },
+      });
+
+      // O chute pro login: mata o cookie antigo e força o cara a logar de novo
+      redirect("/login?expired=true");
+    }
+  }
+  // ==============================================================================
+
+  const isAdmin = currentRole === "ADMIN";
+  const isAfiliado = currentRole === "AFILIADO";
+  const isAssinante = currentRole === "ASSINANTE";
+
+  // Validação blindada (Agora considerando a carência de 48h para não bugar o menu!)
+  let hasValidSubscription = false;
+  if (user.expiresAt) {
+    const dataExpiracao = new Date(user.expiresAt);
+    const dataComCarencia = new Date(
+      dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
+    );
+    hasValidSubscription = dataComCarencia > new Date();
+  }
+
+  // Quem é PRO? Admin, Afiliado ou Assinante dentro do prazo (ou na carência)!
   const isPro = isAdmin || isAfiliado || (isAssinante && hasValidSubscription);
 
-  // 2. LÓGICA DE TRAVA: Apenas Assinantes são bloqueados se não tiverem dados completos. Admin e Afiliado têm passe livre.
+  // 2. LÓGICA DE TRAVA: Apenas Assinantes são bloqueados se não tiverem dados completos.
   const isLocked = isAssinante && (!user.document || !user.phone);
 
   const nameParts = user.name?.split(" ") ?? ["Usuário"];

@@ -290,16 +290,21 @@ export async function loginUser(formData: FormData) {
     };
   }
 
-  // 4. LÓGICA DE EXPIRAÇÃO (Sua lógica original mantida abaixo)
-  if (
-    dbUser.role === ("ASSINANTE" as Role) &&
-    dbUser.expiresAt &&
-    new Date(dbUser.expiresAt) < new Date()
-  ) {
-    await db.user.update({
-      where: { id: dbUser.id },
-      data: { role: "VISITANTE" as Role },
-    });
+  // 4. LÓGICA DE EXPIRAÇÃO (Com Carência de 48h para o Mercado Pago trabalhar)
+  if (dbUser.role === ("ASSINANTE" as Role) && dbUser.expiresAt) {
+    const dataExpiracao = new Date(dbUser.expiresAt);
+
+    // Adiciona 48 horas (2 dias) de carência na data antes de rebaixar
+    const dataComCarencia = new Date(
+      dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
+    );
+
+    if (dataComCarencia < new Date()) {
+      await db.user.update({
+        where: { id: dbUser.id },
+        data: { role: "VISITANTE" as Role },
+      });
+    }
   }
 
   try {
@@ -345,24 +350,6 @@ export async function googleLogin(redirectTo: string) {
 // ==============================================================================
 // 3. PERFIL DO USUÁRIO & UPGRADE
 // ==============================================================================
-
-export async function upgradeUserToAssinante() {
-  const user = await getSafeUser();
-  if (!user) return { error: "Não autorizado." };
-
-  try {
-    await db.user.update({
-      where: { id: user.id },
-      data: { role: "ASSINANTE" as Role },
-    });
-
-    revalidatePath("/");
-    revalidatePath("/dashboard");
-    return { success: true };
-  } catch (error) {
-    return { error: "Erro no upgrade." };
-  }
-}
 
 export async function updateUserProfile(formData: FormData) {
   const sessionUser = await getSafeUser();
