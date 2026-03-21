@@ -1,26 +1,27 @@
 "use client";
 
-import { AlertTriangle, Calendar, ArrowRight } from "lucide-react";
+import { AlertTriangle, Calendar, ArrowRight, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { ptBR } from "date-fns/locale";
 
 export default function SubscriptionAlert({ user }: { user: any }) {
-  // 1. Se não tem data de expiração (expiresAt), é um Lead novato. Não mostramos alerta nenhum.
+  // 1. Se não tem data de expiração, não mostramos nada (Lead ou Admin)
   if (!user.expiresAt) return null;
 
   const router = useRouter();
-  const isExpired = new Date(user.expiresAt) < new Date();
-  const expiryDate = format(
-    new Date(user.expiresAt),
-    "dd 'de' MMMM 'de' yyyy",
-    { locale: ptBR },
-  );
+  const now = new Date();
+  const expiresAt = new Date(user.expiresAt);
+  const isPastDueDate = now > expiresAt;
 
-  // 2. Se a conta está ATIVA e ele é ASSINANTE (O aviso verdinho)
-  if (!isExpired && user.role === "ASSINANTE") {
+  const expiryDate = format(expiresAt, "dd 'de' MMMM 'de' yyyy", {
+    locale: ptBR,
+  });
+
+  // 2. FASE 1: ATIVO E NO PRAZO (O aviso verdinho)
+  if (user.role === "ASSINANTE" && !isPastDueDate) {
     return (
-      <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-3xl flex items-center justify-between mb-8">
+      <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-3xl flex items-center justify-between mb-8 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="bg-emerald-500 text-white p-2 rounded-xl">
             <Calendar size={18} />
@@ -33,8 +34,32 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     );
   }
 
-  // 3. Se a conta está EXPIRADA (O aviso vermelhão para ele pagar)
-  if (isExpired) {
+  // 3. FASE 2: CARÊNCIA / PROCESSANDO (O aviso tranquilizador)
+  // Venceu a data, mas o sistema (Layout.tsx) ainda não rebaixou ele para Visitante
+  if (user.role === "ASSINANTE" && isPastDueDate) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-amber-500 text-white p-2 rounded-xl animate-pulse">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">
+              Processando Renovação...
+            </p>
+            <p className="text-[10px] font-bold text-amber-600/70">
+              Aguardando confirmação do Mercado Pago. Seu acesso continua
+              liberado!
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. FASE 3: EXPIRADO DE VERDADE (O aviso vermelhão)
+  // Se a data passou e ele não é mais ASSINANTE (a guilhotina das 48h caiu)
+  if (user.role === "VISITANTE" && isPastDueDate) {
     return (
       <div className="bg-rose-600 text-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl shadow-rose-200 relative overflow-hidden mb-10 animate-pulse">
         {/* Detalhe de fundo */}
@@ -69,6 +94,6 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     );
   }
 
-  // Se não caiu em nenhuma condição acima, não renderiza nada
+  // Se não caiu em nada, previne quebrar a tela
   return null;
 }
