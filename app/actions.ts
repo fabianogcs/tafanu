@@ -1729,12 +1729,26 @@ export async function createSubscription(
     return { error: "Sua conta possui restrições." };
   }
 
+  const hasUsedTrial = !!dbUser?.expiresAt;
+
   const subscriptionClient = new PreApproval(client);
 
   const planConfigs = {
-    monthly: { amount: 29.9, reason: "Assinatura Tafanu PRO - Mensal" },
-    quarterly: { amount: 74.7, reason: "Assinatura Tafanu PRO - Trimestral" },
-    yearly: { amount: 238.8, reason: "Assinatura Tafanu PRO - Anual" },
+    monthly: {
+      amount: 29.9,
+      reason: "Assinatura Tafanu PRO - Mensal",
+      trialDays: hasUsedTrial ? 0 : 7,
+    },
+    quarterly: {
+      amount: 74.7,
+      reason: "Assinatura Tafanu PRO - Trimestral",
+      trialDays: 0,
+    },
+    yearly: {
+      amount: 238.8,
+      reason: "Assinatura Tafanu PRO - Anual",
+      trialDays: 0,
+    },
   };
 
   const config = planConfigs[planType];
@@ -1742,30 +1756,31 @@ export async function createSubscription(
   try {
     const body = {
       reason: config.reason,
-      // Usamos o e-mail genérico para não dar Erro 400 nem Erro 500 na geração
-      payer_email: "test_user_tafanu@test.com",
+      payer_email: userEmail, // ⬅️ O seu e-mail real do site!
       auto_recurring: {
         frequency:
           planType === "quarterly" ? 3 : planType === "yearly" ? 12 : 1,
         frequency_type: "months",
         transaction_amount: config.amount,
         currency_id: "BRL",
+        // Só adiciona trial se for o caso
+        ...(config.trialDays > 0 && {
+          free_trial: {
+            frequency: config.trialDays,
+            frequency_type: "days",
+          },
+        }),
       },
+
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
+
+      // 🚨 Removi o payment_methods_allowed para evitar o erro do Mercado Pago
     };
 
     const response = await subscriptionClient.create({ body });
 
-    // Pegamos o link oficial que o TypeScript reconhece (sem linhas vermelhas)
-    let linkFinal = response.init_point;
-
-    // Fazemos a troca manual para forçar o ambiente de Sandbox (a página "antiga" de testes)
-    if (linkFinal && linkFinal.includes("www.mercadopago")) {
-      linkFinal = linkFinal.replace("www.mercadopago", "sandbox.mercadopago");
-    }
-
-    return { success: true, init_point: linkFinal };
+    return { success: true, init_point: response.init_point };
   } catch (error) {
     console.error("Erro MP:", error);
     return { error: "Erro ao gerar checkout." };
