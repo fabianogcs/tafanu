@@ -1772,7 +1772,7 @@ export async function createSubscription(
         }),
       },
 
-      back_url: "https://tafanu.vercel.app/dashboard",
+      back_url: "https://tafanu.vercel.app/checkout/sucesso", // ⬅️ Mudamos para a tela de sucesso!
       external_reference: userId,
 
       // 🚨 Removi o payment_methods_allowed para evitar o erro do Mercado Pago
