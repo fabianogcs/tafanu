@@ -1729,11 +1729,11 @@ export async function createSubscription(
     return { error: "Sua conta possui restrições." };
   }
 
-  const hasUsedTrial = !!dbUser?.expiresAt;
+  const hasUsedTrial = !!dbUser?.expiresAt; // 🛡️ Mudança para PreApproval: Isso gera o checkout direto para o usuário
+
   const subscriptionClient = new PreApproval(client);
 
   const planConfigs = {
-    // ... (suas configurações de monthly, quarterly, yearly continuam iguais)
     monthly: {
       amount: 29.9,
       reason: "Assinatura Tafanu PRO - Mensal",
@@ -1756,14 +1756,13 @@ export async function createSubscription(
   try {
     const body = {
       reason: config.reason,
-      // 🚨 O E-MAIL CORRETO DE TESTE ESTÁ AQUI 🚨
-      payer_email: "test_user_tafanu@test.com",
+      payer_email: userEmail, // ⬅️ Agora no lugar certo
       auto_recurring: {
         frequency:
           planType === "quarterly" ? 3 : planType === "yearly" ? 12 : 1,
         frequency_type: "months",
         transaction_amount: config.amount,
-        currency_id: "BRL",
+        currency_id: "BRL", // Só adiciona trial se for o caso
         ...(config.trialDays > 0 && {
           free_trial: {
             frequency: config.trialDays,
@@ -1771,13 +1770,17 @@ export async function createSubscription(
           },
         }),
       },
+
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
+      payment_methods_allowed: {
+        payment_types: [{ id: "credit_card" }],
+        payment_methods: [],
+      },
     };
 
-    const response = await subscriptionClient.create({ body });
+    const response = await subscriptionClient.create({ body }); // O init_point aqui é o que abre o checkout pronto para o usuário
 
-    // 🚨 Removemos o truque do sandbox. Voltamos a usar o link oficial! 🚨
     return { success: true, init_point: response.init_point };
   } catch (error) {
     console.error("Erro MP:", error);
