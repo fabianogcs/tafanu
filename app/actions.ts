@@ -1729,26 +1729,12 @@ export async function createSubscription(
     return { error: "Sua conta possui restrições." };
   }
 
-  const hasUsedTrial = !!dbUser?.expiresAt; // 🛡️ Mudança para PreApproval: Isso gera o checkout direto para o usuário
-
   const subscriptionClient = new PreApproval(client);
 
   const planConfigs = {
-    monthly: {
-      amount: 29.9,
-      reason: "Assinatura Tafanu PRO - Mensal",
-      trialDays: hasUsedTrial ? 0 : 7,
-    },
-    quarterly: {
-      amount: 74.7,
-      reason: "Assinatura Tafanu PRO - Trimestral",
-      trialDays: 0,
-    },
-    yearly: {
-      amount: 238.8,
-      reason: "Assinatura Tafanu PRO - Anual",
-      trialDays: 0,
-    },
+    monthly: { amount: 29.9, reason: "Assinatura Tafanu PRO - Mensal" },
+    quarterly: { amount: 74.7, reason: "Assinatura Tafanu PRO - Trimestral" },
+    yearly: { amount: 238.8, reason: "Assinatura Tafanu PRO - Anual" },
   };
 
   const config = planConfigs[planType];
@@ -1756,32 +1742,30 @@ export async function createSubscription(
   try {
     const body = {
       reason: config.reason,
-      payer_email: userEmail, // ⬅️ Agora no lugar certo
+      // Usamos o e-mail genérico para não dar Erro 400 nem Erro 500 na geração
+      payer_email: "test_user_tafanu@test.com",
       auto_recurring: {
         frequency:
           planType === "quarterly" ? 3 : planType === "yearly" ? 12 : 1,
         frequency_type: "months",
         transaction_amount: config.amount,
-        currency_id: "BRL", // Só adiciona trial se for o caso
-        ...(config.trialDays > 0 && {
-          free_trial: {
-            frequency: config.trialDays,
-            frequency_type: "days",
-          },
-        }),
+        currency_id: "BRL",
       },
-
       back_url: "https://tafanu.vercel.app/dashboard",
       external_reference: userId,
-      payment_methods_allowed: {
-        payment_types: [{ id: "credit_card" }],
-        payment_methods: [],
-      },
     };
 
-    const response = await subscriptionClient.create({ body }); // O init_point aqui é o que abre o checkout pronto para o usuário
+    const response = await subscriptionClient.create({ body });
 
-    return { success: true, init_point: response.init_point };
+    // Pegamos o link oficial que o TypeScript reconhece (sem linhas vermelhas)
+    let linkFinal = response.init_point;
+
+    // Fazemos a troca manual para forçar o ambiente de Sandbox (a página "antiga" de testes)
+    if (linkFinal && linkFinal.includes("www.mercadopago")) {
+      linkFinal = linkFinal.replace("www.mercadopago", "sandbox.mercadopago");
+    }
+
+    return { success: true, init_point: linkFinal };
   } catch (error) {
     console.error("Erro MP:", error);
     return { error: "Erro ao gerar checkout." };
