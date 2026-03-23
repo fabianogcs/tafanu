@@ -347,7 +347,7 @@ export default function ComercialLayout({
                   {business.comercial_badge}
                 </span>
               )}
-              <h1 className="text-3xl md:text-6xl font-black italic tracking-tighter leading-none text-slate-900">
+              <h1 className="text-3xl md:text-6xl font-black italic tracking-tighter leading-none theme.textColor">
                 {business.name}
               </h1>
             </div>
@@ -721,22 +721,35 @@ export default function ComercialLayout({
                       rel="noopener noreferrer"
                       onClick={() =>
                         Actions.registerClickEvent(business.id, "MAP")
-                      } // 🚀 ESPIÃO AQUI
-                      className="p-8 bg-neutral-100 rounded-[2.5rem] flex flex-col justify-between h-64 group border border-black/5"
+                      }
+                      /* AJUSTE AQUI: Removemos h-64, justify-between e usamos min-h com gap */
+                      className={`p-6 md:p-8 ${theme.cardBg} rounded-[2.5rem] flex flex-col gap-6 h-full group border ${theme.border} shadow-sm transition-all hover:shadow-md`}
                     >
+                      {/* ÍCONE COM TAMANHO AJUSTADO */}
                       <div
                         className={`w-12 h-12 rounded-xl ${theme.bgAction} flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform shrink-0`}
                       >
                         <MapPin size={22} />
                       </div>
-                      <div className="text-left">
-                        <h4 className="text-[10px] font-black uppercase opacity-40 mb-1">
+
+                      <div className="text-left space-y-2">
+                        <h4
+                          className={`text-[10px] font-black uppercase opacity-40 tracking-widest ${theme.textColor}`}
+                        >
                           Localização
                         </h4>
-                        <p className="text-base md:text-lg font-black uppercase italic leading-tight">
+
+                        {/* ENDEREÇO PRINCIPAL */}
+                        <p
+                          className={`text-sm md:text-base font-black uppercase italic leading-tight ${theme.textColor}`}
+                        >
                           {business.address?.split("-").slice(0, 2).join(" - ")}
                         </p>
-                        <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-2">
+
+                        {/* CIDADE E ESTADO */}
+                        <p
+                          className={`text-[10px] font-bold opacity-40 uppercase tracking-widest ${theme.textColor}`}
+                        >
                           {business.city}{" "}
                           {business.state ? `— ${business.state}` : ""}
                         </p>

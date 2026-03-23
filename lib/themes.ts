@@ -3,74 +3,78 @@ export const businessThemes: Record<string, any> = {
   // ☀️ COMERCIAL (3 CLAROS + 2 ESCUROS)
   // =========================================================
 
-  // 1. LIGHT - ESSENCIAL (Cinza Neutro e Elegante)
-  comercial_neutral: {
-    label: "Comercial - Clássico",
+  // 1. LIGHT -
+  comercial_pearl: {
+    label: "Comercial - Pearl Luxe",
     layout: "businessList",
-    bgPage: "bg-gray-50", // Fundo gelo quase branco
-    textColor: "text-gray-900", // Texto preto suave
-    cardBg: "bg-white", // Cards brancos puros
-    border: "border-gray-200", // Bordas discretas
-    primary: "text-gray-700", // Ícones em cinza médio elegante
-    bgSecondary: "bg-gray-200/60", // Fundo dos ícones levemente mais escuro que a página
-    bgAction: "bg-gray-900", // Botão "Preto Carvão" (O charme e destaque)
-    previewColor: "linear-gradient(135deg, #ffffff 0%, #111827 100%)",
+    bgPage: "bg-[#fdfcfb]", // Off-white quente e luxuoso
+    textColor: "text-[#2d2421]", // Marrom café para leitura suave
+    cardBg: "bg-white", // Card branco puro para destacar
+    border: "border-[#e5e1da]", // Borda sutil perolada
+    primary: "text-[#c5a059]", // Dourado Champagne (Elegância)
+    bgSecondary: "bg-[#f4f1ea]", // Fundo de ícones em tom areia
+    bgAction: "bg-[#c5a059]", // Botão Dourado
+    previewColor: "linear-gradient(135deg, #fdfcfb 0%, #c5a059 100%)",
   },
 
-  // 2. LIGHT - MENTA FRESH
+  // 2. LIGHT -
+  comercial_violet: {
+    label: "Comercial - Cloud Violet",
+    layout: "businessList",
+    bgPage: "bg-[#f8f9ff]", // Branco azulado (limpeza visual)
+    textColor: "text-[#1e1b4b]", // Azul marinho profundo
+    cardBg: "bg-white",
+    border: "border-[#e0e7ff]", // Borda azulada clara
+    primary: "text-[#6366f1]", // Violeta/Índigo vibrante
+    bgSecondary: "bg-[#eef2ff]",
+    bgAction: "bg-[#6366f1]",
+    previewColor: "linear-gradient(135deg, #f8f9ff 0%, #6366f1 100%)",
+  },
+
+  // 3. DARK - MIDNIGHT INDIGO (Substituindo o Vermelho por um Azul Profundo)
+  // Identidade: Tecnológico, Profissional e Elegante
+  // Mix: Indigo Profundo + Ciano Elétrico + Branco Gelo
+  comercial_blue_dark: {
+    label: "Comercial - Digital Clear",
+    layout: "businessList",
+    bgPage: "bg-[#FDF2F8]", // Cinza azulado ultra-claro (Cor de fundo do Gemini)
+    textColor: "text-[[#4A044E]", // Cinza quase preto (Suave para leitura longa)
+    cardBg: "bg-white", // Card branco puro (Destaque total)
+    border: "border-[#FDBA74]", // Borda muito fina e discreta
+    primary: "text-[#1a73e8]", // Azul Google (Focado em tecnologia e clareza)
+    bgSecondary: "bg-[#FAE8FF]", // Fundo de ícones em azul pálido
+    bgAction: "bg-[#7E22CE] text-white", // Botão azul vibrante (Ação clara)
+    previewColor: "linear-gradient(135deg, #f0f4f8 0%, #7E22CE 100%)",
+  },
+
+  // 4. DARK - ONYX & GOLD (Estilo Luxo / High-End)
+  // Identidade: Exclusividade, Poder e Sofisticação
+  // Mix: Preto Absoluto + Ouro Champagne + Branco Gelo
   comercial_mint: {
-    label: "Comercial - Menta",
+    label: "Comercial - Onyx & Gold",
     layout: "businessList",
-    bgPage: "bg-emerald-50/30",
-    textColor: "text-slate-800",
-    cardBg: "bg-white",
-    border: "border-emerald-100",
-    primary: "text-emerald-600",
-    bgSecondary: "bg-emerald-50",
-    bgAction: "bg-emerald-600",
-    previewColor: "linear-gradient(135deg, #ffffff 0%, #10b981 100%)",
+    bgPage: "bg-[#000000]", // PRETO ABSOLUTO (Oled)
+    textColor: "text-[#f8f8f8]", // Branco Gelo para leitura nítida no preto
+    cardBg: "bg-[#0d0d0d]", // Card quase preto (Sutil separação de profundidade)
+    border: "border-[#EAD900]/30", // Borda Dourada sutil (30% de opacidade para não carregar)
+    primary: "text-[#FFD700]", // Ouro Champagne (A cor que dá o brilho)
+    bgSecondary: "bg-[#1a1a1a]", // Fundo de ícones em cinza chumbo
+    bgAction: "bg-[#AFA700] text-[#000000]", // Botão Dourado com texto preto (Máxima elegância)
+    previewColor: "linear-gradient(135deg, #000000 0%, #FFD700 100%)",
   },
 
-  // 3. LIGHT - SOLAR AMBER
-  comercial_amber: {
-    label: "Comercial - Solar",
+  // 5. DARK - TECH NIGHT
+  comercial_forest: {
+    label: "Comercial - Deep Forest",
     layout: "businessList",
-    bgPage: "bg-orange-50/20",
-    textColor: "text-stone-900",
-    cardBg: "bg-white",
-    border: "border-orange-100",
-    primary: "text-orange-600",
-    bgSecondary: "bg-orange-50",
-    bgAction: "bg-orange-600",
-    previewColor: "linear-gradient(135deg, #ffffff 0%, #ea580c 100%)",
-  },
-
-  // 4. DARK - TECH NIGHT (Azul Noturno)
-  comercial_dark: {
-    label: "Comercial - Tech",
-    layout: "businessList",
-    bgPage: "bg-slate-950",
-    textColor: "text-slate-100",
-    cardBg: "bg-slate-900",
-    border: "border-slate-800",
-    primary: "text-sky-400",
-    bgSecondary: "bg-sky-950/50",
-    bgAction: "bg-sky-500",
-    previewColor: "linear-gradient(135deg, #020617 20%, #0ea5e9 100%)",
-  },
-
-  // 5. DARK - RED FORCE (Substitui o Grafite para variar do Azul)
-  comercial_red_dark: {
-    label: "Comercial - Red Force",
-    layout: "businessList",
-    bgPage: "bg-[#0f0a0a]", // Fundo preto com um leve toque quente
-    textColor: "text-[#fef2f2]", // Texto branco gelo
-    cardBg: "bg-[#1c1010]", // Card num tom "Café/Vinho" muito escuro
-    border: "border-[#450a0a]", // Bordas em vermelho sangue escuro
-    primary: "text-[#f87171]", // Ícones em vermelho claro
-    bgSecondary: "bg-[#450a0a]", // Fundo secundário vermelho escuro
-    bgAction: "bg-[#b91c1c]", // Botão Vermelho Intenso (Fica ótimo com texto branco)
-    previewColor: "linear-gradient(135deg, #0f0a0a 0%, #b91c1c 100%)",
+    bgPage: "bg-[#0d1410]", // Verde quase preto (Sólido)
+    textColor: "text-[#ecf3f0]", // Texto menta gelo
+    cardBg: "bg-[#16211b]", // Card um tom acima do fundo (profundidade)
+    border: "border-[#23352a]",
+    primary: "text-[#4ade80]", // Verde neon para "quebrar" a sobriedade
+    bgSecondary: "bg-[#23352a]",
+    bgAction: "bg-[#4ade80] text-[#0d1410]", // Botão Neon com texto escuro
+    previewColor: "linear-gradient(135deg, #0d1410 0%, #4ade80 100%)",
   },
 
   // =========================================================
@@ -147,42 +151,42 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #000000 0%, #E11D48 100%)",
   },
 
-  // 1. MIDNIGHT (O Original - Intocável)
-  // Identidade: Realeza Cyberpunk
-  // Mix: Roxo Profundo + Dourado Ouro
+  // 1. CYBER PINK (Antigo Midnight - Totalmente Refeito)
+  // Identidade: Futurista, Vibrante e Alta Voltagem
+  // Mix: Preto Absoluto + Rosa Neon + Branco Rosado
   urban_cyber: {
-    label: "Urban - Midnight",
+    label: "Urban - Cyber Pink",
     layout: "urban",
-    bgPage: "bg-[#0f0a1e]", // Roxo Quase Preto
-    textColor: "text-[#e9d5ff]", // Lilás Claro
-    cardBg: "bg-[#1e1b4b]/60", // Roxo Profundo Transparente
+    bgPage: "bg-[#000000]", // Preto Absoluto para o Pink brilhar
+    textColor: "text-[#fce7f3]", // Branco com toque de Rosa (Pink 100)
+    cardBg: "bg-[#0a0a0a]/80", // Card quase preto com transparência
     cardTextColor: "text-white",
-    border: "border-[#fbbf24]", // Dourado
-    primary: "text-[#fbbf24]",
-    bgSecondary: "bg-[#3b0764]",
-    bgAction: "bg-[#fbbf24] text-black",
-    radius: "rounded-xl",
-    shadow: "shadow-[0_0_30px_-10px_rgba(251,191,36,0.3)]", // Glow Dourado
-    previewColor: "linear-gradient(135deg, #e9d5ff 0%, #fbbf24 100%)",
+    border: "border-[#ff007f]", // Rosa Neon Vibrante
+    primary: "text-[#ff007f]", // Ícones e Destaques em Pink
+    bgSecondary: "bg-[#1a1a1a]", // Fundo secundário em cinza muito escuro
+    bgAction: "bg-[#ff007f] text-white", // Botão Pink com texto branco
+    radius: "rounded-2xl", // Bordas modernas e arredondadas
+    shadow: "shadow-[0_0_25px_-5px_rgba(255,0,127,0.4)]", // Glow Rosa Neon
+    previewColor: "linear-gradient(135deg, #000000 0%, #ff007f 100%)",
   },
 
-  // 2. CRIMSON (Estilo Samurai / Sith)
-  // Identidade: Agressivo e Tecnológico
-  // Mix: Preto Carvão + Vermelho Neon + Prata (Adeus Vermelho no fundo!)
-  urban_crimson: {
-    label: "Urban - Crimson",
+  // 2. BLACK IVORY (Preto Absoluto + Nude Vivo)
+  // Identidade: Luxo Moderno, Minimalista e Elegante
+  // Mix: Preto Oled + Nude Orgânico + Texto Off-White
+  urban_black_nude: {
+    label: "Urban - Black Ivory",
     layout: "urban",
-    bgPage: "bg-[#09090b]", // Preto Zinco (Frio)
-    textColor: "text-[#e4e4e7]", // Prata/Cinza Claro
-    cardBg: "bg-[#18181b]/80", // Cinza Escuro
+    bgPage: "bg-[#000000]", // PRETO BEM NEGRO (Oled)
+    textColor: "text-[#f3f4f6]", // Texto quase branco para brilhar no preto
+    cardBg: "bg-[#111111]/90", // Card negro sólido com leve brilho
     cardTextColor: "text-white",
-    border: "border-[#ff0055]", // Vermelho Laser
-    primary: "text-[#ff0055]",
-    bgSecondary: "bg-[#27272a]",
-    bgAction: "bg-[#ff0055] text-white",
-    radius: "rounded-sm", // Levemente quadrado para parecer agressivo
-    shadow: "shadow-[0_0_30px_-5px_rgba(255,0,85,0.25)]", // Glow Vermelho
-    previewColor: "linear-gradient(135deg, #09090b 0%, #ff0055 100%)",
+    border: "border-[#eab69f]", // A COR NUDE: Dando vida aos contornos
+    primary: "text-[#eab69f]", // Ícones e detalhes na cor Nude
+    bgSecondary: "bg-[#0a0a0a]",
+    bgAction: "bg-[#eab69f] text-[#000000]", // Botão Nude com texto preto (Elegância máxima)
+    radius: "rounded-2xl",
+    shadow: "shadow-[0_0_20px_-5px_rgba(234,182,159,0.3)]", // Um "Glow Nude" sutil e chic
+    previewColor: "linear-gradient(135deg, #000000 0%, #eab69f 100%)",
   },
 
   // 3. SAPPHIRE (Versão Electric / Tron)
@@ -245,19 +249,17 @@ export const businessThemes: Record<string, any> = {
   // 🏛️ SHOWROOM (3 CLAROS + 2 ESCUROS)
   // =========================================================
 
-  // 1. LIGHT - STUDIO MINIMAL (Estética Apple/Galeria)
-  // Foco: Branco absoluto e detalhes em Preto. Ideal para fotos coloridas.
-  showroom_minimal: {
-    label: "Showroom - Studio",
+  showroom_tech: {
+    label: "Showroom - Neon Slate",
     layout: "showroom",
-    bgPage: "bg-white",
-    textColor: "text-slate-900",
-    subTextColor: "text-slate-400",
-    border: "border-slate-100",
-    primary: "text-slate-900",
-    bgSecondary: "bg-slate-50",
-    bgAction: "bg-black", // O sticker preto no fundo branco é o auge do chic
-    previewColor: "linear-gradient(135deg, #ffffff 0%, #000000 100%)",
+    bgPage: "bg-[#1e293b]", // Fundo Slate 800
+    textColor: "text-[#f1f5f9]",
+    cardBg: "bg-[#0f172a]", // Card muito mais escuro (Slate 900)
+    border: "border-[#38bdf8]/30", // Borda Ciano neon sutil
+    primary: "text-[#38bdf8]",
+    bgSecondary: "bg-[#0c4a6e]",
+    bgAction: "bg-[#38bdf8] text-[#082f49]",
+    previewColor: "linear-gradient(135deg, #1e293b 0%, #38bdf8 100%)",
   },
 
   // 2. LIGHT - NORDIC SKY (Azul Acinzentado e Sereno)
@@ -275,48 +277,42 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #F8FAFC 0%, #334155 100%)",
   },
 
-  // 3. LIGHT - TERRACOTTA (Orgânico e Quente)
-  // Foco: Marcas artesanais, joias ou gastronomia.
-  showroom_clay: {
-    label: "Showroom - Terracotta",
+  showroom_candy: {
+    label: "Showroom - Cotton Candy",
     layout: "showroom",
-    bgPage: "bg-[#FAF9F6]", // Branco Linho
-    textColor: "text-[#2D2A26]",
-    subTextColor: "text-[#9A7E6F]",
-    border: "border-[#EFEBE9]",
-    primary: "text-[#8D6E63]",
-    bgSecondary: "bg-[#F5F5F4]",
-    bgAction: "bg-[#BC6C25]", // Sticker em tom barro/terracota
-    previewColor: "linear-gradient(135deg, #FAF9F6 0%, #BC6C25 100%)",
+    bgPage: "bg-[#f5f3ff]", // Fundo Lavanda
+    textColor: "text-[#4c1d95]", // Texto Roxo Escuro
+    cardBg: "bg-white",
+    border: "border-[#ddd6fe]",
+    primary: "text-[#f43f5e]", // Rosa Cereja
+    bgSecondary: "bg-[#fff1f2]",
+    bgAction: "bg-[#f43f5e] text-white",
+    previewColor: "linear-gradient(135deg, #f5f3ff 0%, #f43f5e 100%)",
   },
 
-  // 4. DARK - ONYX & PLATINUM (Luxo Tecnológico)
-  // Foco: Relógios, carros ou agências de elite.
-  showroom_onyx: {
-    label: "Showroom - Onyx",
+  showroom_electric: {
+    label: "Showroom - Electric Mono",
     layout: "showroom",
-    bgPage: "bg-[#050505]",
+    bgPage: "bg-[#111827]", // Cinza quase preto
     textColor: "text-white",
-    subTextColor: "text-zinc-500",
-    border: "border-zinc-800/50",
-    primary: "text-white",
-    bgSecondary: "bg-[#111111]",
-    bgAction: "bg-white", // Sticker branco brilha no fundo preto
-    previewColor: "linear-gradient(135deg, #050505 0%, #ffffff 100%)",
+    cardBg: "bg-[#111827]", // O card é da mesma cor do fundo (Efeito Seamless)
+    border: "border-[#374151]", // A borda é o que define o card
+    primary: "text-[#fde047]", // Amarelo Elétrico
+    bgSecondary: "bg-[#374151]",
+    bgAction: "bg-[#fde047] text-black", // Botão que "explode" na tela
+    previewColor: "linear-gradient(135deg, #111827 0%, #fde047 100%)",
   },
 
-  // 5. DARK - MIDNIGHT AMBER (Elegância Noturna)
-  // Foco: Lounge, vinhos ou produtos premium.
-  showroom_amber: {
-    label: "Showroom - Amber",
+  showroom_nude: {
+    label: "Showroom - Nude Luxe",
     layout: "showroom",
-    bgPage: "bg-[#0D0C0B]",
-    textColor: "text-[#E5E5E5]",
-    subTextColor: "text-[#BC6C25]",
-    border: "border-[#1A1816]",
-    primary: "text-[#D4A373]",
-    bgSecondary: "bg-[#1A1816]",
-    bgAction: "bg-[#D4A373]", // Sticker em cobre/âmbar
-    previewColor: "linear-gradient(135deg, #0D0C0B 0%, #D4A373 100%)",
+    bgPage: "bg-[#f2e9e4]", // Nude Areia Suave (Fundo)
+    textColor: "text-[#4a3728]", // Marrom Café Escuro (Aparece em TUDO)
+    cardBg: "bg-[#fdfaf9]", // Nude Creme (Card - faz a letra "pular" pra fora)
+    border: "border-[#c9ada7]", // Borda Nude Rosé para detalhe
+    primary: "text-[#9a8c98]", // Lavanda Acinzentado (Toque exótico)
+    bgSecondary: "bg-[#f2e9e4]", // Fundo de ícones igual ao fundo da página
+    bgAction: "bg-[#4a3728] text-white", // Botão Café com texto branco (Destaque total)
+    previewColor: "linear-gradient(135deg, #f2e9e4 0%, #4a3728 100%)",
   },
 };
