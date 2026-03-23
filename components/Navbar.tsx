@@ -84,7 +84,7 @@ export default function Navbar({
   const isGuest = !isLoggedIn;
 
   return (
-    <nav className="bg-tafanu-blue sticky top-0 z-50 border-b border-white/10 w-full transition-all duration-300">
+    <nav className="bg-tafanu-blue sticky top-0 z-[1000] border-b border-white/10 w-full transition-all duration-300">
       <div className="w-full px-6 lg:px-12">
         <div className="flex justify-between items-center h-20 md:h-24">
           {/* --- LOGO --- */}
@@ -218,7 +218,7 @@ export default function Navbar({
           <div className="md:hidden flex items-center gap-4">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className={`p-3 rounded-2xl border transition-all duration-300 ${isOpen ? "bg-red-500/20 border-red-500/40 text-red-400" : "bg-white/10 border-white/20 text-white"} relative z-[70] shadow-lg`}
+              className={`p-3 rounded-2xl border transition-all duration-300 ${isOpen ? "bg-red-500/20 border-red-500/40 text-red-400" : "bg-white/10 border-white/20 text-white"} relative z-[1020] shadow-lg`}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -229,14 +229,14 @@ export default function Navbar({
       {/* --- OVERLAY: ESCURECE O SITE INTEIRO (Para focar no menu) --- */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/95 z-[60] md:hidden animate-in fade-in duration-300"
+          className="fixed inset-0 bg-black/95 z-[1005] md:hidden animate-in fade-in duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* --- GAVETA MOBILE: FUNDO TOTALMENTE SÓLIDO (Mudei para um azul bem escuro sólido) --- */}
       <div
-        className={`fixed top-0 right-0 h-full w-[310px] bg-[#0A0F1E] z-[65] shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:hidden ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed top-0 right-0 h-full w-[310px] bg-[#0A0F1E] z-[1010] shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:hidden ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex flex-col h-full p-6 pt-24">
           {/* Botão de Instalação Mobile */}

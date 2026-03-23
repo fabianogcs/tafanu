@@ -47,6 +47,10 @@ interface BuscaProps {
   }>;
 }
 
+// app/busca/page.tsx
+
+// ... (mantenha os imports e as funções auxiliares normalizeText e calculateDistance iguais)
+
 export default async function BuscaPage({ searchParams }: BuscaProps) {
   const session = await auth();
   const userId = session?.user?.id;
@@ -57,51 +61,25 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const page = Number(params.page) || 1;
   const skip = (page - 1) * PAGE_SIZE;
 
-  // 📍 PARÂMETROS DE LOCALIZAÇÃO E FILTROS
   const category = params.category || "";
+  const subcategoryParam = params.subcategory || "";
   const rawCityFilter = params.city || "";
-  const cityFilter = normalizeText(rawCityFilter); // Limpa "São Paulo" para "sao paulo"
-  const stateFilter = params.state || "";
-  const neighborhoodFilter = params.neighborhood || "";
+  const cityFilter = normalizeText(rawCityFilter);
   const sort = params.sort || "relevance";
 
   const userLat = params.lat ? parseFloat(String(params.lat)) : null;
   const userLng = params.lng ? parseFloat(String(params.lng)) : null;
 
-  // --- 1. METADADOS PARA O MODAL ---
-  const categoriesData = await db.business.findMany({
-    where: { isActive: true, published: true },
-    select: { category: true, subcategory: true },
-    distinct: ["category"],
-  });
-
-  const filterMap: Record<string, string[]> = {};
-  categoriesData.forEach((item) => {
-    if (!filterMap[item.category]) filterMap[item.category] = [];
-    item.subcategory.forEach((sub) => {
-      if (!filterMap[item.category].includes(sub))
-        filterMap[item.category].push(sub);
-    });
-  });
-
-  const orderedFilterMap: Record<string, string[]> = {};
-  Object.keys(filterMap)
-    .sort()
-    .forEach((key) => {
-      orderedFilterMap[key] = filterMap[key].sort();
-    });
-
-  // --- 2. PREPARAÇÃO DA BARRA DE PESQUISA ---
   const searchTerms = query
     .split(" ")
     .filter((w) => w.length > 0 && !STOPWORDS.includes(w));
-
-  // 🚀 Pegamos também as palavras originais (com acentos e cedilhas)
   const rawTerms = rawQuery
     .split(" ")
     .filter((w) => w.length > 0 && !STOPWORDS.includes(w.toLowerCase()));
 
-  const whereClause: any = {
+  // --- 1. CONSTRUÇÃO DO FILTRO BASE (O que o usuário digitou + Onde ele está) ---
+  // Este filtro define o "universo" de resultados possíveis antes de escolhermos uma categoria
+  const baseWhereClause: any = {
     isActive: true,
     published: true,
     user: {
@@ -111,10 +89,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       ],
     },
     AND: [
-      // 📍 ONDE ESTÁ? (Filtros de Localização)
-      ...(category
-        ? [{ category: { equals: category, mode: "insensitive" as const } }]
-        : []),
+      // Filtros de Localização
       ...(cityFilter
         ? [
             {
@@ -136,15 +111,14 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
           ]
         : []),
 
-      // 🍕 O QUE É? (Busca Dupla Blindada)
+      // Busca de Texto
       ...(searchTerms.length > 0
         ? searchTerms.map((term, index) => {
-            const rTerm = rawTerms[index] || term; // Pega a palavra correspondente COM acento
-
+            const rTerm = rawTerms[index] || term;
             return {
               OR: [
-                { name: { contains: term, mode: "insensitive" as const } }, // Ex: "espaco"
-                { name: { contains: rTerm, mode: "insensitive" as const } }, // Ex: "Espaço"
+                { name: { contains: term, mode: "insensitive" as const } },
+                { name: { contains: rTerm, mode: "insensitive" as const } },
                 { category: { contains: term, mode: "insensitive" as const } },
                 { category: { contains: rTerm, mode: "insensitive" as const } },
                 { keywords: { hasSome: [term, rTerm] } },
@@ -155,19 +129,60 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         : []),
     ],
   };
-  // --- 3. BUSCA NO BANCO ---
+
+  // --- 2. BUSCA DE CATEGORIAS DINÂMICAS (Filtros Facetados) ---
+  // Aqui pegamos apenas categorias que existem dentro do resultado da busca acima
+  const categoriesData = await db.business.findMany({
+    where: baseWhereClause,
+    select: { category: true, subcategory: true },
+    // Removido o distinct aqui para podermos mapear todas as subcategorias corretamente
+  });
+
+  const filterMap: Record<string, string[]> = {};
+  categoriesData.forEach((item) => {
+    if (!filterMap[item.category]) filterMap[item.category] = [];
+    item.subcategory.forEach((sub) => {
+      if (!filterMap[item.category].includes(sub))
+        filterMap[item.category].push(sub);
+    });
+  });
+
+  const orderedFilterMap: Record<string, string[]> = {};
+  Object.keys(filterMap)
+    .sort()
+    .forEach((key) => {
+      orderedFilterMap[key] = filterMap[key].sort();
+    });
+
+  // --- 3. CONSTRUÇÃO DO FILTRO FINAL (Base + Categoria/Sub selecionadas no modal) ---
+  const finalWhereClause = {
+    ...baseWhereClause,
+    AND: [
+      ...baseWhereClause.AND,
+      ...(category
+        ? [{ category: { equals: category, mode: "insensitive" as const } }]
+        : []),
+      ...(subcategoryParam
+        ? [{ subcategory: { hasSome: subcategoryParam.split(",") } }]
+        : []),
+    ],
+  };
+
+  // --- 4. BUSCA DOS NEGÓCIOS E COUNT ---
   const [businessesData, totalCount] = await Promise.all([
     db.business.findMany({
-      where: whereClause,
-      take: 150,
+      where: finalWhereClause,
+      take: 150, // Pegamos uma boa amostragem para o score
       include: {
         hours: true,
         favorites: userId ? { where: { userId } } : false,
         _count: { select: { favorites: true } },
       },
     }),
-    db.business.count({ where: whereClause }),
+    db.business.count({ where: finalWhereClause }),
   ]);
+
+  // ... (mantenha o restante do código: Cálculo de score, Ranking, Ordenação e Return iguais)
 
   // --- 4. RANKING E SCORE (Apenas para Identidade) ---
   const now = new Date();
@@ -250,7 +265,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-[#0f172a] text-white py-8 md:py-10 px-4 shadow-xl relative overflow-hidden z-[100]">
+      <div className="bg-[#0f172a] text-white py-8 md:py-10 px-4 shadow-xl relative overflow-hidden z-10">
         <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
           {/* TÍTULO E BOTÃO DE FILTRO */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
