@@ -11,10 +11,3 @@ self.addEventListener("activate", (event) => {
   console.log("[Service Worker] Ativado e pronto para operar!");
   event.waitUntil(clients.claim());
 });
-
-// 3. Interceptador (Obrigatório para o PWA passar no teste do navegador)
-self.addEventListener("fetch", (event) => {
-  // Por enquanto, não vamos guardar nada em cache offline (para não bugar seus testes).
-  // Apenas deixamos a requisição passar normalmente.
-  return;
-});
