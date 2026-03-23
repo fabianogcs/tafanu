@@ -13,6 +13,7 @@
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^5.22.0",
     "@uploadthing/react": "^7.1.0",
+    "@vercel/analytics": "^2.0.1",
     "bcrypt-ts": "^8.0.1",
     "bcryptjs": "^2.4.3",
     "browser-image-compression": "^2.0.2",

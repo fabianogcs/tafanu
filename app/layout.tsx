@@ -9,8 +9,9 @@ import PasswordAlert from "@/components/PasswordAlert";
 import { Providers } from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import PwaListener from "@/components/PwaListener";
-import AffiliateTracker from "@/components/AffiliateTracker"; // ⬅️ FUSÃO: Adicionado
-import { Suspense } from "react"; // ⬅️ FUSÃO: Adicionado
+import AffiliateTracker from "@/components/AffiliateTracker";
+import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/react"; // 🚀 Importado com sucesso
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
@@ -23,7 +24,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Mantive sua lógica original de Cookies e Role
+  // Lógica de Cookies e Role (Mantida 100%)
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
@@ -43,7 +44,7 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
-        {/* 1. SISTEMA DE AFILIADOS (Invisível, mas ativo) */}
+        {/* 1. SISTEMA DE AFILIADOS */}
         <Suspense fallback={null}>
           <AffiliateTracker />
         </Suspense>
@@ -52,26 +53,18 @@ export default async function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // 1. Verifica se já está rodando dentro do App Instalado (Standalone)
               const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
               if (!isStandalone) {
                 window.deferredPrompt = null;
-                
                 window.addEventListener('beforeinstallprompt', (e) => {
                   e.preventDefault();
                   window.deferredPrompt = e;
-                  // 🚨 CORREÇÃO: O nome do evento agora é exatamente o que o Navbar espera!
                   window.dispatchEvent(new Event('pwa-ready')); 
                 });
-
-                // 2. Avisa quando o usuário termina de instalar para sumir com o botão na hora
                 window.addEventListener('appinstalled', () => {
                   window.deferredPrompt = null;
                   window.dispatchEvent(new Event('pwa-ready'));
                 });
-
-                // 3. Registra o Service Worker (Sem ele, o botão não aparece)
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/sw.js').catch(function(err) {
@@ -84,7 +77,7 @@ export default async function RootLayout({
           }}
         />
 
-        {/* 3. ESTRUTURA VISUAL (Mantida 100%) */}
+        {/* 3. ESTRUTURA VISUAL */}
         <Providers>
           <PwaListener />
           <Toaster position="top-center" richColors />
@@ -92,6 +85,7 @@ export default async function RootLayout({
           <Navbar isLoggedIn={!!userId} userRole={userRole} />
           <main className="flex-grow">{children}</main>
           <Footer />
+          <Analytics />
           <CookieBanner />
         </Providers>
 

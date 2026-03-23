@@ -459,20 +459,44 @@ export default function BusinessEditor({
           (f) => f.q.trim() !== "" && f.a.trim() !== "",
         );
 
+        // ✅ COLE ESTE TRECHO NO LUGAR:
         const updateResult = await updateFullBusiness(business.slug, payload);
 
         if (!updateResult.success) {
-          toast.warning(
-            updateResult.error || "Este nome de link já está em uso.",
-          );
-          setSlugError(true);
-          slugRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
+          setIsLoading(false); // Destrava o botão de salvar
+
+          // 🎨 Alerta Profissional (Sonner)
+          toast.error("Não foi possível salvar", {
+            description:
+              updateResult.error || "Verifique os dados e tente novamente.",
+            duration: 5000,
           });
-          slugRef.current?.focus();
-          setTimeout(() => setSlugError(false), 4000);
-          return;
+
+          const errorMessage = updateResult.error?.toLowerCase() || "";
+
+          // 📍 SE FOR ERRO DE MAPA/ENDEREÇO: Faz scroll até a seção de endereço
+          if (
+            errorMessage.includes("endereço") ||
+            errorMessage.includes("mapa")
+          ) {
+            document.getElementById("address-section")?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+
+          // 🔗 SE FOR ERRO DE SLUG/LINK: Foca no campo de Link
+          if (errorMessage.includes("link") || errorMessage.includes("slug")) {
+            setSlugError(true);
+            slugRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+            slugRef.current?.focus();
+            setTimeout(() => setSlugError(false), 4000);
+          }
+
+          return; // Para a execução aqui
         }
 
         await updateBusinessHours(business.slug, businessHours);
@@ -688,10 +712,12 @@ export default function BusinessEditor({
           </div>
 
           {/* LOCALIZAÇÃO */}
-          <AddressSection
-            addressData={addressData}
-            setAddressData={setAddressData}
-          />
+          <div id="address-section">
+            <AddressSection
+              addressData={addressData}
+              setAddressData={setAddressData}
+            />
+          </div>
 
           {/* HORÁRIOS */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">

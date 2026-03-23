@@ -1,7 +1,8 @@
 "use client";
 
 import { MapPin, Trash2, Loader2 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface AddressData {
   address: string;
@@ -14,21 +15,40 @@ interface AddressData {
 
 interface AddressSectionProps {
   addressData: AddressData;
-  setAddressData: (data: AddressData) => void;
+  setAddressData: (
+    data: AddressData | ((prev: AddressData) => AddressData),
+  ) => void;
 }
 
 export function AddressSection({
   addressData,
   setAddressData,
 }: AddressSectionProps) {
+  const [isSearching, setIsSearching] = useState(false);
   const cepController = useRef<AbortController | null>(null);
+  const numberInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-    const cep = e.target.value.replace(/\D/g, "");
-    if (cep.length !== 8) return;
+  useEffect(() => {
+    const cep = addressData.cep.replace(/\D/g, "");
 
-    // Cancela requisição anterior se o usuário digitar rápido demais
-    cepController.current?.abort();
+    // 1. Debounce: Espera o usuário parar de digitar por 300ms
+    const timeoutId = setTimeout(() => {
+      if (cep.length === 8) {
+        fetchAddress(cep);
+      }
+    }, 300);
+
+    // 2. Cleanup: Limpa o timer e aborta requisições pendentes ao desmontar ou mudar o CEP
+    return () => {
+      clearTimeout(timeoutId);
+      cepController.current?.abort();
+    };
+  }, [addressData.cep]);
+
+  const fetchAddress = async (cep: string) => {
+    setIsSearching(true);
+
+    // Cria novo controller para a requisição atual
     const controller = new AbortController();
     cepController.current = controller;
 
@@ -38,18 +58,30 @@ export function AddressSection({
       });
       const data = await response.json();
 
-      if (!data.erro) {
-        setAddressData({
-          ...addressData,
-          cep: cep,
-          address: data.logradouro || "",
-          neighborhood: data.bairro || "",
-          city: data.localidade || "",
-          state: data.uf || "",
-        });
+      // 4. UX: CEP não encontrado
+      if (data.erro) {
+        toast.error("CEP não encontrado. Verifique os números.");
+        return;
       }
-    } catch (err) {
-      // Ignora erro de abort
+
+      setAddressData((prev) => ({
+        ...prev,
+        address: data.logradouro || "",
+        neighborhood: data.bairro || "",
+        city: data.localidade || "",
+        state: data.uf || "",
+      }));
+
+      requestAnimationFrame(() => {
+        numberInputRef.current?.focus();
+      });
+    } catch (err: any) {
+      // 3. Validação de erro: Silenciosa apenas para Abort
+      if (err.name === "AbortError") return;
+      console.error("Erro ao buscar CEP:", err);
+      toast.error("Erro ao conectar com serviço de CEP.");
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -80,15 +112,23 @@ export function AddressSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <input
-          value={addressData.cep}
-          onChange={(e) =>
-            setAddressData({ ...addressData, cep: e.target.value })
-          }
-          onBlur={handleCepBlur}
-          placeholder="DIGITE O CEP"
-          className="h-12 px-5 bg-white rounded-xl font-bold text-xs border-2 border-indigo-100 outline-none focus:border-indigo-500"
-        />
+        <div className="relative">
+          <input
+            value={addressData.cep}
+            onChange={(e) =>
+              setAddressData((prev) => ({ ...prev, cep: e.target.value }))
+            }
+            placeholder="00000-000"
+            maxLength={9}
+            className="w-full h-12 px-5 bg-white rounded-xl font-bold text-xs border-2 border-indigo-100 outline-none focus:border-indigo-500"
+          />
+          {isSearching && (
+            <div className="absolute right-3 top-3">
+              <Loader2 className="animate-spin text-indigo-500" size={18} />
+            </div>
+          )}
+        </div>
+
         <input
           value={addressData.address}
           readOnly
@@ -96,9 +136,10 @@ export function AddressSection({
           placeholder="Rua / Logradouro"
         />
         <input
+          ref={numberInputRef}
           value={addressData.number}
           onChange={(e) =>
-            setAddressData({ ...addressData, number: e.target.value })
+            setAddressData((prev) => ({ ...prev, number: e.target.value }))
           }
           placeholder="Nº"
           className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"

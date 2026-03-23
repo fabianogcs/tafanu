@@ -610,8 +610,18 @@ export async function updateFullBusiness(slug: string, payload: any) {
         validatedData.city || "",
         validatedData.state || "",
       );
-      lat = newCoords.lat;
-      lng = newCoords.lng;
+
+      // 🛡️ Validação: Só atualiza se o Google realmente encontrou o local
+      if (newCoords.lat && newCoords.lng) {
+        lat = newCoords.lat;
+        lng = newCoords.lng;
+      } else {
+        // 🛑 Para o processo e avisa o usuário sem estragar os dados antigos
+        return {
+          error:
+            "Não conseguimos localizar este endereço no mapa. Verifique se os dados estão corretos.",
+        };
+      }
     }
     // ✂️ CIRURGIA: Faxina do UploadThing
     const linksParaDeletar = [];
