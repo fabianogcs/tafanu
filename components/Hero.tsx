@@ -55,11 +55,14 @@ export default function Hero() {
           <div className="flex-1 flex items-center px-6 h-14 md:h-16">
             <Search className="text-gray-300 w-6 h-6 mr-4 group-focus-within:text-tafanu-action transition-colors" />
             <input
+              id="hero-search" // ⬅️ O RG do campo
+              name="heroQuery" // ⬅️ O CPF do campo
+              autoComplete="search" // ⬅️ BÔNUS: Ajuda o teclado do celular
               type="text"
               placeholder="Ex: Pizzaria, Encanador, Advogado..."
               className="w-full bg-transparent outline-none text-white placeholder-gray-400 font-medium text-lg"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={query} // (Mantenha o que já estiver aí)
+              onChange={(e) => setQuery(e.target.value)} // (Mantenha o que já estiver aí)
             />
           </div>
 

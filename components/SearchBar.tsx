@@ -36,6 +36,9 @@ export default function SearchBar({
       <div className="flex-1 flex items-center px-4 md:px-6 h-12 md:h-14">
         <Search className="text-gray-300 w-5 h-5 md:w-6 md:h-6 mr-3 shrink-0 group-focus-within:text-tafanu-action transition-colors" />
         <input
+          id="search-input" // ⬅️ AJUSTE: Resolve o aviso do console
+          name="searchQuery" // ⬅️ AJUSTE: Resolve o aviso do console
+          autoComplete="search" // ⬅️ BÔNUS: Otimiza o teclado do celular
           type="text"
           placeholder="Buscar outro negócio..."
           // 🚀 AJUSTE 2: Mudamos de text-base para text-sm (menor no celular) e text-lg (grande no PC)
