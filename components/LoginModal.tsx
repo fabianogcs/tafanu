@@ -194,44 +194,69 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           />
 
           {!isLogin && (
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
-                <User size={18} />
+            <div className="space-y-1">
+              {/* 🚀 AULA DE ACESSIBILIDADE: Label invisível visualmente, mas visível para robôs/leitores */}
+              <label htmlFor="modal-name" className="sr-only">
+                Nome Completo
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
+                  <User size={18} />
+                </div>
+                <input
+                  id="modal-name"
+                  name="name"
+                  type="text"
+                  required
+                  autoComplete="name"
+                  placeholder="Nome Completo"
+                  className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
+                />
               </div>
-              <input
-                name="name"
-                type="text"
-                required
-                placeholder="Nome Completo"
-                className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
-              />
             </div>
           )}
 
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
-              <Mail size={18} />
+          <div className="space-y-1">
+            <label htmlFor="modal-email" className="sr-only">
+              E-mail Profissional
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
+                <Mail size={18} />
+              </div>
+              <input
+                id="modal-email" // (ou "email" na page.tsx)
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                inputMode="email" // ⬅️ Teclado otimizado
+                autoCapitalize="none" // ⬅️ Sem maiúscula chata
+                autoCorrect="off" // ⬅️ Sem corretor intrometido
+                placeholder="E-mail Profissional"
+                className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
+              />
             </div>
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="E-mail Profissional"
-              className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
-            />
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
-              <Lock size={18} />
+          <div className="space-y-1">
+            <label htmlFor="modal-password" className="sr-only">
+              Senha
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
+                <Lock size={18} />
+              </div>
+              <input
+                id="modal-password"
+                name="password"
+                type="password"
+                required
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                placeholder="••••••••"
+                className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
+              />
             </div>
-            <input
-              name="password"
-              type="password"
-              required
-              placeholder="••••••••"
-              className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
-            />
           </div>
 
           <div className="flex justify-between items-center px-1">

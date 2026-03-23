@@ -226,7 +226,11 @@ export default function LoginPage() {
 
             {!isLogin && (
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                {/* 🚀 AJUSTE: htmlFor adicionado */}
+                <label
+                  htmlFor="name"
+                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                >
                   Nome Completo
                 </label>
                 <div className="relative">
@@ -234,9 +238,11 @@ export default function LoginPage() {
                     <User size={18} />
                   </div>
                   <input
+                    id="name" // 🚀 AJUSTE: id conectado ao label
                     name="name"
                     type="text"
                     required
+                    autoComplete="name" // 🚀 AJUSTE: autoComplete adicionado
                     placeholder="Ex: João Silva"
                     className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold"
                   />
@@ -245,7 +251,11 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              {/* 🚀 AJUSTE: htmlFor adicionado */}
+              <label
+                htmlFor="email"
+                className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+              >
                 E-mail Profissional
               </label>
               <div className="relative">
@@ -253,9 +263,14 @@ export default function LoginPage() {
                   <Mail size={18} />
                 </div>
                 <input
+                  id="email"
                   name="email"
                   type="email"
                   required
+                  autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   placeholder="seu@email.com"
                   className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold"
                 />
@@ -263,7 +278,11 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              {/* 🚀 AJUSTE: htmlFor adicionado */}
+              <label
+                htmlFor="password"
+                className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+              >
                 Senha
               </label>
               <div className="relative">
@@ -271,9 +290,11 @@ export default function LoginPage() {
                   <Lock size={18} />
                 </div>
                 <input
+                  id="password" // 🚀 AJUSTE: id conectado ao label
                   name="password"
                   type="password"
                   required
+                  autoComplete={isLogin ? "current-password" : "new-password"} // 🚀 AJUSTE: Inteligente para login/cadastro
                   placeholder="••••••••"
                   className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold"
                 />
