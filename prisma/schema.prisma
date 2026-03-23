@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // 🚀 O Prisma só vai usar a DIRECT_URL se essa linha existir!
 }
 enum EventType {
   WHATSAPP
