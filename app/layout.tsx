@@ -48,23 +48,37 @@ export default async function RootLayout({
           <AffiliateTracker />
         </Suspense>
 
-        {/* 2. SEU SCRIPT DE CONTROLE PWA (Mantido 100%) */}
+        {/* 2. SCRIPT DE CONTROLE PWA E SERVICE WORKER */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              window.deferredPrompt = null;
-              window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                window.deferredPrompt = e;
-                window.dispatchEvent(new Event('pwa-prompt-ready'));
-              });
+              // 1. Verifica se já está rodando dentro do App Instalado (Standalone)
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for(let registration of registrations) {
-                    registration.unregister();
-                  }
+              if (!isStandalone) {
+                window.deferredPrompt = null;
+                
+                window.addEventListener('beforeinstallprompt', (e) => {
+                  e.preventDefault();
+                  window.deferredPrompt = e;
+                  // 🚨 CORREÇÃO: O nome do evento agora é exatamente o que o Navbar espera!
+                  window.dispatchEvent(new Event('pwa-ready')); 
                 });
+
+                // 2. Avisa quando o usuário termina de instalar para sumir com o botão na hora
+                window.addEventListener('appinstalled', () => {
+                  window.deferredPrompt = null;
+                  window.dispatchEvent(new Event('pwa-ready'));
+                });
+
+                // 3. Registra o Service Worker (Sem ele, o botão não aparece)
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                      console.log('Falha no SW:', err);
+                    });
+                  });
+                }
               }
             `,
           }}

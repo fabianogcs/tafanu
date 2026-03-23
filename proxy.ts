@@ -17,7 +17,7 @@ export const proxy = auth((req) => {
   const isAdminRoute = pathname.startsWith("/admin");
   const isCheckoutRoute = pathname.startsWith("/checkout");
 
-  // ✅ ROTAS PÚBLICAS
+  // ✅ ROTAS PÚBLICAS (AQUI ENTROU A LIBERAÇÃO DO MANIFESTO E PWA)
   const isPublicRoute =
     pathname === "/" ||
     pathname.startsWith("/login") ||
@@ -28,6 +28,8 @@ export const proxy = auth((req) => {
     pathname.startsWith("/anunciar") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
+    pathname === "/manifest.json" ||
+    pathname === "/sw.js" ||
     isCheckoutRoute;
 
   // 🔁 Usuário logado tentando ir pro login volta pra home
@@ -90,6 +92,9 @@ export const proxy = auth((req) => {
   return NextResponse.next();
 });
 
+// 🔸 EXCLUSÃO DIRETA NO MATCHER PARA GARANTIR QUE O NEXT.JS IGNORE ARQUIVOS DE SISTEMA E PWA
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|images|public).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|images|manifest.json|sw.js|workbox-.*).*)",
+  ],
 };
