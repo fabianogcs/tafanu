@@ -95,6 +95,6 @@ export const proxy = auth((req) => {
 // 🔸 EXCLUSÃO DIRETA NO MATCHER PARA GARANTIR QUE O NEXT.JS IGNORE ARQUIVOS DE SISTEMA E PWA
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|manifest.json|sw.js|workbox-.*).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*|.*\\.(?:png|jpg|jpeg|svg|gif|ico|webp|avif)).*)",
   ],
 };
