@@ -12,6 +12,7 @@ import PwaListener from "@/components/PwaListener";
 import AffiliateTracker from "@/components/AffiliateTracker";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react"; // 🚀 Importado com sucesso
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
@@ -86,6 +87,7 @@ export default async function RootLayout({
           <main className="flex-grow">{children}</main>
           <Footer />
           <Analytics />
+          <SpeedInsights />
           <CookieBanner />
         </Providers>
 
