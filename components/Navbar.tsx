@@ -3,6 +3,7 @@
 import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+// Removi ícones não utilizados para deixar o bundle mais leve
 import {
   LogOut,
   LayoutDashboard,
@@ -28,8 +29,6 @@ export default function Navbar({
   userRole: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // --- LÓGICA MANTIDA (PWA) ---
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -67,7 +66,6 @@ export default function Navbar({
     await signOut({ redirect: true, callbackUrl: "/" });
   };
 
-  // --- LÓGICA MANTIDA (Scroll Lock) ---
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "unset";
     return () => {
@@ -78,8 +76,6 @@ export default function Navbar({
   const isAdmin = isLoggedIn && userRole === "ADMIN";
   const isAfiliado = isLoggedIn && userRole === "AFILIADO";
   const isSubscriber = isLoggedIn && userRole === "ASSINANTE";
-
-  // Visitante é quem tá logado mas não é Assinante, nem Admin, nem Afiliado
   const isVisitor = isLoggedIn && !isSubscriber && !isAdmin && !isAfiliado;
   const isGuest = !isLoggedIn;
 
@@ -87,16 +83,15 @@ export default function Navbar({
     <nav className="bg-tafanu-blue sticky top-0 z-[1000] border-b border-white/10 w-full transition-all duration-300">
       <div className="w-full px-6 lg:px-12">
         <div className="flex justify-between items-center h-20 md:h-24">
-          {/* --- LOGO --- */}
           <div className="flex-shrink-0">
             <Link href="/" className="group" onClick={() => setIsOpen(false)}>
+              {/* 🚀 O PULO DO GATO 1: Texto é mais rápido que imagem. Se for usar imagem aqui um dia, adicione priority={true} */}
               <span className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase italic group-hover:text-tafanu-action transition-all duration-500">
                 Tafanu
               </span>
             </Link>
           </div>
 
-          {/* --- DESKTOP NAV --- */}
           <div className="hidden md:flex items-center gap-8">
             <div className="flex items-center gap-2 bg-white/5 px-2 py-1.5 rounded-2xl border border-white/10 shadow-inner">
               {deferredPrompt && (
@@ -214,7 +209,6 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* --- BOTÃO MOBILE --- */}
           <div className="md:hidden flex items-center gap-4">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -226,7 +220,6 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* --- OVERLAY: ESCURECE O SITE INTEIRO (Para focar no menu) --- */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/95 z-[1005] md:hidden animate-in fade-in duration-300"
@@ -234,12 +227,10 @@ export default function Navbar({
         />
       )}
 
-      {/* --- GAVETA MOBILE: FUNDO TOTALMENTE SÓLIDO (Mudei para um azul bem escuro sólido) --- */}
       <div
         className={`fixed top-0 right-0 h-full w-[310px] bg-[#0A0F1E] z-[1010] shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:hidden ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex flex-col h-full p-6 pt-24">
-          {/* Botão de Instalação Mobile */}
           {deferredPrompt && (
             <button
               onClick={handleInstallClick}
@@ -258,7 +249,6 @@ export default function Navbar({
             </button>
           )}
 
-          {/* Links Mobile com fundos definidos para contraste */}
           <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
             <MobileLink
               href="/"
@@ -266,7 +256,6 @@ export default function Navbar({
               label="Início"
               onClick={() => setIsOpen(false)}
             />
-
             {isVisitor && (
               <MobileLink
                 href="/dashboard/favoritos"
@@ -276,7 +265,6 @@ export default function Navbar({
                 onClick={() => setIsOpen(false)}
               />
             )}
-
             {isSubscriber && (
               <>
                 <MobileLink
@@ -294,7 +282,6 @@ export default function Navbar({
                 />
               </>
             )}
-
             {isAdmin && (
               <>
                 <MobileLink
@@ -312,7 +299,6 @@ export default function Navbar({
                 />
               </>
             )}
-
             {isAfiliado && (
               <>
                 <MobileLink
@@ -330,7 +316,6 @@ export default function Navbar({
                 />
               </>
             )}
-
             {isGuest && (
               <MobileLink
                 href="/login"
@@ -351,7 +336,6 @@ export default function Navbar({
                 <Sparkles size={18} /> Quero Anunciar
               </Link>
             )}
-
             {isLoggedIn && (
               <button
                 onClick={() => {

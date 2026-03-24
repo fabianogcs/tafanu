@@ -193,17 +193,17 @@ export default function CheckoutPage() {
           {/* LISTA DE BENEFÍCIOS */}
           <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-200 shadow-sm">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
-              <Sparkles className="text-emerald-500 w-5 h-5" /> Vantagens PRO
-              Inclusas
+              <Sparkles className="text-emerald-500 w-5 h-5 shrink-0" />{" "}
+              Vantagens PRO Inclusas
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
-                "Página Profissional Exclusiva",
-                "Destaque no Guia Tafanu",
-                "Cliques ilimitados pro WhatsApp",
-                "Painel de Métricas Real-time",
-                "SEO Local Ativo (Google)",
-                "Galeria de Fotos Ultra-Leve",
+                "Site Exclusivo e Personalizável",
+                "Métricas de Views e Cliques",
+                "Integração com Redes Sociais",
+                "Botão Direto para o WhatsApp",
+                "Otimizado para o Google (SEO)",
+                "Galeria de Fotos e Destaques",
               ].map((item, i) => (
                 <div
                   key={i}

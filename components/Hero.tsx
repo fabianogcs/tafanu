@@ -1,27 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Hero() {
   const router = useRouter();
-  const [text, setText] = useState("");
-  const fullText = "O que você precisa agora?";
-  const [index, setIndex] = useState(0);
-
-  // Estados para busca (Simplificado: só query)
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    if (index < fullText.length) {
-      const timeout = setTimeout(() => {
-        setText((prev) => prev + fullText.charAt(index));
-        setIndex((prev) => prev + 1);
-      }, 100);
-      return () => clearTimeout(timeout);
-    }
-  }, [index]);
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -31,67 +16,68 @@ export default function Hero() {
   };
 
   return (
-    <div className="relative bg-tafanu-blue overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none opacity-20">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-tafanu-action rounded-full blur-3xl mix-blend-screen animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500 rounded-full blur-3xl mix-blend-screen"></div>
+    // 🚀 SEO: Alterado de <div> para <section> para demarcar uma área principal
+    <section className="relative bg-[#0A0F1E] overflow-hidden pt-8 pb-20 md:pt-24 md:pb-32 lg:pt-32 lg:pb-40 border-b border-white/5">
+      {/* Fundo Premium com Brilho Sutil */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none"
+        aria-hidden="true"
+      >
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] bg-tafanu-action/10 rounded-full blur-[120px] mix-blend-screen"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 flex flex-col items-center text-center">
-        <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 h-16 md:h-20">
-          {text}
-          <span className="animate-blink text-tafanu-action">|</span>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 text-center">
+        {/* Tipografia de Alto Impacto (H1 principal da página) */}
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-[1.05] mb-4 relative z-20">
+          Tudo o que você busca, <br className="hidden md:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-action to-emerald-400">
+            em um só lugar.
+          </span>
         </h1>
 
-        <p className="text-lg md:text-xl text-gray-300 max-w-2xl mb-10 leading-relaxed">
-          Conectamos você aos melhores serviços e comércios da região.
+        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8 font-medium leading-relaxed relative z-20">
+          Conectamos você aos melhores serviços e comércios.
         </p>
 
-        {/* BARRA DE BUSCA ÚNICA E PODEROSA */}
+        {/* 🔍 Barra de Busca - Otimizada para SEO e Acessibilidade */}
+        {/* 🔍 Barra de Busca - Otimizada para SEO e Acessibilidade */}
         <form
           onSubmit={handleSearch}
-          className="w-full max-w-2xl bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-full shadow-2xl flex items-center gap-2 group transition-all hover:bg-white/20 focus-within:ring-4 ring-white/10"
+          role="search"
+          aria-label="Buscar serviços locais"
+          className="relative z-30 w-full max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-3 md:gap-2 md:bg-white/10 md:backdrop-blur-xl md:border md:border-white/20 md:p-3 md:rounded-[2rem] transition-all"
         >
-          <div className="flex-1 flex items-center px-6 h-14 md:h-16">
-            <Search className="text-gray-300 w-6 h-6 mr-4 group-focus-within:text-tafanu-action transition-colors" />
-            <input
-              id="hero-search" // ⬅️ O RG do campo
-              name="heroQuery" // ⬅️ O CPF do campo
-              autoComplete="search" // ⬅️ BÔNUS: Ajuda o teclado do celular
-              type="text"
-              placeholder="Ex: Pizzaria, Encanador, Advogado..."
-              className="w-full bg-transparent outline-none text-white placeholder-gray-400 font-medium text-lg"
-              value={query} // (Mantenha o que já estiver aí)
-              onChange={(e) => setQuery(e.target.value)} // (Mantenha o que já estiver aí)
+          {/* 🚀 O PULO DO GATO: Trocamos a <div> por <label>. Agora, clicar na Lupa foca no input! */}
+          <label
+            htmlFor="hero-search"
+            className="w-full h-14 md:h-16 flex items-center px-5 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl md:bg-transparent md:backdrop-blur-none md:border-none md:rounded-none focus-within:ring-2 focus-within:ring-tafanu-action/50 md:focus-within:ring-0 cursor-text"
+          >
+            <Search
+              className="text-white/50 w-5 h-5 md:w-6 md:h-6 mr-3 shrink-0"
+              aria-hidden="true"
             />
-          </div>
+            <input
+              id="hero-search" // ⬅️ O htmlFor do label aponta para este ID
+              name="heroQuery"
+              autoComplete="off"
+              type="search"
+              aria-label="O que você está procurando?"
+              placeholder="Pizzaria, Encanador, Advogado..."
+              className="w-full h-full bg-transparent outline-none text-white placeholder-white/40 font-medium text-base md:text-xl appearance-none"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
 
           <button
             type="submit"
-            className="bg-tafanu-action hover:bg-emerald-400 text-tafanu-blue font-black rounded-full px-8 h-12 md:h-14 shadow-lg transform transition hover:scale-105 active:scale-95 flex items-center justify-center uppercase tracking-wider text-sm md:text-base"
+            aria-label="Realizar pesquisa"
+            className="w-full md:w-auto bg-tafanu-action hover:bg-emerald-400 text-tafanu-blue font-black rounded-xl md:rounded-[1.25rem] px-10 h-14 md:h-16 shadow-[0_0_30px_rgba(45,212,191,0.2)] transform transition hover:-translate-y-1 active:scale-95 flex items-center justify-center uppercase tracking-widest text-sm md:text-base shrink-0"
           >
-            BUSCAR
+            Pesquisar
           </button>
         </form>
-
-        <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm text-gray-400">
-          <span>Populares:</span>
-          {[
-            { label: "🍕 Pizza", val: "pizza" },
-            { label: "🔧 Mecânico", val: "mecanico" },
-            { label: "💇‍♀️ Salão", val: "salao" },
-            { label: "💊 Farmácia", val: "farmacia" },
-          ].map((tag) => (
-            <button
-              key={tag.val}
-              onClick={() => router.push(`/busca?q=${tag.val}`)}
-              className="px-3 py-1 bg-white/5 rounded-full border border-white/10 hover:border-tafanu-action hover:text-white cursor-pointer transition-colors"
-            >
-              {tag.label}
-            </button>
-          ))}
-        </div>
       </div>
-    </div>
+    </section>
   );
 }
