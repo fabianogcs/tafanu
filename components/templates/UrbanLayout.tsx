@@ -734,8 +734,22 @@ export default function UrbanLayout({
           )}
         </section>
 
-        <div className="w-full flex justify-center py-6 opacity-30 hover:opacity-100 transition-opacity">
+        {/* DENUNCIAR: Tirei o py-6 (que dava espaço enorme) e deixei só pb-2 para colar no comentário */}
+        <div className="w-full flex justify-center pb-2 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
+        </div>
+
+        {/* COMENTÁRIOS: Tirei o pt-4 (padding top) para ele subir e grudar mais no Denunciar */}
+        <div className="w-full max-w-5xl mx-auto pb-12">
+          <CommentsSection
+            businessId={rawBusiness.id}
+            businessOwnerId={rawBusiness.userId}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            emailVerified={emailVerified}
+            themeColor={theme.primary}
+            comments={rawBusiness.comments || []}
+          />
         </div>
 
         <div ref={footerTriggerRef} className="h-10 w-full" />
@@ -869,20 +883,6 @@ export default function UrbanLayout({
           scrollbar-width: none;
         }
       `}</style>
-
-      {/* SEÇÃO DE COMENTÁRIOS */}
-
-      <div className="max-w-7xl mx-auto px-4 md:px-6 pb-20">
-        <CommentsSection
-          businessId={rawBusiness.id}
-          businessOwnerId={rawBusiness.userId}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          emailVerified={emailVerified}
-          themeColor={theme.primary}
-          comments={rawBusiness.comments || []} // Usamos o rawBusiness para garantir que os dados do banco cheguem aqui
-        />
-      </div>
     </div>
   );
 }

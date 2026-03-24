@@ -611,9 +611,14 @@ export default function ShowroomLayout({
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl border-4 border-white/50 hover:bg-emerald-600 transition-colors"
+          // 🚀 MUDANÇA: Tamanho mobile (w-16 h-16) e desktop (md:w-20 md:h-20)
+          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-30 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/50 hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all"
         >
-          <MessageCircle size={26} fill="currentColor" />
+          {/* 🚀 MUDANÇA: Ícone aumentou para 32 (mobile) e 40 (desktop) usando classes do Tailwind */}
+          <MessageCircle
+            className="w-8 h-8 md:w-10 md:h-10"
+            fill="currentColor"
+          />
         </motion.button>
       )}
 

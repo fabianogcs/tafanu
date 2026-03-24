@@ -557,6 +557,16 @@ export default function LuxeLayout({
                             key={s}
                             href={finalUrl}
                             target="_blank"
+                            rel="noopener noreferrer"
+                            // 🚀 ESPIÃO ADICIONADO: Agora contabiliza redes e sites!
+                            onClick={() => {
+                              try {
+                                Actions.registerClickEvent(
+                                  business.id,
+                                  s.toUpperCase(),
+                                );
+                              } catch (e) {}
+                            }}
                             className={`w-11 h-11 flex items-center justify-center rounded-full border transition-all hover:scale-110 ${colors[s] || "border-black/10"}`}
                           >
                             {s === "instagram" ? (
@@ -599,6 +609,16 @@ export default function LuxeLayout({
                             key={channel.key}
                             href={formatExternalLink(channel.url)}
                             target="_blank"
+                            rel="noopener noreferrer"
+                            // 🚀 ESPIÃO ADICIONADO: Agora contabiliza as lojas!
+                            onClick={() => {
+                              try {
+                                Actions.registerClickEvent(
+                                  business.id,
+                                  channel.key.toUpperCase(),
+                                );
+                              } catch (e) {}
+                            }}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 hover:shadow-md ${storeColors[channel.key] || "border-black/5"}`}
                           >
                             <div className="scale-110">{channel.icon}</div>
@@ -622,6 +642,11 @@ export default function LuxeLayout({
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
                       target="_blank"
+                      rel="noopener noreferrer"
+                      // 🚀 ESPIÃO ADICIONADO: Agora contabiliza cliques na Rota (MAP)
+                      onClick={() =>
+                        Actions.registerClickEvent(business.id, "MAP")
+                      }
                       className="group block"
                     >
                       {/* Pegamos só as 2 primeiras partes (Rua e Bairro) e forçamos Iniciais Maiúsculas */}

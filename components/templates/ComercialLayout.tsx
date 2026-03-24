@@ -788,14 +788,16 @@ export default function ComercialLayout({
         <motion.button
           animate={
             isFooterVisible
-              ? { opacity: 0, scale: 0.8 }
-              : { opacity: 1, scale: 1 }
+              ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
+              : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          className="fixed bottom-6 right-6 w-14 h-14 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl z-50 border-4 border-white/20 hover:bg-emerald-600 transition-colors"
+          // 🚀 MUDANÇA: Tamanho mobile (w-16 h-16), margens desktop (md:bottom-10 md:right-10), sombra 2xl e efeito de clique (active:scale-95)
+          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/20 hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all"
         >
+          {/* 🚀 MUDANÇA: Ícone ajustado para w-8 h-8 no mobile */}
           <MessageCircle
-            className="w-7 h-7 md:w-10 md:h-10"
+            className="w-8 h-8 md:w-10 md:h-10"
             fill="currentColor"
           />
         </motion.button>

@@ -94,28 +94,28 @@ export default function CommentsSection({
 
   return (
     <section className="mt-16 w-full max-w-4xl mx-auto">
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-8 px-2">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
-            <MessageSquare size={22} />
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
-              Avaliações
-            </h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-              {comments.length} depoimentos
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* CAMPO DE ENVIO */}
+      {/* CAMPO DE ENVIO COM HEADER EMBUTIDO */}
       <div
         ref={commentFormRef}
-        className="bg-white rounded-[2.5rem] p-4 md:p-6 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12"
+        className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12"
       >
+        {/* HEADER MOVIDO PARA DENTRO DA CAIXA BRANCA */}
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-md">
+              <MessageSquare size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
+                Avaliações
+              </h3>
+              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
+                {comments.length} depoimentos
+              </p>
+            </div>
+          </div>
+        </div>
+
         {currentUserId ? (
           emailVerified ? (
             <form onSubmit={handleSubmit} className="space-y-4">
