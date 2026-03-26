@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { SlidersHorizontal } from "lucide-react";
 import LocationTracker from "@/components/LocationTracker";
 import SearchBar from "@/components/SearchBar";
@@ -27,8 +28,130 @@ function calculateDistance(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  // Multiplicamos por 1.3 para simular as curvas das ruas da cidade
   return R * c * 1.3;
+}
+
+// 🚀 DICIONÁRIO DE SINÔNIMOS (Bidirecional Automático e Completo)
+const SINONIMOS_BASE: Record<string, string[]> = {
+  // Alimentação
+  pao: ["padaria", "panificadora", "confeitaria", "baguete"],
+  lanche: [
+    "hamburguer",
+    "hamburgueria",
+    "sanduiche",
+    "fast food",
+    "hot dog",
+    "cachorro quente",
+  ],
+  pizza: ["pizzaria", "calzone", "rodizio"],
+  marmita: ["quentinha", "pf", "prato feito", "restaurante", "comida caseira"],
+  carne: ["churrasco", "churrascaria", "espetinho", "acougue"],
+  doce: ["bolo", "doceria", "confeitaria", "sobremesa", "chocolate"],
+  japones: ["sushi", "temaki", "japonesa", "oriental", "sashimi"],
+  sorvete: ["sorveteria", "acai", "gelato", "picole"],
+  cerveja: ["chopp", "adega", "bar", "bebidas", "distribuidora"],
+
+  // Automotivo
+  carro: [
+    "mecanica",
+    "mecanico",
+    "oficina",
+    "automotivo",
+    "auto pecas",
+    "veiculo",
+  ],
+  bateria: ["auto eletrica", "arranque", "alternador"],
+  pneu: ["borracharia", "borracheiro", "alinhamento", "balanceamento"],
+  lavagem: ["lavar", "lava jato", "estetica automotiva", "polimento"],
+  lataria: ["batida", "funilaria", "martelinho", "pintura automotiva"],
+
+  // Beleza e Estética
+  unha: ["manicure", "pedicure", "esmalteria", "salao"],
+  cabelo: [
+    "salao",
+    "cabeleireiro",
+    "barbearia",
+    "corte",
+    "mechas",
+    "coloracao",
+  ],
+  pelo: ["depilacao", "cera", "laser"],
+  rosto: ["sobrancelha", "cilios", "maquiagem", "limpeza de pele", "estetica"],
+
+  // Comércio e Varejo
+  remedio: ["farmacia", "drogaria", "medicamento"],
+  roupa: ["vestuario", "loja", "moda", "boutique", "calcados", "sapato"],
+  celular: ["smartphone", "capinha", "assistencia", "eletronicos", "conserto"],
+  presente: ["lembrancinha", "floricultura", "papelaria", "variedades"],
+  mercado: ["supermercado", "mercearia", "hortifruti", "sacolao"],
+
+  // Pets
+  pet: [
+    "animal",
+    "cachorro",
+    "gato",
+    "pet shop",
+    "veterinario",
+    "clinica veterinaria",
+  ],
+  tosa: ["banho", "estetica animal", "cuidado pet"],
+  racao: ["petisco", "agropecuaria", "comida pet"],
+
+  // Serviços e Profissionais
+  vazamento: ["cano", "encanador", "hidraulico", "desentupidora"],
+  energia: ["luz", "tomada", "eletricista", "eletrica", "fiacao"],
+  limpeza: ["diarista", "faxina", "faxineira"],
+  parede: ["tinta", "pintor", "pintura", "textura"],
+  madeira: ["movel", "marceneiro", "marcenaria", "planejados"],
+  vidro: ["box", "vidracaria", "espelho"],
+  clima: ["ar condicionado", "refrigeracao", "climatizacao", "limpeza de ar"],
+  justica: ["processo", "advogado", "advocacia", "juridico"],
+  imposto: ["cnpj", "contador", "contabilidade"],
+};
+
+function expandSynonyms(map: Record<string, string[]>) {
+  const expanded: Record<string, Set<string>> = {};
+
+  Object.entries(map).forEach(([key, values]) => {
+    const group = [key, ...values].map((v) => normalizeText(v)); // Junta a chave com os valores
+
+    group.forEach((word1) => {
+      if (!expanded[word1]) expanded[word1] = new Set();
+      group.forEach((word2) => {
+        if (word1 !== word2) expanded[word1].add(word2); // Todo mundo se conecta
+      });
+    });
+  });
+
+  return Object.fromEntries(
+    Object.entries(expanded).map(([k, v]) => [k, Array.from(v)]),
+  );
+}
+
+const SYNONYMS_MAP = expandSynonyms(SINONIMOS_BASE);
+
+function getSmartTerms(query: string) {
+  const terms = query
+    .toLowerCase()
+    .split(" ")
+    .filter((t) => t.length > 2 && !STOPWORDS.includes(t));
+
+  const result = new Set<string>();
+
+  terms.forEach((term) => {
+    const normalizedTerm = normalizeText(term);
+    result.add(normalizedTerm);
+
+    if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3) {
+      result.add(normalizedTerm.slice(0, -1));
+    }
+
+    if (SYNONYMS_MAP[normalizedTerm]) {
+      SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
+    }
+  });
+
+  return Array.from(result);
 }
 
 interface BuscaProps {
@@ -47,39 +170,55 @@ interface BuscaProps {
   }>;
 }
 
-// app/busca/page.tsx
-
-// ... (mantenha os imports e as funções auxiliares normalizeText e calculateDistance iguais)
-
 export default async function BuscaPage({ searchParams }: BuscaProps) {
   const session = await auth();
   const userId = session?.user?.id;
 
   const params = await searchParams;
   const rawQuery = (params.q || "").trim();
-  const query = normalizeText(rawQuery);
+  let query = normalizeText(rawQuery);
+
+  // 🚀 INTENÇÃO: Detecta se o usuário quer algo aberto agora
+  let isIntentOpen = false;
+  const openKeywords = [
+    "aberto",
+    "aberta",
+    "abertos",
+    "abertas",
+    "agora",
+    "24h",
+    "hoje",
+  ];
+
+  openKeywords.forEach((word) => {
+    const regex = new RegExp(`\\b${word}\\b`, "g");
+    if (regex.test(query)) {
+      isIntentOpen = true;
+      query = query.replace(regex, "").trim(); // Remove a palavra para não bugar a busca
+    }
+  });
+
   const page = Number(params.page) || 1;
   const skip = (page - 1) * PAGE_SIZE;
 
   const category = params.category || "";
   const subcategoryParam = params.subcategory || "";
   const rawCityFilter = params.city || "";
+
+  // 🚀 ATIVAÇÃO: Liga o filtro de Abertos automaticamente
+  const statusFilter = isIntentOpen ? "open" : params.status || "all";
+  const subcategoryArray = subcategoryParam ? subcategoryParam.split(",") : [];
   const cityFilter = normalizeText(rawCityFilter);
   const sort = params.sort || "relevance";
 
   const userLat = params.lat ? parseFloat(String(params.lat)) : null;
   const userLng = params.lng ? parseFloat(String(params.lng)) : null;
 
-  const searchTerms = query
-    .split(" ")
-    .filter((w) => w.length > 0 && !STOPWORDS.includes(w));
-  const rawTerms = rawQuery
-    .split(" ")
-    .filter((w) => w.length > 0 && !STOPWORDS.includes(w.toLowerCase()));
+  const smartTerms = getSmartTerms(query);
+  const searchTerms = smartTerms;
 
   // --- 1. CONSTRUÇÃO DO FILTRO BASE (O que o usuário digitou + Onde ele está) ---
-  // Este filtro define o "universo" de resultados possíveis antes de escolhermos uma categoria
-  const baseWhereClause: any = {
+  const baseWhereClause: Prisma.BusinessWhereInput = {
     isActive: true,
     published: true,
     user: {
@@ -89,7 +228,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       ],
     },
     AND: [
-      // Filtros de Localização
       ...(cityFilter
         ? [
             {
@@ -110,69 +248,59 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             },
           ]
         : []),
-
-      // Busca de Texto
+      // 🚀 PRISMA BLINDADO: Limita a 3 termos e usa o truque do termCap
       ...(searchTerms.length > 0
-        ? searchTerms.map((term, index) => {
-            const rTerm = rawTerms[index] || term;
-            return {
-              OR: [
-                { name: { contains: term, mode: "insensitive" as const } },
-                { name: { contains: rTerm, mode: "insensitive" as const } },
-                { category: { contains: term, mode: "insensitive" as const } },
-                { category: { contains: rTerm, mode: "insensitive" as const } },
-                { keywords: { hasSome: [term, rTerm] } },
-                { subcategory: { hasSome: [term, rTerm] } },
-              ],
-            };
-          })
+        ? [
+            {
+              OR: searchTerms.slice(0, 3).flatMap((term) => {
+                const termCap = term.charAt(0).toUpperCase() + term.slice(1);
+                return [
+                  { name: { contains: term, mode: "insensitive" as const } },
+                  {
+                    category: { contains: term, mode: "insensitive" as const },
+                  },
+                  { keywords: { hasSome: [term, termCap] } },
+                  { subcategory: { hasSome: [term, termCap] } },
+                ];
+              }),
+            },
+          ]
         : []),
     ],
   };
 
-  // --- 2. BUSCA DE CATEGORIAS DINÂMICAS (Filtros Facetados) ---
-  // Aqui pegamos apenas categorias que existem dentro do resultado da busca acima
+  // --- 2. BUSCA DE CATEGORIAS DINÂMICAS ---
   const categoriesData = await db.business.findMany({
     where: baseWhereClause,
     select: { category: true, subcategory: true },
-    // Removido o distinct aqui para podermos mapear todas as subcategorias corretamente
   });
 
-  const filterMap: Record<string, string[]> = {};
+  const filterMap: Record<string, Set<string>> = {};
   categoriesData.forEach((item) => {
-    if (!filterMap[item.category]) filterMap[item.category] = [];
-    item.subcategory.forEach((sub) => {
-      if (!filterMap[item.category].includes(sub))
-        filterMap[item.category].push(sub);
-    });
+    if (!filterMap[item.category]) filterMap[item.category] = new Set();
+    item.subcategory.forEach((sub) => filterMap[item.category].add(sub));
   });
 
   const orderedFilterMap: Record<string, string[]> = {};
   Object.keys(filterMap)
     .sort()
     .forEach((key) => {
-      orderedFilterMap[key] = filterMap[key].sort();
+      orderedFilterMap[key] = Array.from(filterMap[key]).sort();
     });
 
-  // --- 3. CONSTRUÇÃO DO FILTRO FINAL (Base + Categoria/Sub selecionadas no modal) ---
-  const finalWhereClause = {
+  // 🚀 O FILTRO DO BANCO: Sem a subcategoria para não engessar
+  const finalWhereClause: Prisma.BusinessWhereInput = {
     ...baseWhereClause,
-    AND: [
-      ...baseWhereClause.AND,
-      ...(category
-        ? [{ category: { equals: category, mode: "insensitive" as const } }]
-        : []),
-      ...(subcategoryParam
-        ? [{ subcategory: { hasSome: subcategoryParam.split(",") } }]
-        : []),
-    ],
+    category: category
+      ? { equals: category, mode: "insensitive" as const }
+      : undefined,
   };
 
-  // --- 4. BUSCA DOS NEGÓCIOS E COUNT ---
+  // --- 3. BUSCA DOS NEGÓCIOS E COUNT ---
   const [businessesData, totalCount] = await Promise.all([
     db.business.findMany({
       where: finalWhereClause,
-      take: 150, // Pegamos uma boa amostragem para o score
+      take: 400, // Limite saudável
       include: {
         hours: true,
         favorites: userId ? { where: { userId } } : false,
@@ -182,15 +310,21 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     db.business.count({ where: finalWhereClause }),
   ]);
 
-  // ... (mantenha o restante do código: Cálculo de score, Ranking, Ordenação e Return iguais)
-
-  // --- 4. RANKING E SCORE (Apenas para Identidade) ---
+  // --- 4. RANKING E SCORE ---
   const now = new Date();
   const currentDay = now.getDay();
   const currentTime = now.getHours() * 100 + now.getMinutes();
 
   let businesses = businessesData.map((b) => {
-    // Calcula distância SE a loja tiver latitude salva no banco (resolve o erro do null)
+    // 🚀 FILTRO JS: Valida subcategorias do Modal com precisão
+    const matchesSubcategoryFilter =
+      subcategoryArray.length === 0 ||
+      b.subcategory.some((sub) =>
+        subcategoryArray.some(
+          (filterSub) => normalizeText(filterSub) === normalizeText(sub),
+        ),
+      );
+
     let distanceValue: number | null = null;
     if (userLat && userLng && b.latitude && b.longitude) {
       distanceValue = calculateDistance(
@@ -218,27 +352,45 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     if (query) {
       const nName = normalizeText(b.name);
       const nCat = normalizeText(b.category);
-
-      // Transforma as listas em frases para achar "pizza" dentro de "pizzaria"
-      const nSubs = b.subcategory.map((s) => normalizeText(s)).join(" ");
+      const nSubs = b.subcategory.map((s) => normalizeText(s));
+      const nSubsString = nSubs.join(" ");
       const nKeys = b.keywords.map((k) => normalizeText(k)).join(" ");
 
-      if (nName === query) score += 100;
-      if (nName.includes(query)) score += 60;
+      // 🚀 BOOSTS DE INTENÇÃO REAL
+      if (nName === query) score += 120;
+      else if (nName.startsWith(query)) score += 90;
+      else if (nName.includes(query)) score += 60;
 
-      searchTerms.forEach((t) => {
-        if (nName.includes(t)) score += 40;
-        if (nSubs.includes(t)) score += 50;
-        if (nKeys.includes(t)) score += 45;
-        if (nCat.includes(t)) score += 30;
+      if (nSubs.includes(query)) score += 70;
+
+      let termScore = 0;
+      smartTerms.forEach((t) => {
+        if (nKeys.includes(t)) termScore += 50;
+        if (nCat.includes(t)) termScore += 40;
+        if (nSubsString.includes(t)) termScore += 40;
       });
+
+      score += Math.min(termScore, 200);
+
+      // 🚀 DISTÂNCIA NO SCORE
+      if (distanceValue !== null) {
+        score += Math.max(0, 50 - distanceValue);
+      }
+
+      // Penalidade leve
+      if (b.keywords.length === 0) score -= 10;
     } else {
       score = 1;
     }
 
+    if (subcategoryArray.length > 0 && matchesSubcategoryFilter) {
+      score += 200;
+    }
+
     return {
       ...b,
-      distance: distanceValue as number | null,
+      matchesSubcategoryFilter,
+      distance: distanceValue,
       isOpen,
       score,
       isFavorited: userId ? b.favorites.length > 0 : false,
@@ -246,36 +398,53 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     };
   });
 
-  // --- 5. ORDENAÇÃO E PAGINAÇÃO ---
-  if (query && sort === "relevance") {
-    businesses = businesses
-      .filter((b) => b.score > 0)
-      .sort((a, b) => b.score - a.score);
-  } else if (sort === "distance" && userLat && userLng) {
-    // Coloca quem não tem distância (null) no final da lista
+  // --- 5. CORTES E ORDENAÇÃO ---
+  if (subcategoryArray.length > 0) {
+    businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
+  }
+
+  if (statusFilter === "open") {
+    businesses = businesses.filter((b) => b.isOpen);
+  }
+
+  if (sort === "distance" && userLat && userLng) {
     businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
   } else if (sort === "popular") {
     businesses.sort((a, b) => b.views - a.views);
-  } else if (sort === "newest") {
+  } else if (sort === "recent" || sort === "newest") {
     businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  } else if (query && sort === "relevance") {
+    businesses = businesses
+      .filter((b) => b.score > 0)
+      .sort((a, b) => b.score - a.score);
   }
 
   const paginatedResults = businesses.slice(skip, skip + PAGE_SIZE);
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const totalPages = Math.ceil(businesses.length / PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-[#0f172a] text-white py-8 md:py-10 px-4 shadow-xl relative overflow-hidden z-10">
         <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
-          {/* TÍTULO E BOTÃO DE FILTRO */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div className="space-y-1">
               <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter">
                 {rawQuery ? `"${rawQuery}"` : "Explorar"}
               </h1>
               <p className="text-gray-400 font-medium text-sm">
-                Encontramos <strong className="text-white">{totalCount}</strong>{" "}
-                negócios.
+                {statusFilter === "open" ? (
+                  <>
+                    Exibindo{" "}
+                    <strong className="text-white">{businesses.length}</strong>{" "}
+                    abertos de {totalCount}
+                  </>
+                ) : (
+                  <>
+                    Encontramos{" "}
+                    <strong className="text-white">{totalCount}</strong>{" "}
+                    resultados
+                  </>
+                )}
               </p>
             </div>
             <FilterModal
@@ -283,8 +452,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               currentSort={sort}
             />
           </div>
-
-          {/* 🚀 A NOSSA NOVA BARRA DE BUSCA DE VIDRO AQUI! */}
           <div className="w-full">
             <SearchBar initialQuery={rawQuery} />
           </div>
@@ -309,7 +476,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     key={item.id}
                     business={item}
                     isLoggedIn={!!userId}
-                    // 🚀 O AVISO PARA O CARD: Só é true se o filtro for "distance"
                     showDistance={sort === "distance"}
                   />
                 ))

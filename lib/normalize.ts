@@ -110,14 +110,14 @@ export function normalizeBusiness(raw: any) {
     layout: b.layout || "urban",
   };
 }
-// 🚀 VERSÃO BIG TECH: Arranca acentos, cedilha e joga tudo pra minúsculo
+
 export const normalizeText = (text: string | null | undefined): string => {
   if (!text) return "";
   return text
-    .normalize("NFD") // Separa as letras dos acentos
-    .replace(/[\u0300-\u036f]/g, "") // Apaga os acentos
-    .replace(/ç/g, "c") // Troca ç por c
-    .replace(/Ç/g, "C") // Troca Ç por C
-    .toLowerCase() // Tudo em minúsculo
-    .trim(); // Remove espaços
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "") // 🚀 CIRURGIA: Remove símbolos (ex: !, ?, -, &) para não bugar a busca
+    .replace(/\s+/g, " ") // Garante que não fiquem espaços duplos
+    .trim();
 };

@@ -30,12 +30,16 @@ export default function LocationTracker() {
       (position) => {
         const { latitude, longitude } = position.coords;
         const params = new URLSearchParams(searchParams.toString());
+
         params.set("lat", latitude.toString());
         params.set("lng", longitude.toString());
 
+        // 🚀 O SEGREDO QUE FALTAVA: Força a ordenação por distância na URL
+        params.set("sort", "distance");
+
         setLoading(false);
         // Usamos replace para não criar um histórico infinito de cliques
-        router.push(`/busca?${params.toString()}`);
+        router.replace(`/busca?${params.toString()}`);
       },
       (error) => {
         setLoading(false);
@@ -105,7 +109,7 @@ export default function LocationTracker() {
         disabled={loading}
         className="text-[10px] font-black uppercase bg-[#0f172a] text-white px-4 py-2 rounded-lg hover:bg-black transition-all disabled:opacity-50 active:scale-95 shadow-sm"
       >
-        {loading ? "Localizando..." : "Ativar GPS"}
+        {loading ? "Localizando..." : "MAIS PRÓXIMO"}
       </button>
     </div>
   );

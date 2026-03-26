@@ -10,7 +10,6 @@ import {
   Check,
   ChevronLeft,
   ArrowRight,
-  Map,
   Clock,
   Zap,
   Navigation,
@@ -18,6 +17,7 @@ import {
   CheckSquare,
   RotateCcw,
   MapPin,
+  CalendarDays, // 🚀 Ícone novo para "Mais Recentes"
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -34,7 +34,7 @@ export default function FilterModal({
   const [mounted, setMounted] = useState(false);
   const [catStep, setCatStep] = useState<"main" | "sub">("main");
   const [tempCat, setTempCat] = useState("");
-  const cityInputRef = useRef<HTMLInputElement>(null); // 🚀 Ref para o Focus Trap
+  const cityInputRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,17 +42,14 @@ export default function FilterModal({
   const [draftCategory, setDraftCategory] = useState("");
   const [draftSubs, setDraftSubs] = useState<string[]>([]);
   const [draftStatus, setDraftStatus] = useState("all");
-  const [draftSort, setDraftSort] = useState("distance");
+  const [draftSort, setDraftSort] = useState("popular"); // 🚀 Default mudou para popular
   const [draftCity, setDraftCity] = useState("");
-  const [isLoadingGPS, setIsLoadingGPS] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // 🚀 Otimização: Pré-carrega a rota de busca
     router.prefetch("/busca");
   }, [router]);
 
-  // 🚀 Acessibilidade: Fecha no ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);
@@ -61,7 +58,6 @@ export default function FilterModal({
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
-  // 🚀 Acessibilidade: Foco inteligente com requestAnimationFrame
   useEffect(() => {
     if (isOpen) {
       requestAnimationFrame(() => {
@@ -76,7 +72,8 @@ export default function FilterModal({
       const subsParam = searchParams.get("subcategory");
       setDraftSubs(subsParam ? subsParam.split(",") : []);
       setDraftStatus(searchParams.get("status") || "all");
-      setDraftSort(currentSort || searchParams.get("sort") || "distance");
+      // Se a URL estiver "distance" (por causa do botão externo), mantemos, senão default é popular
+      setDraftSort(currentSort || searchParams.get("sort") || "popular");
       setDraftCity(searchParams.get("city") || "");
       setCatStep("main");
     }
@@ -89,42 +86,10 @@ export default function FilterModal({
     };
   }, [isOpen]);
 
-  // 🚀 Melhoria: GPS sem Race Condition (Passa coords direto para o callback)
-  const ensureGPS = (callback: (lat: string, lng: string) => void) => {
-    if (!navigator.geolocation) return toast.error("GPS não suportado.");
-    setIsLoadingGPS(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsLoadingGPS(false);
-        callback(
-          pos.coords.latitude.toString(),
-          pos.coords.longitude.toString(),
-        );
-      },
-      () => {
-        setIsLoadingGPS(false);
-        toast.warning("Ative a localização para ordenar por distância.");
-      },
-    );
-  };
-
+  // 🚀 applyFilters AGORA É INSTANTÂNEO! Sem check de GPS.
   const applyFilters = () => {
-    if (draftSort === "distance" && !searchParams.get("lat")) {
-      ensureGPS((lat, lng) => finalizePush(lat, lng));
-      return;
-    }
-    finalizePush();
-  };
-
-  // 🚀 Melhoria: finalizePush aceita coords opcionais para evitar estados de URL antigos
-  const finalizePush = (gpsLat?: string, gpsLng?: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", "1");
-
-    if (gpsLat && gpsLng) {
-      params.set("lat", gpsLat);
-      params.set("lng", gpsLng);
-    }
 
     if (draftCategory) params.set("category", draftCategory);
     else params.delete("category");
@@ -146,7 +111,7 @@ export default function FilterModal({
     setDraftCategory("");
     setDraftSubs([]);
     setDraftStatus("all");
-    setDraftSort("distance");
+    setDraftSort("popular");
     setDraftCity("");
     setCatStep("main");
     const query = searchParams.get("q");
@@ -159,7 +124,8 @@ export default function FilterModal({
     !!searchParams.get("category") ||
     !!searchParams.get("city") ||
     searchParams.get("status") !== "all" ||
-    searchParams.get("sort") !== "distance";
+    (searchParams.get("sort") !== "distance" &&
+      searchParams.get("sort") !== "popular");
 
   return (
     <>
@@ -232,30 +198,13 @@ export default function FilterModal({
                   />
                 </section>
 
-                {/* ORDENAÇÃO */}
+                {/* ORDENAÇÃO (Limpa e sem GPS) */}
                 <section className="space-y-4">
                   <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
                     <Navigation size={14} className="text-tafanu-blue" />
                     Prioridade de Exibição
                   </label>
                   <div className="grid grid-cols-1 gap-2">
-                    <button
-                      onClick={() => setDraftSort("distance")}
-                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "distance" ? "border-tafanu-blue bg-blue-50 text-tafanu-blue" : "border-slate-100 text-slate-400"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Map size={18} />
-                        <div className="text-left">
-                          <p className="font-black text-[11px] uppercase">
-                            Mais Próximos
-                          </p>
-                          <p className="text-[9px] font-bold italic opacity-70">
-                            Distância GPS
-                          </p>
-                        </div>
-                      </div>
-                      {draftSort === "distance" && <Check size={18} />}
-                    </button>
                     <button
                       onClick={() => setDraftSort("popular")}
                       className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "popular" ? "border-tafanu-action bg-orange-50 text-tafanu-blue" : "border-slate-100 text-slate-400"}`}
@@ -267,11 +216,29 @@ export default function FilterModal({
                             Mais Populares
                           </p>
                           <p className="text-[9px] font-bold italic opacity-70">
-                            Por favoritos
+                            Mais favoritados
                           </p>
                         </div>
                       </div>
                       {draftSort === "popular" && <Check size={18} />}
+                    </button>
+
+                    <button
+                      onClick={() => setDraftSort("recent")}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "recent" ? "border-tafanu-blue bg-blue-50 text-tafanu-blue" : "border-slate-100 text-slate-400"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CalendarDays size={18} />
+                        <div className="text-left">
+                          <p className="font-black text-[11px] uppercase">
+                            Novidades
+                          </p>
+                          <p className="text-[9px] font-bold italic opacity-70">
+                            Adicionados recentemente
+                          </p>
+                        </div>
+                      </div>
+                      {draftSort === "recent" && <Check size={18} />}
                     </button>
                   </div>
                 </section>
@@ -374,16 +341,9 @@ export default function FilterModal({
                 </button>
                 <button
                   onClick={applyFilters}
-                  disabled={isLoadingGPS}
-                  className="flex-1 py-5 bg-[#0f172a] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-tafanu-blue transition-all disabled:opacity-50 flex justify-center items-center gap-3"
+                  className="flex-1 py-5 bg-[#0f172a] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-tafanu-blue transition-all flex justify-center items-center gap-3"
                 >
-                  {isLoadingGPS ? (
-                    "Obtendo localização..."
-                  ) : (
-                    <>
-                      Aplicar Filtros <ArrowRight size={18} />
-                    </>
-                  )}
+                  Aplicar Filtros <ArrowRight size={18} />
                 </button>
               </div>
             </div>
