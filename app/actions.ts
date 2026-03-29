@@ -154,23 +154,24 @@ export async function registerUser(formData: FormData) {
   const password = formData.get("password") as string;
   const rawDocument = formData.get("document") as string;
 
-  // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO (Ex: fabiano@a) ---
+  // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO ---
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!email || !emailRegex.test(email)) {
     return {
       error: "Por favor, insira um e-mail válido (ex: nome@dominio.com).",
     };
   }
-  // --------------------------------------------------
 
-  // 1. MEMÓRIA DE AFILIADO: Tenta pegar o código do formulário OU do cookie
+  // 1. MEMÓRIA DE AFILIADO: Pega do formulário OU do cookie padronizado "tafanu_ref"
   const cookieStore = await cookies();
   const formAffiliateCode = formData.get("affiliateCode") as string;
   const cookieAffiliateCode = cookieStore.get("tafanu_ref")?.value;
 
-  const affiliateCode = formAffiliateCode || cookieAffiliateCode;
+  const affiliateCode = (formAffiliateCode || cookieAffiliateCode)
+    ?.toLowerCase()
+    .trim();
 
-  // Define a função do usuário (Admin se for seu e-mail, senão Visitante)
+  // Define a função do usuário
   let role = (formData.get("role") as string) || "VISITANTE";
   if (email.toLowerCase() === "prfabianoguedes@gmail.com") role = "ADMIN";
 
@@ -198,19 +199,19 @@ export async function registerUser(formData: FormData) {
 
     const hashedPassword = await hash(password, 10);
 
-    // 4. VÍNCULO COM O PARCEIRO (AFILIADO)
+    // 4. 🚀 VÍNCULO COM O PARCEIRO (Busca Inteligente)
     let affiliateId = null;
     if (affiliateCode) {
-      const partner = await db.user.findUnique({
-        where: { referralCode: affiliateCode.toLowerCase().trim() },
+      const partner = await db.user.findFirst({
+        where: {
+          referralCode: { equals: affiliateCode, mode: "insensitive" },
+        },
         select: { id: true },
       });
-      // Se o código for válido, guardamos o ID do parceiro
       if (partner) affiliateId = partner.id;
     }
 
     // 5. CRIAÇÃO NO BANCO DE DADOS
-    // Nota: Removi o "emailVerified: new Date()" para o usuário começar como NÃO verificado
     const user = await db.user.create({
       data: {
         name,
@@ -222,14 +223,23 @@ export async function registerUser(formData: FormData) {
       },
     });
 
-    // 5.5 ENVIO DE E-MAIL DE VERIFICAÇÃO (MÁGICA DO RESEND)
+    if (affiliateId) {
+      await db.referralLog.create({
+        data: {
+          affiliateId: affiliateId,
+          referredId: user.id,
+        },
+      });
+    }
+
+    // 5.5 📧 ENVIO DE E-MAIL DE VERIFICAÇÃO (Sua lógica do Resend mantida)
     const verificationToken = await generateVerificationToken(email);
     const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
 
     try {
       await resend.emails.send({
-        from: "Tafanu <onboarding@resend.dev>", // Certifique-se que este e-mail está configurado no Resend
+        from: "Tafanu <onboarding@resend.dev>",
         to: email,
         subject: "Ative sua conta no Tafanu",
         html: `
@@ -240,16 +250,15 @@ export async function registerUser(formData: FormData) {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${confirmLink}" style="background-color: #0070f3; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">CONFIRMAR MEU E-MAIL</a>
             </div>
-            <p style="font-size: 12px; color: #666;">Este link expira em 24 horas. Se você não solicitou este cadastro, ignore este e-mail.</p>
+            <p style="font-size: 12px; color: #666;">Este link expira em 24 horas.</p>
           </div>
         `,
       });
     } catch (e) {
       console.error("Erro ao enviar e-mail de verificação:", e);
-      // Não travamos o cadastro se o e-mail falhar, mas o usuário precisará pedir reenvio depois.
     }
-    // 6. LIMPEZA: Remove o cookie de indicação após o cadastro com sucesso
-    // para não dar comissão dupla se ele cadastrar o irmão no mesmo PC depois.
+
+    // 6. 🧹 LIMPEZA: Remove o cookie após o sucesso
     if (cookieStore.has("tafanu_ref")) {
       cookieStore.delete("tafanu_ref");
     }
@@ -1448,9 +1457,57 @@ export async function promoteToAffiliate(userId: string, code: string) {
     return { error: "Erro interno ao processar a promoção." };
   }
 }
+
+export async function generateCommission(
+  userId: string,
+  orderAmount: number,
+  description: string,
+) {
+  try {
+    // 1. Verifica se quem comprou tem um afiliado vinculado
+    const customer = await db.user.findUnique({
+      where: { id: userId },
+      select: { affiliateId: true },
+    });
+
+    if (!customer?.affiliateId)
+      return { success: false, message: "Usuário não tem afiliado." };
+
+    // 2. Calcula os 20% exatos
+    const commissionAmount = Number((orderAmount * 0.2).toFixed(2));
+
+    // 3. Define a data de liberação (Ex: 7 dias de garantia para evitar estorno)
+    const releaseDate = new Date();
+    releaseDate.setDate(releaseDate.getDate() + 7);
+
+    // 4. Salva a comissão como PENDENTE no banco de dados
+    await db.commission.create({
+      data: {
+        affiliateId: customer.affiliateId,
+        userId: userId,
+        amount: commissionAmount,
+        orderAmount: orderAmount,
+        status: "PENDING",
+        description: description,
+        releaseDate: releaseDate,
+      },
+    });
+
+    console.log(
+      `✅ Comissão de R$ ${commissionAmount} gerada para o afiliado ${customer.affiliateId}`,
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao gerar comissão:", error);
+    return { error: "Falha ao registrar comissão no banco." };
+  }
+}
+
+// ==============================================================================
+// 📊 ESTATÍSTICAS DO AFILIADO (NOVO MODELO SEGURO + CRM DE VENDAS)
+// ==============================================================================
 export async function getAffiliateStats() {
   const sessionUser = await getSafeUser();
-
   if (
     !sessionUser ||
     (sessionUser.role !== "AFILIADO" && sessionUser.role !== "ADMIN")
@@ -1460,152 +1517,184 @@ export async function getAffiliateStats() {
 
   try {
     const userId = sessionUser.id;
-    const hoje = new Date();
-
     const partner = await db.user.findUnique({
       where: { id: userId },
-      select: { referralCode: true, createdAt: true, lastPayoutDate: true },
+      select: { referralCode: true },
     });
 
-    const allReferrals = await db.user.findMany({
+    // 1. FINANCEIRO: Pega todas as comissões do afiliado
+    const commissions = await db.commission.findMany({
+      where: { affiliateId: userId },
+    });
+
+    let pendente = 0;
+    let disponivel = 0;
+    let pago = 0;
+    const hoje = new Date();
+
+    commissions.forEach((c) => {
+      if (c.status === "PAID") {
+        pago += c.amount;
+      } else if (c.status === "PENDING" && c.releaseDate > hoje) {
+        pendente += c.amount;
+      } else if (
+        c.status === "AVAILABLE" ||
+        (c.status === "PENDING" && c.releaseDate <= hoje)
+      ) {
+        disponivel += c.amount;
+      }
+    });
+
+    // 2. CRM DE VENDAS: Busca todos os usuários indicados por ele
+    const indicados = await db.user.findMany({
       where: { affiliateId: userId },
       select: {
         id: true,
         name: true,
-        role: true,
         email: true,
         phone: true,
+        role: true,
+        planType: true,
         createdAt: true,
         expiresAt: true,
-        lastPrice: true,
-        businesses: { select: { slug: true, name: true }, take: 1 },
+        businesses: { select: { slug: true }, take: 1 }, // Pega o site do cliente se existir
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    // 1. DATA DE CORTE DO CICLO
-    // Ex: Se o afiliado foi criado dia 05/01, e hoje é 20/02. O ciclo atual começou 05/02.
-    const dataCriacaoParceiro = partner?.createdAt
-      ? new Date(partner.createdAt)
-      : new Date();
-    const diaFechamento = dataCriacaoParceiro.getDate();
-
-    let inicioCicloAtual = new Date(
-      hoje.getFullYear(),
-      hoje.getMonth(),
-      diaFechamento,
-    );
-    if (hoje < inicioCicloAtual) {
-      inicioCicloAtual.setMonth(inicioCicloAtual.getMonth() - 1); // Volta pro mês passado se o dia do fechamento ainda não chegou
-    }
-
-    // --- SEPARAÇÃO DAS GAVETAS ---
-
-    const ativos = allReferrals.filter((u) => {
-      if (!u.expiresAt || !u.createdAt) return false;
-      const dataCriacaoCliente = new Date(u.createdAt);
-
-      // REGRA DO TESTE GRÁTIS: Só conta se já passou de 7 dias (cobrança real ocorreu)
-      const diasDeCasa =
-        (hoje.getTime() - dataCriacaoCliente.getTime()) / (1000 * 60 * 60 * 24);
-      const isCobrado = diasDeCasa > 7;
-
-      const isAtivo = u.expiresAt > hoje;
-
-      // TRAVA DO CICLO E HIGH TICKET:
-      // Conta se o cliente renovou/pagou DENTRO do ciclo atual.
-      // Se ele já foi pago pelo Admin (lastPayoutDate), ignora.
-      let pagoNesteCiclo = false;
-      if (
-        partner?.lastPayoutDate &&
-        partner.lastPayoutDate >= inicioCicloAtual
-      ) {
-        pagoNesteCiclo = true;
-      }
-
-      return (
-        u.role === ("ASSINANTE" as Role) &&
-        isCobrado &&
-        isAtivo &&
-        !pagoNesteCiclo
-      );
-    });
-
-    const emTeste = allReferrals.filter((u) => {
-      if (!u.createdAt || !u.expiresAt) return false;
-      const diasDeCasa =
-        (hoje.getTime() - new Date(u.createdAt).getTime()) /
-        (1000 * 60 * 60 * 24);
-      return u.role === "ASSINANTE" && diasDeCasa <= 7 && u.expiresAt > hoje;
-    });
-
-    const inativos = allReferrals.filter((u) => {
-      const expirado = !u.expiresAt || u.expiresAt <= hoje;
-      return (
-        u.role === ("VISITANTE" as Role) ||
-        (u.role === ("ASSINANTE" as Role) && expirado)
-      );
-    });
-
-    // --- MATEMÁTICA PRO MAX (TAXAS E HIGH TICKET) ---
-    // Clientes High Ticket não influenciam na regra de % da mensalidade de 29.90,
-    // mas geram 30% na veia.
-
-    let baseMensal = 0; // Contagem só da galera de 29,90
-    let lucroEstimado = 0;
-
-    ativos.forEach((u) => {
-      const valorPago = Number(u.lastPrice) || 29.9;
-
-      if (valorPago > 30) {
-        // HIGH TICKET (Trimestral/Anual): 30% direto, não conta na base mensal de taxa
-        lucroEstimado += valorPago * 0.3;
-      } else {
-        baseMensal += 1; // Soma na meta
-      }
-    });
-
-    // Calcula a taxa baseada em quem paga R$ 29,90
-    let taxaAtual = 15;
-    if (baseMensal >= 20) taxaAtual = 30;
-    else if (baseMensal >= 10) taxaAtual = 20;
-
-    // Aplica a taxa na galera do mensal e soma ao High Ticket
-    lucroEstimado += baseMensal * 29.9 * (taxaAtual / 100);
-
-    // O potencial futuro calcula os de 7 dias considerando a taxa base atual
-    // (aqui assumimos que eles vão assinar o mensal)
-    const potencialFuturo = emTeste.length * 29.9 * (taxaAtual / 100);
+    const clientesAtivos = indicados.filter(
+      (i) => i.role === "ASSINANTE" && i.expiresAt && i.expiresAt > hoje,
+    ).length;
 
     return {
       success: true,
       referralCode: partner?.referralCode,
-      createdAt: partner?.createdAt,
-      stats: {
-        taxaAtual,
-        ganhoEstimado: lucroEstimado,
-        potencialFuturo,
-        vendasConfirmadas: ativos.length, // Mostra o total para dar moral, mesmo se for High Ticket
-        progressoMeta: Math.min((baseMensal / 20) * 100, 100), // Barra de progresso baseada só no plano de 29.90
-      },
-      ativos,
-      emTeste,
-      inativos,
+      stats: { pendente, disponivel, pago, vendasConfirmadas: clientesAtivos },
+      indicados, // ⬅️ AGORA MANDAMOS A LISTA PARA O PAINEL!
     };
   } catch (error) {
-    console.error("Erro na Server Action getAffiliateStats:", error);
-    return { error: "Erro interno no servidor ao processar estatísticas." };
+    return { error: "Erro interno ao carregar painel." };
   }
 }
-// 1. Busca a lista de parceiros e quanto eles têm para receber
-export async function getAffiliatePayouts() {
+// ==============================================================================
+// 🌟 BUSCAR DADOS DO PAINEL DO PARCEIRO (AFILIADO)
+// ==============================================================================
+export async function getAffiliateDashboardData() {
+  const sessionUser = await getSafeUser();
+  if (!sessionUser || sessionUser.role !== "AFILIADO") {
+    return { error: "Acesso negado." };
+  }
+
+  try {
+    // 1. Puxa os dados do Afiliado e seus clientes diretos (via affiliateId)
+    const affiliate = await db.user.findUnique({
+      where: { id: sessionUser.id },
+      include: {
+        referrals: {
+          // Estes são os clientes amarrados a ele!
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            expiresAt: true,
+            createdAt: true,
+            role: true, // 🚀 AGORA ELE TRAZ O CARGO (ASSINANTE/VISITANTE)
+            planType: true, // 🚀 TRAZ O PLANO
+            mpSubscriptionId: true, // 🚀 TRAZ O ID DO MP PARA SABER SE É PIX MANUAL
+            businesses: {
+              select: {
+                slug: true,
+              },
+              take: 1, // Só precisamos da primeira loja
+            },
+          },
+          orderBy: { expiresAt: "asc" },
+        },
+        commissions: {
+          // Vendas automáticas do Mercado Pago
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!affiliate) return { error: "Parceiro não encontrado." };
+
+    return {
+      success: true,
+      affiliate: {
+        name: affiliate.name,
+        referralCode: affiliate.referralCode,
+      },
+      clients: affiliate.referrals,
+      commissions: affiliate.commissions,
+    };
+  } catch (error) {
+    return { error: "Erro ao carregar dados do parceiro." };
+  }
+}
+
+// ==============================================================================
+// 🔄 VINCULAR CLIENTE A UM PARCEIRO MANUALMENTE
+// ==============================================================================
+export async function assignUserToAffiliate(
+  userId: string,
+  referralCode: string,
+) {
   const sessionUser = await getSafeUser();
   if (!sessionUser || sessionUser.role !== "ADMIN")
     return { error: "Não autorizado." };
 
   try {
+    // Procura o parceiro ignorando se está maiúsculo ou minúsculo
+    const affiliate = await db.user.findFirst({
+      where: {
+        referralCode: {
+          equals: referralCode,
+          mode: "insensitive",
+        },
+        role: "AFILIADO",
+      },
+    });
+
+    if (!affiliate) {
+      return {
+        error:
+          "Parceiro não encontrado ou o dono do código não tem cargo de Parceiro.",
+      };
+    }
+
+    if (userId === affiliate.id) {
+      return { error: "O usuário não pode ser afiliado de si mesmo." };
+    }
+
+    // Atualiza o usuário conectando o ID oficial no banco de dados
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        affiliateId: affiliate.id,
+      },
+    });
+
+    return {
+      success: true,
+      message: `Cliente vinculado a ${affiliate.name} com sucesso!`,
+    };
+  } catch (error) {
+    return { error: "Erro interno ao vincular." };
+  }
+}
+// ==============================================================================
+// 💸 ADMIN: VER QUEM TEM DINHEIRO PARA RECEBER
+// ==============================================================================
+export async function getAffiliatePayouts() {
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Não autorizado." };
+
+  try {
     const hoje = new Date();
 
-    // Busca todos os parceiros
+    // Busca afiliados que têm comissões liberadas (passaram da garantia)
     const partners = await db.user.findMany({
       where: { role: "AFILIADO" },
       select: {
@@ -1613,87 +1702,35 @@ export async function getAffiliatePayouts() {
         name: true,
         email: true,
         phone: true,
-        createdAt: true,
-        lastPayoutDate: true,
-        referrals: {
+        commissions: {
           where: {
-            role: "ASSINANTE" as Role,
-            expiresAt: { gt: hoje },
+            OR: [
+              { status: "AVAILABLE" },
+              { status: "PENDING", releaseDate: { lte: hoje } }, // Virou disponível hoje
+            ],
           },
-          select: { id: true, createdAt: true, lastPrice: true },
         },
       },
     });
 
-    const payoutData = partners.map((p) => {
-      // 1. DATA DE CORTE DO PARCEIRO
-      const dataCriacaoParceiro = p.createdAt
-        ? new Date(p.createdAt)
-        : new Date();
-      const diaFechamento = dataCriacaoParceiro.getDate();
-
-      let inicioCicloAtual = new Date(
-        hoje.getFullYear(),
-        hoje.getMonth(),
-        diaFechamento,
-      );
-      if (hoje < inicioCicloAtual) {
-        inicioCicloAtual.setMonth(inicioCicloAtual.getMonth() - 1);
-      }
-
-      // 2. FILTRA OS ATIVOS DESTE CICLO (Passaram dos 7 dias E não foram pagos)
-      const ativosNesteCiclo = p.referrals.filter((u) => {
-        const diasDeCasa =
-          (hoje.getTime() - new Date(u.createdAt).getTime()) /
-          (1000 * 60 * 60 * 24);
-        const isCobrado = diasDeCasa > 7;
-
-        let pagoNesteCiclo = false;
-        if (p.lastPayoutDate && p.lastPayoutDate >= inicioCicloAtual) {
-          pagoNesteCiclo = true;
-        }
-
-        return isCobrado && !pagoNesteCiclo;
-      });
-
-      // 3. MATEMÁTICA PRO MAX (Admin)
-      let baseMensal = 0;
-      let valorDevido = 0;
-
-      ativosNesteCiclo.forEach((u) => {
-        const valorPago = Number(u.lastPrice) || 29.9;
-        if (valorPago > 30) {
-          valorDevido += valorPago * 0.3; // High Ticket: 30% na lata
-        } else {
-          baseMensal += 1;
-        }
-      });
-
-      let taxa = 0.15;
-      if (baseMensal >= 20) taxa = 0.3;
-      else if (baseMensal >= 10) taxa = 0.2;
-
-      valorDevido += baseMensal * 29.9 * taxa;
-
-      return {
-        id: p.id,
-        name: p.name,
-        email: p.email,
-        phone: p.phone,
-        ativos: ativosNesteCiclo.length, // Total real para mostrar na dashboard
-        taxa: taxa * 100, // Mostra a taxa base alcançada
-        valorDevido: valorDevido, // O PIX exato que você deve mandar
-        ultimoPagamento: p.lastPayoutDate,
-      };
-    });
+    const payoutData = partners
+      .map((p) => {
+        const valorDevido = p.commissions.reduce((acc, c) => acc + c.amount, 0);
+        return {
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          phone: p.phone,
+          valorDevido: valorDevido,
+        };
+      })
+      .filter((p) => p.valorDevido > 0); // Só mostra quem tem dinheiro pra receber
 
     return { success: true, payouts: payoutData };
   } catch (error) {
-    console.error("Erro em getAffiliatePayouts:", error);
     return { error: "Erro ao calcular pagamentos." };
   }
 }
-
 // 2. Registra o pagamento e "Zera" o saldo do parceiro
 export async function markAffiliateAsPaid(affiliateId: string) {
   const adminId = await requireAdmin();

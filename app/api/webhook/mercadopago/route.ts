@@ -4,6 +4,7 @@ import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
+import { generateCommission } from "@/app/actions";
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
@@ -140,6 +141,8 @@ export async function POST(request: Request) {
 
         if (frequency === 3) planType = "quarterly";
         else if (frequency === 12) planType = "yearly";
+        const transactionAmount =
+          subscription.auto_recurring?.transaction_amount ?? 0;
 
         await db.user.update({
           where: { id: userId },
@@ -151,6 +154,19 @@ export async function POST(request: Request) {
             planType: planType,
           },
         });
+        if (transactionAmount > 0) {
+          const descricaoPlano =
+            planType === "monthly"
+              ? "Mensal"
+              : planType === "quarterly"
+                ? "Trimestral"
+                : "Anual";
+          await generateCommission(
+            userId,
+            transactionAmount,
+            `Assinatura ${descricaoPlano} - Cliente ID: ${userId}`,
+          );
+        }
 
         revalidatePath("/", "layout");
         console.log(

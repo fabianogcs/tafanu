@@ -50,6 +50,10 @@ model User {
   emailVerified   DateTime? 
   image           String?   
   password        String?
+  commissions    Commission[]  @relation("AffiliateCommissions")
+  withdrawals    Withdrawal[]  @relation("AffiliateWithdrawals")
+  referralLogs   ReferralLog[] @relation("AffiliateLogs")
+  isReferredBy   ReferralLog?  @relation("ReferredUser")
   
  role            Role      @default(VISITANTE)
   referralCode    String?   @unique 
@@ -265,4 +269,53 @@ model AnalyticsEvent {
 
   @@index([businessId, createdAt]) // Busca range de datas por loja (Muito rápido)
   @@index([eventType])
+}
+// --- SISTEMA DE AFILIADOS PROFISSIONAL ---
+
+enum CommissionStatus {
+  PENDING    // Aguardando prazo de garantia (ex: 7 dias)
+  AVAILABLE  // Liberado para o afiliado pedir saque
+  PAID       // Você já transferiu o dinheiro
+  CANCELLED  // Cliente pediu estorno ou assinatura falhou
+}
+
+model ReferralLog {
+  id          String   @id @default(cuid())
+  affiliateId String   // ID do User que indicou
+  referredId  String   @unique // ID do User que foi indicado
+  createdAt   DateTime @default(now())
+  
+  affiliate   User     @relation("AffiliateLogs", fields: [affiliateId], references: [id])
+  referred    User     @relation("ReferredUser", fields: [referredId], references: [id])
+
+  @@index([affiliateId])
+}
+
+model Commission {
+  id            String           @id @default(cuid())
+  affiliateId   String
+  userId        String           // Cliente que pagou
+  amount        Float            // Valor da comissão (ex: 5.98)
+  orderAmount   Float            // Valor total da venda (ex: 29.90)
+  status        CommissionStatus @default(PENDING)
+  description   String?          // Ex: "Mensalidade Março - Cliente X"
+  createdAt     DateTime         @default(now())
+  releaseDate   DateTime         // Data que o valor fica disponível (createdAt + 7 dias)
+  
+  affiliate     User             @relation("AffiliateCommissions", fields: [affiliateId], references: [id])
+
+  @@index([affiliateId])
+  @@index([status])
+}
+
+model Withdrawal {
+  id          String   @id @default(cuid())
+  affiliateId String
+  amount      Float
+  pixKey      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime @default(now())
+  paidAt      DateTime?
+
+  affiliate   User     @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id])
 }

@@ -1,41 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getAffiliateStats } from "@/app/actions";
+import { useEffect, useState, useMemo } from "react";
+import { getAffiliateDashboardData } from "@/app/actions";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
-  Users,
-  Copy,
-  Trophy,
-  Zap,
-  Clock,
-  MessageCircle,
-  Mail,
-  ExternalLink,
-  Search,
-  CheckCircle2,
-  Timer,
   Wallet,
   Share2,
+  Clock,
+  Banknote,
+  Search,
+  MessageCircle,
+  ExternalLink,
   AlertCircle,
-  ShieldCheck,
-  DollarSign,
-  SearchX,
-  Crown,
-  CalendarDays,
-  ArrowRight,
+  CheckCircle2,
+  Zap,
+  Target,
+  QrCode, // ⬅️ Ícone novo para a aba de PIX
 } from "lucide-react";
-import Link from "next/link";
 
 export default function AffiliateDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("ativos");
+  const [activeTab, setActiveTab] = useState("mensal");
   const [searchTerm, setSearchTerm] = useState("");
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin); // 🚀 Só captura a URL quando chegar no navegador
+  }, []);
 
   useEffect(() => {
     async function loadStats() {
-      const res = await getAffiliateStats();
+      // 🚀 Usando a nova função super otimizada que criamos
+      const res = await getAffiliateDashboardData();
       if (res.error) toast.error(res.error);
       else setData(res);
       setLoading(false);
@@ -43,55 +41,130 @@ export default function AffiliateDashboard() {
     loadStats();
   }, []);
 
+  // 🚀 CÁLCULO FINANCEIRO EXCLUSIVO DO MERCADO PAGO
+  const stats = useMemo(() => {
+    let disponivel = 0;
+    let pendente = 0;
+    let pago = 0;
+
+    if (data?.commissions) {
+      data.commissions.forEach((c: any) => {
+        if (c.status === "AVAILABLE") disponivel += c.amount;
+        if (c.status === "PENDING") pendente += c.amount;
+        if (c.status === "PAID") pago += c.amount;
+      });
+    }
+    return { disponivel, pendente, pago };
+  }, [data]);
+
   if (loading)
     return (
       <div className="flex h-[90vh] items-center justify-center flex-col gap-4">
         <div className="h-14 w-14 border-4 border-[#F28705] border-t-transparent rounded-full animate-spin shadow-lg" />
         <p className="text-[#023059] font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">
-          Sincronizando Dados Bancários...
+          Sincronizando Funil de Vendas...
         </p>
       </div>
     );
 
-  if (!data) return null;
-  const { stats, createdAt } = data;
+  if (!data || !data.affiliate) return null;
+  const { affiliate, clients } = data;
+  const hoje = new Date();
 
-  // Calcula o dia de pagamento baseado na data de criação do Afiliado
-  const dataCriacao = createdAt ? new Date(createdAt) : new Date();
-  const diaPagamento = dataCriacao.getDate();
+  // 🛡️ O FUNIL DE VENDAS PERFEITO (CRM) - VERSÃO BLINDADA
+  const listMensal: any[] = [];
+  const listTrimestral: any[] = [];
+  const listAnual: any[] = [];
+  const listPix: any[] = [];
+  const listTeste: any[] = [];
+  const listLeads: any[] = [];
+  const listVencidos: any[] = [];
 
-  // Lógica de filtragem
+  clients.forEach((u: any) => {
+    const expDate = u.expiresAt ? new Date(u.expiresAt) : null;
+    const creationDate = new Date(u.createdAt);
+    const isActive = expDate && expDate > hoje;
+
+    // Calculamos quantos dias de acesso restam para o cliente
+    const diasRestantes = expDate
+      ? Math.ceil((expDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    // 1. VISITANTES (Leads puros)
+    if (u.role === "VISITANTE") {
+      listLeads.push(u);
+    }
+
+    // 2. ASSINANTES (Ativados por você ou pelo Mercado Pago)
+    else if (u.role === "ASSINANTE") {
+      // REGRA A: Se já venceu, vai para a aba de Vencidos
+      if (!isActive) {
+        listVencidos.push(u);
+      }
+
+      // REGRA B: Se não tem Mercado Pago, é ATIVAÇÃO MANUAL (PIX)
+      else if (!u.mpSubscriptionId) {
+        listPix.push(u);
+      }
+
+      // REGRA C: Se tem Mercado Pago, segue o fluxo automático
+      else {
+        if (u.planType === "quarterly") {
+          listTrimestral.push(u);
+        } else if (u.planType === "yearly") {
+          listAnual.push(u);
+        } else {
+          // LÓGICA DO MENSAL (AJUSTADA):
+          const idadeConta = Math.ceil(
+            (hoje.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
+          // Só vai para "Em Teste" se for plano mensal E (tiver o bônus de 7 dias OU a conta for nova)
+          if (
+            u.planType === "monthly" &&
+            (diasRestantes > 30 || idadeConta <= 7)
+          ) {
+            listTeste.push(u);
+          } else {
+            listMensal.push(u);
+          }
+        }
+      }
+    }
+  });
   const getRawList = () => {
-    if (activeTab === "ativos") return data.ativos || [];
-    if (activeTab === "teste") return data.emTeste || [];
-    return data.inativos || [];
+    if (activeTab === "mensal") return listMensal;
+    if (activeTab === "trimestral") return listTrimestral;
+    if (activeTab === "anual") return listAnual;
+    if (activeTab === "pix") return listPix; // 🚀 Retorna a lista de PIX
+    if (activeTab === "teste") return listTeste;
+    if (activeTab === "leads") return listLeads;
+    return listVencidos;
   };
 
-  const filteredList = getRawList()
-    .filter(
-      (ref: any) =>
-        ref.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    .sort((a: any, b: any) => {
-      if (!a.expiresAt) return 1;
-      return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime();
-    });
+  const filteredList = getRawList().filter(
+    (ref: any) =>
+      ref.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   const copyLink = () => {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/?ref=${data.referralCode}`,
-    );
-    toast.success("Link VIP copiado! Boas vendas!", {
-      icon: <Share2 size={16} />,
-    });
+    const linkCompleto = `${origin}/?ref=${affiliate.referralCode}`; // 🚀 Usa o estado origin
+    navigator.clipboard.writeText(linkCompleto);
+    toast.success("Link copiado! Boas vendas!", { icon: <Share2 size={16} /> });
+  };
+
+  const formatMoney = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
   };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 px-4 font-sans">
-      {/* 1. PAINEL FINANCEIRO DE ALTA CONVERSÃO */}
+      {/* 1. PAINEL FINANCEIRO */}
       <div className="bg-gradient-to-br from-[#023059] to-[#011a33] rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden border-b-[12px] border-[#F28705]">
-        {/* Efeito de Fundo */}
         <div className="absolute top-0 right-0 p-32 opacity-5 pointer-events-none">
           <Zap size={400} />
         </div>
@@ -101,26 +174,28 @@ export default function AffiliateDashboard() {
             <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 backdrop-blur-md">
               <Wallet size={16} className="text-emerald-400" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100">
-                Seu Fechamento: Todo dia {diaPagamento}
+                COMISSÃO AUTOMÁTICA (CARTÃO)
               </span>
             </div>
 
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-[#F28705] mb-2">
-                Comissão Atual Base
+                Disponível para Saque
               </p>
-              <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-none drop-shadow-lg">
-                <span className="text-white">{stats.taxaAtual}%</span>
+              <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-none text-emerald-400">
+                {formatMoney(stats.disponivel)}
               </h1>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/5 p-2.5 rounded-[2rem] border border-white/10 max-w-lg backdrop-blur-sm">
-              <div className="flex-1 px-5 py-2 w-full truncate font-mono text-[11px] text-blue-200/70 italic font-bold">
-                {window.location.origin}/?ref={data.referralCode}
+              <div className="flex-1 px-5 py-2 w-full truncate font-mono text-[11px] text-blue-200/70 font-bold select-all">
+                {origin
+                  ? `${origin}/?ref=${affiliate.referralCode}`
+                  : "Carregando link..."}
               </div>
               <button
                 onClick={copyLink}
-                className="w-full sm:w-auto bg-[#F28705] text-[#023059] px-8 py-4 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:scale-105 transition-all shadow-xl"
+                className="w-full sm:w-auto bg-[#F28705] text-[#023059] px-6 py-3 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl"
               >
                 Copiar Link
               </button>
@@ -128,290 +203,251 @@ export default function AffiliateDashboard() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
-            <div className="bg-white/10 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/10 border-l-8 border-l-emerald-500 min-w-[280px] shadow-2xl relative overflow-hidden">
-              <p className="text-[10px] font-black uppercase text-gray-300 mb-2 tracking-widest">
-                Saldo a Receber (Dia {diaPagamento})
+            <div className="bg-white/10 backdrop-blur-md p-6 rounded-[2rem] border border-white/10 border-l-8 border-l-blue-500 min-w-[240px]">
+              <p className="text-[10px] font-black uppercase text-gray-300 mb-2 tracking-widest flex items-center gap-2">
+                <Clock size={14} /> Saldo Pendente
               </p>
-              <p className="text-4xl md:text-5xl font-black tracking-tighter">
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(stats.ganhoEstimado)}
+              <p className="text-3xl font-black text-white">
+                {formatMoney(stats.pendente)}
               </p>
-              <div className="absolute -bottom-4 -right-4 text-emerald-500/20">
-                <DollarSign size={100} />
-              </div>
+              <p className="text-[8px] font-bold text-gray-400 mt-2 uppercase">
+                *Garantia de 7 dias
+              </p>
             </div>
-
-            <div className="bg-white/5 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/10 border-l-8 border-l-[#F28705] min-w-[280px] shadow-2xl">
-              <p className="text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">
-                Aguardando Pagamento
+            <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2rem] border border-white/10 border-l-8 border-l-gray-500 min-w-[240px]">
+              <p className="text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest flex items-center gap-2">
+                <Banknote size={14} /> Já Pago
               </p>
-              <p className="text-4xl md:text-5xl font-black italic text-white/40 tracking-tighter">
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(stats.potencialFuturo)}
+              <p className="text-3xl font-black italic text-white/50">
+                {formatMoney(stats.pago)}
               </p>
-              <p className="text-[8px] font-bold text-gray-400 mt-3 uppercase tracking-widest">
-                *Assinantes no teste de 7 dias
+              <p className="text-[8px] font-bold text-gray-500 mt-2 uppercase">
+                *Transferido p/ Você
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. MANUAL DO PARCEIRO (NOVA REGRA DE NEGÓCIOS) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-lg transition-all flex flex-col items-start gap-4 group">
-          <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
-            <CalendarDays size={28} />
-          </div>
-          <div>
-            <h4 className="text-[11px] font-black uppercase tracking-widest text-[#023059] mb-1">
-              Ciclo Mensal
-            </h4>
-            <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-              Seu fechamento é todo{" "}
-              <strong className="text-blue-500">dia {diaPagamento}</strong>.
-              Vendas feitas hoje só contabilizam para o próximo ciclo se
-              passarem da data de corte.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-lg transition-all flex flex-col items-start gap-4 group">
-          <div className="h-14 w-14 bg-orange-50 rounded-2xl flex items-center justify-center text-[#F28705] group-hover:scale-110 transition-transform">
-            <Timer size={28} />
-          </div>
-          <div>
-            <h4 className="text-[11px] font-black uppercase tracking-widest text-[#023059] mb-1">
-              Regra dos 7 Dias
-            </h4>
-            <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-              Assinantes no período de teste grátis{" "}
-              <strong className="text-[#F28705]">não pontuam</strong>. A
-              comissão é gerada apenas quando a 1ª mensalidade é paga com
-              sucesso.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all flex flex-col items-start gap-4 group border-b-8 border-emerald-900">
-          <div className="h-14 w-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-            <Crown size={28} />
-          </div>
-          <div>
-            <h4 className="text-[11px] font-black uppercase tracking-widest text-white mb-1">
-              High Ticket VIP
-            </h4>
-            <p className="text-[10px] text-emerald-100 font-bold leading-relaxed">
-              Vendeu Plano Trimestral ou Anual? Você ganha{" "}
-              <strong className="text-white text-xs bg-black/20 px-2 py-0.5 rounded ml-1">
-                30% DIRETO
-              </strong>{" "}
-              no ato da venda, independente da sua meta atual!
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. METAS E BUSCA */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-8 md:p-10 rounded-[3rem] border border-gray-100 shadow-sm space-y-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-            <div>
-              <h2 className="text-2xl font-black text-[#023059] uppercase italic flex items-center gap-3 tracking-tighter">
-                <Zap className="text-[#F28705]" fill="currentColor" size={28} />{" "}
-                Progresso do Ciclo
-              </h2>
-              <p className="text-[10px] font-bold text-gray-400 mt-2 tracking-widest">
-                Planos High Ticket pontuam na meta e pagam 30% fixo.
-              </p>
-            </div>
-            <div className="bg-[#f8fafc] px-6 py-3 rounded-2xl border border-gray-100">
-              <p className="text-3xl font-black text-[#023059] italic">
-                {stats.vendasConfirmadas}{" "}
-                <span className="text-sm text-gray-300 font-bold">/ 20</span>
-              </p>
-            </div>
-          </div>
-          <div className="h-5 w-full bg-gray-100 rounded-full p-1 shadow-inner overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#023059] via-[#F28705] to-emerald-500 rounded-full transition-all duration-1000 shadow-lg relative"
-              style={{ width: `${Math.min(stats.progressoMeta, 100)}%` }}
-            >
-              <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]" />
-            </div>
-          </div>
-          <div className="flex justify-between text-[9px] font-black uppercase text-gray-400 px-2 tracking-widest">
-            <span>Bronze (15%)</span>
-            <span>Prata (10 Vendas - 20%)</span>
-            <span className="text-[#F28705]">Ouro (20 Vendas - 30%)</span>
-          </div>
-        </div>
-
-        <div className="bg-[#f8fafc] p-8 rounded-[3rem] border border-gray-100 flex items-center shadow-sm">
-          <div className="relative w-full">
-            <Search
-              className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300"
-              size={24}
-            />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar cliente..."
-              className="w-full pl-16 pr-6 py-6 bg-white border border-gray-100 rounded-[2rem] text-sm font-bold shadow-sm outline-none focus:ring-4 focus:ring-[#F28705]/10 transition-all text-[#023059]"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 4. ABAS E LISTAGEM */}
-      <div className="space-y-8">
-        <div className="flex items-center gap-3 overflow-x-auto pb-4 px-2 no-scrollbar">
-          <TabButton
-            active={activeTab === "ativos"}
-            onClick={() => setActiveTab("ativos")}
-            label="Pagantes (Meta)"
-            count={data.ativos.length}
-            color="bg-[#023059]"
+      {/* 2. CRM - BUSCA E ABAS */}
+      <div className="space-y-6">
+        <div className="bg-[#f8fafc] p-6 rounded-[2rem] border border-gray-100 flex items-center shadow-sm relative">
+          <Search className="absolute left-6 text-gray-300" size={24} />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar cliente na lista..."
+            className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-full text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-[#F28705] transition-all text-[#023059]"
           />
+        </div>
+
+        {/* Scroll Horizontal de Abas do Funil */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar">
+          <TabButton
+            active={activeTab === "mensal"}
+            onClick={() => setActiveTab("mensal")}
+            label="Mensais"
+            count={listMensal.length}
+            color="bg-emerald-500"
+          />
+          <TabButton
+            active={activeTab === "trimestral"}
+            onClick={() => setActiveTab("trimestral")}
+            label="Trimestrais"
+            count={listTrimestral.length}
+            color="bg-emerald-600"
+          />
+          <TabButton
+            active={activeTab === "anual"}
+            onClick={() => setActiveTab("anual")}
+            label="Anuais"
+            count={listAnual.length}
+            color="bg-emerald-700"
+          />
+          <div className="w-px h-8 bg-gray-200 mx-1 shrink-0"></div>
+
+          {/* 🚀 NOVA ABA DE PIX MANUAL (Controle Privado do Afiliado) */}
+          <TabButton
+            active={activeTab === "pix"}
+            onClick={() => setActiveTab("pix")}
+            label="PIX / Manuais"
+            count={listPix.length}
+            color="bg-purple-500"
+            icon={<QrCode size={12} />}
+          />
+
+          <div className="w-px h-8 bg-gray-200 mx-1 shrink-0"></div>
+
           <TabButton
             active={activeTab === "teste"}
             onClick={() => setActiveTab("teste")}
-            label="Teste 7 Dias"
-            count={data.emTeste.length}
+            label="Em Teste"
+            count={listTeste.length}
             color="bg-[#F28705]"
           />
           <TabButton
-            active={activeTab === "inativos"}
-            onClick={() => setActiveTab("inativos")}
-            label="Inativos"
-            count={data.inativos.length}
+            active={activeTab === "leads"}
+            onClick={() => setActiveTab("leads")}
+            label="Leads (Visitantes)"
+            count={listLeads.length}
+            color="bg-blue-500"
+          />
+          <TabButton
+            active={activeTab === "vencidos"}
+            onClick={() => setActiveTab("vencidos")}
+            label="Vencidos / Cancelados"
+            count={listVencidos.length}
             color="bg-rose-500"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* 3. LISTAGEM DE CLIENTES */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredList.map((ref: any) => {
             const expDate = ref.expiresAt ? new Date(ref.expiresAt) : null;
             const daysLeft = expDate
               ? Math.ceil(
-                  (expDate.getTime() - new Date().getTime()) /
-                    (1000 * 60 * 60 * 24),
+                  (expDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24),
                 )
               : 0;
             const business = ref.businesses?.[0];
 
-            // Identificação do Plano e Tag visual
-            const isHighTicket = Number(ref.lastPrice) > 30;
-            const isAnual = Number(ref.lastPrice) > 100;
-
             return (
               <div
                 key={ref.id}
-                className="bg-white rounded-[2.5rem] border border-gray-100 shadow-md hover:shadow-xl transition-all flex flex-col overflow-hidden group"
+                className="bg-white rounded-[2rem] border border-gray-100 shadow-md hover:shadow-xl transition-all flex flex-col overflow-hidden group"
               >
-                {/* CABEÇALHO DO CARD */}
+                {/* CABEÇALHO DO CARD (Dinâmico por Aba) */}
                 <div
-                  className={`px-6 py-4 flex justify-between items-center ${
-                    activeTab === "ativos"
-                      ? "bg-emerald-50 border-b border-emerald-100"
+                  className={`px-5 py-3 flex justify-between items-center border-b ${
+                    activeTab === "leads"
+                      ? "bg-blue-50 border-blue-100"
                       : activeTab === "teste"
-                        ? "bg-orange-50 border-b border-orange-100"
-                        : "bg-slate-50 border-b border-slate-200"
+                        ? "bg-orange-50 border-orange-100"
+                        : activeTab === "vencidos"
+                          ? "bg-rose-50 border-rose-100"
+                          : activeTab === "pix"
+                            ? "bg-purple-50 border-purple-100" // 🚀 Cor da aba PIX
+                            : "bg-emerald-50 border-emerald-100"
                   }`}
                 >
                   <span
-                    className={`text-[9px] font-black uppercase tracking-widest ${
-                      activeTab === "ativos"
-                        ? "text-emerald-600"
+                    className={`text-[10px] font-black uppercase tracking-widest ${
+                      activeTab === "leads"
+                        ? "text-blue-600"
                         : activeTab === "teste"
                           ? "text-[#F28705]"
-                          : "text-slate-500"
+                          : activeTab === "vencidos"
+                            ? "text-rose-600"
+                            : activeTab === "pix"
+                              ? "text-purple-600 flex items-center gap-1"
+                              : "text-emerald-600"
                     }`}
                   >
-                    {activeTab === "ativos"
-                      ? "Gera Comissão"
-                      : activeTab === "teste"
-                        ? "Aguardando 1º Pagto"
-                        : "Cancelado"}
+                    {activeTab === "leads" ? (
+                      "Falta Assinar"
+                    ) : activeTab === "teste" ? (
+                      "Faltam " + daysLeft + " dias para faturar"
+                    ) : activeTab === "vencidos" ? (
+                      "Recuperar Venda"
+                    ) : activeTab === "pix" ? (
+                      <>
+                        <QrCode size={10} /> Pagamento Manual
+                      </>
+                    ) : (
+                      "Ativo e Rendendo"
+                    )}
                   </span>
-                  {/* TAG HIGH TICKET */}
-                  {isHighTicket && activeTab === "ativos" && (
-                    <span
-                      className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1 ${isAnual ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}
-                    >
-                      <Crown size={10} />{" "}
-                      {isAnual ? "Anual VIP (30%)" : "Trimestral (30%)"}
-                    </span>
-                  )}
                 </div>
 
-                <div className="p-8 space-y-6 flex-1 flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1.5 max-w-[70%]">
-                      <h3 className="font-black text-[#023059] text-xl uppercase leading-none truncate tracking-tighter">
-                        {ref.name || "Sem Nome"}
-                      </h3>
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Mail size={12} />
-                        <span className="text-[10px] font-bold truncate">
+                <div className="p-6 space-y-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div className="truncate max-w-[80%]">
+                        <h3 className="font-black text-[#023059] text-lg uppercase leading-tight truncate">
+                          {ref.name || "Sem Nome"}
+                        </h3>
+                        <p className="text-[11px] font-bold text-gray-400 mt-1 truncate">
                           {ref.email}
-                        </span>
+                        </p>
                       </div>
+
+                      {/* Botão de Ver Loja */}
+                      {business && (
+                        <Link
+                          href={`/site/${business.slug}`}
+                          target="_blank"
+                          title="Ver loja"
+                          className="h-10 w-10 shrink-0 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center hover:bg-[#023059] hover:text-white transition-all border border-gray-200"
+                        >
+                          <ExternalLink size={16} />
+                        </Link>
+                      )}
                     </div>
-                    {business && (
-                      <Link
-                        href={`/site/${business.slug}`}
-                        target="_blank"
-                        className="h-12 w-12 bg-[#f8fafc] text-[#023059] rounded-[1rem] flex items-center justify-center hover:bg-[#023059] hover:text-white transition-all shadow-sm border border-gray-100 group-hover:scale-110"
-                      >
-                        <ExternalLink size={20} />
-                      </Link>
+
+                    {/* STATUS DE TEMPO E AVISOS */}
+                    {ref.role === "ASSINANTE" && expDate && (
+                      <div className="mt-4 flex flex-col gap-2">
+                        <div
+                          className={`flex items-center gap-1.5 w-fit text-[11px] font-black uppercase px-3 py-1.5 rounded-lg border ${
+                            daysLeft <= 0
+                              ? "bg-rose-50 text-rose-600 border-rose-100"
+                              : activeTab === "pix"
+                                ? "bg-purple-50 text-purple-600 border-purple-100"
+                                : "bg-blue-50 text-blue-600 border-blue-100"
+                          }`}
+                        >
+                          {daysLeft <= 0 ? (
+                            <AlertCircle size={14} />
+                          ) : (
+                            <CheckCircle2 size={14} />
+                          )}
+                          {daysLeft <= 0
+                            ? `Vencido há ${Math.abs(daysLeft)} dias`
+                            : `Vence em ${daysLeft} dias`}
+                        </div>
+
+                        {/* 🚀 AVISO ESPECIAL PARA A ABA DE PIX */}
+                        {activeTab === "pix" && (
+                          <p className="text-[9px] font-bold text-purple-500/70 leading-tight">
+                            *Você deve cobrar este cliente diretamente e
+                            repassar a parte da plataforma.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
 
-                  <div
-                    className={`p-4 rounded-2xl border flex items-center justify-between ${daysLeft <= 0 ? "bg-rose-50 border-rose-100 text-rose-600" : "bg-[#f8fafc] border-gray-100 text-[#023059]"}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {daysLeft <= 0 ? (
-                        <AlertCircle size={18} />
-                      ) : (
-                        <CheckCircle2
-                          size={18}
-                          className={
-                            activeTab === "ativos"
-                              ? "text-emerald-500"
-                              : "text-[#F28705]"
-                          }
-                        />
-                      )}
-                      <span className="text-[10px] font-black uppercase tracking-widest">
-                        {daysLeft <= 0
-                          ? "Expirado"
-                          : `Vence em ${daysLeft} dias`}
-                      </span>
-                    </div>
-                  </div>
-
+                  {/* BOTÃO WHATSAPP - CRM COMPLETO */}
                   <a
                     href={
                       ref.phone
-                        ? `https://wa.me/55${ref.phone.replace(/\D/g, "")}`
+                        ? `https://wa.me/55${ref.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                            daysLeft <= 0
+                              ? `Olá ${ref.name?.split(" ")[0]}, sua assinatura na plataforma venceu! Vamos renovar?`
+                              : activeTab === "pix" && daysLeft <= 5
+                                ? `Olá ${ref.name?.split(" ")[0]}, passando para lembrar que sua assinatura vence em ${daysLeft} dias. Segue a chave PIX para renovação:`
+                                : `Olá ${ref.name?.split(" ")[0]}, tudo bem? Como estão os acessos na sua loja?`,
+                          )}`
                         : "#"
                     }
                     target="_blank"
-                    className={`w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                    className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
                       ref.phone
-                        ? "bg-[#023059] text-white shadow-xl hover:bg-[#F28705]"
+                        ? "bg-[#25D366] text-white shadow-lg hover:bg-[#1ebd57]"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
+                    onClick={(e) => {
+                      if (!ref.phone) {
+                        e.preventDefault();
+                        toast.error(
+                          "Este cliente não tem telefone cadastrado.",
+                        );
+                      }
+                    }}
                   >
-                    <MessageCircle size={18} />{" "}
-                    {ref.phone ? "Chamar no WhatsApp" : "Sem Telefone"}
+                    <MessageCircle size={18} />
+                    {ref.phone ? "Atendimento WhatsApp" : "Sem Telefone Salvo"}
                   </a>
                 </div>
               </div>
@@ -420,10 +456,10 @@ export default function AffiliateDashboard() {
         </div>
 
         {filteredList.length === 0 && (
-          <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
-            <SearchX size={64} className="mx-auto text-gray-200 mb-6" />
-            <p className="font-black uppercase text-gray-400 text-xs tracking-[0.2em] italic">
-              Nenhum cliente neste status no momento.
+          <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
+            <Target size={48} className="mx-auto text-gray-300 mb-4" />
+            <p className="font-black uppercase text-gray-400 text-[10px] tracking-widest">
+              Nenhum cliente nesta categoria.
             </p>
           </div>
         )}
@@ -432,20 +468,19 @@ export default function AffiliateDashboard() {
   );
 }
 
-// COMPONENTES AUXILIARES
-function TabButton({ active, onClick, label, count, color }: any) {
+function TabButton({ active, onClick, label, count, color, icon }: any) {
   return (
     <button
       onClick={onClick}
-      className={`px-8 py-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${
+      className={`px-6 py-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${
         active
-          ? `${color} text-white shadow-xl scale-105 border-b-4 border-black/20`
-          : "bg-white text-gray-400 hover:bg-gray-50 border border-gray-100 shadow-sm"
+          ? `${color} text-white shadow-lg border-b-4 border-black/20 scale-105`
+          : "bg-white text-gray-500 border border-gray-200 hover:bg-gray-50"
       }`}
     >
-      {label}
+      {icon} {label}
       <span
-        className={`px-2 py-0.5 rounded-full text-[9px] ${active ? "bg-white/20 text-white" : "bg-gray-100 text-gray-400"}`}
+        className={`px-2 py-0.5 rounded-full text-[9px] ${active ? "bg-white/20" : "bg-gray-100 text-gray-400"}`}
       >
         {count}
       </span>

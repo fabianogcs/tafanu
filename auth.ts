@@ -94,6 +94,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
 
   events: {
+    async createUser({ user }) {
+      try {
+        const cookieStore = await cookies();
+        // 🚀 Mudando para o nome padronizado
+        const referredBy = cookieStore.get("tafanu_ref")?.value;
+
+        if (referredBy && user.id) {
+          const affiliate = await db.user.findFirst({
+            where: {
+              referralCode: { equals: referredBy, mode: "insensitive" },
+            },
+            select: { id: true, name: true },
+          });
+
+          if (affiliate) {
+            await db.user.update({
+              where: { id: user.id },
+              data: { affiliateId: affiliate.id },
+            });
+            console.log(`✅ Google User vinculado a: ${affiliate.name}`);
+          }
+        }
+      } catch (error) {
+        console.error("Erro no vínculo Google:", error);
+      }
+    },
+
     async linkAccount({ user }) {
       if (user.id) {
         await db.user.update({
@@ -102,6 +129,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
       }
     },
+
     async signIn({ user }) {
       const cookieStore = await cookies();
       if (user.id) {
@@ -118,6 +146,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         path: "/",
       });
     },
+
     async signOut() {
       const cookieStore = await cookies();
       cookieStore.delete("userId");
