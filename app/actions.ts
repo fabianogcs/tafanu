@@ -13,6 +13,7 @@ import { Resend } from "resend";
 import crypto from "crypto";
 import { MercadoPagoConfig, PreApproval } from "mercadopago"; // 👈 NOVO IMPORT AQUI
 import { normalizeText } from "@/lib/normalize"; // 👈 NOVO IMPORT
+import { CommissionStatus } from "@prisma/client";
 
 type BusinessInput = z.infer<typeof businessSchema>;
 const client = new MercadoPagoConfig({
@@ -1733,22 +1734,44 @@ export async function getAffiliatePayouts() {
 }
 // 2. Registra o pagamento e "Zera" o saldo do parceiro
 export async function markAffiliateAsPaid(affiliateId: string) {
-  const adminId = await requireAdmin();
+  const adminId = await requireAdmin(); // Supondo que essa seja sua função de auth
   if (!adminId) return { error: "Não autorizado." };
 
   try {
+    // 🚀 AGORA SIM O PRISMA VAI ENTENDER!
+    const atualizacao = await db.commission.updateMany({
+      where: {
+        affiliateId: affiliateId,
+        status: CommissionStatus.AVAILABLE, // Usando o Enum oficial
+      },
+      data: {
+        status: CommissionStatus.PAID, // Usando o Enum oficial
+      },
+    });
+
+    if (atualizacao.count === 0) {
+      return {
+        error:
+          "Erro: Nenhuma comissão com status AVAILABLE encontrada no Prisma.",
+      };
+    }
+
+    // Atualiza a data do último pagamento no usuário
     await db.user.update({
       where: { id: affiliateId },
       data: { lastPayoutDate: new Date() },
     });
 
-    // ⬅️ ESSENCIAL: Faz o AdminDashboard e o AffiliateDashboard atualizarem os valores na hora
     revalidatePath("/admin");
     revalidatePath("/dashboard/parceiro");
 
-    return { success: true, message: "Pagamento registrado e saldo resetado!" };
+    return {
+      success: true,
+      message: `Sucesso! ${atualizacao.count} comissão(ões) movida(s) para o Extrato.`,
+    };
   } catch (error) {
-    return { error: "Erro ao registrar pagamento." };
+    console.error("Erro crítico ao registrar pagamento:", error);
+    return { error: "Erro interno no banco de dados." };
   }
 }
 

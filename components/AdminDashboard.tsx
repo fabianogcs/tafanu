@@ -31,7 +31,9 @@ import {
   User,
   MessageSquare,
   Trash2,
-  Link2, // ⬅️ Ícone adicionado para a função de Ligar Parceiro
+  Link2,
+  Store,
+  ReceiptText,
 } from "lucide-react";
 
 import {
@@ -46,14 +48,13 @@ import {
   banUserAction,
   unbanUserAction,
   deleteComment,
-  assignUserToAffiliate, // ⬅️ Função de vincular afiliado importada
+  assignUserToAffiliate,
 } from "@/app/actions";
 
 export default function AdminDashboard({ data }: { data: any }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // --- NOVO SISTEMA DE ABAS (ORGANIZADO) ---
   const [mainCategory, setMainCategory] = useState("overview");
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -62,24 +63,19 @@ export default function AdminDashboard({ data }: { data: any }) {
   const [payouts, setPayouts] = useState<any[]>([]);
   const [promotingUser, setPromotingUser] = useState<any>(null);
   const [referralCodeInput, setReferralCodeInput] = useState("");
-
-  // 🚀 NOVO: Estado para vincular afiliado manualmente
   const [assignCodeInput, setAssignCodeInput] = useState("");
 
   const ADMIN_EMAIL = "prfabianoguedes@gmail.com";
 
-  // --- CARREGAR PAGAMENTOS ---
   const loadPayouts = async () => {
     const res = await getAffiliatePayouts();
     if (res.payouts) setPayouts(res.payouts);
   };
 
   useEffect(() => {
-    // 🚀 Carrega os pagamentos tanto na aba de payouts quanto no overview (para o cálculo financeiro)
     if (activeTab === "payouts" || activeTab === "overview") loadPayouts();
   }, [activeTab]);
 
-  // --- PROCESSAMENTO DE DADOS ---
   const {
     allUsers,
     activeSubscribers,
@@ -126,7 +122,10 @@ export default function AdminDashboard({ data }: { data: any }) {
     const leads = users.filter(
       (u: any) => u.role === "VISITANTE" && !u.isBanned,
     );
-    const affs = users.filter((u: any) => u.role === "AFILIADO");
+    // 🚀 CORREÇÃO: Todo mundo que tem código é parceiro
+    const affs = users.filter(
+      (u: any) => u.role === "AFILIADO" || !!u.referralCode,
+    );
     const banned = users.filter((u: any) => u.isBanned);
 
     const reports = data.reports
@@ -134,7 +133,6 @@ export default function AdminDashboard({ data }: { data: any }) {
       .map((report: any) => {
         let foundBusiness = null;
         let foundOwner = null;
-
         for (const u of data.users) {
           if (u.businesses) {
             const biz = u.businesses.find(
@@ -147,12 +145,7 @@ export default function AdminDashboard({ data }: { data: any }) {
             }
           }
         }
-
-        return {
-          ...report,
-          business: foundBusiness,
-          owner: foundOwner,
-        };
+        return { ...report, business: foundBusiness, owner: foundOwner };
       });
 
     return {
@@ -168,11 +161,10 @@ export default function AdminDashboard({ data }: { data: any }) {
     };
   }, [data, ADMIN_EMAIL]);
 
-  // 🚀 CÁLCULO DE LUCRO LÍQUIDO REAL (Já descontando 20% se tiver parceiro)
   const faturamentoLiquido = useMemo(() => {
     return activeSubscribers.reduce((acc: number, u: any) => {
       const preco = Number(u.lastPrice) || 0;
-      const temAfiliado = !!u.affiliateId || !!u.referredBy; // Vê se tem coleira no afiliado
+      const temAfiliado = !!u.affiliateId || !!u.referredBy;
       return temAfiliado ? acc + preco * 0.8 : acc + preco;
     }, 0);
   }, [activeSubscribers]);
@@ -181,13 +173,13 @@ export default function AdminDashboard({ data }: { data: any }) {
     () => payouts.reduce((acc, p) => acc + p.valorDevido, 0),
     [payouts],
   );
+
   const formatMoney = (val: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(val);
 
-  // --- BUSCA GLOBAL ---
   const filteredData = useMemo(() => {
     if (activeTab === "reports") return pendingReports;
     if (activeTab === "payouts") return payouts;
@@ -245,7 +237,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       res.success ? toast.success(res.message) : toast.error(res.error);
       router.refresh();
       setSelectedUser(null);
-      setAssignCodeInput(""); // 🚀 Limpa input
+      setAssignCodeInput("");
     });
   };
 
@@ -255,7 +247,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       res.success ? toast.success(res.message) : toast.error(res.error);
       router.refresh();
       setSelectedUser(null);
-      setAssignCodeInput(""); // 🚀 Limpa input
+      setAssignCodeInput("");
     });
   };
 
@@ -276,9 +268,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       if (res.success) {
         toast.success("Comentário removido!");
         router.refresh();
-      } else {
-        toast.error(res.error || "Erro ao apagar");
-      }
+      } else toast.error(res.error || "Erro ao apagar");
     });
   };
 
@@ -288,9 +278,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       if (res.success) {
         toast.success("Denúncia ignorada e comentário mantido!");
         router.refresh();
-      } else {
-        toast.error(res.error || "Erro ao processar.");
-      }
+      } else toast.error(res.error || "Erro ao processar.");
     });
   };
 
@@ -313,7 +301,6 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
-  // 🚀 FUNÇÃO DE VINCULAR MELHORADA
   const handleAssignAffiliate = async () => {
     if (!assignCodeInput) return toast.error("Digite o código do parceiro!");
     startTransition(async () => {
@@ -327,9 +314,7 @@ export default function AdminDashboard({ data }: { data: any }) {
           affiliateId: "linked",
         });
         router.refresh();
-      } else {
-        toast.error(res.error);
-      }
+      } else toast.error(res.error);
     });
   };
 
@@ -374,12 +359,11 @@ export default function AdminDashboard({ data }: { data: any }) {
           newDate.setDate(newDate.getDate() + days);
           return { ...prev, expiresAt: newDate, role: "ASSINANTE" };
         });
-      } else {
-        toast.error(res?.error || "Erro ao adicionar dias.");
-      }
+      } else toast.error(res?.error || "Erro ao adicionar dias.");
     });
   };
 
+  // 🚀 ATUALIZAÇÃO OTIMISTA
   const handleConfirmPayment = async (
     affiliateId: string,
     valor: number,
@@ -391,12 +375,16 @@ export default function AdminDashboard({ data }: { data: any }) {
       )
     )
       return;
+
     startTransition(async () => {
       const res = await markAffiliateAsPaid(affiliateId);
       if (res.success) {
         toast.success(res.message);
-        loadPayouts();
-      } else toast.error(res.error);
+        setPayouts((prev) => prev.filter((p) => p.id !== affiliateId));
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
     });
   };
 
@@ -407,12 +395,10 @@ export default function AdminDashboard({ data }: { data: any }) {
       )
     )
       return;
-
     const promise = runGarbageCollector().then((res) => {
       if (res.error) throw new Error(res.error);
       return res.message;
     });
-
     toast.promise(promise, {
       loading: "Analisando servidor... isso pode levar alguns segundos.",
       success: (msg) => `${msg}`,
@@ -421,7 +407,11 @@ export default function AdminDashboard({ data }: { data: any }) {
   };
 
   const getSelectedUserAffiliateData = () => {
-    if (!selectedUser || selectedUser.role !== "AFILIADO") return null;
+    if (
+      !selectedUser ||
+      (!selectedUser.referralCode && selectedUser.role !== "AFILIADO")
+    )
+      return null;
     return (
       payouts.find((p) => p.id === selectedUser.id) || {
         ativos: 0,
@@ -430,6 +420,26 @@ export default function AdminDashboard({ data }: { data: any }) {
       }
     );
   };
+
+  // 🚀 FUNÇÃO DE EXTRATO (Agora filtrando garantido pelo status)
+  const getSelectedUserPaidCommissions = () => {
+    if (!selectedUser) return [];
+    const comissoes =
+      selectedUser.commissionsReceived ||
+      data.commissions?.filter((c: any) => c.affiliateId === selectedUser.id) ||
+      [];
+    return comissoes
+      .filter((c: any) => c.status === "PAID")
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.releaseDate || b.createdAt).getTime() -
+          new Date(a.releaseDate || a.createdAt).getTime(),
+      );
+  };
+
+  // 🚀 VERIFICADOR DE PAPEL
+  const isSelectedUserPartner =
+    selectedUser?.role === "AFILIADO" || !!selectedUser?.referralCode;
 
   const allBusinesses = useMemo(() => {
     return allUsers
@@ -473,7 +483,7 @@ export default function AdminDashboard({ data }: { data: any }) {
             <button
               onClick={handleGarbageCollection}
               className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100 shadow-sm"
-              title="Limpar Imagens Inúteis (Garbage Collector)"
+              title="Limpar Imagens"
             >
               <Eraser />
             </button>
@@ -482,7 +492,7 @@ export default function AdminDashboard({ data }: { data: any }) {
       </header>
 
       <main className="max-w-7xl mx-auto space-y-6">
-        {/* --- MENU NÍVEL 1: CATEGORIAS PRINCIPAIS --- */}
+        {/* ABAS NÍVEL 1 */}
         <div className="flex p-2 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
           <TabButton
             active={mainCategory === "overview"}
@@ -526,7 +536,7 @@ export default function AdminDashboard({ data }: { data: any }) {
           />
         </div>
 
-        {/* --- MENU NÍVEL 2: SUB-ABAS --- */}
+        {/* ABAS NÍVEL 2 */}
         {mainCategory === "users" && (
           <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
             <SubTabButton
@@ -592,100 +602,14 @@ export default function AdminDashboard({ data }: { data: any }) {
             <SubTabButton
               active={activeTab === "banned"}
               onClick={() => setActiveTab("banned")}
-              label="Lista Negra (Banidos)"
+              label="Lista Negra"
               count={bannedUsers.length}
             />
           </div>
         )}
 
-        {/* --- ÁREA DE CONTEÚDO --- */}
+        {/* CONTEÚDO */}
         <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-          {/* ABA DE MODERAÇÃO DE COMENTÁRIOS */}
-          {activeTab === "comments" && (
-            <div className="p-8 space-y-4 animate-in fade-in duration-500">
-              {flaggedComments.length === 0 ? (
-                <EmptyCardState message="Nenhum comentário denunciado." />
-              ) : (
-                flaggedComments.map((comment: any) => (
-                  <div
-                    key={comment.id}
-                    className="p-6 bg-white border border-slate-200 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm hover:border-orange-200 transition-all group"
-                  >
-                    <div className="flex gap-5 w-full">
-                      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shrink-0 group-hover:bg-orange-50 transition-colors">
-                        <MessageSquare
-                          className="text-slate-400 group-hover:text-orange-500"
-                          size={24}
-                        />
-                      </div>
-
-                      <div className="flex-1">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                          <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
-                              Conteúdo Denunciado:
-                            </p>
-                            <p className="text-sm font-bold text-slate-800 italic mt-1 bg-slate-50 p-3 rounded-xl border-l-4 border-orange-500">
-                              "{comment.content}"
-                            </p>
-                          </div>
-
-                          <a
-                            href={`/site/${comment.business?.slug}`}
-                            target="_blank"
-                            className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 text-orange-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all shadow-sm border border-orange-100 shrink-0"
-                          >
-                            <ExternalLink size={14} />
-                            Averiguar Local
-                          </a>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-4 mt-2">
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md">
-                            <User size={10} className="text-slate-500" />
-                            <span className="text-[9px] font-bold text-slate-500 uppercase">
-                              Autor: {comment.user?.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md">
-                            <LayoutGrid size={10} className="text-slate-500" />
-                            <span className="text-[9px] font-bold text-slate-500 uppercase">
-                              Anúncio: {comment.business?.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md">
-                            <Clock size={10} className="text-slate-500" />
-                            <span className="text-[9px] font-bold text-slate-500 uppercase">
-                              {new Date(comment.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 shrink-0 w-full md:w-auto">
-                      <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="flex-1 md:flex-none p-4 bg-rose-100 text-rose-600 rounded-2xl hover:bg-rose-600 hover:text-white transition-all shadow-sm flex justify-center"
-                        title="Apagar Comentário Definitivamente"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleApproveComment(comment.id)}
-                        className="flex-1 md:flex-none p-4 bg-emerald-100 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex justify-center"
-                        title="Manter Comentário (Ignorar Denúncia)"
-                      >
-                        <CheckCircle2 size={20} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* TABELA PADRÃO */}
           {activeTab !== "overview" &&
             activeTab !== "reports" &&
             activeTab !== "payouts" &&
@@ -693,7 +617,7 @@ export default function AdminDashboard({ data }: { data: any }) {
               <div className="overflow-x-auto animate-in fade-in duration-500">
                 {searchTerm && (
                   <div className="bg-emerald-50 text-emerald-700 p-3 text-center text-xs font-black tracking-widest uppercase">
-                    Resultados da Busca Global Ativados
+                    Busca Global Ativada
                   </div>
                 )}
                 <table className="w-full min-w-[800px]">
@@ -710,7 +634,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                         key={user.id}
                         onClick={() => {
                           setSelectedUser(user);
-                          setAssignCodeInput(""); // 🚀 Limpa input ao abrir novo
+                          setAssignCodeInput("");
                         }}
                         className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/20" : ""}`}
                       >
@@ -743,6 +667,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                               <StatusBadge
                                 expiresAt={user.expiresAt}
                                 role={user.role}
+                                referralCode={user.referralCode}
                               />
                             </div>
                           )}
@@ -764,7 +689,7 @@ export default function AdminDashboard({ data }: { data: any }) {
                               <button
                                 onClick={() => {
                                   setSelectedUser(user);
-                                  setAssignCodeInput(""); // 🚀 Limpa input
+                                  setAssignCodeInput("");
                                 }}
                                 className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
                               >
@@ -783,10 +708,8 @@ export default function AdminDashboard({ data }: { data: any }) {
               </div>
             )}
 
-          {/* OVERVIEW FINANCEIRO E STATUS GERAL */}
           {activeTab === "overview" && (
             <div className="p-8 space-y-8 animate-in fade-in duration-500">
-              {/* 🚀 NOVOS CARDS FINANCEIROS */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[2rem]">
                   <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2 mb-2">
@@ -795,9 +718,6 @@ export default function AdminDashboard({ data }: { data: any }) {
                   <h2 className="text-4xl font-black text-emerald-900 tracking-tighter">
                     {formatMoney(faturamentoLiquido)}
                   </h2>
-                  <p className="text-[9px] font-bold text-emerald-500 uppercase mt-2">
-                    *Já descontados 20% de quem tem parceiro
-                  </p>
                 </div>
                 <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem]">
                   <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest flex items-center gap-2 mb-2">
@@ -806,9 +726,6 @@ export default function AdminDashboard({ data }: { data: any }) {
                   <h2 className="text-4xl font-black text-rose-900 tracking-tighter">
                     {formatMoney(totalOwed)}
                   </h2>
-                  <p className="text-[9px] font-bold text-rose-500 uppercase mt-2">
-                    *Parceiros aguardando PIX
-                  </p>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] text-white">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 mb-2">
@@ -817,174 +734,11 @@ export default function AdminDashboard({ data }: { data: any }) {
                   <h2 className="text-4xl font-black text-emerald-400 tracking-tighter">
                     {activeSubscribers.length}
                   </h2>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase mt-2">
-                    *Lojas ativas no sistema
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                  <h3 className="font-black uppercase italic text-slate-900 flex items-center gap-2">
-                    <TrendingUp className="text-emerald-500" /> Últimos Negócios
-                    Criados
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {allBusinesses.length === 0 ? (
-                      <EmptyCardState message="Nenhum negócio criado ainda." />
-                    ) : (
-                      allBusinesses.slice(0, 8).map((biz: any) => (
-                        <div
-                          key={biz.id}
-                          className="p-5 bg-slate-50 rounded-[2rem] flex items-center justify-between border border-slate-100 hover:shadow-sm transition-all"
-                        >
-                          <div>
-                            <p className="font-black text-slate-900 italic uppercase leading-none">
-                              {biz.name}
-                            </p>
-                            <p className="text-[9px] text-slate-400 font-bold mt-1">
-                              /{biz.slug}
-                            </p>
-                          </div>
-                          <a
-                            href={`/site/${biz.slug}`}
-                            target="_blank"
-                            className="p-2.5 bg-white text-emerald-500 rounded-xl shadow-sm border border-slate-100"
-                          >
-                            <ExternalLink size={16} />
-                          </a>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-                <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-black uppercase italic text-slate-500 mb-8 tracking-[0.2em] text-center text-xs">
-                      Termômetro da Plataforma
-                    </h3>
-                    <HealthItem
-                      label="Conversão (Total Pagantes)"
-                      value={activeSubscribers.length + trialSubscribers.length}
-                      total={allUsers.length}
-                      color="bg-emerald-400"
-                    />
-                    <HealthItem
-                      label="Potencial Oculto (Leads)"
-                      value={visitors.length}
-                      total={allUsers.length}
-                      color="bg-amber-400"
-                    />
-                    <HealthItem
-                      label="Inadimplentes (Vencidos)"
-                      value={expiredSubscribers.length}
-                      total={allUsers.length}
-                      color="bg-rose-400"
-                    />
-                  </div>
-                  <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center mt-6">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase italic mb-1">
-                      Status Global
-                    </p>
-                    <p className="text-xs font-bold text-white uppercase tracking-widest">
-                      SISTEMA ONLINE
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* DENÚNCIAS (REPORTS) */}
-          {activeTab === "reports" && (
-            <div className="p-8 space-y-4 animate-in fade-in duration-500">
-              {pendingReports.length === 0 ? (
-                <EmptyCardState message="Tudo limpo! Nenhuma denúncia pendente." />
-              ) : (
-                pendingReports.map((report: any) => (
-                  <div
-                    key={report.id}
-                    className="p-6 bg-rose-50 border border-rose-200 rounded-[2rem] flex flex-col justify-between gap-6 shadow-sm relative overflow-hidden"
-                  >
-                    <div className="flex flex-col md:flex-row justify-between gap-6">
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
-                          <AlertTriangle size={24} />
-                        </div>
-                        <div>
-                          <h4 className="font-black text-rose-900 uppercase italic">
-                            {report.reason}
-                          </h4>
-                          <p className="text-sm font-medium text-rose-700 mt-1">
-                            {report.details ||
-                              "Nenhum detalhe adicional fornecido."}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start shrink-0">
-                        <button
-                          onClick={() => handleResolveReport(report.id)}
-                          disabled={isPending}
-                          className="px-6 py-4 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg w-full md:w-auto flex items-center justify-center gap-2"
-                        >
-                          {isPending ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <CheckCircle2 size={16} />
-                          )}
-                          Encerrar Caso
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* DADOS DO ALVO DA DENÚNCIA */}
-                    {report.business && report.owner ? (
-                      <div className="mt-2 pt-4 border-t border-rose-200/60 flex flex-col sm:flex-row gap-6 justify-between">
-                        <div>
-                          <p className="text-[10px] font-black text-rose-800/60 uppercase tracking-widest">
-                            Alvo da Denúncia:
-                          </p>
-                          <a
-                            href={`/site/${report.business.slug}`}
-                            target="_blank"
-                            className="text-sm font-black italic text-rose-700 hover:text-rose-900 flex items-center gap-1 underline decoration-rose-300 underline-offset-4 mt-1"
-                          >
-                            {report.business.name} <ExternalLink size={14} />
-                          </a>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-rose-800/60 uppercase tracking-widest">
-                            Criador do Anúncio:
-                          </p>
-                          <button
-                            onClick={() => {
-                              setSelectedUser(report.owner);
-                              setAssignCodeInput(""); // 🚀 Limpa input
-                            }}
-                            className="text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white flex items-center gap-2 mt-1 bg-white/50 px-4 py-2 rounded-xl border border-rose-200 shadow-sm transition-all"
-                          >
-                            <User size={14} /> {report.owner.name}{" "}
-                            <span className="text-[10px] font-normal opacity-50">
-                              ({report.owner.email})
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-2 pt-4 border-t border-rose-200/60">
-                        <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">
-                          ID do Local: {report.businessId} (Este anúncio já foi
-                          excluído do sistema)
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* PAGAMENTOS (PAYOUTS) */}
           {activeTab === "payouts" && (
             <div className="p-8 space-y-4 animate-in fade-in duration-500">
               {payouts.map((p: any) => (
@@ -1001,40 +755,51 @@ export default function AdminDashboard({ data }: { data: any }) {
                         {p.name}
                       </p>
                       <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                        {p.email}
+                        PIX: {p.email}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-8 text-center bg-white px-10 py-5 rounded-[2rem] border shadow-inner">
                     <div>
                       <p className="text-[9px] font-black text-slate-300 uppercase">
-                        Vendas (MP)
+                        Vendas Liberadas
                       </p>
-                      <p className="font-black text-xl">{p.ativos}</p>
+                      <p className="font-black text-xl text-slate-700">
+                        {p.ativos}
+                      </p>
                     </div>
                     <div>
                       <p className="text-[9px] font-black text-slate-300 uppercase">
-                        A Pagar
+                        A Pagar (PIX)
                       </p>
                       <p className="font-black text-emerald-600 text-2xl tracking-tighter">
                         R$ {p.valorDevido.toFixed(2)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        handleConfirmPayment(p.id, p.valorDevido, p.name)
-                      }
-                      className="px-8 py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all"
-                    >
-                      PAGAR VIA PIX
-                    </button>
-                  </div>
+                  <button
+                    onClick={() =>
+                      handleConfirmPayment(p.id, p.valorDevido, p.name)
+                    }
+                    disabled={isPending}
+                    className="px-8 py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all flex items-center gap-2"
+                  >
+                    {isPending ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <CheckCircle2 size={16} />
+                    )}{" "}
+                    PAGAR VIA PIX
+                  </button>
                 </div>
               ))}
               {payouts.length === 0 && (
-                <EmptyCardState message="Nenhum parceiro atingiu a meta de pagamento." />
+                <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                  <ShieldCheck size={48} className="text-slate-300 mb-4" />
+                  <p className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-400">
+                    Nenhum parceiro na fila.
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -1047,7 +812,7 @@ export default function AdminDashboard({ data }: { data: any }) {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl overflow-y-auto"
           onClick={() => {
             setSelectedUser(null);
-            setAssignCodeInput(""); // 🚀 Limpa Input clicando fora
+            setAssignCodeInput("");
           }}
         >
           <div
@@ -1057,12 +822,14 @@ export default function AdminDashboard({ data }: { data: any }) {
             <div className="p-8 bg-slate-50 border-b flex justify-between items-start">
               <div className="flex items-center gap-6">
                 <div
-                  className={`w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}
+                  className={`w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : isSelectedUserPartner ? "bg-purple-600 text-white" : "bg-slate-900 text-white"}`}
                 >
                   {selectedUser.isBanned ? (
                     <UserX size={48} />
+                  ) : isSelectedUserPartner ? (
+                    <Star size={48} />
                   ) : (
-                    <ShieldCheck size={48} />
+                    <User size={48} />
                   )}
                 </div>
                 <div>
@@ -1077,13 +844,18 @@ export default function AdminDashboard({ data }: { data: any }) {
                       <CreditCard size={12} /> CPF:{" "}
                       {selectedUser.document || "N/A"}
                     </span>
+                    {isSelectedUserPartner && (
+                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl border border-purple-200 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                        CONTA PARCEIRO
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => {
                   setSelectedUser(null);
-                  setAssignCodeInput(""); // 🚀 Limpa Input no botão X
+                  setAssignCodeInput("");
                 }}
                 className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all"
               >
@@ -1091,226 +863,271 @@ export default function AdminDashboard({ data }: { data: any }) {
               </button>
             </div>
 
-            <div className="p-8 space-y-8">
-              {/* 🚀 O BLOCO COM O CAMPO INTELIGENTE QUE VOCÊ PEDIU */}
-              <div className="bg-slate-100/50 border border-slate-100 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-200 text-slate-500 rounded-xl">
-                    <Users size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                      Origem / Indicação Atual
-                    </p>
-                    <p className="text-sm font-bold text-slate-700">
-                      {selectedUser.referredBy ||
-                        selectedUser.referralCode ||
-                        "Orgânico (Veio Direto / Sem Afiliado)"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
-                  <input
-                    type="text"
-                    placeholder="Código ou Link..."
-                    value={assignCodeInput}
-                    onChange={(e) => {
-                      let val = e.target.value;
-                      if (val.includes("ref=")) {
-                        val = val.split("ref=")[1].split("&")[0];
-                      } else if (val.includes("/")) {
-                        val = val.split("/").pop() || val;
-                      }
-                      setAssignCodeInput(
-                        val.trim().toUpperCase().replace(/\s/g, "-"),
-                      );
-                    }}
-                    className="bg-transparent border-none outline-none text-xs font-bold px-2 w-36 uppercase"
-                  />
-                  <button
-                    onClick={handleAssignAffiliate}
-                    disabled={isPending}
-                    className="bg-slate-900 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-2"
-                  >
-                    {isPending ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Link2 size={12} />
-                    )}{" "}
-                    Ligar
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm">
-                  <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
-                    Status da Conta
-                  </h3>
-                  <div className="flex items-center gap-3 mb-4">
-                    <StatusBadge
-                      expiresAt={selectedUser.expiresAt}
-                      role={selectedUser.role}
-                    />
-                  </div>
-                  {selectedUser.expiresAt && (
-                    <p className="text-sm font-medium text-slate-500">
-                      Vencimento Atual:{" "}
-                      <span className="font-black text-lg text-slate-900 ml-2">
-                        {new Date(selectedUser.expiresAt).toLocaleDateString(
-                          "pt-BR",
-                        )}
-                      </span>
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center gap-3 relative">
-                  {isPending && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-10">
-                      <Loader2 className="animate-spin text-emerald-500" />
-                    </div>
-                  )}
-                  <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
-                    Soma e Subtração de Tempo
-                  </h3>
-                  {!selectedUser.isBanned && selectedUser.role !== "ADMIN" ? (
-                    <>
-                      <div className="flex flex-wrap gap-2">
-                        <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-fit">
-                          <button
-                            onClick={(e) =>
-                              handleAddMonths(e, selectedUser.id, -1)
-                            }
-                            className="px-4 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100 font-bold text-xs"
-                            title="Tirar 1 Mês"
-                          >
-                            - 1 Mês
-                          </button>
-                          <button
-                            onClick={(e) =>
-                              handleAddExactDays(e, selectedUser.id, -1)
-                            }
-                            className="px-4 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-all border-r border-slate-100 font-bold text-xs"
-                            title="Tirar 1 Dia"
-                          >
-                            - 1 Dia
-                          </button>
-                          <button
-                            onClick={(e) =>
-                              handleAddExactDays(e, selectedUser.id, 1)
-                            }
-                            className="px-4 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all border-r border-slate-100 font-bold text-xs"
-                            title="Somar 1 Dia"
-                          >
-                            + 1 Dia
-                          </button>
-                          <button
-                            onClick={(e) =>
-                              handleAddMonths(e, selectedUser.id, 1)
-                            }
-                            className="px-4 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all font-bold text-xs"
-                            title="Somar 1 Mês"
-                          >
-                            + 1 Mês
-                          </button>
+            <div className="p-8 space-y-8 bg-white">
+              {/* 🚀 VISÃO AFILIADO / PARCEIRO */}
+              {isSelectedUserPartner ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                        <TrendingUp size={120} />
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-6 flex items-center gap-2">
+                        <Star size={14} /> Vendas Não Pagas
+                      </h3>
+                      <div className="grid grid-cols-2 gap-6 relative z-10">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">
+                            Quantidade
+                          </p>
+                          <p className="text-4xl font-black">
+                            {getSelectedUserAffiliateData()?.ativos || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">
+                            Saldo Restante
+                          </p>
+                          <p className="text-4xl font-black text-emerald-400">
+                            R${" "}
+                            {getSelectedUserAffiliateData()?.valorDevido.toFixed(
+                              2,
+                            ) || "0.00"}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedUser.role !== "AFILIADO" && (
-                          <button
-                            onClick={() => setPromotingUser(selectedUser)}
-                            className="px-4 py-2 bg-amber-100 text-amber-700 font-bold text-xs rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2 shadow-sm"
-                          >
-                            <Award size={14} /> Tornar Parceiro
-                          </button>
-                        )}
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center">
+                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
+                        Link Oficial
+                      </h3>
+                      <div className="flex items-center gap-2 mb-6">
+                        <p className="flex-1 font-mono text-slate-600 bg-white px-4 py-3 rounded-xl border border-slate-200 text-xs truncate">
+                          tafanu.app/?ref={selectedUser.referralCode}
+                        </p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `tafanu.app/?ref=${selectedUser.referralCode}`,
+                            );
+                            toast.success("Copiado!");
+                          }}
+                          className="p-3 bg-slate-900 text-white rounded-xl hover:bg-emerald-500 transition-all"
+                        >
+                          <LinkIcon size={16} />
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
                         <button
                           onClick={() =>
                             handleBan(selectedUser.id, selectedUser.name)
                           }
-                          className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-rose-600 transition-all flex items-center gap-2 shadow-sm"
+                          className="px-4 py-3 flex-1 bg-rose-50 text-rose-600 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2 border border-rose-100"
                         >
-                          <Gavel size={14} /> Banir CPF
+                          <Gavel size={14} /> Banir Conta
                         </button>
                       </div>
-                    </>
-                  ) : (
-                    <p className="text-xs font-bold text-slate-400">
-                      Tempo de admin/banido não pode ser mexido.
-                    </p>
-                  )}
-                </div>
-              </div>
+                    </div>
+                  </div>
 
-              {selectedUser.role === "AFILIADO" && (
-                <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem]">
-                  <h3 className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.2em] mb-4 flex items-center gap-2">
-                    <Wallet size={14} /> Raio-X do Parceiro
-                  </h3>
-
-                  {/* 🚀 LINK COMPLETO EXIBIDO E PRONTO PARA COPIAR */}
-                  <div className="mb-6">
-                    <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
-                      Link de Indicação
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="font-black text-emerald-900 bg-white px-3 py-2 rounded-lg border border-emerald-100 text-xs lowercase select-all">
-                        tafanu.app/?ref={selectedUser.referralCode}
-                      </p>
+                  {/* 🚀 EXTRATO */}
+                  <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
+                    <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-6 flex items-center gap-2">
+                      <ReceiptText size={16} /> Extrato de Pagamentos (Já Pagos
+                      via PIX)
+                    </h3>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2 no-scrollbar">
+                      {getSelectedUserPaidCommissions().length === 0 ? (
+                        <p className="text-xs font-bold text-slate-400 italic text-center py-6">
+                          Nenhum pagamento registrado no histórico deste
+                          parceiro ainda.
+                        </p>
+                      ) : (
+                        getSelectedUserPaidCommissions().map(
+                          (c: any, index: number) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white transition-all"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl">
+                                  <CheckCircle2 size={18} />
+                                </div>
+                                <div>
+                                  <p className="font-black text-slate-800 text-sm uppercase">
+                                    {c.description || "Comissão de Venda"}
+                                  </p>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                    {new Date(
+                                      c.releaseDate || c.createdAt,
+                                    ).toLocaleDateString("pt-BR")}{" "}
+                                    • STATUS: PAGO
+                                  </p>
+                                </div>
+                              </div>
+                              <p className="font-black text-emerald-600 text-lg">
+                                R$ {c.amount?.toFixed(2)}
+                              </p>
+                            </div>
+                          ),
+                        )
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* VISÃO CLIENTES NORMAIS */
+                <>
+                  <div className="bg-slate-100/50 border border-slate-100 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-slate-200 text-slate-500 rounded-xl">
+                        <Users size={16} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                          Origem da Venda
+                        </p>
+                        <p className="text-sm font-bold text-slate-700">
+                          {selectedUser.referredBy || "Orgânico (Sem Afiliado)"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
+                      <input
+                        type="text"
+                        placeholder="Código Parceiro"
+                        value={assignCodeInput}
+                        onChange={(e) =>
+                          setAssignCodeInput(
+                            e.target.value.toUpperCase().replace(/\s/g, "-"),
+                          )
+                        }
+                        className="bg-transparent border-none outline-none text-xs font-bold px-2 w-32 uppercase"
+                      />
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(
-                            `tafanu.app/?ref=${selectedUser.referralCode}`,
-                          );
-                          toast.success("Link copiado!");
-                        }}
-                        className="p-2 bg-white rounded-lg border border-emerald-100 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-all shadow-sm"
-                        title="Copiar Link"
+                        onClick={handleAssignAffiliate}
+                        disabled={isPending}
+                        className="bg-slate-900 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-2"
                       >
-                        <LinkIcon size={16} />
+                        {isPending ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Link2 size={12} />
+                        )}{" "}
+                        Vincular
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-8 items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
-                        Vendas Ativas (MP)
-                      </p>
-                      <p className="font-black text-2xl text-emerald-900">
-                        {getSelectedUserAffiliateData()?.ativos}
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm">
+                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
+                        Status da Assinatura
+                      </h3>
+                      <div className="flex items-center gap-3 mb-4">
+                        <StatusBadge
+                          expiresAt={selectedUser.expiresAt}
+                          role={selectedUser.role}
+                        />
+                      </div>
+                      {selectedUser.expiresAt && (
+                        <p className="text-sm font-medium text-slate-500">
+                          Vencimento:{" "}
+                          <span className="font-black text-lg text-slate-900 ml-2">
+                            {new Date(
+                              selectedUser.expiresAt,
+                            ).toLocaleDateString("pt-BR")}
+                          </span>
+                        </p>
+                      )}
                     </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
-                        A Receber (Cartão)
-                      </p>
-                      <p className="font-black text-2xl text-emerald-600">
-                        R${" "}
-                        {getSelectedUserAffiliateData()?.valorDevido.toFixed(2)}
-                      </p>
+
+                    <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center gap-3 relative">
+                      {isPending && (
+                        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-10">
+                          <Loader2 className="animate-spin text-emerald-500" />
+                        </div>
+                      )}
+                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
+                        Gerenciamento
+                      </h3>
+                      {!selectedUser.isBanned &&
+                      selectedUser.role !== "ADMIN" ? (
+                        <>
+                          <div className="flex flex-wrap gap-2">
+                            <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-fit">
+                              <button
+                                onClick={(e) =>
+                                  handleAddMonths(e, selectedUser.id, -1)
+                                }
+                                className="px-3 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-r border-slate-100 font-bold text-xs"
+                              >
+                                - 1 Mês
+                              </button>
+                              <button
+                                onClick={(e) =>
+                                  handleAddExactDays(e, selectedUser.id, -1)
+                                }
+                                className="px-3 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-r border-slate-100 font-bold text-xs"
+                              >
+                                - 1 Dia
+                              </button>
+                              <button
+                                onClick={(e) =>
+                                  handleAddExactDays(e, selectedUser.id, 1)
+                                }
+                                className="px-3 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 border-r border-slate-100 font-bold text-xs"
+                              >
+                                + 1 Dia
+                              </button>
+                              <button
+                                onClick={(e) =>
+                                  handleAddMonths(e, selectedUser.id, 1)
+                                }
+                                className="px-3 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 font-bold text-xs"
+                              >
+                                + 1 Mês
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <button
+                              onClick={() => setPromotingUser(selectedUser)}
+                              className="px-4 py-2 bg-amber-100 text-amber-700 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2 shadow-sm"
+                            >
+                              <Award size={14} /> Promover Parceiro
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs font-bold text-slate-400">
+                          Ações de admin restritas.
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
-              <div>
+              {/* LOJAS DO USUÁRIO */}
+              <div className="pt-4 border-t border-slate-100">
                 <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-4 flex items-center gap-2">
-                  <LayoutGrid size={14} /> Anúncios Deste Usuário
+                  <Store size={14} /> Lojas (
+                  {selectedUser.businesses?.length || 0})
                 </h3>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedUser.businesses?.length === 0 && (
                     <p className="text-xs font-bold text-slate-400 italic">
-                      Este usuário ainda não criou nenhum anúncio.
+                      Nenhuma loja criada.
                     </p>
                   )}
                   {selectedUser.businesses?.map((biz: any) => (
                     <div
                       key={biz.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all shadow-sm gap-4"
+                      className="flex flex-col p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all shadow-sm gap-4 relative overflow-hidden"
                     >
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-slate-200 to-transparent opacity-20 rounded-bl-full pointer-events-none"></div>
                       <div>
                         <p className="font-black text-slate-900 italic uppercase text-lg">
                           {biz.name}
@@ -1318,9 +1135,9 @@ export default function AdminDashboard({ data }: { data: any }) {
                         <a
                           href={`/site/${biz.slug}`}
                           target="_blank"
-                          className="text-[10px] font-bold text-emerald-500 hover:underline"
+                          className="text-[10px] font-bold text-emerald-500 hover:underline flex items-center gap-1 mt-1"
                         >
-                          tafanu.app/site/{biz.slug}
+                          <ExternalLink size={12} /> tafanu.app/site/{biz.slug}
                         </a>
                       </div>
                       <button
@@ -1329,9 +1146,9 @@ export default function AdminDashboard({ data }: { data: any }) {
                             `/dashboard/editar/${biz.slug}?adminMode=true`,
                           )
                         }
-                        className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all shadow-md"
+                        className="px-5 py-3 w-full bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all shadow-md flex items-center justify-center gap-2"
                       >
-                        Editar Anúncio
+                        <LayoutGrid size={14} /> Editar Anúncio
                       </button>
                     </div>
                   ))}
@@ -1342,7 +1159,7 @@ export default function AdminDashboard({ data }: { data: any }) {
         </div>
       )}
 
-      {/* MODAL NOVO AFILIADO */}
+      {/* MODAL PROMOÇÃO */}
       {promotingUser && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
@@ -1402,8 +1219,6 @@ export default function AdminDashboard({ data }: { data: any }) {
   );
 }
 
-// --- SUBCOMPONENTES ---
-
 function TabButton({ active, onClick, label, icon, count, alertMode }: any) {
   return (
     <button
@@ -1426,13 +1241,7 @@ function SubTabButton({ active, onClick, label, count, alertMode }: any) {
   return (
     <button
       onClick={onClick}
-      className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border ${
-        active
-          ? alertMode
-            ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm"
-            : "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
-          : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50"
-      }`}
+      className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border ${active ? (alertMode ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm" : "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm") : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50"}`}
     >
       {label}
       {count !== undefined && (
@@ -1446,8 +1255,8 @@ function SubTabButton({ active, onClick, label, count, alertMode }: any) {
   );
 }
 
-function StatusBadge({ expiresAt, role }: any) {
-  if (role === "AFILIADO")
+function StatusBadge({ expiresAt, role, referralCode }: any) {
+  if (role === "AFILIADO" || !!referralCode)
     return (
       <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[9px] font-black uppercase italic border border-purple-100">
         Parceiro
@@ -1484,26 +1293,6 @@ function StatusBadge({ expiresAt, role }: any) {
   );
 }
 
-function HealthItem({ label, value, total, color }: any) {
-  const percentage = Math.min((value / (total || 1)) * 100, 100);
-  return (
-    <div className="space-y-2 mb-6">
-      <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 italic">
-        <span>{label}</span>
-        <span className="text-white">
-          {value} / {total}
-        </span>
-      </div>
-      <div className="h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
-        <div
-          className={`h-full ${color} transition-all duration-1000`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function EmptyState({ message }: { message: string }) {
   return (
     <tr>
@@ -1514,13 +1303,5 @@ function EmptyState({ message }: { message: string }) {
         {message}
       </td>
     </tr>
-  );
-}
-
-function EmptyCardState({ message }: { message: string }) {
-  return (
-    <div className="py-20 text-center opacity-40 font-black uppercase tracking-[0.3em] text-[10px] italic w-full">
-      {message}
-    </div>
   );
 }
