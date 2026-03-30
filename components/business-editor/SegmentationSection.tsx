@@ -70,12 +70,13 @@ export function SegmentationSection({
       </div>
 
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8">
-        <label className="text-[9px] font-black uppercase text-slate-400 mb-3 block tracking-widest flex justify-between">
+        {/* Trocamos <label> por <div> e removemos a classe "block" */}
+        <div className="text-[9px] font-black uppercase text-slate-400 mb-3 flex tracking-widest justify-between">
           <span>2. Nichos</span>
           <span className="text-indigo-400">
             {selectedSubs.length} Selecionados
           </span>
-        </label>
+        </div>
         <div className="flex flex-wrap gap-2">
           {(TAFANU_CATEGORIES as any)[categoria]?.map((sub: string) => (
             <button
