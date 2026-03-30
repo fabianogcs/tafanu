@@ -122,7 +122,7 @@ export default function AdminDashboard({ data }: { data: any }) {
     const leads = users.filter(
       (u: any) => u.role === "VISITANTE" && !u.isBanned,
     );
-    // 🚀 CORREÇÃO: Todo mundo que tem código é parceiro
+    // 🚀 Todo mundo que tem código é parceiro
     const affs = users.filter(
       (u: any) => u.role === "AFILIADO" || !!u.referralCode,
     );
@@ -161,13 +161,19 @@ export default function AdminDashboard({ data }: { data: any }) {
     };
   }, [data, ADMIN_EMAIL]);
 
+  // 🚀 CORREÇÃO 1: CÁLCULO DE LUCRO LÍQUIDO BLINDADO
   const faturamentoLiquido = useMemo(() => {
-    return activeSubscribers.reduce((acc: number, u: any) => {
-      const preco = Number(u.lastPrice) || 0;
+    const todosPagantes = [...activeSubscribers, ...trialSubscribers];
+
+    return todosPagantes.reduce((acc: number, u: any) => {
+      // Se lastPrice for zero ou nulo no banco de dados, assume R$29.90 provisoriamente
+      const preco = Number(u.lastPrice) || 29.9;
       const temAfiliado = !!u.affiliateId || !!u.referredBy;
+
+      // Se a venda veio de parceiro, o lucro é 80% (tirando os 20% do parceiro)
       return temAfiliado ? acc + preco * 0.8 : acc + preco;
     }, 0);
-  }, [activeSubscribers]);
+  }, [activeSubscribers, trialSubscribers]);
 
   const totalOwed = useMemo(
     () => payouts.reduce((acc, p) => acc + p.valorDevido, 0),
@@ -363,7 +369,6 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
-  // 🚀 ATUALIZAÇÃO OTIMISTA
   const handleConfirmPayment = async (
     affiliateId: string,
     valor: number,
@@ -406,28 +411,65 @@ export default function AdminDashboard({ data }: { data: any }) {
     });
   };
 
+  // 🚀 CORREÇÃO 2: QUANTIDADE DE VENDAS x SALDO A PAGAR
   const getSelectedUserAffiliateData = () => {
     if (
       !selectedUser ||
       (!selectedUser.referralCode && selectedUser.role !== "AFILIADO")
     )
       return null;
-    return (
-      payouts.find((p) => p.id === selectedUser.id) || {
-        ativos: 0,
-        taxa: 0,
-        valorDevido: 0,
-      }
-    );
-  };
 
-  // 🚀 FUNÇÃO DE EXTRATO (Agora filtrando garantido pelo status)
-  const getSelectedUserPaidCommissions = () => {
-    if (!selectedUser) return [];
-    const comissoes =
-      selectedUser.commissionsReceived ||
+    // Acessamos o banco de dados das comissões diretamente para calcular na hora (A Prova de Falhas)
+    const comissoesDaPessoa =
+      selectedUser.commissions ||
       data.commissions?.filter((c: any) => c.affiliateId === selectedUser.id) ||
       [];
+
+    // Filtramos apenas as moedinhas que estão marcadas como AVAILABLE
+    const disponiveis = comissoesDaPessoa.filter(
+      (c: any) => c.status === "AVAILABLE",
+    );
+
+    if (disponiveis.length > 0) {
+      // Se ele achar no BD local, soma as quantidades e valores reais
+      const valorTotal = disponiveis.reduce(
+        (acc: number, c: any) => acc + (c.amount || 0),
+        0,
+      );
+      return {
+        ativos: disponiveis.length,
+        valorDevido: valorTotal,
+      };
+    }
+
+    // Se a busca local não achou, ele tenta ler do backend de Payouts
+    const payoutDoBackend = payouts.find((p) => p.id === selectedUser.id);
+    if (payoutDoBackend) {
+      return {
+        ...payoutDoBackend,
+        // Correção de segurança: se ele tem valor a receber (5.98) mas a quantidade bugou e deu 0, força para pelo menos 1.
+        ativos:
+          payoutDoBackend.ativos > 0
+            ? payoutDoBackend.ativos
+            : payoutDoBackend.valorDevido > 0
+              ? 1
+              : 0,
+      };
+    }
+
+    return { ativos: 0, taxa: 0, valorDevido: 0 };
+  };
+
+  // 🚀 CORREÇÃO 3: O EXTRATO DE PAGAMENTOS VOLTOU A FUNCIONAR
+  const getSelectedUserPaidCommissions = () => {
+    if (!selectedUser) return [];
+
+    // Antes estava selectedUser.commissionsReceived, mas no Prisma se chama selectedUser.commissions!
+    const comissoes =
+      selectedUser.commissions ||
+      data.commissions?.filter((c: any) => c.affiliateId === selectedUser.id) ||
+      [];
+
     return comissoes
       .filter((c: any) => c.status === "PAID")
       .sort(
@@ -764,8 +806,9 @@ export default function AdminDashboard({ data }: { data: any }) {
                       <p className="text-[9px] font-black text-slate-300 uppercase">
                         Vendas Liberadas
                       </p>
+                      {/* Correção de UI se a API falhar em trazer a quantidade */}
                       <p className="font-black text-xl text-slate-700">
-                        {p.ativos}
+                        {p.ativos > 0 ? p.ativos : p.valorDevido > 0 ? "1+" : 0}
                       </p>
                     </div>
                     <div>

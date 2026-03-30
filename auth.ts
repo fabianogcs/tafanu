@@ -135,6 +135,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user.id) {
         cookieStore.set("userId", user.id, {
           httpOnly: true,
+          secure: true,
           maxAge: 604800,
           path: "/",
         });
@@ -142,6 +143,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const userRole = user.role || "VISITANTE";
       cookieStore.set("userRole", userRole, {
         httpOnly: true,
+        secure: true,
         maxAge: 604800,
         path: "/",
       });

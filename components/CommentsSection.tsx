@@ -48,8 +48,7 @@ export default function CommentsSection({
     setIsSubmitting(true);
     const result = await addComment(
       businessId,
-      currentUserId,
-      newComment.trim(),
+      newComment.trim(), // ✅ O texto agora é o segundo parâmetro
       replyingTo?.id,
     );
     setIsSubmitting(false);

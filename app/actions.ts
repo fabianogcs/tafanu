@@ -49,8 +49,16 @@ function cleanSocialLink(url: string) {
 
 async function requireAdmin() {
   const user = await getSafeUser();
-  if (user?.role !== "ADMIN" && user?.email !== "prfabianoguedes@gmail.com")
+
+  // 1. Garante para o TypeScript que o usuário existe e não é nulo
+  if (!user) return null;
+
+  // 2. Agora o TypeScript permite ler user.role e user.email sem o "?"
+  if (user.role !== "ADMIN" && user.email !== process.env.ADMIN_EMAIL) {
     return null;
+  }
+
+  // 3. Tipagem validada: é 100% seguro retornar o ID
   return user.id;
 }
 
@@ -172,9 +180,8 @@ export async function registerUser(formData: FormData) {
     ?.toLowerCase()
     .trim();
 
-  // Define a função do usuário
-  let role = (formData.get("role") as string) || "VISITANTE";
-  if (email.toLowerCase() === "prfabianoguedes@gmail.com") role = "ADMIN";
+  // Role é sempre VISITANTE. Nunca aceite do formulário.
+  const role = "VISITANTE";
 
   if (!name || !email || !password) {
     return { error: "Preencha todos os campos obrigatórios." };
@@ -1780,6 +1787,10 @@ export async function createSubscription(
   userEmail: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
+  const session = await auth();
+  if (session?.user?.id !== userId) {
+    return { error: "Não autorizado." };
+  }
   const dbUser = await db.user.findUnique({ where: { id: userId } });
 
   if (dbUser?.isBanned) {
@@ -2080,11 +2091,19 @@ export async function resendVerificationEmail(email: string) {
 
 export async function addComment(
   businessId: string,
-  userId: string,
   content: string,
   parentId?: string,
 ) {
   try {
+    // 🛡️ Segurança: Pega o ID direto da sessão autenticada do servidor
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: "Não autorizado." };
+    }
+
+    // Define o userId com base em quem está logado
+    const userId = session.user.id;
+
     const newComment = await db.comment.create({
       data: {
         content,
@@ -2094,9 +2113,6 @@ export async function addComment(
       },
     });
 
-    // Revalidar a página do negócio para mostrar o novo comentário imediatamente
-    // Como não sabemos o slug aqui, o ideal é revalidar tudo ou passar o slug
-    // Se quiser ser específico, passe o slug como parâmetro. Vou revalidar o path genérico.
     revalidatePath(`/site/[slug]`, "page");
     return { success: true, comment: newComment };
   } catch (error) {
@@ -2171,9 +2187,7 @@ export async function approveComment(commentId: string) {
   // 1. Validação de Segurança (Garante que só você, o Admin, faça isso)
   const session = await auth();
   const emailSessao = session?.user?.email?.toLowerCase();
-  const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"]; // Seu e-mail de poder
-
-  if (!emailSessao || !ADMIN_EMAILS.includes(emailSessao)) {
+  if (!emailSessao || emailSessao !== process.env.ADMIN_EMAIL) {
     return { error: "Acesso negado. Apenas o Admin pode aprovar comentários." };
   }
 

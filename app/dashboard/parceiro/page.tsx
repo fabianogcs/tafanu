@@ -80,54 +80,36 @@ export default function AffiliateDashboard() {
   const listLeads: any[] = [];
   const listVencidos: any[] = [];
 
+  // COLOQUE ISSO:
   clients.forEach((u: any) => {
     const expDate = u.expiresAt ? new Date(u.expiresAt) : null;
     const creationDate = new Date(u.createdAt);
     const isActive = expDate && expDate > hoje;
 
-    // Calculamos quantos dias de acesso restam para o cliente
-    const diasRestantes = expDate
-      ? Math.ceil((expDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
-
-    // 1. VISITANTES (Leads puros)
     if (u.role === "VISITANTE") {
       listLeads.push(u);
-    }
-
-    // 2. ASSINANTES (Ativados por você ou pelo Mercado Pago)
-    else if (u.role === "ASSINANTE") {
-      // REGRA A: Se já venceu, vai para a aba de Vencidos
+    } else if (u.role === "ASSINANTE") {
       if (!isActive) {
-        listVencidos.push(u);
-      }
-
-      // REGRA B: Se não tem Mercado Pago, é ATIVAÇÃO MANUAL (PIX)
-      else if (!u.mpSubscriptionId) {
-        listPix.push(u);
-      }
-
-      // REGRA C: Se tem Mercado Pago, segue o fluxo automático
-      else {
-        if (u.planType === "quarterly") {
-          listTrimestral.push(u);
-        } else if (u.planType === "yearly") {
-          listAnual.push(u);
-        } else {
-          // LÓGICA DO MENSAL (AJUSTADA):
+        listVencidos.push(u); // Se venceu, vai pra aba de recuperação
+      } else if (!u.mpSubscriptionId) {
+        listPix.push(u); // Ativação manual via Admin
+      } else {
+        // Lógica Automática (Mercado Pago)
+        if (u.planType === "monthly") {
           const idadeConta = Math.ceil(
             (hoje.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24),
           );
 
-          // Só vai para "Em Teste" se for plano mensal E (tiver o bônus de 7 dias OU a conta for nova)
-          if (
-            u.planType === "monthly" &&
-            (diasRestantes > 30 || idadeConta <= 7)
-          ) {
+          // Se for conta nova (menos de 7 dias) e plano mensal, é o TRIAL
+          if (idadeConta <= 7) {
             listTeste.push(u);
           } else {
             listMensal.push(u);
           }
+        } else if (u.planType === "quarterly") {
+          listTrimestral.push(u);
+        } else if (u.planType === "yearly") {
+          listAnual.push(u);
         }
       }
     }
@@ -211,7 +193,7 @@ export default function AffiliateDashboard() {
                 {formatMoney(stats.pendente)}
               </p>
               <p className="text-[8px] font-bold text-gray-400 mt-2 uppercase">
-                *Garantia de 7 dias
+                *Liberado após 7 dias do pagamento
               </p>
             </div>
             <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2rem] border border-white/10 border-l-8 border-l-gray-500 min-w-[240px]">

@@ -43,6 +43,11 @@ function validateSignature(request: Request, body: MPWebhookBody) {
     const ts = parts["ts"];
     const v1 = parts["v1"];
 
+    const now = Math.floor(Date.now() / 1000);
+    if (Math.abs(now - Number(ts)) > 300) {
+      return false;
+    }
+
     const manifest = `id:${body.data?.id || body.id};request-id:${requestId};ts:${ts};`;
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
@@ -187,6 +192,17 @@ export async function POST(request: Request) {
           where: { id: userId },
           data: {
             mpSubscriptionId: null, // Apenas removemos o vínculo de cobrança
+          },
+        });
+
+        // Cancela qualquer comissão pendente desse cliente (ex: cancelou no trial)
+        await db.commission.updateMany({
+          where: {
+            userId: userId,
+            status: "PENDING",
+          },
+          data: {
+            status: "CANCELLED",
           },
         });
 

@@ -195,7 +195,11 @@ model Report {
   status      String   @default("PENDING") 
   createdAt   DateTime @default(now())
   businessId  String
+  reportedBy  String?
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([reportedBy])
 }
 
 model Account {
@@ -318,4 +322,6 @@ model Withdrawal {
   paidAt      DateTime?
 
   affiliate   User     @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id])
+
+  @@index([affiliateId])
 }
