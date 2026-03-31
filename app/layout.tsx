@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { auth } from "@/auth";
 import PasswordAlert from "@/components/PasswordAlert";
 import { Providers } from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
@@ -25,22 +24,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Lógica de Cookies e Role (Mantida 100%)
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
-
-  let userRole = null;
-  if (userId) {
-    try {
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      });
-      userRole = user?.role || "VISITANTE";
-    } catch (error) {
-      console.error("Erro ao buscar role:", error);
-    }
-  }
+  // 🛡️ SEGURANÇA MÁXIMA: Lendo dados validados do JWT
+  const session = await auth();
+  const userId = session?.user?.id || null;
+  const userRole = session?.user?.role || "VISITANTE";
 
   return (
     <html lang="pt-BR">
@@ -83,7 +70,7 @@ export default async function RootLayout({
           <PwaListener />
           <Toaster position="top-center" richColors />
           <PasswordAlert />
-          <Navbar isLoggedIn={!!userId} userRole={userRole} />
+          <Navbar isLoggedIn={!!userId} userRole={userRole as string} />
           <main className="flex-grow">{children}</main>
           <Footer />
           <Analytics />

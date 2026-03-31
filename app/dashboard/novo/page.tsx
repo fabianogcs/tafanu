@@ -1,13 +1,12 @@
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import BusinessEditor from "@/components/BusinessEditor";
 
 export default async function NewBusinessPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
-
-  if (!userId) redirect("/login");
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
 
   const user = await db.user.findUnique({
     where: { id: userId },

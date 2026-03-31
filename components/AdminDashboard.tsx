@@ -51,7 +51,13 @@ import {
   assignUserToAffiliate,
 } from "@/app/actions";
 
-export default function AdminDashboard({ data }: { data: any }) {
+export default function AdminDashboard({
+  data,
+  adminEmail,
+}: {
+  data: any;
+  adminEmail?: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -65,7 +71,7 @@ export default function AdminDashboard({ data }: { data: any }) {
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [assignCodeInput, setAssignCodeInput] = useState("");
 
-  const ADMIN_EMAIL = "prfabianoguedes@gmail.com";
+  const ADMIN_EMAIL = adminEmail || "";
 
   const loadPayouts = async () => {
     const res = await getAffiliatePayouts();

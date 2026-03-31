@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { cookies } from "next/headers";
+import { auth } from "@/auth"; // ✅ trocado: era cookies + db
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,37 +21,30 @@ export default async function EditBusinessPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) redirect("/login");
+  // ✅ CORREÇÃO 1: sessão segura em vez de cookie
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
 
-  // 1. BUSCA O NEGÓCIO PELO SLUG
   const business = await db.business.findUnique({
-    where: { slug: slug },
+    where: { slug },
     include: {
       hours: true,
-      _count: {
-        select: { favorites: true },
-      },
+      _count: { select: { favorites: true } },
     },
   });
 
   if (!business) return notFound();
 
-  // --- 2. LÓGICA DE SUPORTE MASTER (ADMIN) ---
-  // Buscamos os dados do usuário logado para conferir se é você (Admin)
-  const currentUser = await db.user.findUnique({
-    where: { id: userId },
-    select: { email: true, role: true },
-  });
-
-  const ADMIN_EMAIL = "prfabianoguedes@gmail.com";
+  // ✅ CORREÇÃO 2: role vem da sessão, sem query extra ao banco
+  // ✅ CORREÇÃO 3: e-mail admin vem do .env de forma segura
+  const adminEmail = process.env.ADMIN_EMAIL;
   const isAdmin =
-    currentUser?.email === ADMIN_EMAIL || currentUser?.role === "ADMIN";
+    session.user.role === "ADMIN" ||
+    (!!adminEmail &&
+      session.user.email?.toLowerCase() === adminEmail.toLowerCase());
 
-  // 3. VALIDAÇÃO DE ACESSO
-  // Se não for o dono do negócio E não for um administrador, bloqueia o acesso.
   if (business.userId !== userId && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -76,13 +69,11 @@ export default async function EditBusinessPage({
     );
   }
 
-  // Ordenar horários
   business.hours.sort((a, b) => a.dayOfWeek - b.dayOfWeek);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">
       <div className="max-w-5xl mx-auto pb-24 p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* HEADER DE NAVEGAÇÃO */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <Link
             href="/dashboard"
@@ -95,18 +86,15 @@ export default async function EditBusinessPage({
           </Link>
         </div>
 
-        {/* BANNER DE STATUS COM AVISO DE ADMIN */}
         <div className="bg-white border border-slate-200 rounded-[40px] p-8 md:p-10 mb-10 shadow-sm relative overflow-hidden">
           {isAdmin && business.userId !== userId && (
             <div className="absolute top-0 left-0 bg-amber-500 text-white px-4 py-1 text-[10px] font-bold uppercase rounded-br-xl z-20">
               Modo Suporte Ativado
             </div>
           )}
-
           <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
             <Settings2 size={180} className="rotate-12" />
           </div>
-
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -119,7 +107,6 @@ export default async function EditBusinessPage({
                 {business.name}
               </h1>
             </div>
-
             <div className="flex flex-wrap items-center gap-3">
               <StatItem
                 icon={<Eye size={16} />}
@@ -149,7 +136,6 @@ export default async function EditBusinessPage({
           </div>
         </div>
 
-        {/* EDITOR */}
         <div className="relative bg-white rounded-[40px] shadow-sm border border-slate-200 p-2 md:p-4">
           <BusinessEditor business={business} />
         </div>

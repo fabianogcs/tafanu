@@ -303,7 +303,7 @@ export default function LoginPage() {
 
             <div className="flex justify-between items-center pr-1 px-1">
               <Link
-                href="/esqueci-minha-senha"
+                href="/esqueci-senha"
                 className="text-[10px] font-bold text-slate-400 hover:text-tafanu-blue transition-colors uppercase tracking-widest"
               >
                 Esqueci a senha

@@ -3,8 +3,6 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
 
-const ADMIN_EMAILS = ["prfabianoguedes@gmail.com"];
-
 export default async function AdminPage() {
   const session = await auth();
 
@@ -20,7 +18,8 @@ export default async function AdminPage() {
     },
   });
 
-  const isEmailAutorizado = ADMIN_EMAILS.includes(emailSessao);
+  const isEmailAutorizado =
+    emailSessao === process.env.ADMIN_EMAIL?.toLowerCase();
   const isAdminNoBanco = currentUser?.role === "ADMIN";
 
   if (!isEmailAutorizado && !isAdminNoBanco) {
@@ -95,5 +94,7 @@ export default async function AdminPage() {
     receita: receitaTotal,
   };
 
-  return <AdminDashboard data={adminData} />;
+  return (
+    <AdminDashboard data={adminData} adminEmail={process.env.ADMIN_EMAIL} />
+  );
 }

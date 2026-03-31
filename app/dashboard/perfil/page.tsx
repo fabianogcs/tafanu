@@ -1,14 +1,13 @@
 import { db } from "@/lib/db";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { User } from "lucide-react";
 import ProfileForm from "@/components/ProfileForm";
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
-
-  if (!userId) redirect("/login");
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
 
   const user = await db.user.findUnique({
     where: { id: userId },

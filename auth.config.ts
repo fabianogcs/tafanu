@@ -15,8 +15,9 @@ export default {
       },
       allowDangerousEmailAccountLinking: true,
       profile(profile) {
-        // Mantendo sua lógica de ADMIN por e-mail
-        const isAdmin = profile.email === "prfabianoguedes@gmail.com";
+        const isAdmin =
+          profile.email?.toLowerCase() ===
+          process.env.ADMIN_EMAIL?.toLowerCase();
         return {
           id: profile.sub,
           name: profile.name,

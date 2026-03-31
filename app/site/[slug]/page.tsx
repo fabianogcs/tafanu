@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { businessThemes } from "@/lib/themes";
 import { Metadata, Viewport } from "next";
 
@@ -116,8 +116,8 @@ export default async function BusinessPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
+  const session = await auth();
+  const userId = session?.user?.id || null;
 
   // 1. BUSCA O NEGÓCIO + DADOS DO DONO E O USUÁRIO LOGADO AO MESMO TEMPO
   const [business, loggedUser] = await Promise.all([
