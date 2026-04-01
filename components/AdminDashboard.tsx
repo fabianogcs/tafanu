@@ -36,9 +36,9 @@ import {
   Trash2,
   Link2,
   Store,
-  ReceiptText,
-  AlertTriangle,
   Clock,
+  Copy,
+  Check,
 } from "lucide-react";
 
 import {
@@ -89,9 +89,9 @@ export default function AdminDashboard({
   const [promotingUser, setPromotingUser] = useState<any>(null);
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [assignCodeInput, setAssignCodeInput] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const ADMIN_EMAIL = adminEmail || "";
-  const agora = new Date();
 
   // ✅ Debounce na busca
   useEffect(() => {
@@ -108,8 +108,9 @@ export default function AdminDashboard({
     if (mainTab === "affiliates" || mainTab === "overview") loadPayouts();
   }, [mainTab, loadPayouts]);
 
-  // ✅ Segmentação de usuários no cliente (apenas display, não financeiro)
+  // ✅ Segmentação de usuários — data calculada dentro do useMemo
   const segments = useMemo(() => {
+    const agora = new Date();
     const users = data.users.filter(
       (u) => u.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase(),
     );
@@ -141,7 +142,7 @@ export default function AdminDashboard({
     const affiliates = users.filter((u) => u.role === "AFILIADO");
     const banned = users.filter((u) => u.isBanned);
 
-    // ✅ Corrige O(n²): usa Map para enriched reports
+    // ✅ Map para O(n) nos reports
     const businessMap = new Map(
       data.users.flatMap((u) =>
         u.businesses.map((b: any) => [b.id, { ...b, ownerName: u.name }]),
@@ -163,6 +164,7 @@ export default function AdminDashboard({
     };
   }, [data.users, ADMIN_EMAIL]);
 
+  // ✅ filteredUsers com getSegmentList inline no useMemo
   const filteredUsers = useMemo(() => {
     const list = (() => {
       switch (subTab) {
@@ -203,6 +205,14 @@ export default function AdminDashboard({
       style: "currency",
       currency: "BRL",
     }).format(val);
+
+  const copyAffiliateLink = (code: string, id: string) => {
+    const link = `${window.location.origin}/?ref=${code}`;
+    navigator.clipboard.writeText(link);
+    setCopiedId(id);
+    toast.success("Link copiado!");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // --- AÇÕES ---
   const handleBan = (userId: string, name: string) => {
@@ -350,6 +360,9 @@ export default function AdminDashboard({
     setSelectedUser(null);
     setAssignCodeInput("");
   };
+
+  // Verifica se o usuário selecionado é afiliado
+  const isAffiliate = selectedUser?.role === "AFILIADO";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
@@ -605,7 +618,7 @@ export default function AdminDashboard({
           )}
 
           {/* TABELA DE USUÁRIOS */}
-          {mainTab === "users" && subTab !== "payouts" && (
+          {mainTab === "users" && (
             <div className="overflow-x-auto">
               {debouncedSearch && (
                 <div className="bg-emerald-50 text-emerald-700 py-2 text-center text-[10px] font-black tracking-widest uppercase">
@@ -701,72 +714,109 @@ export default function AdminDashboard({
             </div>
           )}
 
-          {/* PARCEIROS */}
+          {/* PARCEIROS — CARDS */}
           {mainTab === "affiliates" && subTab === "affiliates" && (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead className="bg-slate-50 border-b border-slate-100">
-                  <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                    <th className="p-5 text-left">Parceiro</th>
-                    <th className="p-5 text-left">Código</th>
-                    <th className="p-5 text-left">Indicações</th>
-                    <th className="p-5 text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+            <div className="p-6">
+              {segments.affiliates.length === 0 ? (
+                <div className="flex flex-col items-center py-20 text-slate-300">
+                  <Star size={40} className="mb-3" />
+                  <p className="text-[11px] font-black uppercase tracking-widest">
+                    Nenhum parceiro cadastrado.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {segments.affiliates.map((u) => (
-                    <tr
+                    <div
                       key={u.id}
-                      onClick={() => setSelectedUser(u)}
-                      className="hover:bg-slate-50/60 cursor-pointer transition-colors"
+                      className="bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden hover:shadow-md transition-all"
                     >
-                      <td className="p-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-black text-sm">
-                            {u.name?.charAt(0) || "?"}
+                      {/* Card header */}
+                      <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-black text-sm border border-purple-500/30">
+                              {u.name?.charAt(0) || "?"}
+                            </div>
+                            <div>
+                              <p className="font-black text-white text-sm uppercase leading-none">
+                                {u.name}
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                {u.email}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-black text-sm text-slate-800 uppercase">
-                              {u.name}
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-[9px] font-black uppercase border border-purple-500/30">
+                            Parceiro
+                          </span>
+                        </div>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-2 mt-4">
+                          <div className="bg-white/5 rounded-xl p-3 text-center">
+                            <p className="text-[9px] font-black uppercase text-slate-400 mb-1">
+                              Indicações
                             </p>
-                            <p className="text-[11px] text-slate-400">
-                              {u.email}
+                            <p className="text-xl font-black text-white">
+                              {u.referralCount || 0}
                             </p>
+                          </div>
+                          <div className="bg-white/5 rounded-xl p-3 text-center">
+                            <p className="text-[9px] font-black uppercase text-slate-400 mb-1">
+                              Código
+                            </p>
+                            <code className="text-sm font-black text-emerald-400">
+                              {u.referralCode || "—"}
+                            </code>
                           </div>
                         </div>
-                      </td>
-                      <td className="p-5">
-                        <code className="text-[11px] bg-slate-100 px-2 py-1 rounded-lg font-bold">
-                          {u.referralCode || "—"}
-                        </code>
-                      </td>
-                      <td className="p-5">
-                        <span className="text-sm font-black text-slate-700">
-                          {u.referralCount || 0}
-                        </span>
-                      </td>
-                      <td className="p-5 text-right">
-                        <button
-                          onClick={() => setSelectedUser(u)}
-                          className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5 ml-auto"
-                        >
-                          <Info size={13} /> Ver
-                        </button>
-                      </td>
-                    </tr>
+                      </div>
+                      {/* Card body */}
+                      <div className="p-4 space-y-3">
+                        {/* Link de afiliado */}
+                        {u.referralCode && (
+                          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2">
+                            <p className="flex-1 text-[10px] font-mono text-slate-500 truncate px-1">
+                              {typeof window !== "undefined"
+                                ? window.location.origin
+                                : "tafanu.vercel.app"}
+                              /?ref={u.referralCode}
+                            </p>
+                            <button
+                              onClick={() =>
+                                copyAffiliateLink(u.referralCode, u.id)
+                              }
+                              className={`shrink-0 p-2 rounded-lg transition-all ${copiedId === u.id ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white"}`}
+                              title="Copiar link"
+                            >
+                              {copiedId === u.id ? (
+                                <Check size={14} />
+                              ) : (
+                                <Copy size={14} />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                        {/* Ações */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedUser(u)}
+                            className="flex-1 px-3 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Info size={13} /> Detalhes
+                          </button>
+                          <button
+                            onClick={() => handleBan(u.id, u.name)}
+                            className="px-3 py-2.5 bg-rose-50 text-rose-500 rounded-xl text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center gap-1.5"
+                          >
+                            <Gavel size={13} /> Banir
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                  {segments.affiliates.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="py-16 text-center text-[11px] font-black uppercase text-slate-300 tracking-widest"
-                      >
-                        Nenhum parceiro cadastrado.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -893,7 +943,7 @@ export default function AdminDashboard({
             </div>
           )}
 
-          {/* MODERAÇÃO DE COMENTÁRIOS */}
+          {/* MODERAÇÃO */}
           {mainTab === "security" && subTab === "comments" && (
             <div className="p-6 space-y-4">
               {data.flaggedComments.length === 0 ? (
@@ -963,8 +1013,8 @@ export default function AdminDashboard({
         </div>
       </main>
 
-      {/* MODAL RAIO-X */}
-      {selectedUser && (
+      {/* MODAL RAIO-X — ASSINANTE */}
+      {selectedUser && !isAffiliate && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto"
           onClick={closeUser}
@@ -977,12 +1027,10 @@ export default function AdminDashboard({
             <div className="p-6 bg-slate-50 border-b flex justify-between items-start">
               <div className="flex items-center gap-4">
                 <div
-                  className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : selectedUser.role === "AFILIADO" ? "bg-purple-600 text-white" : "bg-slate-900 text-white"}`}
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}
                 >
                   {selectedUser.isBanned ? (
                     <UserX size={32} />
-                  ) : selectedUser.role === "AFILIADO" ? (
-                    <Star size={32} />
                   ) : (
                     <User size={32} />
                   )}
@@ -1076,7 +1124,7 @@ export default function AdminDashboard({
                 )}
               </div>
 
-              {/* Gerenciamento de tempo */}
+              {/* Gerenciamento de tempo — apenas para não afiliados */}
               {!selectedUser.isBanned && selectedUser.role !== "ADMIN" && (
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-3">
@@ -1176,6 +1224,155 @@ export default function AdminDashboard({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RAIO-X — AFILIADO */}
+      {selectedUser && isAffiliate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto"
+          onClick={closeUser}
+        >
+          <div
+            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header afiliado */}
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center shadow-lg border border-purple-500/30">
+                  <Star size={32} />
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
+                    Parceiro Oficial
+                  </span>
+                  <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter mt-1">
+                    {selectedUser.name}
+                  </h2>
+                  <div className="flex flex-wrap gap-3 mt-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                      <Mail size={11} /> {selectedUser.email}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                      <CreditCard size={11} /> CPF:{" "}
+                      {selectedUser.document || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={closeUser}
+                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Stats do parceiro */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Total de Indicações
+                  </p>
+                  <p className="text-3xl font-black text-slate-800">
+                    {selectedUser.referralCount || 0}
+                  </p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Código
+                  </p>
+                  <code className="text-xl font-black text-emerald-600">
+                    {selectedUser.referralCode || "—"}
+                  </code>
+                </div>
+              </div>
+
+              {/* Link de afiliado */}
+              {selectedUser.referralCode && (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3">
+                    Link de Indicação
+                  </p>
+                  <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2.5">
+                    <p className="flex-1 text-[11px] font-mono text-slate-600 truncate">
+                      {typeof window !== "undefined"
+                        ? window.location.origin
+                        : "https://tafanu.vercel.app"}
+                      /?ref={selectedUser.referralCode}
+                    </p>
+                    <button
+                      onClick={() =>
+                        copyAffiliateLink(
+                          selectedUser.referralCode,
+                          selectedUser.id,
+                        )
+                      }
+                      className={`shrink-0 px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${copiedId === selectedUser.id ? "bg-emerald-500 text-white" : "bg-slate-900 text-white hover:bg-emerald-500"}`}
+                    >
+                      {copiedId === selectedUser.id ? (
+                        <>
+                          <Check size={13} /> Copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} /> Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lojas do afiliado */}
+              {selectedUser.businesses?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
+                    <Store size={13} /> Lojas ({selectedUser.businesses.length})
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedUser.businesses.map((biz: any) => (
+                      <div
+                        key={biz.id}
+                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-black text-slate-800 text-sm uppercase">
+                            {biz.name}
+                          </p>
+                          <a
+                            href={`/site/${biz.slug}`}
+                            target="_blank"
+                            className="text-[10px] text-emerald-500 font-bold hover:underline flex items-center gap-1 mt-0.5"
+                          >
+                            <ExternalLink size={10} /> /site/{biz.slug}
+                          </a>
+                        </div>
+                        <a
+                          href={`/dashboard/editar/${biz.slug}`}
+                          className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all"
+                        >
+                          Editar
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ação de banir */}
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => handleBan(selectedUser.id, selectedUser.name)}
+                  className="w-full px-4 py-3 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-2"
+                >
+                  <Gavel size={14} /> Banir Parceiro
+                </button>
+              </div>
             </div>
           </div>
         </div>
