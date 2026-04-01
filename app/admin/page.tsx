@@ -11,52 +11,50 @@ export default async function AdminPage() {
   }
 
   const emailSessao = session.user.email.toLowerCase();
-
-  const currentUser = await db.user.findFirst({
-    where: {
-      email: { equals: emailSessao, mode: "insensitive" },
-    },
-  });
-
   const isEmailAutorizado =
     emailSessao === process.env.ADMIN_EMAIL?.toLowerCase();
-  const isAdminNoBanco = currentUser?.role === "ADMIN";
+  const isAdminNoBanco = session.user.role === "ADMIN";
 
   if (!isEmailAutorizado && !isAdminNoBanco) {
     redirect("/");
   }
 
-  // --- BUSCA GERAL DE DADOS ---
-  const [usersData, reports, flaggedComments] = await Promise.all([
-    // 1. Todos os Usuários + Negócios + Contagem de Indicações
-    db.user.findMany({
-      include: {
-        businesses: true,
-        referrals: { select: { id: true } }, // Quantas pessoas ele indicou
-        affiliate: { select: { name: true, referralCode: true } }, // Quem indicou ele
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    // 2. Denúncias de Negócios (Abuso, Plágio, etc)
-    db.report.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { business: { select: { name: true, slug: true } } },
-    }),
-    // 3. NOVO: Comentários Denunciados (Moderação)
-    db.comment.findMany({
-      where: { isFlagged: true },
-      include: {
-        user: { select: { name: true, image: true } },
-        business: { select: { name: true, slug: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
-
-  // --- ORGANIZAÇÃO DOS DADOS ---
   const agora = new Date();
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase() || "";
 
-  const users = usersData.map((u: any) => ({
+  const [usersData, reports, flaggedComments, allCommissions] =
+    await Promise.all([
+      db.user.findMany({
+        include: {
+          businesses: true,
+          referrals: { select: { id: true } },
+          affiliate: { select: { name: true, referralCode: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.report.findMany({
+        orderBy: { createdAt: "desc" },
+        include: { business: { select: { name: true, slug: true } } },
+      }),
+      db.comment.findMany({
+        where: { isFlagged: true },
+        include: {
+          user: { select: { name: true, image: true } },
+          business: { select: { name: true, slug: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      // ✅ Correção 1: Busca apenas comissões reais de afiliados (Alivia o banco)
+      db.commission.findMany({
+        where: {
+          status: { in: ["AVAILABLE", "PAID"] },
+          amount: { gt: 0 },
+        },
+      }),
+    ]);
+
+  // ✅ Mapeia usuários com metadados
+  const users = usersData.map((u) => ({
     ...u,
     referredBy: u.affiliate
       ? `${u.affiliate.name} (${u.affiliate.referralCode})`
@@ -64,34 +62,54 @@ export default async function AdminPage() {
     referralCount: u.referrals.length,
   }));
 
-  // Filtramos os Afiliados (quem tem código de afiliado ou indicações)
-  const affiliates = users.filter((u) => u.referralCode || u.referralCount > 0);
+  // ✅ Corrige O(n²): monta Map de businessId → dono
+  const businessOwnerMap = new Map<string, string>();
+  users.forEach((u) => {
+    u.businesses.forEach((b) => {
+      businessOwnerMap.set(b.id, u.id);
+    });
+  });
 
-  // Filtramos os Assinantes (quem tem negócios cadastrados)
-  const subscribers = users.filter(
-    (u) => u.businesses.length > 0 || u.role === "ASSINANTE",
+  // ✅ Correção 2: Faturamento bruto — baseado nos assinantes ativos (inclui orgânicos)
+  const pagantes = users.filter(
+    (u) =>
+      u.role === "ASSINANTE" &&
+      u.expiresAt &&
+      new Date(u.expiresAt) > agora &&
+      !u.isBanned &&
+      u.email?.toLowerCase() !== adminEmail,
   );
 
-  // Cálculo de Receita (apenas assinantes ativos)
-  const receitaTotal = users.reduce((acc, user) => {
-    if (
-      user.role === "ASSINANTE" &&
-      user.expiresAt &&
-      user.expiresAt > agora &&
-      !user.isBanned
-    ) {
-      return acc + (Number(user.lastPrice) || 0);
-    }
-    return acc;
+  const faturamentoBruto = pagantes.reduce((acc, u) => {
+    return acc + (Number(u.lastPrice) || 29.9);
   }, 0);
 
+  // ✅ Comissões devidas — fonte confiável (só afiliados)
+  const totalComissoesDevidas = allCommissions
+    .filter((c) => c.status === "AVAILABLE")
+    .reduce((acc, c) => acc + c.amount, 0);
+
+  const totalComissoesPagas = allCommissions
+    .filter((c) => c.status === "PAID")
+    .reduce((acc, c) => acc + c.amount, 0);
+
+  // ✅ Lucro líquido = bruto − comissões devidas − comissões já pagas
+  const faturamentoLiquido =
+    faturamentoBruto - totalComissoesDevidas - totalComissoesPagas;
+
+  const totalPagantes = pagantes.length;
+
   const adminData = {
-    users: users,
-    subscribers: subscribers,
-    affiliates: affiliates,
-    reports: reports,
-    flaggedComments: flaggedComments, // Dados para a nova aba de moderação
-    receita: receitaTotal,
+    users,
+    reports,
+    flaggedComments,
+    businessOwnerMap: Object.fromEntries(businessOwnerMap),
+    metricas: {
+      faturamentoBruto,
+      faturamentoLiquido,
+      totalComissoesDevidas,
+      totalPagantes,
+    },
   };
 
   return (

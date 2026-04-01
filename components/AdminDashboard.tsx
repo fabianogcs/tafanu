@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect } from "react";
+import {
+  useState,
+  useTransition,
+  useMemo,
+  useEffect,
+  useCallback,
+} from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -10,8 +16,6 @@ import {
   ShieldCheck,
   Search,
   LayoutGrid,
-  Clock,
-  History,
   X,
   UserCheck,
   Eraser,
@@ -27,13 +31,14 @@ import {
   Info,
   Link as LinkIcon,
   CreditCard,
-  AlertTriangle,
   User,
   MessageSquare,
   Trash2,
   Link2,
   Store,
   ReceiptText,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
 
 import {
@@ -51,20 +56,34 @@ import {
   assignUserToAffiliate,
 } from "@/app/actions";
 
+type AdminData = {
+  users: any[];
+  reports: any[];
+  flaggedComments: any[];
+  businessOwnerMap: Record<string, string>;
+  metricas: {
+    faturamentoBruto: number;
+    faturamentoLiquido: number;
+    totalComissoesDevidas: number;
+    totalPagantes: number;
+  };
+};
+
 export default function AdminDashboard({
   data,
   adminEmail,
 }: {
-  data: any;
+  data: AdminData;
   adminEmail?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-
-  const [mainCategory, setMainCategory] = useState("overview");
-  const [activeTab, setActiveTab] = useState("overview");
-
+  const [mainTab, setMainTab] = useState<
+    "overview" | "users" | "affiliates" | "security"
+  >("overview");
+  const [subTab, setSubTab] = useState("subscribers");
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
   const [promotingUser, setPromotingUser] = useState<any>(null);
@@ -72,114 +91,107 @@ export default function AdminDashboard({
   const [assignCodeInput, setAssignCodeInput] = useState("");
 
   const ADMIN_EMAIL = adminEmail || "";
+  const agora = new Date();
 
-  const loadPayouts = async () => {
+  // ✅ Debounce na busca
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const loadPayouts = useCallback(async () => {
     const res = await getAffiliatePayouts();
     if (res.payouts) setPayouts(res.payouts);
-  };
+  }, []);
 
   useEffect(() => {
-    if (activeTab === "payouts" || activeTab === "overview") loadPayouts();
-  }, [activeTab]);
+    if (mainTab === "affiliates" || mainTab === "overview") loadPayouts();
+  }, [mainTab, loadPayouts]);
 
-  const {
-    allUsers,
-    activeSubscribers,
-    trialSubscribers,
-    expiredSubscribers,
-    visitors,
-    partners,
-    pendingReports,
-    bannedUsers,
-    flaggedComments,
-  } = useMemo(() => {
-    const users = data.users.filter((u: any) => u.email !== ADMIN_EMAIL);
-    const now = new Date();
+  // ✅ Segmentação de usuários no cliente (apenas display, não financeiro)
+  const segments = useMemo(() => {
+    const users = data.users.filter(
+      (u) => u.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase(),
+    );
 
+    const active = users.filter(
+      (u) =>
+        u.role === "ASSINANTE" &&
+        u.expiresAt &&
+        new Date(u.expiresAt) > agora &&
+        !u.isBanned &&
+        (new Date(u.expiresAt).getTime() - agora.getTime()) / 86400000 > 7,
+    );
+    const expiring = users.filter(
+      (u) =>
+        u.role === "ASSINANTE" &&
+        u.expiresAt &&
+        new Date(u.expiresAt) > agora &&
+        !u.isBanned &&
+        (new Date(u.expiresAt).getTime() - agora.getTime()) / 86400000 <= 7,
+    );
     const expired = users.filter(
-      (u: any) =>
+      (u) =>
         u.role === "ASSINANTE" &&
         u.expiresAt &&
-        new Date(u.expiresAt) < now &&
+        new Date(u.expiresAt) < agora &&
         !u.isBanned,
     );
-    const running = users.filter(
-      (u: any) =>
-        u.role === "ASSINANTE" &&
-        u.expiresAt &&
-        new Date(u.expiresAt) >= now &&
-        !u.isBanned,
+    const visitors = users.filter((u) => u.role === "VISITANTE" && !u.isBanned);
+    const affiliates = users.filter((u) => u.role === "AFILIADO");
+    const banned = users.filter((u) => u.isBanned);
+
+    // ✅ Corrige O(n²): usa Map para enriched reports
+    const businessMap = new Map(
+      data.users.flatMap((u) =>
+        u.businesses.map((b: any) => [b.id, { ...b, ownerName: u.name }]),
+      ),
     );
-
-    const trials = running.filter((u: any) => {
-      const diffDays =
-        (new Date(u.expiresAt).getTime() - now.getTime()) /
-        (1000 * 60 * 60 * 24);
-      return diffDays <= 7;
-    });
-
-    const actives = running.filter((u: any) => {
-      const diffDays =
-        (new Date(u.expiresAt).getTime() - now.getTime()) /
-        (1000 * 60 * 60 * 24);
-      return diffDays > 7;
-    });
-
-    const leads = users.filter(
-      (u: any) => u.role === "VISITANTE" && !u.isBanned,
-    );
-    // 🚀 Todo mundo que tem código é parceiro
-    const affs = users.filter(
-      (u: any) => u.role === "AFILIADO" || !!u.referralCode,
-    );
-    const banned = users.filter((u: any) => u.isBanned);
-
-    const reports = data.reports
-      .filter((r: any) => r.status === "PENDING")
-      .map((report: any) => {
-        let foundBusiness = null;
-        let foundOwner = null;
-        for (const u of data.users) {
-          if (u.businesses) {
-            const biz = u.businesses.find(
-              (b: any) => b.id === report.businessId,
-            );
-            if (biz) {
-              foundBusiness = biz;
-              foundOwner = u;
-              break;
-            }
-          }
-        }
-        return { ...report, business: foundBusiness, owner: foundOwner };
-      });
+    const pendingReports = data.reports
+      .filter((r) => r.status === "PENDING")
+      .map((r) => ({ ...r, businessDetail: businessMap.get(r.businessId) }));
 
     return {
-      allUsers: users,
-      activeSubscribers: actives,
-      trialSubscribers: trials,
-      expiredSubscribers: expired,
-      visitors: leads,
-      partners: affs,
-      bannedUsers: banned,
-      pendingReports: reports,
-      flaggedComments: data.flaggedComments || [],
+      all: users,
+      active,
+      expiring,
+      expired,
+      visitors,
+      affiliates,
+      banned,
+      pendingReports,
     };
-  }, [data, ADMIN_EMAIL]);
+  }, [data.users, ADMIN_EMAIL]);
 
-  // 🚀 CORREÇÃO 1: CÁLCULO DE LUCRO LÍQUIDO BLINDADO
-  const faturamentoLiquido = useMemo(() => {
-    const todosPagantes = [...activeSubscribers, ...trialSubscribers];
+  const filteredUsers = useMemo(() => {
+    const list = (() => {
+      switch (subTab) {
+        case "subscribers":
+          return segments.active;
+        case "expiring":
+          return segments.expiring;
+        case "expired":
+          return segments.expired;
+        case "visitors":
+          return segments.visitors;
+        case "affiliates":
+          return segments.affiliates;
+        case "banned":
+          return segments.banned;
+        default:
+          return segments.all;
+      }
+    })();
 
-    return todosPagantes.reduce((acc: number, u: any) => {
-      // Se lastPrice for zero ou nulo no banco de dados, assume R$29.90 provisoriamente
-      const preco = Number(u.lastPrice) || 29.9;
-      const temAfiliado = !!u.affiliateId || !!u.referredBy;
-
-      // Se a venda veio de parceiro, o lucro é 80% (tirando os 20% do parceiro)
-      return temAfiliado ? acc + preco * 0.8 : acc + preco;
-    }, 0);
-  }, [activeSubscribers, trialSubscribers]);
+    if (!debouncedSearch.trim()) return list;
+    const q = debouncedSearch.toLowerCase();
+    return segments.all.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        (u.document || "").includes(q),
+    );
+  }, [debouncedSearch, subTab, segments]);
 
   const totalOwed = useMemo(
     () => payouts.reduce((acc, p) => acc + p.valorDevido, 0),
@@ -192,55 +204,11 @@ export default function AdminDashboard({
       currency: "BRL",
     }).format(val);
 
-  const filteredData = useMemo(() => {
-    if (activeTab === "reports") return pendingReports;
-    if (activeTab === "payouts") return payouts;
-
-    if (searchTerm.trim().length > 0) {
-      const searchLower = searchTerm.toLowerCase();
-      return allUsers.filter(
-        (u: any) =>
-          (u.name?.toLowerCase() || "").includes(searchLower) ||
-          (u.email?.toLowerCase() || "").includes(searchLower) ||
-          (u.document || "").includes(searchLower),
-      );
-    }
-
-    switch (activeTab) {
-      case "subscribers":
-        return activeSubscribers;
-      case "trials":
-        return trialSubscribers;
-      case "expired":
-        return expiredSubscribers;
-      case "visitors":
-        return visitors;
-      case "partners":
-        return partners;
-      case "banned":
-        return bannedUsers;
-      default:
-        return allUsers;
-    }
-  }, [
-    activeTab,
-    searchTerm,
-    allUsers,
-    activeSubscribers,
-    trialSubscribers,
-    expiredSubscribers,
-    visitors,
-    partners,
-    pendingReports,
-    payouts,
-    bannedUsers,
-  ]);
-
-  // --- AÇÕES ADMINISTRATIVAS ---
+  // --- AÇÕES ---
   const handleBan = (userId: string, name: string) => {
     if (
       !confirm(
-        `BANIR ${name.toUpperCase()}? Isso cancela o pagamento no MP e bloqueia o CPF.`,
+        `BANIR ${name.toUpperCase()}? Isso cancela o MP e bloqueia a conta.`,
       )
     )
       return;
@@ -249,7 +217,6 @@ export default function AdminDashboard({
       res.success ? toast.success(res.message) : toast.error(res.error);
       router.refresh();
       setSelectedUser(null);
-      setAssignCodeInput("");
     });
   };
 
@@ -259,7 +226,27 @@ export default function AdminDashboard({
       res.success ? toast.success(res.message) : toast.error(res.error);
       router.refresh();
       setSelectedUser(null);
-      setAssignCodeInput("");
+    });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!confirm("Apagar este comentário permanentemente?")) return;
+    startTransition(async () => {
+      const res = await deleteComment(commentId);
+      res.success
+        ? toast.success("Comentário removido!")
+        : toast.error(res.error || "Erro");
+      router.refresh();
+    });
+  };
+
+  const handleApproveComment = (commentId: string) => {
+    startTransition(async () => {
+      const res = await approveComment(commentId);
+      res.success
+        ? toast.success("Comentário aprovado!")
+        : toast.error(res.error || "Erro");
+      router.refresh();
     });
   };
 
@@ -267,34 +254,13 @@ export default function AdminDashboard({
     startTransition(async () => {
       const res = await resolveReport(reportId);
       res.success
-        ? toast.success("Caso encerrado com sucesso!")
+        ? toast.success("Caso encerrado!")
         : toast.error("Erro ao resolver.");
       router.refresh();
     });
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    if (!confirm("Apagar esse comentário permanentemente?")) return;
-    startTransition(async () => {
-      const res = await deleteComment(commentId);
-      if (res.success) {
-        toast.success("Comentário removido!");
-        router.refresh();
-      } else toast.error(res.error || "Erro ao apagar");
-    });
-  };
-
-  const handleApproveComment = (commentId: string) => {
-    startTransition(async () => {
-      const res = await approveComment(commentId);
-      if (res.success) {
-        toast.success("Denúncia ignorada e comentário mantido!");
-        router.refresh();
-      } else toast.error(res.error || "Erro ao processar.");
-    });
-  };
-
-  const handlePromote = async () => {
+  const handlePromote = () => {
     if (!referralCodeInput) return toast.error("Defina um código!");
     startTransition(async () => {
       const res = await promoteToAffiliate(promotingUser.id, referralCodeInput);
@@ -303,963 +269,968 @@ export default function AdminDashboard({
         setPromotingUser(null);
         setReferralCodeInput("");
         router.refresh();
-        if (selectedUser)
-          setSelectedUser({
-            ...selectedUser,
-            role: "AFILIADO",
-            referralCode: referralCodeInput,
-          });
       } else toast.error(res.error);
     });
   };
 
-  const handleAssignAffiliate = async () => {
+  const handleAssignAffiliate = () => {
     if (!assignCodeInput) return toast.error("Digite o código do parceiro!");
     startTransition(async () => {
       const res = await assignUserToAffiliate(selectedUser.id, assignCodeInput);
       if (res.success) {
         toast.success(res.message);
         setAssignCodeInput("");
-        setSelectedUser({
-          ...selectedUser,
-          referredBy: `Parceiro: ${assignCodeInput}`,
-          affiliateId: "linked",
-        });
         router.refresh();
       } else toast.error(res.error);
     });
   };
 
-  const handleAddMonths = (e: any, userId: string, months: number) => {
+  const handleAddTime = (
+    e: React.MouseEvent,
+    userId: string,
+    months: number,
+  ) => {
     e.stopPropagation();
-    if (
-      months < 0 &&
-      !confirm("ATENÇÃO: Deseja realmente REMOVER 1 mês deste usuário?")
-    )
-      return;
+    if (months < 0 && !confirm("Remover tempo deste usuário?")) return;
     startTransition(async () => {
       await adminAddDaysToUser(userId, months);
-      toast.success(months > 0 ? "+1 Mês adicionado!" : "-1 Mês removido!");
+      toast.success(
+        months > 0 ? `+${months} mês adicionado!` : `-1 mês removido!`,
+      );
       router.refresh();
-      setSelectedUser((prev: any) => {
-        if (!prev) return prev;
-        const base =
-          prev.expiresAt && new Date(prev.expiresAt) > new Date()
-            ? new Date(prev.expiresAt)
-            : new Date();
-        const newDate = new Date(base);
-        newDate.setMonth(newDate.getMonth() + months);
-        return { ...prev, expiresAt: newDate, role: "ASSINANTE" };
-      });
     });
   };
 
-  const handleAddExactDays = (e: any, userId: string, days: number) => {
+  const handleAddDays = (e: React.MouseEvent, userId: string, days: number) => {
     e.stopPropagation();
     startTransition(async () => {
       const res = await adminAddExactDaysToUser(userId, days);
       if (res?.success) {
         toast.success(res.message);
         router.refresh();
-        setSelectedUser((prev: any) => {
-          if (!prev) return prev;
-          const base =
-            prev.expiresAt && new Date(prev.expiresAt) > new Date()
-              ? new Date(prev.expiresAt)
-              : new Date();
-          const newDate = new Date(base);
-          newDate.setDate(newDate.getDate() + days);
-          return { ...prev, expiresAt: newDate, role: "ASSINANTE" };
-        });
       } else toast.error(res?.error || "Erro ao adicionar dias.");
     });
   };
 
-  const handleConfirmPayment = async (
+  const handleConfirmPayment = (
     affiliateId: string,
     valor: number,
     name: string,
   ) => {
     if (
       !confirm(
-        `Confirmar o envio do PIX de R$ ${valor.toFixed(2)} para ${name.toUpperCase()}?`,
+        `Confirmar PIX de ${formatMoney(valor)} para ${name.toUpperCase()}?`,
       )
     )
       return;
-
     startTransition(async () => {
       const res = await markAffiliateAsPaid(affiliateId);
       if (res.success) {
         toast.success(res.message);
         setPayouts((prev) => prev.filter((p) => p.id !== affiliateId));
         router.refresh();
-      } else {
-        toast.error(res.error);
-      }
+      } else toast.error(res.error);
     });
   };
 
   const handleGarbageCollection = () => {
-    if (
-      !confirm(
-        "Iniciar faxina de imagens órfãs? O servidor fará uma varredura.",
-      )
-    )
-      return;
+    if (!confirm("Iniciar faxina de imagens órfãs?")) return;
     const promise = runGarbageCollector().then((res) => {
       if (res.error) throw new Error(res.error);
       return res.message;
     });
     toast.promise(promise, {
-      loading: "Analisando servidor... isso pode levar alguns segundos.",
+      loading: "Varrendo servidor...",
       success: (msg) => `${msg}`,
-      error: (err) => err.message || "Erro ao rodar faxina.",
+      error: (err) => err.message || "Erro na faxina.",
     });
   };
 
-  // 🚀 CORREÇÃO 2: QUANTIDADE DE VENDAS x SALDO A PAGAR
-  const getSelectedUserAffiliateData = () => {
-    if (
-      !selectedUser ||
-      (!selectedUser.referralCode && selectedUser.role !== "AFILIADO")
-    )
-      return null;
-
-    // Acessamos o banco de dados das comissões diretamente para calcular na hora (A Prova de Falhas)
-    const comissoesDaPessoa =
-      selectedUser.commissions ||
-      data.commissions?.filter((c: any) => c.affiliateId === selectedUser.id) ||
-      [];
-
-    // Filtramos apenas as moedinhas que estão marcadas como AVAILABLE
-    const disponiveis = comissoesDaPessoa.filter(
-      (c: any) => c.status === "AVAILABLE",
-    );
-
-    if (disponiveis.length > 0) {
-      // Se ele achar no BD local, soma as quantidades e valores reais
-      const valorTotal = disponiveis.reduce(
-        (acc: number, c: any) => acc + (c.amount || 0),
-        0,
-      );
-      return {
-        ativos: disponiveis.length,
-        valorDevido: valorTotal,
-      };
-    }
-
-    // Se a busca local não achou, ele tenta ler do backend de Payouts
-    const payoutDoBackend = payouts.find((p) => p.id === selectedUser.id);
-    if (payoutDoBackend) {
-      return {
-        ...payoutDoBackend,
-        // Correção de segurança: se ele tem valor a receber (5.98) mas a quantidade bugou e deu 0, força para pelo menos 1.
-        ativos:
-          payoutDoBackend.ativos > 0
-            ? payoutDoBackend.ativos
-            : payoutDoBackend.valorDevido > 0
-              ? 1
-              : 0,
-      };
-    }
-
-    return { ativos: 0, taxa: 0, valorDevido: 0 };
+  const closeUser = () => {
+    setSelectedUser(null);
+    setAssignCodeInput("");
   };
-
-  // 🚀 CORREÇÃO 3: O EXTRATO DE PAGAMENTOS VOLTOU A FUNCIONAR
-  const getSelectedUserPaidCommissions = () => {
-    if (!selectedUser) return [];
-
-    // Antes estava selectedUser.commissionsReceived, mas no Prisma se chama selectedUser.commissions!
-    const comissoes =
-      selectedUser.commissions ||
-      data.commissions?.filter((c: any) => c.affiliateId === selectedUser.id) ||
-      [];
-
-    return comissoes
-      .filter((c: any) => c.status === "PAID")
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.releaseDate || b.createdAt).getTime() -
-          new Date(a.releaseDate || a.createdAt).getTime(),
-      );
-  };
-
-  // 🚀 VERIFICADOR DE PAPEL
-  const isSelectedUserPartner =
-    selectedUser?.role === "AFILIADO" || !!selectedUser?.referralCode;
-
-  const allBusinesses = useMemo(() => {
-    return allUsers
-      .flatMap((u: any) => u.businesses)
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-  }, [allUsers]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans text-slate-900">
-      <header className="max-w-7xl mx-auto mb-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
+      {/* HEADER */}
+      <header className="max-w-7xl mx-auto mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-slate-900 rounded-3xl text-emerald-400 shadow-xl">
-              <ShieldCheck size={32} />
+            <div className="p-3 bg-slate-900 rounded-2xl text-emerald-400">
+              <ShieldCheck size={28} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-                Painel Administrativo
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                Painel Admin
               </p>
-              <h1 className="text-3xl font-black italic uppercase tracking-tighter">
+              <h1 className="text-2xl font-black italic uppercase tracking-tighter">
                 Tafanu <span className="text-emerald-500">HQ</span>
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80">
+            <div className="relative flex-1 md:w-72">
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300"
+                size={16}
               />
               <input
                 type="text"
-                placeholder="Busca Global (E-mail/CPF)..."
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-emerald-500/20 shadow-inner font-medium"
+                placeholder="Buscar por nome, e-mail ou CPF..."
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-emerald-500/20 text-sm font-medium border border-slate-100"
+                value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button
               onClick={handleGarbageCollection}
-              className="p-4 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100 shadow-sm"
-              title="Limpar Imagens"
+              className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all border border-rose-100"
+              title="Faxina de imagens"
             >
-              <Eraser />
+              <Eraser size={18} />
             </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto space-y-6">
-        {/* ABAS NÍVEL 1 */}
-        <div className="flex p-2 bg-white rounded-[2rem] shadow-sm border border-slate-200 w-fit overflow-x-auto max-w-full no-scrollbar">
-          <TabButton
-            active={mainCategory === "overview"}
-            onClick={() => {
-              setMainCategory("overview");
-              setActiveTab("overview");
-            }}
-            label="Visão Geral"
-            icon={<LayoutGrid size={16} />}
-          />
-          <TabButton
-            active={mainCategory === "users"}
-            onClick={() => {
-              setMainCategory("users");
-              setActiveTab("subscribers");
-            }}
-            label="Membros"
-            icon={<Users size={16} />}
-          />
-          <TabButton
-            active={mainCategory === "affiliates"}
-            onClick={() => {
-              setMainCategory("affiliates");
-              setActiveTab("partners");
-            }}
-            label="Parceiros"
-            icon={<Star size={16} />}
-          />
-          <TabButton
-            active={mainCategory === "security"}
-            onClick={() => {
-              setMainCategory("security");
-              setActiveTab("reports");
-            }}
-            label="Segurança"
-            icon={<ShieldAlert size={16} />}
-            count={
-              pendingReports.length > 0 ? pendingReports.length : undefined
-            }
-            alertMode={pendingReports.length > 0}
-          />
+        {/* TABS NÍVEL 1 */}
+        <div className="flex gap-2 bg-white p-2 rounded-2xl border border-slate-100 w-fit shadow-sm overflow-x-auto">
+          {[
+            {
+              key: "overview",
+              label: "Visão Geral",
+              icon: <LayoutGrid size={15} />,
+            },
+            {
+              key: "users",
+              label: "Membros",
+              icon: <Users size={15} />,
+              count: segments.all.length,
+            },
+            {
+              key: "affiliates",
+              label: "Parceiros",
+              icon: <Star size={15} />,
+              count: segments.affiliates.length,
+            },
+            {
+              key: "security",
+              label: "Segurança",
+              icon: <ShieldAlert size={15} />,
+              count:
+                segments.pendingReports.length + data.flaggedComments.length,
+              alert: true,
+            },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setMainTab(tab.key as any);
+                setSubTab(
+                  tab.key === "users"
+                    ? "subscribers"
+                    : tab.key === "affiliates"
+                      ? "affiliates"
+                      : tab.key === "security"
+                        ? "reports"
+                        : "overview",
+                );
+              }}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${mainTab === tab.key ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"}`}
+            >
+              {tab.icon} {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[9px] ${mainTab === tab.key ? (tab.alert ? "bg-rose-500" : "bg-emerald-500") : tab.alert ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"}`}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* ABAS NÍVEL 2 */}
-        {mainCategory === "users" && (
-          <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
-            <SubTabButton
-              active={activeTab === "subscribers"}
-              onClick={() => setActiveTab("subscribers")}
-              label="Ativos"
-              count={activeSubscribers.length}
-            />
-            <SubTabButton
-              active={activeTab === "trials"}
-              onClick={() => setActiveTab("trials")}
-              label="Vencendo"
-              count={trialSubscribers.length}
-            />
-            <SubTabButton
-              active={activeTab === "expired"}
-              onClick={() => setActiveTab("expired")}
-              label="Vencidos"
-              count={expiredSubscribers.length}
-            />
-            <SubTabButton
-              active={activeTab === "visitors"}
-              onClick={() => setActiveTab("visitors")}
-              label="Leads"
-              count={visitors.length}
-            />
+        {/* TABS NÍVEL 2 */}
+        {mainTab === "users" && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {[
+              {
+                key: "subscribers",
+                label: "Ativos",
+                count: segments.active.length,
+              },
+              {
+                key: "expiring",
+                label: "Vencendo",
+                count: segments.expiring.length,
+                alert: true,
+              },
+              {
+                key: "expired",
+                label: "Vencidos",
+                count: segments.expired.length,
+              },
+              {
+                key: "visitors",
+                label: "Leads",
+                count: segments.visitors.length,
+              },
+              {
+                key: "banned",
+                label: "Banidos",
+                count: segments.banned.length,
+              },
+            ].map((t) => (
+              <SubTab
+                key={t.key}
+                active={subTab === t.key}
+                onClick={() => setSubTab(t.key)}
+                label={t.label}
+                count={t.count}
+                alert={t.alert}
+              />
+            ))}
           </div>
         )}
 
-        {mainCategory === "affiliates" && (
-          <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
-            <SubTabButton
-              active={activeTab === "partners"}
-              onClick={() => setActiveTab("partners")}
-              label="Ver Parceiros"
-              count={partners.length}
-            />
-            <SubTabButton
-              active={activeTab === "payouts"}
-              onClick={() => setActiveTab("payouts")}
-              label="Fila de Pagamentos"
-              count={payouts.length}
-            />
+        {mainTab === "affiliates" && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {[
+              {
+                key: "affiliates",
+                label: "Parceiros",
+                count: segments.affiliates.length,
+              },
+              {
+                key: "payouts",
+                label: "Fila de Pagamento",
+                count: payouts.length,
+              },
+            ].map((t) => (
+              <SubTab
+                key={t.key}
+                active={subTab === t.key}
+                onClick={() => setSubTab(t.key)}
+                label={t.label}
+                count={t.count}
+              />
+            ))}
           </div>
         )}
 
-        {mainCategory === "security" && (
-          <div className="flex gap-2 px-2 overflow-x-auto no-scrollbar animate-in fade-in duration-300">
-            <SubTabButton
-              active={activeTab === "reports"}
-              onClick={() => setActiveTab("reports")}
-              label="Denúncias"
-              count={pendingReports.length}
-              alertMode
-            />
-            <SubTabButton
-              active={activeTab === "comments"}
-              onClick={() => setActiveTab("comments")}
-              label="Moderação"
-              count={flaggedComments.length}
-              alertMode
-            />
-            <SubTabButton
-              active={activeTab === "banned"}
-              onClick={() => setActiveTab("banned")}
-              label="Lista Negra"
-              count={bannedUsers.length}
-            />
+        {mainTab === "security" && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {[
+              {
+                key: "reports",
+                label: "Denúncias",
+                count: segments.pendingReports.length,
+                alert: true,
+              },
+              {
+                key: "comments",
+                label: "Moderação",
+                count: data.flaggedComments.length,
+                alert: true,
+              },
+            ].map((t) => (
+              <SubTab
+                key={t.key}
+                active={subTab === t.key}
+                onClick={() => setSubTab(t.key)}
+                label={t.label}
+                count={t.count}
+                alert={t.alert}
+              />
+            ))}
           </div>
         )}
 
         {/* CONTEÚDO */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-          {activeTab !== "overview" &&
-            activeTab !== "reports" &&
-            activeTab !== "payouts" &&
-            activeTab !== "comments" && (
-              <div className="overflow-x-auto animate-in fade-in duration-500">
-                {searchTerm && (
-                  <div className="bg-emerald-50 text-emerald-700 p-3 text-center text-xs font-black tracking-widest uppercase">
-                    Busca Global Ativada
-                  </div>
-                )}
-                <table className="w-full min-w-[800px]">
-                  <thead className="bg-slate-50 border-b">
-                    <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">
-                      <th className="p-6 text-left">Membro</th>
-                      <th className="p-6 text-left">Status da Conta</th>
-                      <th className="p-6 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredData.map((user: any) => (
-                      <tr
-                        key={user.id}
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setAssignCodeInput("");
-                        }}
-                        className={`hover:bg-slate-50/50 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/20" : ""}`}
-                      >
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${user.isBanned ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"}`}
-                            >
-                              {user.name?.charAt(0) || "U"}
-                            </div>
-                            <div>
-                              <p
-                                className={`font-black uppercase italic ${user.isBanned ? "text-rose-600 line-through" : "text-slate-900"}`}
-                              >
-                                {user.name || "Sem Nome"}
-                              </p>
-                              <p className="text-[10px] text-slate-400 font-bold">
-                                {user.email}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          {user.isBanned ? (
-                            <span className="px-3 py-1 bg-rose-600 text-white rounded-full text-[9px] font-black uppercase italic">
-                              BLACKLIST
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <StatusBadge
-                                expiresAt={user.expiresAt}
-                                role={user.role}
-                                referralCode={user.referralCode}
-                              />
-                            </div>
-                          )}
-                        </td>
-                        <td
-                          className="p-6 text-right"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex justify-end gap-3 items-center">
-                            {user.isBanned ? (
-                              <button
-                                onClick={() => handleUnban(user.id)}
-                                className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg hover:bg-emerald-600 transition-all"
-                                title="Desbanir"
-                              >
-                                <UserCheck size={18} />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setAssignCodeInput("");
-                                }}
-                                className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
-                              >
-                                <Info size={14} /> Raio-X
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredData.length === 0 && (
-                      <EmptyState message="Nenhum registro encontrado nesta categoria." />
-                    )}
-                  </tbody>
-                </table>
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+          {/* OVERVIEW */}
+          {mainTab === "overview" && (
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                  label="Lucro Líquido"
+                  value={formatMoney(data.metricas.faturamentoLiquido)}
+                  icon={<TrendingUp size={18} />}
+                  color="emerald"
+                />
+                <MetricCard
+                  label="Faturamento Bruto"
+                  value={formatMoney(data.metricas.faturamentoBruto)}
+                  icon={<Wallet size={18} />}
+                  color="blue"
+                />
+                <MetricCard
+                  label="Comissões a Pagar"
+                  value={formatMoney(data.metricas.totalComissoesDevidas)}
+                  icon={<Clock size={18} />}
+                  color="amber"
+                />
+                <MetricCard
+                  label="Assinantes Ativos"
+                  value={String(data.metricas.totalPagantes)}
+                  icon={<Users size={18} />}
+                  color="purple"
+                />
               </div>
-            )}
-
-          {activeTab === "overview" && (
-            <div className="p-8 space-y-8 animate-in fade-in duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[2rem]">
-                  <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2 mb-2">
-                    <TrendingUp size={14} /> Lucro Líquido (Sua Parte)
-                  </p>
-                  <h2 className="text-4xl font-black text-emerald-900 tracking-tighter">
-                    {formatMoney(faturamentoLiquido)}
-                  </h2>
-                </div>
-                <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem]">
-                  <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest flex items-center gap-2 mb-2">
-                    <Wallet size={14} /> Comissões a Pagar (MP)
-                  </p>
-                  <h2 className="text-4xl font-black text-rose-900 tracking-tighter">
-                    {formatMoney(totalOwed)}
-                  </h2>
-                </div>
-                <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] text-white">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 mb-2">
-                    <Users size={14} /> Base Pagante
-                  </p>
-                  <h2 className="text-4xl font-black text-emerald-400 tracking-tighter">
-                    {activeSubscribers.length}
-                  </h2>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatBox
+                  label="Vencendo (7d)"
+                  value={segments.expiring.length}
+                  color="amber"
+                />
+                <StatBox
+                  label="Vencidos"
+                  value={segments.expired.length}
+                  color="rose"
+                />
+                <StatBox
+                  label="Leads"
+                  value={segments.visitors.length}
+                  color="blue"
+                />
+                <StatBox
+                  label="Parceiros"
+                  value={segments.affiliates.length}
+                  color="purple"
+                />
               </div>
             </div>
           )}
 
-          {activeTab === "payouts" && (
-            <div className="p-8 space-y-4 animate-in fade-in duration-500">
-              {payouts.map((p: any) => (
-                <div
-                  key={p.id}
-                  className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 hover:bg-white transition-all hover:shadow-md"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center shadow-lg">
-                      <Wallet size={28} />
-                    </div>
-                    <div>
-                      <p className="font-black text-slate-900 uppercase italic text-lg leading-none">
-                        {p.name}
-                      </p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                        PIX: {p.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-8 text-center bg-white px-10 py-5 rounded-[2rem] border shadow-inner">
-                    <div>
-                      <p className="text-[9px] font-black text-slate-300 uppercase">
-                        Vendas Liberadas
-                      </p>
-                      {/* Correção de UI se a API falhar em trazer a quantidade */}
-                      <p className="font-black text-xl text-slate-700">
-                        {p.ativos > 0 ? p.ativos : p.valorDevido > 0 ? "1+" : 0}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black text-slate-300 uppercase">
-                        A Pagar (PIX)
-                      </p>
-                      <p className="font-black text-emerald-600 text-2xl tracking-tighter">
-                        R$ {p.valorDevido.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() =>
-                      handleConfirmPayment(p.id, p.valorDevido, p.name)
-                    }
-                    disabled={isPending}
-                    className="px-8 py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all flex items-center gap-2"
-                  >
-                    {isPending ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <CheckCircle2 size={16} />
-                    )}{" "}
-                    PAGAR VIA PIX
-                  </button>
+          {/* TABELA DE USUÁRIOS */}
+          {mainTab === "users" && subTab !== "payouts" && (
+            <div className="overflow-x-auto">
+              {debouncedSearch && (
+                <div className="bg-emerald-50 text-emerald-700 py-2 text-center text-[10px] font-black tracking-widest uppercase">
+                  Busca global ativa — {filteredUsers.length} resultado(s)
                 </div>
-              ))}
-              {payouts.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 opacity-50">
-                  <ShieldCheck size={48} className="text-slate-300 mb-4" />
-                  <p className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-400">
-                    Nenhum parceiro na fila.
+              )}
+              <table className="w-full min-w-[700px]">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                    <th className="p-5 text-left">Membro</th>
+                    <th className="p-5 text-left">Status</th>
+                    <th className="p-5 text-left">Vencimento</th>
+                    <th className="p-5 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredUsers.map((user) => (
+                    <tr
+                      key={user.id}
+                      onClick={() => setSelectedUser(user)}
+                      className={`hover:bg-slate-50/60 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/30" : ""}`}
+                    >
+                      <td className="p-5">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${user.isBanned ? "bg-rose-100 text-rose-500" : "bg-slate-100 text-slate-500"}`}
+                          >
+                            {user.name?.charAt(0) || "?"}
+                          </div>
+                          <div>
+                            <p
+                              className={`font-black text-sm uppercase ${user.isBanned ? "text-rose-500 line-through" : "text-slate-800"}`}
+                            >
+                              {user.name || "Sem Nome"}
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-5">
+                        <StatusBadge
+                          role={user.role}
+                          expiresAt={user.expiresAt}
+                          isBanned={user.isBanned}
+                        />
+                      </td>
+                      <td className="p-5">
+                        <span className="text-[11px] font-bold text-slate-400">
+                          {user.expiresAt
+                            ? new Date(user.expiresAt).toLocaleDateString(
+                                "pt-BR",
+                              )
+                            : "—"}
+                        </span>
+                      </td>
+                      <td
+                        className="p-5 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {user.isBanned ? (
+                          <button
+                            onClick={() => handleUnban(user.id)}
+                            className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all"
+                            title="Desbanir"
+                          >
+                            <UserCheck size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedUser(user)}
+                            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5"
+                          >
+                            <Info size={13} /> Raio-X
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-16 text-center text-[11px] font-black uppercase text-slate-300 tracking-widest"
+                      >
+                        Nenhum registro encontrado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* PARCEIROS */}
+          {mainTab === "affiliates" && subTab === "affiliates" && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px]">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                    <th className="p-5 text-left">Parceiro</th>
+                    <th className="p-5 text-left">Código</th>
+                    <th className="p-5 text-left">Indicações</th>
+                    <th className="p-5 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {segments.affiliates.map((u) => (
+                    <tr
+                      key={u.id}
+                      onClick={() => setSelectedUser(u)}
+                      className="hover:bg-slate-50/60 cursor-pointer transition-colors"
+                    >
+                      <td className="p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-black text-sm">
+                            {u.name?.charAt(0) || "?"}
+                          </div>
+                          <div>
+                            <p className="font-black text-sm text-slate-800 uppercase">
+                              {u.name}
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              {u.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-5">
+                        <code className="text-[11px] bg-slate-100 px-2 py-1 rounded-lg font-bold">
+                          {u.referralCode || "—"}
+                        </code>
+                      </td>
+                      <td className="p-5">
+                        <span className="text-sm font-black text-slate-700">
+                          {u.referralCount || 0}
+                        </span>
+                      </td>
+                      <td className="p-5 text-right">
+                        <button
+                          onClick={() => setSelectedUser(u)}
+                          className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5 ml-auto"
+                        >
+                          <Info size={13} /> Ver
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {segments.affiliates.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-16 text-center text-[11px] font-black uppercase text-slate-300 tracking-widest"
+                      >
+                        Nenhum parceiro cadastrado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* FILA DE PAGAMENTOS */}
+          {mainTab === "affiliates" && subTab === "payouts" && (
+            <div className="p-6 space-y-4">
+              {payouts.length === 0 ? (
+                <div className="flex flex-col items-center py-20 text-slate-300">
+                  <ShieldCheck size={40} className="mb-3" />
+                  <p className="text-[11px] font-black uppercase tracking-widest">
+                    Nenhum pagamento pendente.
                   </p>
                 </div>
+              ) : (
+                payouts.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex flex-col md:flex-row items-center justify-between gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center">
+                        <Wallet size={22} />
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-800 uppercase">
+                          {p.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">{p.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 bg-white px-6 py-3 rounded-xl border">
+                      <div className="text-center">
+                        <p className="text-[9px] font-black text-slate-300 uppercase">
+                          Vendas
+                        </p>
+                        <p className="font-black text-lg text-slate-700">
+                          {p.ativos || "1+"}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] font-black text-slate-300 uppercase">
+                          A Pagar
+                        </p>
+                        <p className="font-black text-xl text-emerald-600">
+                          {formatMoney(p.valorDevido)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleConfirmPayment(p.id, p.valorDevido, p.name)
+                      }
+                      disabled={isPending}
+                      className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg"
+                    >
+                      {isPending ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <CheckCircle2 size={14} />
+                      )}{" "}
+                      Pagar PIX
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* DENÚNCIAS */}
+          {mainTab === "security" && subTab === "reports" && (
+            <div className="p-6 space-y-4">
+              {segments.pendingReports.length === 0 ? (
+                <div className="flex flex-col items-center py-20 text-slate-300">
+                  <ShieldCheck size={40} className="mb-3" />
+                  <p className="text-[11px] font-black uppercase tracking-widest">
+                    Nenhuma denúncia pendente.
+                  </p>
+                </div>
+              ) : (
+                segments.pendingReports.map((r: any) => (
+                  <div
+                    key={r.id}
+                    className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                  >
+                    <div>
+                      <p className="font-black text-slate-800 uppercase text-sm">
+                        {r.businessDetail?.name ||
+                          r.business?.name ||
+                          "Negócio desconhecido"}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        <span className="font-bold">Motivo:</span> {r.reason}
+                      </p>
+                      {r.details && (
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {r.details}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-slate-300 mt-1">
+                        {new Date(r.createdAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      {r.business?.slug && (
+                        <a
+                          href={`/site/${r.business.slug}`}
+                          target="_blank"
+                          className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 hover:bg-slate-200 transition-all"
+                        >
+                          <ExternalLink size={13} /> Ver
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleResolveReport(r.id)}
+                        disabled={isPending}
+                        className="px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 border border-emerald-100"
+                      >
+                        <CheckCircle2 size={13} /> Resolver
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* MODERAÇÃO DE COMENTÁRIOS */}
+          {mainTab === "security" && subTab === "comments" && (
+            <div className="p-6 space-y-4">
+              {data.flaggedComments.length === 0 ? (
+                <div className="flex flex-col items-center py-20 text-slate-300">
+                  <ShieldCheck size={40} className="mb-3" />
+                  <p className="text-[11px] font-black uppercase tracking-widest">
+                    Nenhum comentário denunciado.
+                  </p>
+                </div>
+              ) : (
+                data.flaggedComments.map((c: any) => (
+                  <div
+                    key={c.id}
+                    className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-white transition-all"
+                  >
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="w-9 h-9 bg-rose-100 text-rose-500 rounded-xl flex items-center justify-center shrink-0">
+                        <MessageSquare size={16} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-700 text-sm">
+                          "{c.content}"
+                        </p>
+                        <div className="flex gap-3 mt-1.5">
+                          <span className="text-[10px] font-bold text-slate-400">
+                            Por: {c.user?.name || "Anônimo"}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-300">
+                            •
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            Em: {c.business?.name}
+                          </span>
+                          {c.business?.slug && (
+                            <a
+                              href={`/site/${c.business.slug}`}
+                              target="_blank"
+                              className="text-[10px] font-bold text-emerald-500 hover:underline flex items-center gap-0.5"
+                            >
+                              <ExternalLink size={10} /> Ver loja
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => handleApproveComment(c.id)}
+                        disabled={isPending}
+                        className="px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all border border-emerald-100 flex items-center gap-1.5"
+                      >
+                        <CheckCircle2 size={13} /> Manter
+                      </button>
+                      <button
+                        onClick={() => handleDeleteComment(c.id)}
+                        disabled={isPending}
+                        className="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center gap-1.5"
+                      >
+                        <Trash2 size={13} /> Apagar
+                      </button>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           )}
         </div>
       </main>
 
-      {/* RAIO-X DO USUÁRIO */}
+      {/* MODAL RAIO-X */}
       {selectedUser && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl overflow-y-auto"
-          onClick={() => {
-            setSelectedUser(null);
-            setAssignCodeInput("");
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto"
+          onClick={closeUser}
         >
           <div
-            className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-8"
+            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-8 bg-slate-50 border-b flex justify-between items-start">
-              <div className="flex items-center gap-6">
+            {/* Cabeçalho */}
+            <div className="p-6 bg-slate-50 border-b flex justify-between items-start">
+              <div className="flex items-center gap-4">
                 <div
-                  className={`w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : isSelectedUserPartner ? "bg-purple-600 text-white" : "bg-slate-900 text-white"}`}
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : selectedUser.role === "AFILIADO" ? "bg-purple-600 text-white" : "bg-slate-900 text-white"}`}
                 >
                   {selectedUser.isBanned ? (
-                    <UserX size={48} />
-                  ) : isSelectedUserPartner ? (
-                    <Star size={48} />
+                    <UserX size={32} />
+                  ) : selectedUser.role === "AFILIADO" ? (
+                    <Star size={32} />
                   ) : (
-                    <User size={48} />
+                    <User size={32} />
                   )}
                 </div>
                 <div>
-                  <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter leading-none mb-2">
+                  <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">
                     {selectedUser.name}
                   </h2>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                      <Mail size={12} /> {selectedUser.email}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <Mail size={11} /> {selectedUser.email}
                     </span>
-                    <span className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                      <CreditCard size={12} /> CPF:{" "}
+                    <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <CreditCard size={11} /> CPF:{" "}
                       {selectedUser.document || "N/A"}
                     </span>
-                    {isSelectedUserPartner && (
-                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl border border-purple-200 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                        CONTA PARCEIRO
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setSelectedUser(null);
-                  setAssignCodeInput("");
-                }}
-                className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                onClick={closeUser}
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
-            <div className="p-8 space-y-8 bg-white">
-              {/* 🚀 VISÃO AFILIADO / PARCEIRO */}
-              {isSelectedUserPartner ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <TrendingUp size={120} />
-                      </div>
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-6 flex items-center gap-2">
-                        <Star size={14} /> Vendas Não Pagas
-                      </h3>
-                      <div className="grid grid-cols-2 gap-6 relative z-10">
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase">
-                            Quantidade
-                          </p>
-                          <p className="text-4xl font-black">
-                            {getSelectedUserAffiliateData()?.ativos || 0}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase">
-                            Saldo Restante
-                          </p>
-                          <p className="text-4xl font-black text-emerald-400">
-                            R${" "}
-                            {getSelectedUserAffiliateData()?.valorDevido.toFixed(
-                              2,
-                            ) || "0.00"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center">
-                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
-                        Link Oficial
-                      </h3>
-                      <div className="flex items-center gap-2 mb-6">
-                        <p className="flex-1 font-mono text-slate-600 bg-white px-4 py-3 rounded-xl border border-slate-200 text-xs truncate">
-                          tafanu.app/?ref={selectedUser.referralCode}
-                        </p>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(
-                              `tafanu.app/?ref=${selectedUser.referralCode}`,
-                            );
-                            toast.success("Copiado!");
-                          }}
-                          className="p-3 bg-slate-900 text-white rounded-xl hover:bg-emerald-500 transition-all"
-                        >
-                          <LinkIcon size={16} />
-                        </button>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleBan(selectedUser.id, selectedUser.name)
-                          }
-                          className="px-4 py-3 flex-1 bg-rose-50 text-rose-600 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2 border border-rose-100"
-                        >
-                          <Gavel size={14} /> Banir Conta
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 🚀 EXTRATO */}
-                  <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
-                    <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-6 flex items-center gap-2">
-                      <ReceiptText size={16} /> Extrato de Pagamentos (Já Pagos
-                      via PIX)
-                    </h3>
-                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2 no-scrollbar">
-                      {getSelectedUserPaidCommissions().length === 0 ? (
-                        <p className="text-xs font-bold text-slate-400 italic text-center py-6">
-                          Nenhum pagamento registrado no histórico deste
-                          parceiro ainda.
-                        </p>
-                      ) : (
-                        getSelectedUserPaidCommissions().map(
-                          (c: any, index: number) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white transition-all"
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl">
-                                  <CheckCircle2 size={18} />
-                                </div>
-                                <div>
-                                  <p className="font-black text-slate-800 text-sm uppercase">
-                                    {c.description || "Comissão de Venda"}
-                                  </p>
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                                    {new Date(
-                                      c.releaseDate || c.createdAt,
-                                    ).toLocaleDateString("pt-BR")}{" "}
-                                    • STATUS: PAGO
-                                  </p>
-                                </div>
-                              </div>
-                              <p className="font-black text-emerald-600 text-lg">
-                                R$ {c.amount?.toFixed(2)}
-                              </p>
-                            </div>
-                          ),
+            <div className="p-6 space-y-6">
+              {/* Status e vencimento */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-2">
+                    Status
+                  </p>
+                  <StatusBadge
+                    role={selectedUser.role}
+                    expiresAt={selectedUser.expiresAt}
+                    isBanned={selectedUser.isBanned}
+                  />
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-2">
+                    Vencimento
+                  </p>
+                  <p className="font-black text-slate-800">
+                    {selectedUser.expiresAt
+                      ? new Date(selectedUser.expiresAt).toLocaleDateString(
+                          "pt-BR",
                         )
-                      )}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                /* VISÃO CLIENTES NORMAIS */
-                <>
-                  <div className="bg-slate-100/50 border border-slate-100 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-200 text-slate-500 rounded-xl">
-                        <Users size={16} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                          Origem da Venda
-                        </p>
-                        <p className="text-sm font-bold text-slate-700">
-                          {selectedUser.referredBy || "Orgânico (Sem Afiliado)"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
-                      <input
-                        type="text"
-                        placeholder="Código Parceiro"
-                        value={assignCodeInput}
-                        onChange={(e) =>
-                          setAssignCodeInput(
-                            e.target.value.toUpperCase().replace(/\s/g, "-"),
-                          )
-                        }
-                        className="bg-transparent border-none outline-none text-xs font-bold px-2 w-32 uppercase"
-                      />
-                      <button
-                        onClick={handleAssignAffiliate}
-                        disabled={isPending}
-                        className="bg-slate-900 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-2"
-                      >
-                        {isPending ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <Link2 size={12} />
-                        )}{" "}
-                        Vincular
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm">
-                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">
-                        Status da Assinatura
-                      </h3>
-                      <div className="flex items-center gap-3 mb-4">
-                        <StatusBadge
-                          expiresAt={selectedUser.expiresAt}
-                          role={selectedUser.role}
-                        />
-                      </div>
-                      {selectedUser.expiresAt && (
-                        <p className="text-sm font-medium text-slate-500">
-                          Vencimento:{" "}
-                          <span className="font-black text-lg text-slate-900 ml-2">
-                            {new Date(
-                              selectedUser.expiresAt,
-                            ).toLocaleDateString("pt-BR")}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="bg-slate-50 border border-slate-200 p-6 rounded-[2rem] flex flex-col justify-center gap-3 relative">
-                      {isPending && (
-                        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-[2rem] flex items-center justify-center z-10">
-                          <Loader2 className="animate-spin text-emerald-500" />
-                        </div>
-                      )}
-                      <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
-                        Gerenciamento
-                      </h3>
-                      {!selectedUser.isBanned &&
-                      selectedUser.role !== "ADMIN" ? (
-                        <>
-                          <div className="flex flex-wrap gap-2">
-                            <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-fit">
-                              <button
-                                onClick={(e) =>
-                                  handleAddMonths(e, selectedUser.id, -1)
-                                }
-                                className="px-3 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-r border-slate-100 font-bold text-xs"
-                              >
-                                - 1 Mês
-                              </button>
-                              <button
-                                onClick={(e) =>
-                                  handleAddExactDays(e, selectedUser.id, -1)
-                                }
-                                className="px-3 py-3 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border-r border-slate-100 font-bold text-xs"
-                              >
-                                - 1 Dia
-                              </button>
-                              <button
-                                onClick={(e) =>
-                                  handleAddExactDays(e, selectedUser.id, 1)
-                                }
-                                className="px-3 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 border-r border-slate-100 font-bold text-xs"
-                              >
-                                + 1 Dia
-                              </button>
-                              <button
-                                onClick={(e) =>
-                                  handleAddMonths(e, selectedUser.id, 1)
-                                }
-                                className="px-3 py-3 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 font-bold text-xs"
-                              >
-                                + 1 Mês
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <button
-                              onClick={() => setPromotingUser(selectedUser)}
-                              className="px-4 py-2 bg-amber-100 text-amber-700 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2 shadow-sm"
-                            >
-                              <Award size={14} /> Promover Parceiro
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-xs font-bold text-slate-400">
-                          Ações de admin restritas.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* LOJAS DO USUÁRIO */}
-              <div className="pt-4 border-t border-slate-100">
-                <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mb-4 flex items-center gap-2">
-                  <Store size={14} /> Lojas (
-                  {selectedUser.businesses?.length || 0})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedUser.businesses?.length === 0 && (
-                    <p className="text-xs font-bold text-slate-400 italic">
-                      Nenhuma loja criada.
-                    </p>
-                  )}
-                  {selectedUser.businesses?.map((biz: any) => (
-                    <div
-                      key={biz.id}
-                      className="flex flex-col p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all shadow-sm gap-4 relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-slate-200 to-transparent opacity-20 rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <p className="font-black text-slate-900 italic uppercase text-lg">
-                          {biz.name}
-                        </p>
-                        <a
-                          href={`/site/${biz.slug}`}
-                          target="_blank"
-                          className="text-[10px] font-bold text-emerald-500 hover:underline flex items-center gap-1 mt-1"
-                        >
-                          <ExternalLink size={12} /> tafanu.app/site/{biz.slug}
-                        </a>
-                      </div>
-                      <button
-                        onClick={() =>
-                          router.push(
-                            `/dashboard/editar/${biz.slug}?adminMode=true`,
-                          )
-                        }
-                        className="px-5 py-3 w-full bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all shadow-md flex items-center justify-center gap-2"
-                      >
-                        <LayoutGrid size={14} /> Editar Anúncio
-                      </button>
-                    </div>
-                  ))}
+                      : "—"}
+                  </p>
                 </div>
               </div>
+
+              {/* Origem */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Origem da Venda
+                  </p>
+                  <p className="text-sm font-bold text-slate-700">
+                    {selectedUser.referredBy || "Orgânico"}
+                  </p>
+                </div>
+                {!selectedUser.affiliateId && (
+                  <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-full md:w-auto">
+                    <input
+                      type="text"
+                      placeholder="Código parceiro"
+                      value={assignCodeInput}
+                      onChange={(e) =>
+                        setAssignCodeInput(
+                          e.target.value.toUpperCase().replace(/\s/g, "-"),
+                        )
+                      }
+                      className="bg-transparent border-none outline-none text-xs font-bold px-2 w-28 uppercase"
+                    />
+                    <button
+                      onClick={handleAssignAffiliate}
+                      disabled={isPending}
+                      className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-1.5"
+                    >
+                      {isPending ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : (
+                        <Link2 size={11} />
+                      )}{" "}
+                      Vincular
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Gerenciamento de tempo */}
+              {!selectedUser.isBanned && selectedUser.role !== "ADMIN" && (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3">
+                    Gerenciar Acesso
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      {
+                        label: "−1 mês",
+                        action: (e: any) =>
+                          handleAddTime(e, selectedUser.id, -1),
+                        danger: true,
+                      },
+                      {
+                        label: "−1 dia",
+                        action: (e: any) =>
+                          handleAddDays(e, selectedUser.id, -1),
+                        danger: true,
+                      },
+                      {
+                        label: "+1 dia",
+                        action: (e: any) =>
+                          handleAddDays(e, selectedUser.id, 1),
+                      },
+                      {
+                        label: "+1 mês",
+                        action: (e: any) =>
+                          handleAddTime(e, selectedUser.id, 1),
+                      },
+                      {
+                        label: "+3 meses",
+                        action: (e: any) =>
+                          handleAddTime(e, selectedUser.id, 3),
+                      },
+                    ].map((btn) => (
+                      <button
+                        key={btn.label}
+                        onClick={btn.action}
+                        disabled={isPending}
+                        className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase transition-all border ${btn.danger ? "bg-white text-rose-500 border-rose-100 hover:bg-rose-500 hover:text-white" : "bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-500 hover:text-white"}`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => setPromotingUser(selectedUser)}
+                      className="px-3 py-2 bg-amber-50 text-amber-600 rounded-xl text-[11px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all border border-amber-100 flex items-center gap-1.5"
+                    >
+                      <Award size={13} /> Promover Parceiro
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleBan(selectedUser.id, selectedUser.name)
+                      }
+                      className="px-3 py-2 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center gap-1.5"
+                    >
+                      <Gavel size={13} /> Banir
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lojas */}
+              {selectedUser.businesses?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
+                    <Store size={13} /> Lojas ({selectedUser.businesses.length})
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedUser.businesses.map((biz: any) => (
+                      <div
+                        key={biz.id}
+                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-black text-slate-800 text-sm uppercase">
+                            {biz.name}
+                          </p>
+                          <a
+                            href={`/site/${biz.slug}`}
+                            target="_blank"
+                            className="text-[10px] text-emerald-500 font-bold hover:underline flex items-center gap-1 mt-0.5"
+                          >
+                            <ExternalLink size={10} /> /site/{biz.slug}
+                          </a>
+                        </div>
+                        <a
+                          href={`/dashboard/editar/${biz.slug}`}
+                          className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all"
+                        >
+                          Editar
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL PROMOÇÃO */}
+      {/* MODAL PROMOVER PARCEIRO */}
       {promotingUser && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
           onClick={() => setPromotingUser(null)}
         >
           <div
-            className="bg-white w-full max-w-md rounded-[3rem] p-10 animate-in zoom-in-95 shadow-2xl"
+            className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-amber-500 shadow-inner">
-                <Award size={48} />
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-500">
+                <Award size={36} />
               </div>
-              <h2 className="text-2xl font-black uppercase italic tracking-tighter">
-                Novo Parceiro VIP
+              <h2 className="text-xl font-black uppercase italic">
+                Novo Parceiro
               </h2>
-              <p className="text-xs font-bold text-slate-400 mt-2">
-                Personalize o código para {promotingUser.name}
+              <p className="text-xs text-slate-400 mt-1">
+                Código para {promotingUser.name?.split(" ")[0]}
               </p>
             </div>
-            <div className="space-y-6">
-              <input
-                type="text"
-                placeholder="EX: NOME-SAO-PAULO"
-                className="w-full px-6 py-5 bg-slate-50 rounded-2xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center text-lg tracking-widest"
-                value={referralCodeInput}
-                onChange={(e) =>
-                  setReferralCodeInput(
-                    e.target.value.toUpperCase().replace(/\s/g, "-"),
-                  )
-                }
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setPromotingUser(null)}
-                  className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest"
-                >
-                  Abortar
-                </button>
-                <button
-                  onClick={handlePromote}
-                  disabled={isPending}
-                  className="flex-[2] py-5 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-amber-100"
-                >
-                  {isPending ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    "ATIVAR AFILIADO"
-                  )}
-                </button>
-              </div>
+            <input
+              type="text"
+              placeholder="EX: JOAO-SP"
+              className="w-full px-4 py-4 bg-slate-50 rounded-xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center tracking-widest mb-4"
+              value={referralCodeInput}
+              onChange={(e) =>
+                setReferralCodeInput(
+                  e.target.value.toUpperCase().replace(/\s/g, "-"),
+                )
+              }
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPromotingUser(null)}
+                className="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[11px] font-black uppercase"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handlePromote}
+                disabled={isPending}
+                className="flex-[2] py-3 bg-amber-500 text-white rounded-xl text-[11px] font-black uppercase flex items-center justify-center gap-2 shadow-lg"
+              >
+                {isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  "Ativar"
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -1268,34 +1239,84 @@ export default function AdminDashboard({
   );
 }
 
-function TabButton({ active, onClick, label, icon, count, alertMode }: any) {
+// --- COMPONENTES AUXILIARES ---
+function MetricCard({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: any;
+  color: string;
+}) {
+  const colors: Record<string, string> = {
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    purple: "bg-purple-50 text-purple-600 border-purple-100",
+  };
   return (
-    <button
-      onClick={onClick}
-      className={`relative flex items-center gap-2 px-6 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${active ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:bg-slate-50"}`}
-    >
-      {icon} {label}
-      {count !== undefined && (
-        <span
-          className={`ml-2 px-2.5 py-0.5 rounded-full text-[9px] ${active ? (alertMode ? "bg-rose-500 text-white" : "bg-emerald-500 text-white") : alertMode ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"}`}
-        >
-          {count}
+    <div className={`p-5 rounded-2xl border ${colors[color]}`}>
+      <div className="flex items-center gap-2 mb-3 opacity-70">
+        {icon}
+        <span className="text-[10px] font-black uppercase tracking-widest">
+          {label}
         </span>
-      )}
-    </button>
+      </div>
+      <p className="text-2xl font-black tracking-tighter">{value}</p>
+    </div>
   );
 }
 
-function SubTabButton({ active, onClick, label, count, alertMode }: any) {
+function StatBox({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  const colors: Record<string, string> = {
+    amber: "text-amber-600",
+    rose: "text-rose-600",
+    blue: "text-blue-600",
+    purple: "text-purple-600",
+  };
+  return (
+    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+      <p className={`text-2xl font-black ${colors[color]}`}>{value}</p>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function SubTab({
+  active,
+  onClick,
+  label,
+  count,
+  alert,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+  alert?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border ${active ? (alertMode ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm" : "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm") : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50"}`}
+      className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 border ${active ? (alert ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-emerald-50 border-emerald-200 text-emerald-700") : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50"}`}
     >
       {label}
       {count !== undefined && (
         <span
-          className={`px-2 py-0.5 rounded-full text-[9px] ${active ? (alertMode ? "bg-rose-200" : "bg-emerald-200") : "bg-slate-100"}`}
+          className={`px-2 py-0.5 rounded-full text-[9px] ${active ? (alert ? "bg-rose-200" : "bg-emerald-200") : "bg-slate-100"}`}
         >
           {count}
         </span>
@@ -1304,53 +1325,61 @@ function SubTabButton({ active, onClick, label, count, alertMode }: any) {
   );
 }
 
-function StatusBadge({ expiresAt, role, referralCode }: any) {
-  if (role === "AFILIADO" || !!referralCode)
+function StatusBadge({
+  role,
+  expiresAt,
+  isBanned,
+}: {
+  role: string;
+  expiresAt?: string;
+  isBanned?: boolean;
+}) {
+  if (isBanned)
     return (
-      <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[9px] font-black uppercase italic border border-purple-100">
+      <span className="px-2.5 py-1 bg-rose-600 text-white rounded-full text-[9px] font-black uppercase">
+        Banido
+      </span>
+    );
+  if (role === "ADMIN")
+    return (
+      <span className="px-2.5 py-1 bg-slate-900 text-white rounded-full text-[9px] font-black uppercase">
+        Admin
+      </span>
+    );
+  if (role === "AFILIADO")
+    return (
+      <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-[9px] font-black uppercase border border-purple-200">
         Parceiro
       </span>
     );
   if (role === "VISITANTE")
     return (
-      <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase italic border border-blue-100">
+      <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase border border-blue-100">
         Lead
       </span>
     );
-  const diff = expiresAt
-    ? (new Date(expiresAt).getTime() - new Date().getTime()) /
-      (1000 * 60 * 60 * 24)
-    : null;
-  if (diff === null)
+  if (!expiresAt)
     return (
-      <span className="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-[9px] font-black uppercase italic">
-        Vitalício
+      <span className="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase">
+        Sem data
       </span>
     );
+  const diff = (new Date(expiresAt).getTime() - Date.now()) / 86400000;
   if (diff < 0)
     return (
-      <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[9px] font-black uppercase italic border border-rose-100">
+      <span className="px-2.5 py-1 bg-rose-50 text-rose-600 rounded-full text-[9px] font-black uppercase border border-rose-100">
         Vencido
       </span>
     );
+  if (diff <= 7)
+    return (
+      <span className="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase border border-amber-100">
+        Vence em {Math.ceil(diff)}d
+      </span>
+    );
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-[9px] font-black uppercase italic border ${diff < 7 ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}
-    >
+    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase border border-emerald-100">
       Ativo {Math.ceil(diff)}d
     </span>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <tr>
-      <td
-        colSpan={3}
-        className="py-20 text-center opacity-40 font-black uppercase tracking-[0.3em] text-[10px] italic"
-      >
-        {message}
-      </td>
-    </tr>
   );
 }
