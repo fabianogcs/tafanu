@@ -298,74 +298,101 @@ export default function UrbanLayout({
     >
       <div className="hidden md:block fixed inset-0 pointer-events-none z-[10] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      <header className="relative pt-20 md:pt-32 pb-0 flex flex-col items-center justify-center overflow-hidden w-full px-4 border-b border-white/10">
-        {/* Pílula de Ações (Fixo e Estável) */}
+      {/* --- HEADER URBANO: CONCEITO "THE POSTER" --- */}
+      <header className="relative pt-24 md:pt-32 pb-12 w-full px-4 md:px-6 flex flex-col items-center justify-center">
+        {/* Grid Background Geral */}
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, white 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
 
-        <div className="absolute top-4 right-4 z-10">
-          <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-xl">
-            <button
-              onClick={() => handleShare(business.name)}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all text-slate-700"
-            >
-              <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-            </button>
-
-            <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
-
-            <FavoriteButton
-              businessId={business.id}
-              isLoggedIn={isLoggedIn}
-              initialIsFavorited={isFavorited}
-              emailVerified={emailVerified}
-            />
-          </div>
-        </div>
-
-        <div className="relative z-20 w-full max-w-7xl mx-auto text-center flex flex-col items-center">
-          {business.imageUrl && (
-            <div className="w-24 h-24 md:w-36 md:h-36 mb-4 md:mb-6 relative">
-              <div
-                className={`w-full h-full border border-white/10 overflow-hidden ${radius} ${shadow} bg-black`}
+        <div className="w-full max-w-6xl relative z-20">
+          {/* Pílula de Ações (Agora ancorada no topo do Pôster) */}
+          <div className="absolute -top-14 right-0 md:-top-16 z-30">
+            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md p-1.5 rounded-full border border-white/20 shadow-xl">
+              <button
+                onClick={() => handleShare(business.name)}
+                className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center hover:bg-white/20 rounded-full transition-all text-white"
               >
-                <img
-                  src={business.imageUrl}
-                  loading="eager"
-                  decoding="async"
-                  className="w-full h-full object-cover"
-                  alt="Logo"
-                />
-              </div>
+                <Share2 className="w-[18px] h-[18px]" />
+              </button>
+              <div className="w-[1px] h-4 bg-white/20 mx-1" />
+              <FavoriteButton
+                businessId={business.id}
+                isLoggedIn={isLoggedIn}
+                initialIsFavorited={isFavorited}
+                emailVerified={emailVerified}
+              />
             </div>
-          )}
+          </div>
 
-          <div className="py-8 flex items-center justify-center w-full">
-            <h1
-              className={`font-black uppercase italic tracking-tight ${theme.textColor} break-words px-2 text-[clamp(2.5rem,10vw,6rem)] leading-[0.9] -skew-x-[3deg] drop-shadow-[2px_2px_0px_rgba(0,0,0,0.1)]`}
-            >
-              {business.name}
-            </h1>
+          {/* O PÔSTER (Onde a mágica acontece) */}
+          <div
+            className={`relative w-full ${glassEffect} border border-white/10 ${radius} overflow-hidden shadow-2xl`}
+          >
+            {/* Faixa de cor no topo do pôster para dar identidade */}
+            <div className={`h-2 w-full ${theme.primary} opacity-80`} />
+
+            <div className="px-6 py-16 md:p-20 flex flex-col items-center text-center relative overflow-hidden">
+              {/* NOME MARCA D'ÁGUA (Preenche o vazio do fundo) */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] select-none pointer-events-none overflow-hidden">
+                <span className="text-[20vw] font-black uppercase whitespace-nowrap leading-none italic -skew-x-[6deg]">
+                  {business.name}
+                </span>
+              </div>
+
+              {/* LOGO */}
+              {business.imageUrl && (
+                <div className="relative z-10 w-28 h-28 md:w-40 md:h-40 mb-8">
+                  <div
+                    className={`w-full h-full border-4 border-white/10 overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-black`}
+                  >
+                    <img
+                      src={business.imageUrl}
+                      className="w-full h-full object-cover"
+                      alt="Logo"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* NOME DA EMPRESA */}
+              <h1
+                className={`relative z-10 font-black uppercase italic tracking-tighter ${theme.textColor} break-words text-[clamp(2.5rem,9vw,6.5rem)] leading-[0.85] -skew-x-[6deg] drop-shadow-2xl mb-8 md:mb-12`}
+              >
+                {business.name}
+              </h1>
+
+              {/* TAG URBANA (BLOCO PESADO ANIMADO) */}
+              {business.urban_tag && (
+                <motion.div
+                  initial={{
+                    y: 20,
+                    opacity: 0,
+                    clipPath: "polygon(0 0, 0 0, 0 100%, 0% 100%)",
+                  }}
+                  animate={{
+                    y: 0,
+                    opacity: 1,
+                    clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+                  }}
+                  transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                  className="relative z-10"
+                >
+                  <div
+                    className={`px-8 py-3 md:px-12 md:py-4 ${theme.bgAction} font-black uppercase italic tracking-[0.3em] text-sm md:text-xl -skew-x-[8deg] shadow-[8px_8px_0px_rgba(0,0,0,0.5)] md:shadow-[12px_12px_0px_rgba(0,0,0,0.5)] border border-white/20 text-black`}
+                  >
+                    {business.urban_tag}
+                  </div>
+                </motion.div>
+              )}
+            </div>
           </div>
         </div>
-
-        {business.urban_tag && (
-          <div
-            className={`relative mt-12 w-full overflow-hidden ${glassEffect} py-3 border-y border-white/10`}
-          >
-            <div className="inline-block animate-marquee whitespace-nowrap">
-              {Array(8)
-                .fill(null)
-
-                .map((_, i) => (
-                  <span
-                    key={i}
-                    className={`text-2xl md:text-5xl font-black uppercase italic mx-12 opacity-80 ${theme.primary}`}
-                  >
-                    {business.urban_tag} ///
-                  </span>
-                ))}
-            </div>
-          </div>
-        )}
       </header>
 
       <main className="container mx-auto px-4 md:px-6 relative z-30 space-y-20 md:space-y-32 pb-24 mt-10 md:mt-20">
@@ -853,33 +880,13 @@ export default function UrbanLayout({
       </AnimatePresence>
 
       <style jsx global>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0);
-          }
-
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
-        .animate-marquee {
-          display: inline-block;
-        }
-
-        @media (min-width: 768px) {
-          .animate-marquee {
-            animation: marquee 30s linear infinite;
-          }
-        }
-
+        /* Remove a barra de rolagem visual, mas mantém a função de scroll */
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
 
         .no-scrollbar {
           -ms-overflow-style: none;
-
           scrollbar-width: none;
         }
       `}</style>
