@@ -245,10 +245,15 @@ export default function BusinessEditor({
       socials.shein !== (safeBusiness.shein || "") ||
       socials.website !== (safeBusiness.website || "");
 
+    // 🛡️ Agora o radar vigia o endereço COMPLETO vindo do CEP
     const isAddressDifferent =
       addressData.cep !== (safeBusiness.cep || "") ||
+      addressData.address !== (safeBusiness.address || "") ||
+      addressData.neighborhood !== (safeBusiness.neighborhood || "") ||
+      addressData.city !== (safeBusiness.city || "") ||
+      addressData.state !== (safeBusiness.state || "") ||
       addressData.number !== (safeBusiness.number || "") ||
-      addressData.complement !== (safeBusiness.complement || ""); // 🚀 Adicionado ao Radar!
+      addressData.complement !== (safeBusiness.complement || "");
 
     return (
       isBasicDifferent ||
@@ -375,8 +380,6 @@ export default function BusinessEditor({
     setIsLoading(true);
 
     try {
-      const fullAddress = `${addressData.address}${addressData.number ? ", " + addressData.number : ""}${addressData.complement ? " - " + addressData.complement : ""}${addressData.neighborhood ? " - " + addressData.neighborhood : ""}${addressData.city ? " - " + addressData.city : ""}${addressData.cep ? " - CEP " + addressData.cep : ""}`;
-
       const payload: any = {
         slug,
         name,
@@ -392,13 +395,13 @@ export default function BusinessEditor({
         showroom_collection: layoutText,
         comercial_badge: layoutText,
         features: features.filter((f) => f.trim() !== ""),
-        address: fullAddress,
-        cep: addressData.cep,
+        address: addressData.address, // APENAS a rua
+        cep: addressData.cep, // APENAS o cep
         city: addressData.city,
         state: addressData.state,
         neighborhood: addressData.neighborhood,
-        number: addressData.number, // 🚀 Coluna separada para o BD
-        complement: addressData.complement, // 🚀 Coluna separada para o BD
+        number: addressData.number, // Enviando para a coluna separada
+        complement: addressData.complement, // Enviando para a coluna separada
         whatsapp: onlyNumbers(whatsapp),
         phone: onlyNumbers(phone),
         instagram: socials.instagram

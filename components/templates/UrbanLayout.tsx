@@ -185,7 +185,13 @@ export default function UrbanLayout({
 
   const glassEffect = "bg-white/5 md:backdrop-blur-md";
 
-  const safeAddress = fullAddress || business?.address || "";
+  const addressBase = business?.address || "";
+  const hasNumberInAddress =
+    business?.number && addressBase.includes(business.number);
+
+  const safeAddress =
+    fullAddress ||
+    `${addressBase}${!hasNumberInAddress && business?.number ? `, ${business.number}` : ""} ${business?.complement || ""}`;
 
   const gallery = Array.isArray(business.gallery)
     ? business.gallery.filter(Boolean)
@@ -721,11 +727,22 @@ export default function UrbanLayout({
                   <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
                     Location
                   </p>
-                  <p className="text-base md:text-lg font-bold italic uppercase tracking-wide">
-                    {business.address?.split("-").slice(0, 2).join(" - ")}
+                  <p className="text-base md:text-lg font-bold italic uppercase tracking-wide leading-tight">
+                    {/* Mostra o endereço e só adiciona o número se ele já não estiver lá */}
+                    {business.address}
+                    {business.number &&
+                      !business.address?.includes(business.number) &&
+                      `, ${business.number}`}
+
+                    {/* Complemento sempre em linha separada e discreta */}
+                    {business.complement && (
+                      <span className="block text-xs md:text-sm opacity-70 not-italic font-medium mt-1">
+                        {business.complement}
+                      </span>
+                    )}
                   </p>
                   <p className="text-[10px] md:text-xs opacity-40 uppercase tracking-widest mt-1">
-                    {business.city} — {business.state}
+                    {business.neighborhood} • {business.city} — {business.state}
                   </p>
                 </div>
               </a>

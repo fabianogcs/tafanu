@@ -114,7 +114,7 @@ export function IdentitySection({
 
         <div className="mb-8 px-4 py-2 bg-indigo-50/50 border border-indigo-100 rounded-full">
           <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-indigo-500">
-            💡 Clique na bola para enviar (MÁX: 4MB)
+            💡 Clique na bola para enviar (MÁX: 6MB)
           </p>
         </div>
 

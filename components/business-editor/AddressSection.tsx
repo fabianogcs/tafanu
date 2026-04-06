@@ -112,6 +112,7 @@ export function AddressSection({
         {/* LINHA 1: CEP, Logradouro, Número */}
         <div className="relative">
           <input
+            name="cep"
             value={addressData.cep}
             onChange={(e) =>
               setAddressData((prev) => ({ ...prev, cep: e.target.value }))
@@ -128,6 +129,7 @@ export function AddressSection({
         </div>
 
         <input
+          name="address"
           value={addressData.address}
           readOnly
           className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
@@ -135,6 +137,7 @@ export function AddressSection({
         />
 
         <input
+          name="number"
           ref={numberInputRef}
           value={addressData.number}
           onChange={(e) =>
@@ -146,6 +149,7 @@ export function AddressSection({
 
         {/* LINHA 2: Complemento, Bairro, Cidade, UF */}
         <input
+          name="complement"
           value={addressData.complement}
           onChange={(e) =>
             setAddressData((prev) => ({ ...prev, complement: e.target.value }))
@@ -156,6 +160,7 @@ export function AddressSection({
 
         {/* ATUALIZAÇÃO: Removido o md:col-span-2 do Bairro para caberem 4 itens nesta linha */}
         <input
+          name="neighborhood"
           value={addressData.neighborhood}
           readOnly
           className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
@@ -163,6 +168,7 @@ export function AddressSection({
         />
 
         <input
+          name="city"
           value={addressData.city}
           readOnly
           className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
@@ -170,6 +176,7 @@ export function AddressSection({
         />
 
         <input
+          name="state"
           value={addressData.state}
           readOnly
           className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"

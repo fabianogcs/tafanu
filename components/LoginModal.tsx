@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom"; // ⬅️ IMPORTAMOS O PORTAL AQUI
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -21,15 +21,16 @@ import {
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { getSession } from "next-auth/react";
 
+// 🛡️ DEFINIÇÃO DE TIPOS (Igual ao seu Prisma)
+type UserRole = "VISITANTE" | "CLIENTE" | "ADMIN" | "AFILIADO" | "ASSINANTE";
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  // ⬅️ NOVO ESTADO: Garante que o Portal só renderize no navegador (evita erro no Next.js)
   const [mounted, setMounted] = useState(false);
-
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -43,20 +44,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const currentUrl =
     pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
 
-  // 🛡️ Função inteligente para decidir o roteamento com base no cargo
-  const getDestination = (role?: string) => {
+  // 🛡️ Função com tipagem forte para evitar erros no build
+  const getDestination = (role?: UserRole) => {
     if (role === "ADMIN" || role === "ASSINANTE" || role === "AFILIADO")
       return "/dashboard";
-    return "/"; // VISITANTE vai para a home
+    return "/";
   };
 
   useEffect(() => {
-    setMounted(true); // ⬅️ Avisa que o componente carregou no navegador
+    setMounted(true);
     const savedRef = localStorage.getItem("tafanu_affiliate_ref");
     if (savedRef) setAffiliateCode(savedRef);
   }, []);
 
-  // Se não estiver aberto ou não tiver carregado no navegador, não mostra nada
   if (!isOpen || !mounted) return null;
 
   async function handleResendEmail() {
@@ -95,8 +95,13 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         setIsLoading(false);
       } else {
         toast.success("Login realizado com sucesso!");
+
         const session = await getSession();
-        const role = session?.user?.role as string | undefined;
+        // 🛡️ Aplicando a tipagem correta aqui
+        const role = session?.user?.role as UserRole | undefined;
+
+        setIsLoading(false);
+        onClose(); // ⬅️ FECHA O MODAL ANTES DE SAIR
         window.location.assign(getDestination(role));
       }
     } else {
@@ -112,7 +117,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         const loginResult = await loginUser(formData);
 
         if (loginResult?.error) {
-          toast.success("Conta criada! Verifique seu e-mail para ativar.");
+          toast.success("Conta criada! Verifique seu e-mail.");
           setIsLogin(true);
           setLoginError("Verifique sua caixa de entrada para ativar a conta.");
           setShowResend(true);
@@ -121,17 +126,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         } else {
           toast.success("Conta criada com sucesso!");
           const session = await getSession();
-          const role = session?.user?.role as string | undefined;
+          const role = session?.user?.role as UserRole | undefined;
+
+          setIsLoading(false);
+          onClose(); // ⬅️ FECHA O MODAL ANTES DE SAIR
           window.location.assign(getDestination(role));
         }
       }
     }
   }
 
-  // 🚀 MÁGICA DO PORTAL: Envia o HTML lá para a raiz do <body>
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Clica fora para fechar */}
       <div className="absolute inset-0" onClick={onClose}></div>
 
       <div
@@ -156,7 +162,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </p>
         </div>
 
-        {/* --- ALERTA DE E-MAIL --- */}
         {loginError && (
           <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-2xl flex flex-col gap-3">
             <div className="flex items-center gap-3">
@@ -195,7 +200,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
           {!isLogin && (
             <div className="space-y-1">
-              {/* 🚀 AULA DE ACESSIBILIDADE: Label invisível visualmente, mas visível para robôs/leitores */}
               <label htmlFor="modal-name" className="sr-only">
                 Nome Completo
               </label>
@@ -225,14 +229,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <Mail size={18} />
               </div>
               <input
-                id="modal-email" // (ou "email" na page.tsx)
+                id="modal-email"
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
-                inputMode="email" // ⬅️ Teclado otimizado
-                autoCapitalize="none" // ⬅️ Sem maiúscula chata
-                autoCorrect="off" // ⬅️ Sem corretor intrometido
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
                 placeholder="E-mail Profissional"
                 className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
               />
@@ -299,6 +303,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         <GoogleLoginButton redirectTo={currentUrl} />
       </div>
     </div>,
-    document.body, // ⬅️ O destino do Portal!
+    document.body,
   );
 }
