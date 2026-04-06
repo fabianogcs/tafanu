@@ -174,7 +174,7 @@ export default function BusinessEditor({
   );
 
   const [addressData, setAddressData] = useState({
-    address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
+    address: safeBusiness.address || "",
     cep: safeBusiness.cep || "",
     neighborhood: safeBusiness.neighborhood || "",
     city: safeBusiness.city || "",
@@ -335,7 +335,7 @@ export default function BusinessEditor({
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
 
       setAddressData({
-        address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
+        address: safeBusiness.address || "",
         cep: safeBusiness.cep || "",
         neighborhood: safeBusiness.neighborhood || "",
         city: safeBusiness.city || "",
