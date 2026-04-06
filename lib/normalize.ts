@@ -90,9 +90,10 @@ export function normalizeBusiness(raw: any) {
     address: b.address || "",
     city: b.city || "",
     state: b.state || "",
-    cep: b.cep || "",
-    number: b.number || b.address?.split(", ")[1]?.split(" - ")[0] || "",
-    neighborhood: b.neighborhood || b.address?.split(" - ")[1] || "",
+    cep: b.cep || "", // ⬅️ CORREÇÃO: Lendo do banco
+    number: b.number || "", // ⬅️ CORREÇÃO: Lendo direto do banco, sem adivinhar
+    complement: b.complement || "", // ⬅️ NOVO: Lendo o complemento
+    neighborhood: b.neighborhood || "", // ⬅️ CORREÇÃO: Lendo direto do banco, sem adivinhar
     urban_tag: b.urban_tag || "",
     luxe_quote: b.luxe_quote || "",
     comercial_badge: b.comercial_badge || "",

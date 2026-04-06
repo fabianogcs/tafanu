@@ -81,8 +81,14 @@ export default function AffiliateDashboard() {
   const listVencidos: any[] = [];
 
   // COLOQUE ISSO:
+  // COLOQUE ISSO:
   clients.forEach((u: any) => {
-    const expDate = u.expiresAt ? new Date(u.expiresAt) : null;
+    // 🚀 NOVO: Puxamos os dados da assinatura a partir do negócio!
+    const business = u.businesses?.[0];
+    const expDate = business?.expiresAt ? new Date(business.expiresAt) : null;
+    const planType = business?.planType;
+    const mpSubId = business?.mpSubscriptionId;
+
     const creationDate = new Date(u.createdAt);
     const isActive = expDate && expDate > hoje;
 
@@ -91,11 +97,13 @@ export default function AffiliateDashboard() {
     } else if (u.role === "ASSINANTE") {
       if (!isActive) {
         listVencidos.push(u); // Se venceu, vai pra aba de recuperação
-      } else if (!u.mpSubscriptionId) {
+      } else if (!mpSubId) {
+        // ⬅️ Atualizado
         listPix.push(u); // Ativação manual via Admin
       } else {
         // Lógica Automática (Mercado Pago)
-        if (u.planType === "monthly") {
+        if (planType === "monthly") {
+          // ⬅️ Atualizado
           const idadeConta = Math.ceil(
             (hoje.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24),
           );
@@ -106,9 +114,11 @@ export default function AffiliateDashboard() {
           } else {
             listMensal.push(u);
           }
-        } else if (u.planType === "quarterly") {
+        } else if (planType === "quarterly") {
+          // ⬅️ Atualizado
           listTrimestral.push(u);
-        } else if (u.planType === "yearly") {
+        } else if (planType === "yearly") {
+          // ⬅️ Atualizado
           listAnual.push(u);
         }
       }
@@ -286,13 +296,17 @@ export default function AffiliateDashboard() {
         {/* 3. LISTAGEM DE CLIENTES */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredList.map((ref: any) => {
-            const expDate = ref.expiresAt ? new Date(ref.expiresAt) : null;
+            // 🚀 NOVO: Buscamos o negócio e a data dele primeiro
+            const business = ref.businesses?.[0];
+            const expDate = business?.expiresAt
+              ? new Date(business.expiresAt)
+              : null;
+
             const daysLeft = expDate
               ? Math.ceil(
                   (expDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24),
                 )
               : 0;
-            const business = ref.businesses?.[0];
 
             return (
               <div

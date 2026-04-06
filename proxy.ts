@@ -17,7 +17,7 @@ export const proxy = auth((req) => {
   const isAdminRoute = pathname.startsWith("/admin");
   const isCheckoutRoute = pathname.startsWith("/checkout");
 
-  // ✅ ROTAS PÚBLICAS (AQUI ENTROU A LIBERAÇÃO DO MANIFESTO E PWA)
+  // ✅ ROTAS PÚBLICAS (AQUI ENTROU A LIBERAÇÃO DO MANIFESTO E PWA E O WEBHOOK DO MERCADO PAGO)
   const isPublicRoute =
     pathname === "/" ||
     pathname.startsWith("/login") ||
@@ -27,6 +27,7 @@ export const proxy = auth((req) => {
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/webhook") || // 🚀 ADICIONADO: Essencial para o Mercado Pago funcionar!
     pathname.startsWith("/_next") ||
     pathname === "/manifest.json" ||
     pathname === "/sw.js" ||

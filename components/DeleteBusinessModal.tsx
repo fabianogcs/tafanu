@@ -18,7 +18,11 @@ export default function DeleteBusinessModal({ slug }: { slug: string }) {
     // --- AQUI ENTRA O CÓDIGO DE SUCESSO ---
     if (res.success) {
       toast.success("Anúncio e assinatura encerrados com sucesso.");
-      router.push("/");
+      // Dá 1 segundo para o cara ler a mensagem verde antes de mudar de tela
+      setTimeout(() => {
+        router.push("/");
+        router.refresh(); // Garante que a tela inicial vem limpa
+      }, 1000);
     } else {
       // Aqui aproveitamos para trocar o alert pelo toast de erro também
       toast.error(res.error || "Erro ao excluir anúncio.");

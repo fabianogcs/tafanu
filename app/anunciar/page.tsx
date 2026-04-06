@@ -26,12 +26,10 @@ export const metadata: Metadata = {
 export default async function AnunciarPage() {
   const session = (await auth()) as any;
   const userRole = session?.user?.role;
-  const expiresAt = session?.user?.expiresAt;
-
-  const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false;
 
   if (userRole === "ADMIN") redirect("/admin");
-  if (userRole === "ASSINANTE" && !isExpired) redirect("/dashboard");
+  if (userRole === "ASSINANTE") redirect("/dashboard");
+  if (userRole === "AFILIADO") redirect("/dashboard");
 
   const destination = session
     ? "/checkout"

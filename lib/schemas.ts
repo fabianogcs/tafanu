@@ -36,6 +36,10 @@ export const businessSchema = z.object({
 
   // --- Localização ---
   address: z.string().optional().or(z.literal("")),
+  number: z.string().optional().or(z.literal("")), // ⬅️ NOVO: Número
+  complement: z.string().optional().or(z.literal("")), // ⬅️ NOVO: Complemento
+  cep: z.string().optional().or(z.literal("")), // ⬅️ CORREÇÃO: Adicionado CEP
+  neighborhood: z.string().optional().or(z.literal("")), // ⬅️ CORREÇÃO: Adicionado Bairro
   city: z.string().optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
 

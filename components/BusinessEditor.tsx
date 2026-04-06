@@ -11,7 +11,7 @@ import { useUploadThing } from "@/lib/uploadthing";
 import { AddressSection } from "./business-editor/AddressSection";
 import { SegmentationSection } from "./business-editor/SegmentationSection";
 import { ContentSection } from "./business-editor/ContentSection";
-import { compressImage } from "@/lib/imageCompression";
+import { compressImage } from "@/lib/compressImage";
 import { ConnectionsSection } from "./business-editor/ConnectionsSection";
 import {
   Save,
@@ -104,8 +104,9 @@ export default function BusinessEditor({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 4 * 1024 * 1024) {
-      toast.error("A imagem é muito pesada! O limite é 4MB.");
+    // 🚀 AJUSTADO PARA 6MB:
+    if (file.size > 6 * 1024 * 1024) {
+      toast.error("A imagem é muito pesada! O limite agora é 6MB.");
       return;
     }
     // Cria um link temporário da foto para mostrar no Modal de Recorte
@@ -172,7 +173,6 @@ export default function BusinessEditor({
     safeBusiness.hours,
   );
 
-  // 🚀 PROTEGENDO OS ENDEREÇOS VAZIOS COM || ""
   const [addressData, setAddressData] = useState({
     address: safeBusiness.address?.split(" - ")[0]?.split(", ")[0] || "",
     cep: safeBusiness.cep || "",
@@ -180,6 +180,7 @@ export default function BusinessEditor({
     city: safeBusiness.city || "",
     state: safeBusiness.state || "",
     number: safeBusiness.number || "",
+    complement: safeBusiness.complement || "", // 🚀 Adicionado aqui!
   });
 
   const [socials, setSocials] = useState({
@@ -246,7 +247,8 @@ export default function BusinessEditor({
 
     const isAddressDifferent =
       addressData.cep !== (safeBusiness.cep || "") ||
-      addressData.number !== (safeBusiness.number || "");
+      addressData.number !== (safeBusiness.number || "") ||
+      addressData.complement !== (safeBusiness.complement || ""); // 🚀 Adicionado ao Radar!
 
     return (
       isBasicDifferent ||
@@ -334,6 +336,7 @@ export default function BusinessEditor({
         city: safeBusiness.city || "",
         state: safeBusiness.state || "",
         number: safeBusiness.number || "",
+        complement: safeBusiness.complement || "", // 🚀 Adicionado aqui!
       });
 
       // 3. AQUI ESTÁ O SEGREDO: Agora a gente muda a trava para 'true'
@@ -372,7 +375,7 @@ export default function BusinessEditor({
     setIsLoading(true);
 
     try {
-      const fullAddress = `${addressData.address}${addressData.number ? ", " + addressData.number : ""}${addressData.neighborhood ? " - " + addressData.neighborhood : ""}${addressData.city ? " - " + addressData.city : ""}${addressData.cep ? " - CEP " + addressData.cep : ""}`;
+      const fullAddress = `${addressData.address}${addressData.number ? ", " + addressData.number : ""}${addressData.complement ? " - " + addressData.complement : ""}${addressData.neighborhood ? " - " + addressData.neighborhood : ""}${addressData.city ? " - " + addressData.city : ""}${addressData.cep ? " - CEP " + addressData.cep : ""}`;
 
       const payload: any = {
         slug,
@@ -394,6 +397,8 @@ export default function BusinessEditor({
         city: addressData.city,
         state: addressData.state,
         neighborhood: addressData.neighborhood,
+        number: addressData.number, // 🚀 Coluna separada para o BD
+        complement: addressData.complement, // 🚀 Coluna separada para o BD
         whatsapp: onlyNumbers(whatsapp),
         phone: onlyNumbers(phone),
         instagram: socials.instagram

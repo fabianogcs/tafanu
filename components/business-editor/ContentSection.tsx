@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { UploadButton as UTButton } from "@uploadthing/react";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
-import { compressImage } from "@/lib/imageCompression";
+import { compressImage } from "@/lib/compressImage";
 import { toast } from "sonner";
 
 interface ContentSectionProps {

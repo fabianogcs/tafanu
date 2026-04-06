@@ -221,12 +221,14 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const baseWhereClause: Prisma.BusinessWhereInput = {
     isActive: true,
     published: true,
-    user: {
-      OR: [
-        { role: "ADMIN" },
-        { role: "ASSINANTE", expiresAt: { gt: new Date() } },
-      ],
-    },
+    // 🚀 AJUSTE CIRÚRGICO: O filtro de validade agora olha para a LOJA e não para o USUÁRIO
+    OR: [
+      { user: { role: "ADMIN" as any } },
+      {
+        user: { role: "ASSINANTE" as any },
+        expiresAt: { gt: new Date() },
+      },
+    ],
     AND: [
       ...(cityFilter
         ? [
@@ -311,7 +313,11 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   ]);
 
   // --- 4. RANKING E SCORE ---
-  const now = new Date();
+  // 🚀 CORREÇÃO SÊNIOR: Forçando o fuso horário de Brasília (evita o bug do servidor gringo)
+  const serverTime = new Date().toLocaleString("en-US", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const now = new Date(serverTime);
   const currentDay = now.getDay();
   const currentTime = now.getHours() * 100 + now.getMinutes();
 

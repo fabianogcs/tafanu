@@ -138,7 +138,15 @@ export default function ProfileForm({ user }: { user: any }) {
     if (!confirmar) return;
     setIsSaving(true);
     try {
-      const res = await cancelSubscriptionAction();
+      // 🚀 Pegamos o ID da primeira (e única) loja do assinante
+      const businessId = user?.businesses?.[0]?.id;
+
+      if (!businessId) {
+        toast.error("Não encontramos uma loja ativa para cancelar.");
+        return;
+      }
+
+      const res = await cancelSubscriptionAction(businessId); // 👈 Agora passamos o ID!
       if (res.success) {
         toast.success(
           "Sua assinatura foi cancelada. Você agora é um Visitante.",

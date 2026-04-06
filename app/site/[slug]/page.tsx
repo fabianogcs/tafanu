@@ -124,25 +124,22 @@ export default async function BusinessPage({
     db.business.findUnique({
       where: { slug },
       include: {
-        user: { select: { role: true, expiresAt: true } },
+        user: { select: { role: true } }, // 🚀 CORREÇÃO 1: Tiramos o expiresAt daqui!
         hours: true,
         favorites: userId ? { where: { userId } } : false,
         _count: { select: { favorites: true } },
-        // --- BUSCA OS COMENTÁRIOS E QUEM OS ESCREVEU ---
-        // --- BUSCA OS COMENTÁRIOS, QUEM ESCREVEU E AS RESPOSTAS DO DONO ---
         comments: {
-          where: { parentId: null }, // 🛡️ Segurança: Pega apenas comentários "pai" (não pega respostas soltas)
+          where: { parentId: null },
           include: {
             user: { select: { name: true, image: true, role: true } },
             replies: {
-              // 🚀 A MÁGICA: Aqui ele busca as respostas vinculadas
               include: {
                 user: { select: { name: true, image: true, role: true } },
               },
-              orderBy: { createdAt: "asc" }, // Respostas em ordem de conversa (mais antiga primeiro)
+              orderBy: { createdAt: "asc" },
             },
           },
-          orderBy: { createdAt: "desc" }, // Comentários novos no topo
+          orderBy: { createdAt: "desc" },
         },
       },
     }),
@@ -154,22 +151,23 @@ export default async function BusinessPage({
       : null,
   ]);
 
-  // 2. TRAVA DE SEGURANÇA: Se não existe ou se o dono expirou
+  // 2. TRAVA DE SEGURANÇA: Se não existe
   if (!business) return notFound();
 
   const now = new Date();
   const isOwnerAdmin = business.user?.role === "ADMIN";
   const isVisitorAdmin = loggedUser?.role === "ADMIN";
-  const isExpired = business.user?.expiresAt
-    ? new Date(business.user.expiresAt) < now
+
+  // 🚀 CORREÇÃO 2: Agora olhamos o expiresAt direto da raiz do 'business'
+  const isExpired = business.expiresAt
+    ? new Date(business.expiresAt) < now
     : true;
 
-  // Se o dono não for ADMIN e estiver expirado, manda pro 404
-  if (!isOwnerAdmin && isExpired) {
+  // 🛡️ SEGURANÇA EXTRA: Se o dono não for ADMIN e o negócio estiver expirado OU inativo, manda pro 404
+  if (!isOwnerAdmin && (isExpired || !business.isActive)) {
     return notFound();
   }
 
-  // ... (Daqui para baixo o seu código continua exatamente igual)
   const siteUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
   const rawImage = business.imageUrl;
@@ -209,9 +207,21 @@ export default async function BusinessPage({
   const theme =
     businessThemes[business.theme as keyof typeof businessThemes] ||
     businessThemes["urban_gold"];
-  const fullAddress = [business.address, business.city, business.state]
+
+  // 🚀 CORREÇÃO 3: Endereço completo agora com o Número e o Complemento que você adicionou hoje!
+  const streetWithNumber = [business.address, business.number]
     .filter(Boolean)
     .join(", ");
+  const fullAddress = [
+    streetWithNumber,
+    business.complement,
+    business.neighborhood,
+    business.city,
+    business.state,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+
   const DAYS_MAP = [
     "Domingo",
     "Segunda",

@@ -93,44 +93,72 @@ export async function POST(request: Request) {
         return new NextResponse("Assinatura não encontrada", { status: 404 });
       }
 
-      const userId = subscription.external_reference;
+      // 🚀 ATUALIZAÇÃO 1: Descolando a Etiqueta Dupla
+      const externalReference = subscription.external_reference;
       const status = subscription.status;
+
+      if (!externalReference) {
+        return new NextResponse("External Reference ausente", { status: 400 });
+      }
+
+      // Separa o userId e o businessId que enviamos lá no checkout
+      const [userId, businessId] = externalReference.split("___");
 
       // 🔸 Ajuste 4: Log de elite para debug futuro
       console.log(
-        `📡 [Webhook MP] status=${status} user=${userId} sub=${subscription.id}`,
+        `📡 [Webhook MP] status=${status} user=${userId} business=${businessId} sub=${subscription.id}`,
       );
 
-      if (!userId)
-        return new NextResponse("External Reference ausente", { status: 400 });
+      if (!userId || !businessId) {
+        console.error(
+          `[Webhook MP] Referência externa malformada: ${externalReference}`,
+        );
+        return new NextResponse("Referência malformada", { status: 400 });
+      }
 
-      // 3. [BUSCA USUÁRIO]
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { id: true, mpSubscriptionId: true, expiresAt: true },
+      // 🚀 ATUALIZAÇÃO 2: Busca focada no Negócio em vez do Usuário
+      const business = await db.business.findUnique({
+        where: { id: businessId },
+        select: {
+          id: true,
+          mpSubscriptionId: true,
+          expiresAt: true,
+          userId: true,
+        },
       });
 
-      if (!user)
-        return new NextResponse("Usuário não existe no banco", { status: 404 });
+      if (!business) {
+        return new NextResponse("Negócio não existe no banco", { status: 404 });
+      }
 
-      if (!user.mpSubscriptionId && status !== "authorized") {
+      // Validação de segurança: O negócio ainda pertence a este usuário?
+      if (business.userId !== userId) {
+        console.error(
+          `[Webhook MP] Fraude detectada: Negócio ${businessId} não pertence ao usuário ${userId}`,
+        );
+        return new NextResponse("Incompatibilidade de propriedade", {
+          status: 400,
+        });
+      }
+
+      if (!business.mpSubscriptionId && status !== "authorized") {
         console.log(
-          `⚠️ [Webhook MP] Ignorando ${status} para o usuário ${userId}. Assinatura já encerrada no banco.`,
+          `⚠️ [Webhook MP] Ignorando ${status} para o negócio ${businessId}. Assinatura já encerrada no banco.`,
         );
         return new NextResponse("Já processado ou cancelado manualmente", {
           status: 200,
         });
       }
 
-      // 🔴 RE-ADICIONANDO: IDEMPOTÊNCIA (Proteção contra duplicação do MP)
+      // 🔴 RE-ADICIONANDO: IDEMPOTÊNCIA (Agora olhando para a data do negócio)
       if (
-        user.mpSubscriptionId === subscription.id &&
-        user.expiresAt &&
+        business.mpSubscriptionId === subscription.id &&
+        business.expiresAt &&
         subscription.next_payment_date &&
-        new Date(user.expiresAt) >= new Date(subscription.next_payment_date)
+        new Date(business.expiresAt) >= new Date(subscription.next_payment_date)
       ) {
         console.log(
-          `[Webhook MP] Ignorando duplicata para o usuário ${userId}`,
+          `[Webhook MP] Ignorando duplicata para o negócio ${businessId}`,
         );
         return new NextResponse("Já processado", { status: 200 });
       }
@@ -149,16 +177,27 @@ export async function POST(request: Request) {
         const transactionAmount =
           subscription.auto_recurring?.transaction_amount ?? 0;
 
-        await db.user.update({
-          where: { id: userId },
-          data: {
-            role: "ASSINANTE" as Role,
-            expiresAt: expiresAt,
-            mpSubscriptionId: subscription.id,
-            lastPrice: subscription.auto_recurring?.transaction_amount ?? 0,
-            planType: planType,
-          },
-        });
+        // 🚀 ATUALIZAÇÃO SÊNIOR: Incluindo o 'subscriptionStatus'
+        await db.$transaction([
+          db.business.update({
+            where: { id: businessId },
+            data: {
+              isActive: true,
+              expiresAt: expiresAt,
+              mpSubscriptionId: subscription.id,
+              planType: planType,
+              subscriptionStatus: "active", // ⬅️ Atualizando o status real
+            },
+          }),
+          db.user.update({
+            where: { id: userId },
+            data: {
+              role: "ASSINANTE" as Role,
+              lastPrice: transactionAmount,
+            },
+          }),
+        ]);
+
         if (transactionAmount > 0) {
           const descricaoPlano =
             planType === "monthly"
@@ -169,41 +208,44 @@ export async function POST(request: Request) {
           await generateCommission(
             userId,
             transactionAmount,
-            `Assinatura ${descricaoPlano} - Cliente ID: ${userId}`,
+            `Assinatura ${descricaoPlano} - Negócio ID: ${businessId}`,
           );
         }
 
         revalidatePath("/", "layout");
         console.log(
-          `✅ Sucesso: ${userId} PRO (${planType}) até ${expiresAt.toLocaleDateString()}`,
+          `✅ Sucesso: Negócio ${businessId} PRO (${planType}) até ${expiresAt.toLocaleDateString()}`,
         );
       }
-      // --- CENÁRIO B: CANCELADO OU REJEITADO ---
+      // --- CENÁRIO B: CANCELADO OU PAUSADO ---
       else if (
         status === "cancelled" ||
         status === "paused" ||
         status === "rejected"
       ) {
         console.log(
-          `ℹ️ [Webhook MP] Assinatura cancelada/pausada para ${userId}. Mantendo acesso até expirar.`,
+          `ℹ️ [Webhook MP] Assinatura ${status} para negócio ${businessId}.`,
         );
 
-        await db.user.update({
-          where: { id: userId },
+        // 🚀 ATUALIZAÇÃO SÊNIOR: Apenas muda o status, NUNCA apaga o ID
+        await db.business.update({
+          where: { id: businessId },
           data: {
-            mpSubscriptionId: null, // Apenas removemos o vínculo de cobrança
+            subscriptionStatus: status, // ⬅️ "cancelled", "paused", etc.
           },
         });
 
-        // Cancela qualquer comissão pendente desse cliente (ex: cancelou no trial)
+        // 🚀 ATUALIZAÇÃO SÊNIOR: Cancelar apenas as comissões exatas DESTE negócio
         await db.commission.updateMany({
           where: {
             userId: userId,
             status: "PENDING",
+            // Garante que só cancela a comissão vinculada a esta vitrine específica
+            description: {
+              contains: businessId,
+            },
           },
-          data: {
-            status: "CANCELLED",
-          },
+          data: { status: "CANCELLED" },
         });
 
         revalidatePath("/", "layout");

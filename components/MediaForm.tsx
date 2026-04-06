@@ -6,7 +6,7 @@ import { UploadDropzone } from "@/lib/uploadthing";
 import { X, Image as ImageIcon, Save, Loader2 } from "lucide-react";
 import { updateBusinessMedia } from "@/app/actions";
 import { useRouter } from "next/navigation";
-
+import { compressImage } from "@/lib/compressImage";
 interface MediaFormProps {
   businessSlug: string;
   initialGallery?: string[];
@@ -67,14 +67,22 @@ export default function MediaForm({
         {gallery.length < 8 ? (
           <UploadDropzone
             endpoint="imageUploader"
+            // 🚀 ADICIONE ESTE BLOCO (Faz a compressão antes de subir)
+            onBeforeUploadBegin={async (files) => {
+              return await Promise.all(
+                files.map(async (file) => {
+                  return await compressImage(file);
+                }),
+              );
+            }}
             onClientUploadComplete={(res) => {
-              // 🚀 Usamos ufsUrl que é o padrão novo e permanente
               const newPhotos = res.map((r) => r.ufsUrl);
               setGallery((prev) => [...prev, ...newPhotos].slice(0, 8));
-              toast.success("Fotos carregadas! Não esqueça de salvar.");
+              toast.success("Fotos enviadas e comprimidas!"); // 👈 MENSAGEM ATUALIZADA
             }}
             onUploadError={(error: Error) => {
-              toast.error("Erro: Verifique se a foto tem menos de 4MB.");
+              // 👈 LIMITE ATUALIZADO PARA 6MB
+              toast.error("Erro: Verifique se a foto tem menos de 6MB.");
             }}
             className="ut-label:text-indigo-500 ut-button:bg-indigo-600 ut-button:hover:bg-indigo-700 border-dashed border-2 border-slate-200 bg-slate-50 rounded-[2rem] p-8 transition-all hover:bg-slate-100/50 ut-allowed-content:text-[10px] ut-allowed-content:uppercase ut-allowed-content:font-bold"
           />

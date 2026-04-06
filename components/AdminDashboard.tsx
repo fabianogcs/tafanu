@@ -39,13 +39,14 @@ import {
   Clock,
   Copy,
   Check,
+  CalendarPlus, // 🚀 AJUSTE: Ícone adicionado para os botões de tempo
 } from "lucide-react";
 
 import {
   approveComment,
   resolveReport,
-  adminAddDaysToUser,
-  adminAddExactDaysToUser,
+  adminAddDaysToBusiness, // 🚀 AJUSTE: Nova função apontando para o Negócio
+  adminAddExactDaysToBusiness, // 🚀 AJUSTE: Nova função apontando para o Negócio
   runGarbageCollector,
   promoteToAffiliate,
   getAffiliatePayouts,
@@ -93,6 +94,11 @@ export default function AdminDashboard({
 
   const ADMIN_EMAIL = adminEmail || "";
 
+  const [baseUrl, setBaseUrl] = useState("https://tafanu.vercel.app");
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
+
   // ✅ Debounce na busca
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
@@ -108,39 +114,57 @@ export default function AdminDashboard({
     if (mainTab === "affiliates" || mainTab === "overview") loadPayouts();
   }, [mainTab, loadPayouts]);
 
-  // ✅ Segmentação de usuários — data calculada dentro do useMemo
+  // 🚀 AJUSTE: Segmentação de usuários adaptada para o esquema Multi-Assinaturas
   const segments = useMemo(() => {
     const agora = new Date();
-    const users = data.users.filter(
-      (u) => u.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase(),
-    );
 
-    const active = users.filter(
+    // 1. Calcula a data derivada (a loja que vai demorar mais para vencer)
+    const usersWithDerivedDates = data.users
+      .filter((u) => u.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase())
+      .map((u) => {
+        let maxDate: Date | null = null;
+        if (u.businesses && u.businesses.length > 0) {
+          u.businesses.forEach((b: any) => {
+            if (b.expiresAt) {
+              const d = new Date(b.expiresAt);
+              if (!maxDate || d > maxDate) maxDate = d;
+            }
+          });
+        }
+        return { ...u, derivedExpiresAt: maxDate };
+      });
+
+    // 2. Filtra usando a nova derivedExpiresAt
+    const active = usersWithDerivedDates.filter(
       (u) =>
         u.role === "ASSINANTE" &&
-        u.expiresAt &&
-        new Date(u.expiresAt) > agora &&
+        u.derivedExpiresAt &&
+        u.derivedExpiresAt > agora &&
         !u.isBanned &&
-        (new Date(u.expiresAt).getTime() - agora.getTime()) / 86400000 > 7,
+        (u.derivedExpiresAt.getTime() - agora.getTime()) / 86400000 > 7,
     );
-    const expiring = users.filter(
+    const expiring = usersWithDerivedDates.filter(
       (u) =>
         u.role === "ASSINANTE" &&
-        u.expiresAt &&
-        new Date(u.expiresAt) > agora &&
+        u.derivedExpiresAt &&
+        u.derivedExpiresAt > agora &&
         !u.isBanned &&
-        (new Date(u.expiresAt).getTime() - agora.getTime()) / 86400000 <= 7,
+        (u.derivedExpiresAt.getTime() - agora.getTime()) / 86400000 <= 7,
     );
-    const expired = users.filter(
+    const expired = usersWithDerivedDates.filter(
       (u) =>
         u.role === "ASSINANTE" &&
-        u.expiresAt &&
-        new Date(u.expiresAt) < agora &&
+        u.derivedExpiresAt &&
+        u.derivedExpiresAt < agora &&
         !u.isBanned,
     );
-    const visitors = users.filter((u) => u.role === "VISITANTE" && !u.isBanned);
-    const affiliates = users.filter((u) => u.role === "AFILIADO");
-    const banned = users.filter((u) => u.isBanned);
+    const visitors = usersWithDerivedDates.filter(
+      (u) => u.role === "VISITANTE" && !u.isBanned,
+    );
+    const affiliates = usersWithDerivedDates.filter(
+      (u) => u.role === "AFILIADO",
+    );
+    const banned = usersWithDerivedDates.filter((u) => u.isBanned);
 
     // ✅ Map para O(n) nos reports
     const businessMap = new Map(
@@ -153,7 +177,7 @@ export default function AdminDashboard({
       .map((r) => ({ ...r, businessDetail: businessMap.get(r.businessId) }));
 
     return {
-      all: users,
+      all: usersWithDerivedDates,
       active,
       expiring,
       expired,
@@ -162,7 +186,7 @@ export default function AdminDashboard({
       banned,
       pendingReports,
     };
-  }, [data.users, ADMIN_EMAIL]);
+  }, [data.users, data.reports, ADMIN_EMAIL]);
 
   // ✅ filteredUsers com getSegmentList inline no useMemo
   const filteredUsers = useMemo(() => {
@@ -295,26 +319,32 @@ export default function AdminDashboard({
     });
   };
 
+  // 🚀 AJUSTE: Função agora espera businessId em vez de userId
   const handleAddTime = (
     e: React.MouseEvent,
-    userId: string,
+    businessId: string,
     months: number,
   ) => {
     e.stopPropagation();
-    if (months < 0 && !confirm("Remover tempo deste usuário?")) return;
+    if (months < 0 && !confirm("Remover tempo DESTA LOJA?")) return;
     startTransition(async () => {
-      await adminAddDaysToUser(userId, months);
+      await adminAddDaysToBusiness(businessId, months);
       toast.success(
-        months > 0 ? `+${months} mês adicionado!` : `-1 mês removido!`,
+        months > 0 ? `+${months} mês adicionado na loja!` : `-1 mês removido!`,
       );
       router.refresh();
     });
   };
 
-  const handleAddDays = (e: React.MouseEvent, userId: string, days: number) => {
+  // 🚀 AJUSTE: Função agora espera businessId em vez de userId
+  const handleAddDays = (
+    e: React.MouseEvent,
+    businessId: string,
+    days: number,
+  ) => {
     e.stopPropagation();
     startTransition(async () => {
-      const res = await adminAddExactDaysToUser(userId, days);
+      const res = await adminAddExactDaysToBusiness(businessId, days);
       if (res?.success) {
         toast.success(res.message);
         router.refresh();
@@ -663,16 +693,18 @@ export default function AdminDashboard({
                       <td className="p-5">
                         <StatusBadge
                           role={user.role}
-                          expiresAt={user.expiresAt}
+                          expiresAt={
+                            user.derivedExpiresAt
+                          } /* 🚀 AJUSTE: Lendo a data derivada */
                           isBanned={user.isBanned}
                         />
                       </td>
                       <td className="p-5">
                         <span className="text-[11px] font-bold text-slate-400">
-                          {user.expiresAt
-                            ? new Date(user.expiresAt).toLocaleDateString(
-                                "pt-BR",
-                              )
+                          {user.derivedExpiresAt /* 🚀 AJUSTE: Lendo a data derivada */
+                            ? new Date(
+                                user.derivedExpiresAt,
+                              ).toLocaleDateString("pt-BR")
                             : "—"}
                         </span>
                       </td>
@@ -777,10 +809,7 @@ export default function AdminDashboard({
                         {u.referralCode && (
                           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2">
                             <p className="flex-1 text-[10px] font-mono text-slate-500 truncate px-1">
-                              {typeof window !== "undefined"
-                                ? window.location.origin
-                                : "tafanu.vercel.app"}
-                              /?ref={u.referralCode}
+                              {baseUrl}/?ref={u.referralCode}
                             </p>
                             <button
                               onClick={() =>
@@ -1063,23 +1092,25 @@ export default function AdminDashboard({
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-2">
-                    Status
+                    Status (Melhor Loja)
                   </p>
                   <StatusBadge
                     role={selectedUser.role}
-                    expiresAt={selectedUser.expiresAt}
+                    expiresAt={
+                      selectedUser.derivedExpiresAt
+                    } /* 🚀 AJUSTE: Lendo a data derivada */
                     isBanned={selectedUser.isBanned}
                   />
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-2">
-                    Vencimento
+                    Vencimento Distante
                   </p>
                   <p className="font-black text-slate-800">
-                    {selectedUser.expiresAt
-                      ? new Date(selectedUser.expiresAt).toLocaleDateString(
-                          "pt-BR",
-                        )
+                    {selectedUser.derivedExpiresAt /* 🚀 AJUSTE: Lendo a data derivada */
+                      ? new Date(
+                          selectedUser.derivedExpiresAt,
+                        ).toLocaleDateString("pt-BR")
                       : "—"}
                   </p>
                 </div>
@@ -1124,106 +1155,127 @@ export default function AdminDashboard({
                 )}
               </div>
 
-              {/* Gerenciamento de tempo — apenas para não afiliados */}
-              {!selectedUser.isBanned && selectedUser.role !== "ADMIN" && (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3">
-                    Gerenciar Acesso
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      {
-                        label: "−1 mês",
-                        action: (e: any) =>
-                          handleAddTime(e, selectedUser.id, -1),
-                        danger: true,
-                      },
-                      {
-                        label: "−1 dia",
-                        action: (e: any) =>
-                          handleAddDays(e, selectedUser.id, -1),
-                        danger: true,
-                      },
-                      {
-                        label: "+1 dia",
-                        action: (e: any) =>
-                          handleAddDays(e, selectedUser.id, 1),
-                      },
-                      {
-                        label: "+1 mês",
-                        action: (e: any) =>
-                          handleAddTime(e, selectedUser.id, 1),
-                      },
-                      {
-                        label: "+3 meses",
-                        action: (e: any) =>
-                          handleAddTime(e, selectedUser.id, 3),
-                      },
-                    ].map((btn) => (
-                      <button
-                        key={btn.label}
-                        onClick={btn.action}
-                        disabled={isPending}
-                        className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase transition-all border ${btn.danger ? "bg-white text-rose-500 border-rose-100 hover:bg-rose-500 hover:text-white" : "bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-500 hover:text-white"}`}
-                      >
-                        {btn.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={() => setPromotingUser(selectedUser)}
-                      className="px-3 py-2 bg-amber-50 text-amber-600 rounded-xl text-[11px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all border border-amber-100 flex items-center gap-1.5"
+              {/* 🚀 AJUSTE: Lojas com o Gerenciador de Tempo embutido */}
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
+                  <Store size={13} /> Lojas e Assinaturas (
+                  {selectedUser.businesses?.length || 0})
+                </p>
+                <div className="flex flex-col gap-3">
+                  {selectedUser.businesses?.map((biz: any) => (
+                    <div
+                      key={biz.id}
+                      className="p-4 bg-slate-50 rounded-2xl border border-slate-100"
                     >
-                      <Award size={13} /> Promover Parceiro
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleBan(selectedUser.id, selectedUser.name)
-                      }
-                      className="px-3 py-2 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center gap-1.5"
-                    >
-                      <Gavel size={13} /> Banir
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Lojas */}
-              {selectedUser.businesses?.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
-                    <Store size={13} /> Lojas ({selectedUser.businesses.length})
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedUser.businesses.map((biz: any) => (
-                      <div
-                        key={biz.id}
-                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between"
-                      >
+                      <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
                         <div>
                           <p className="font-black text-slate-800 text-sm uppercase">
                             {biz.name}
                           </p>
+                          <div className="flex gap-2 mt-1">
+                            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md font-bold uppercase">
+                              Plano: {biz.planType || "Nenhum"}
+                            </span>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${biz.expiresAt && new Date(biz.expiresAt) > new Date() ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                            >
+                              Validade:{" "}
+                              {biz.expiresAt
+                                ? new Date(biz.expiresAt).toLocaleDateString(
+                                    "pt-BR",
+                                  )
+                                : "Sem data"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
                           <a
                             href={`/site/${biz.slug}`}
                             target="_blank"
-                            className="text-[10px] text-emerald-500 font-bold hover:underline flex items-center gap-1 mt-0.5"
+                            className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center gap-1"
                           >
-                            <ExternalLink size={10} /> /site/{biz.slug}
+                            <ExternalLink size={12} /> Ver
+                          </a>
+                          <a
+                            href={`/dashboard/editar/${biz.slug}`}
+                            className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all"
+                          >
+                            Editar
                           </a>
                         </div>
-                        <a
-                          href={`/dashboard/editar/${biz.slug}`}
-                          className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all"
-                        >
-                          Editar
-                        </a>
                       </div>
-                    ))}
-                  </div>
+
+                      {/* Botões de controle de tempo isolados para esta loja */}
+                      {!selectedUser.isBanned &&
+                        selectedUser.role !== "ADMIN" && (
+                          <div className="flex items-center gap-2 flex-wrap pt-1">
+                            <CalendarPlus
+                              size={14}
+                              className="text-slate-400 mr-2"
+                            />
+                            <button
+                              onClick={(e) => handleAddTime(e, biz.id, -1)}
+                              disabled={isPending}
+                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
+                            >
+                              −1 mês
+                            </button>
+                            <button
+                              onClick={(e) => handleAddDays(e, biz.id, -1)}
+                              disabled={isPending}
+                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
+                            >
+                              −1 dia
+                            </button>
+                            <button
+                              onClick={(e) => handleAddDays(e, biz.id, 1)}
+                              disabled={isPending}
+                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
+                            >
+                              +1 dia
+                            </button>
+                            <button
+                              onClick={(e) => handleAddTime(e, biz.id, 1)}
+                              disabled={isPending}
+                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
+                            >
+                              +1 mês
+                            </button>
+                            <button
+                              onClick={(e) => handleAddTime(e, biz.id, 3)}
+                              disabled={isPending}
+                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
+                            >
+                              +3 meses
+                            </button>
+                          </div>
+                        )}
+                    </div>
+                  ))}
+                  {(!selectedUser.businesses ||
+                    selectedUser.businesses.length === 0) && (
+                    <p className="text-[11px] text-slate-400 p-4 border border-dashed rounded-xl text-center">
+                      Este usuário ainda não criou nenhuma vitrine.
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Ação de banir e promover parceiro */}
+              <div className="pt-4 border-t border-slate-100 flex gap-2">
+                <button
+                  onClick={() => setPromotingUser(selectedUser)}
+                  className="flex-1 px-3 py-3 bg-amber-50 text-amber-600 rounded-xl text-[11px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all border border-amber-100 flex items-center justify-center gap-1.5"
+                >
+                  <Award size={13} /> Promover a Parceiro
+                </button>
+                <button
+                  onClick={() => handleBan(selectedUser.id, selectedUser.name)}
+                  className="flex-1 px-3 py-3 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-1.5"
+                >
+                  <Gavel size={13} /> Banir Usuário
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1300,10 +1352,7 @@ export default function AdminDashboard({
                   </p>
                   <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2.5">
                     <p className="flex-1 text-[11px] font-mono text-slate-600 truncate">
-                      {typeof window !== "undefined"
-                        ? window.location.origin
-                        : "https://tafanu.vercel.app"}
-                      /?ref={selectedUser.referralCode}
+                      {baseUrl}/?ref={selectedUser.referralCode}
                     </p>
                     <button
                       onClick={() =>
@@ -1528,7 +1577,7 @@ function StatusBadge({
   isBanned,
 }: {
   role: string;
-  expiresAt?: string;
+  expiresAt?: string | Date | null;
   isBanned?: boolean;
 }) {
   if (isBanned)

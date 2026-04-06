@@ -62,10 +62,7 @@ model User {
   affiliateSince  DateTime? 
   lastPayoutDate  DateTime?
   lastPrice       Float?    @default(0)    
-planType  PlanType?
   referrals       User[]    @relation("AffiliateToUser")
-  expiresAt       DateTime?  
-  mpSubscriptionId String?
   document        String?   @unique
   phone           String?
   createdAt       DateTime  @default(now())
@@ -119,6 +116,8 @@ model Business {
 
   // Localização e Contato
   address             String?
+  number              String?        
+  complement          String?       
   cep                 String?
   neighborhood        String?        
   city                String?   
@@ -135,6 +134,12 @@ model Business {
   mercadoLivre        String?
   shein               String?
   ifood               String?
+
+  // 💰 Dados da Assinatura Deste Negócio Específico
+  planType            PlanType?      // ⬅️ NOVO: Transferido do User
+  subscriptionStatus String?        @default("inactive") // ⬅️ NOVO: 'active', 'past_due', 'cancelled'
+  expiresAt           DateTime?      // ⬅️ NOVO: Transferido do User
+  mpSubscriptionId    String?        // ⬅️ NOVO: Transferido do User
   
   published           Boolean        @default(true) 
   isActive            Boolean        @default(true) 
@@ -305,11 +310,16 @@ model Commission {
   description   String?          // Ex: "Mensalidade Março - Cliente X"
   createdAt     DateTime         @default(now())
   releaseDate   DateTime         // Data que o valor fica disponível (createdAt + 7 dias)
+
+  // ⬅️ NOVO: Relacionamento para saber em qual saque esta comissão foi paga
+  withdrawalId   String?          
+  withdrawal     Withdrawal?      @relation(fields: [withdrawalId], references: [id])
   
   affiliate     User             @relation("AffiliateCommissions", fields: [affiliateId], references: [id])
 
   @@index([affiliateId])
   @@index([status])
+  @@index([withdrawalId]) 
 }
 
 model Withdrawal {
@@ -322,6 +332,7 @@ model Withdrawal {
   paidAt      DateTime?
 
   affiliate   User     @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id])
+  commissions Commission[] // ⬅️ NOVO: Lista de comissões que compõem este saque
 
   @@index([affiliateId])
 }

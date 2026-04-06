@@ -2,32 +2,34 @@ import { DefaultSession } from "next-auth";
 import { JWT as DefaultJWT } from "next-auth/jwt";
 
 declare module "next-auth" {
-  // Isso define o que aparece em session.user
+  // 1. Define o que aparece em session.user
   interface Session {
     user: {
       id: string;
       role?: string;
       phone?: string | null;
-      expiresAt?: Date | null;
+      document?: string | null; // ✅ Adicionado: Agora o TS conhece o documento
       hasPassword?: boolean;
-      expiresAt?: Date | null;
+      // 🛡️ expiresAt REMOVIDO: Ele não mora mais no Usuário
     } & DefaultSession["user"];
   }
 
-  // Isso define o que o objeto user tem nos callbacks (authorize, etc)
+  // 2. Define o que o objeto user tem nos callbacks (authorize, etc)
   interface User {
     role?: string;
     phone?: string | null;
+    document?: string | null; // ✅ Adicionado
   }
 }
 
 declare module "next-auth/jwt" {
-  // Isso define o que o objeto token tem dentro do callback jwt
+  // 3. Define o que o objeto token tem dentro do callback jwt
   interface JWT extends DefaultJWT {
     id?: string;
     role?: string;
     phone?: string | null;
+    document?: string | null; // ✅ Adicionado
     hasPassword?: boolean;
-    expiresAt?: Date | null;
+    // 🛡️ expiresAt REMOVIDO
   }
 }

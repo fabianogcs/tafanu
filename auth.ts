@@ -61,7 +61,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               phone: true,
               document: true,
               password: true,
-              expiresAt: true,
+              // 🛡️ AQUI: expiresAt REMOVIDO cirurgicamente
             },
           });
 
@@ -70,7 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.phone = dbUser.phone;
             token.document = dbUser.document;
             token.hasPassword = !!dbUser.password;
-            token.expiresAt = dbUser.expiresAt;
+            // 🛡️ AQUI: token.expiresAt REMOVIDO
           }
         } catch (e) {
           /* ignore */
@@ -84,10 +84,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = (token.id || token.sub) as string;
         session.user.role = token.role as string;
 
-        // 2. Apagamos todos os @ts-ignore daqui para baixo:
-        session.user.phone = token.phone;
-        session.user.hasPassword = token.hasPassword;
-        session.user.expiresAt = token.expiresAt;
+        session.user.phone = token.phone as string;
+        session.user.hasPassword = token.hasPassword as boolean;
+        session.user.document = token.document as string;
+
+        // 🛡️ AQUI: session.user.expiresAt REMOVIDO
       }
       return session;
     },
@@ -128,31 +129,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           data: { emailVerified: new Date() },
         });
       }
-    },
-
-    async signIn({ user }) {
-      const cookieStore = await cookies();
-      if (user.id) {
-        cookieStore.set("userId", user.id, {
-          httpOnly: true,
-          secure: true,
-          maxAge: 604800,
-          path: "/",
-        });
-      }
-      const userRole = user.role || "VISITANTE";
-      cookieStore.set("userRole", userRole, {
-        httpOnly: true,
-        secure: true,
-        maxAge: 604800,
-        path: "/",
-      });
-    },
-
-    async signOut() {
-      const cookieStore = await cookies();
-      cookieStore.delete("userId");
-      cookieStore.delete("userRole");
     },
   },
 });

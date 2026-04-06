@@ -44,7 +44,6 @@ export default async function AdminPage() {
         },
         orderBy: { createdAt: "desc" },
       }),
-      // ✅ Correção 1: Busca apenas comissões reais de afiliados (Alivia o banco)
       db.commission.findMany({
         where: {
           status: { in: ["AVAILABLE", "PAID"] },
@@ -70,19 +69,31 @@ export default async function AdminPage() {
     });
   });
 
-  // ✅ Correção 2: Faturamento bruto — baseado nos assinantes ativos (inclui orgânicos)
-  const pagantes = users.filter(
-    (u) =>
-      u.role === "ASSINANTE" &&
-      u.expiresAt &&
-      new Date(u.expiresAt) > agora &&
-      !u.isBanned &&
-      u.email?.toLowerCase() !== adminEmail,
-  );
+  // 🚀 ATUALIZAÇÃO: Cálculo de Faturamento e Pagantes baseado na NOVA estrutura
+  let faturamentoBruto = 0;
 
-  const faturamentoBruto = pagantes.reduce((acc, u) => {
-    return acc + (Number(u.lastPrice) || 29.9);
-  }, 0);
+  const pagantes = users.filter((u) => {
+    // Ignora banidos ou o próprio admin
+    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false;
+
+    // Filtra apenas os negócios que estão ativos e no prazo
+    const negociosAtivos = u.businesses.filter(
+      (b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora,
+    );
+
+    // Se o usuário tem negócios ativos, ele é um pagante
+    if (negociosAtivos.length > 0) {
+      // Soma o valor de cada negócio ativo baseado no planType
+      negociosAtivos.forEach((negocio) => {
+        if (negocio.planType === "yearly") faturamentoBruto += 238.8;
+        else if (negocio.planType === "quarterly") faturamentoBruto += 74.7;
+        else faturamentoBruto += 29.9; // Mensal é o padrão
+      });
+      return true; // Mantém o usuário na lista de pagantes
+    }
+
+    return false;
+  });
 
   // ✅ Comissões devidas — fonte confiável (só afiliados)
   const totalComissoesDevidas = allCommissions

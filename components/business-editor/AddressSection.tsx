@@ -4,6 +4,7 @@ import { MapPin, Trash2, Loader2 } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+// 1. ATUALIZAÇÃO: Adicionado 'complement' na interface
 interface AddressData {
   address: string;
   cep: string;
@@ -11,6 +12,7 @@ interface AddressData {
   city: string;
   state: string;
   number: string;
+  complement: string; // ⬅️ NOVO
 }
 
 interface AddressSectionProps {
@@ -31,14 +33,12 @@ export function AddressSection({
   useEffect(() => {
     const cep = addressData.cep.replace(/\D/g, "");
 
-    // 1. Debounce: Espera o usuário parar de digitar por 300ms
     const timeoutId = setTimeout(() => {
       if (cep.length === 8) {
         fetchAddress(cep);
       }
     }, 300);
 
-    // 2. Cleanup: Limpa o timer e aborta requisições pendentes ao desmontar ou mudar o CEP
     return () => {
       clearTimeout(timeoutId);
       cepController.current?.abort();
@@ -47,8 +47,6 @@ export function AddressSection({
 
   const fetchAddress = async (cep: string) => {
     setIsSearching(true);
-
-    // Cria novo controller para a requisição atual
     const controller = new AbortController();
     cepController.current = controller;
 
@@ -58,7 +56,6 @@ export function AddressSection({
       });
       const data = await response.json();
 
-      // 4. UX: CEP não encontrado
       if (data.erro) {
         toast.error("CEP não encontrado. Verifique os números.");
         return;
@@ -76,7 +73,6 @@ export function AddressSection({
         numberInputRef.current?.focus();
       });
     } catch (err: any) {
-      // 3. Validação de erro: Silenciosa apenas para Abort
       if (err.name === "AbortError") return;
       console.error("Erro ao buscar CEP:", err);
       toast.error("Erro ao conectar com serviço de CEP.");
@@ -102,6 +98,7 @@ export function AddressSection({
                 city: "",
                 state: "",
                 number: "",
+                complement: "", // ⬅️ ATUALIZAÇÃO: Resetando o complemento ao excluir
               })
             }
             className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-lg text-[9px] font-black uppercase hover:bg-rose-100 transition-colors border border-rose-100"
@@ -112,6 +109,7 @@ export function AddressSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        {/* LINHA 1: CEP, Logradouro, Número */}
         <div className="relative">
           <input
             value={addressData.cep}
@@ -135,6 +133,7 @@ export function AddressSection({
           className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
           placeholder="Rua / Logradouro"
         />
+
         <input
           ref={numberInputRef}
           value={addressData.number}
@@ -144,18 +143,32 @@ export function AddressSection({
           placeholder="Nº"
           className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
         />
+
+        {/* LINHA 2: Complemento, Bairro, Cidade, UF */}
+        <input
+          value={addressData.complement}
+          onChange={(e) =>
+            setAddressData((prev) => ({ ...prev, complement: e.target.value }))
+          }
+          placeholder="Complemento (Opcional)"
+          className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
+        />
+
+        {/* ATUALIZAÇÃO: Removido o md:col-span-2 do Bairro para caberem 4 itens nesta linha */}
         <input
           value={addressData.neighborhood}
           readOnly
-          className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+          className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
           placeholder="Bairro"
         />
+
         <input
           value={addressData.city}
           readOnly
           className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
           placeholder="Cidade"
         />
+
         <input
           value={addressData.state}
           readOnly

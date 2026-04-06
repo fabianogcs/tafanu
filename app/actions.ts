@@ -146,10 +146,18 @@ async function getCoordinates(address: string, city: string, state: string) {
 
 async function getSafeUser() {
   const session = await auth();
+
   if (!session?.user?.id) return null;
+
   return await db.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, role: true, expiresAt: true, email: true },
+    // 🛡️ Removemos o expiresAt daqui porque ele "mudou de endereço"
+    // Agora ele mora dentro da tabela de Negócios (Business)
+    select: {
+      id: true,
+      role: true,
+      email: true,
+    },
   });
 }
 
@@ -308,15 +316,45 @@ export async function loginUser(formData: FormData) {
   }
 
   // 4. LÓGICA DE EXPIRAÇÃO (Com Carência de 48h para o Mercado Pago trabalhar)
-  if (dbUser.role === ("ASSINANTE" as Role) && dbUser.expiresAt) {
-    const dataExpiracao = new Date(dbUser.expiresAt);
+  // Agora a assinatura pertence ao Negócio, não mais ao Usuário.
 
-    // Adiciona 48 horas (2 dias) de carência na data antes de rebaixar
-    const dataComCarencia = new Date(
-      dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
-    );
+  if (dbUser.role === "ASSINANTE") {
+    // 1. Busca todos os negócios ativos desse usuário
+    const negociosDoUsuario = await db.business.findMany({
+      where: { userId: dbUser.id, isActive: true },
+      select: { id: true, expiresAt: true }, // Pegamos só o que importa para economizar memória
+    });
 
-    if (dataComCarencia < new Date()) {
+    let temAlgumNegocioAtivo = false;
+    const dataAtual = new Date();
+
+    // 2. Verifica a expiração de cada negócio separadamente
+    for (const negocio of negociosDoUsuario) {
+      if (negocio.expiresAt) {
+        const dataExpiracao = new Date(negocio.expiresAt);
+        // Adiciona 48 horas (2 dias) de carência na data
+        const dataComCarencia = new Date(
+          dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
+        );
+
+        if (dataComCarencia < dataAtual) {
+          // A assinatura deste negócio específico expirou. Vamos inativá-lo.
+          await db.business.update({
+            where: { id: negocio.id },
+            data: { isActive: false },
+          });
+        } else {
+          // Este negócio ainda está no prazo, então o usuário continua sendo assinante
+          temAlgumNegocioAtivo = true;
+        }
+      } else {
+        // Se por algum motivo o negócio não tem data de expiração, consideramos ativo
+        temAlgumNegocioAtivo = true;
+      }
+    }
+
+    // 3. Se todos os negócios expiraram, rebaixamos o usuário
+    if (!temAlgumNegocioAtivo) {
       await db.user.update({
         where: { id: dbUser.id },
         data: { role: "VISITANTE" as Role },
@@ -492,18 +530,45 @@ export async function getFilterMetadata() {
   return map;
 }
 
-// 🏗️ CRIAÇÃO DE NEGÓCIO (Limpo e Seguro)
 export async function createBusiness(payload: any) {
   const session = await getSafeUser();
   if (!session) return { error: "Não autorizado." };
 
+  // 🚀 PARTE 1: VALIDAÇÃO DE REGRAS DE NEGÓCIO (ROLES)
+  const userRole = session.role; // Pegando o cargo do usuário da sessão
+
+  // 1. Bloqueio para Visitantes
+  if (userRole === "VISITANTE") {
+    return {
+      error: "Visitantes não podem criar lojas. Assine um plano para começar!",
+    };
+  }
+
+  // 2. Bloqueio de limite para Assinantes
+  if (userRole === "ASSINANTE") {
+    // Contamos quantos negócios este usuário já possui no banco
+    const businessCount = await db.business.count({
+      where: { userId: session.id },
+    });
+
+    if (businessCount >= 1) {
+      return {
+        error:
+          "Assinantes podem ter apenas 1 loja ativa. Torne-se um Parceiro para criar lojas ilimitadas!",
+      };
+    }
+  }
+
+  // Se for ADMIN ou AFILIADO, o código ignora os IFs acima e segue normalmente...
+
+  // --- RESTANTE DO SEU CÓDIGO ORIGINAL ---
   const validatedFields = businessSchema.safeParse(payload);
   if (!validatedFields.success) return { error: "Dados inválidos." };
 
   const validatedData = validatedFields.data;
 
   const coords = await getCoordinates(
-    validatedData.address || "",
+    `${validatedData.address}${validatedData.number ? `, ${validatedData.number}` : ""}`, // Rua + Número
     validatedData.city || "",
     validatedData.state || "",
   );
@@ -515,15 +580,18 @@ export async function createBusiness(payload: any) {
           userId: session.id,
           name: validatedData.name,
           slug: validatedData.slug.toLowerCase().trim(),
+          // ... (todos os outros campos que você já mapeou)
           theme: validatedData.theme,
-          layout: validatedData.layout as LayoutType,
+          layout: validatedData.layout as any,
           category: validatedData.category,
           subcategory: payload.subcategory || [],
           description: validatedData.description,
           whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
           phone: (validatedData.phone || "").replace(/\D/g, ""),
           address: validatedData.address,
-          // 🛡️ Normalização para a busca "Vila Tu" funcionar
+          number: validatedData.number || "",
+          complement: validatedData.complement || "",
+          cep: payload.cep || "",
           city: normalizeText(validatedData.city || ""),
           neighborhood: normalizeText(payload.neighborhood || ""),
           state: validatedData.state,
@@ -532,7 +600,6 @@ export async function createBusiness(payload: any) {
           imageUrl: payload.imageUrl || "",
           gallery: payload.gallery || [],
           features: payload.features || [],
-          // 🚀 O PULO DO GATO: Salva as palavras-chave do usuário + o Nome do Negócio 100% sem acentos
           keywords: Array.from(
             new Set([
               ...(payload.keywords || []).map((k: string) => normalizeText(k)),
@@ -541,7 +608,6 @@ export async function createBusiness(payload: any) {
               ...(payload.subcategory || []).map((s: string) =>
                 normalizeText(s),
               ),
-              // 👇 ESSA É A LINHA NOVA QUE RESOLVE TUDO 👇
               ...(payload.subcategory || []).flatMap((s: string) =>
                 normalizeText(s).split(" "),
               ),
@@ -576,6 +642,7 @@ export async function createBusiness(payload: any) {
         });
       }
     });
+
     revalidatePath("/busca");
     revalidatePath("/");
     return { success: true };
@@ -605,8 +672,10 @@ export async function updateFullBusiness(slug: string, payload: any) {
         gallery: true,
       },
     });
-
-    if (!old || old.userId !== user.id) return { error: "Negado." };
+    // 🚀 CORREÇÃO SÊNIOR 1: A Chave Mestra do Admin!
+    if (!old) return { error: "Negócio não encontrado." };
+    if (old.userId !== user.id && user.role !== "ADMIN")
+      return { error: "Acesso Negado." };
 
     const validatedFields = businessSchema.safeParse(payload);
     if (!validatedFields.success) return { error: "Verifique os dados." };
@@ -672,8 +741,9 @@ export async function updateFullBusiness(slug: string, payload: any) {
         layout: validatedData.layout as LayoutType,
         whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
         phone: (validatedData.phone || "").replace(/\D/g, ""),
-        address: validatedData.address,
-        cep: payload.cep || "", // 🚀 TAVA FALTANDO
+        number: validatedData.number || "", // ⬅️ NOVO: Salvando número
+        complement: validatedData.complement || "", // ⬅️ NOVO: Salvando complemento
+        cep: payload.cep || "", // ⬅️ NOVO: Salvando CEP
         city: normalizeText(validatedData.city || ""),
         neighborhood: normalizeText(payload.neighborhood || ""),
         state: validatedData.state, // 🚀 TAVA FALTANDO
@@ -712,6 +782,27 @@ export async function updateFullBusiness(slug: string, payload: any) {
         faqs: payload.faqs || [],
       },
     });
+
+    // 🚀 CORREÇÃO SÊNIOR 2: Atualizando os horários de funcionamento!
+    if (payload.hours) {
+      // Primeiro, apagamos os horários velhos dessa loja
+      await db.businessHour.deleteMany({
+        where: { businessId: old.id },
+      });
+
+      // Depois, criamos os novos se eles existirem
+      if (payload.hours.length > 0) {
+        await db.businessHour.createMany({
+          data: payload.hours.map((h: any) => ({
+            businessId: old.id,
+            dayOfWeek: h.dayOfWeek,
+            openTime: h.openTime || "09:00",
+            closeTime: h.closeTime || "18:00",
+            isClosed: !!h.isClosed,
+          })),
+        });
+      }
+    }
 
     revalidatePath("/busca");
     revalidatePath("/dashboard");
@@ -810,18 +901,69 @@ export async function deleteBusiness(slug: string) {
   const userId = user.id;
 
   try {
-    const b = await db.business.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        userId: true,
-        imageUrl: true,
-        gallery: true,
+    // 1. Buscamos a loja e contamos quantas o usuário tem no total
+    const userWithBusinesses = await db.user.findUnique({
+      where: { id: userId },
+      include: {
+        businesses: {
+          select: { id: true, slug: true },
+        },
       },
     });
 
-    if (!b || b.userId !== userId) return { error: "Negado." };
+    const b = userWithBusinesses?.businesses.find((item) => item.slug === slug);
+    if (!b) return { error: "Negado ou loja não encontrada." };
 
+    const totalBusinesses = userWithBusinesses?.businesses.length || 0;
+    const isPowerUser = user.role === "ADMIN" || user.role === "AFILIADO";
+
+    // --- DECISÃO CIRÚRGICA ---
+
+    // Se for Assinante e for a ÚNICA loja dele, entramos no modo RESET
+    if (user.role === "ASSINANTE" && totalBusinesses <= 1) {
+      // 🚀 MODO RESET: Limpamos os dados, mas mantemos o registro e o tempo (expiresAt)
+      await db.$transaction([
+        // Removemos dados vinculados
+        db.businessHour.deleteMany({ where: { businessId: b.id } }),
+        db.favorite.deleteMany({ where: { businessId: b.id } }),
+        db.report.deleteMany({ where: { businessId: b.id } }),
+        // Adicione aqui outros deletes como db.product.deleteMany se houver
+
+        // Resetamos o registro principal para o estado inicial
+        db.business.update({
+          where: { id: b.id },
+          data: {
+            name: "Minha Nova Vitrine",
+            slug: `reiniciar-${Math.random().toString(36).substring(7)}`, // Novo slug para evitar conflito
+            description: "",
+            imageUrl: "",
+            gallery: [],
+            keywords: [],
+            category: "",
+            subcategory: [],
+            published: false, // Ocultamos até ele editar de novo
+            whatsapp: "",
+            phone: "",
+            instagram: "",
+            facebook: "",
+            tiktok: "",
+            // O campo 'userId' e campos de tempo (como expiresAt) NÃO são tocados aqui
+          },
+        }),
+      ]);
+
+      // Coleta arquivos para apagar do storage e não deixar lixo
+      await cleanStorageFiles(slug);
+
+      revalidatePath("/dashboard");
+      return {
+        success: true,
+        message:
+          "Sua vitrine foi resetada. Como você é assinante, sua loja base permanece ativa para nova edição.",
+      };
+    }
+
+    // 🗑️ MODO EXCLUSÃO TOTAL: Se for Admin/Afiliado ou se o assinante tiver mais de uma (segurança extra)
     await db.$transaction([
       db.businessHour.deleteMany({ where: { businessId: b.id } }),
       db.favorite.deleteMany({ where: { businessId: b.id } }),
@@ -829,26 +971,35 @@ export async function deleteBusiness(slug: string) {
       db.business.delete({ where: { id: b.id } }),
     ]);
 
-    // --- COLETA TUDO QUE PRECISA SER DELETADO ---
-    const filesToDelete: string[] = [];
-    if (b.imageUrl) filesToDelete.push(b.imageUrl);
-    if (b.gallery && b.gallery.length > 0) {
-      filesToDelete.push(...b.gallery);
-    }
-
-    // Manda deletar tudo de uma vez
-    if (filesToDelete.length > 0) {
-      await deleteFilesFromUploadThing(filesToDelete);
-    }
+    await cleanStorageFiles(slug);
 
     revalidatePath("/dashboard");
     revalidatePath("/busca");
     revalidatePath(`/site/${slug}`);
 
-    return { success: true };
+    return { success: true, message: "Loja excluída com sucesso." };
   } catch (error) {
-    console.error("Erro ao excluir:", error);
+    console.error("Erro ao processar exclusão:", error);
     return { error: "Erro ao excluir. Tente novamente." };
+  }
+}
+
+// Função auxiliar para não repetir código de deletar arquivos
+async function cleanStorageFiles(slug: string) {
+  const business = await db.business.findUnique({
+    where: { slug },
+    select: { imageUrl: true, gallery: true },
+  });
+  if (!business) return;
+
+  const filesToDelete: string[] = [];
+  if (business.imageUrl) filesToDelete.push(business.imageUrl);
+  if (business.gallery && business.gallery.length > 0) {
+    filesToDelete.push(...(business.gallery as string[]));
+  }
+
+  if (filesToDelete.length > 0) {
+    await deleteFilesFromUploadThing(filesToDelete);
   }
 }
 
@@ -1049,29 +1200,55 @@ export async function banBusiness(businessId: string) {
   return { success: true };
 }
 
-export async function adminAddDaysToUser(
-  userId: string,
+// 🚀 ATUALIZAÇÃO: Mudamos o nome e agora ela pede o 'businessId'
+export async function adminAddDaysToBusiness(
+  businessId: string,
   monthsToAdd: number = 1,
 ) {
   if (!(await requireAdmin())) return { error: "Acesso negado." };
+
   try {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) return { error: "Não encontrado." };
+    // 1. Busca o negócio e já traz os dados do dono (user) junto
+    const business = await db.business.findUnique({
+      where: { id: businessId },
+      include: { user: true }, // Precisamos do usuário para atualizar a Role dele
+    });
+
+    if (!business) return { error: "Negócio não encontrado." };
+
     const now = new Date();
+
+    // Calcula a nova data baseada na expiração atual do NEGÓCIO
     const base =
-      user.expiresAt && new Date(user.expiresAt) > now
-        ? new Date(user.expiresAt)
+      business.expiresAt && new Date(business.expiresAt) > now
+        ? new Date(business.expiresAt)
         : now;
+
     const newDate = new Date(base);
     newDate.setMonth(newDate.getMonth() + monthsToAdd);
-    await db.user.update({
-      where: { id: userId },
-      data: { role: "ASSINANTE" as Role, expiresAt: newDate },
+
+    // 2. Atualiza o negócio adicionando o tempo e garantindo que está ativo
+    await db.business.update({
+      where: { id: businessId },
+      data: {
+        expiresAt: newDate,
+        isActive: true, // Garante que a vitrine volte ao ar
+      },
     });
+
+    // 3. Garante que o dono do negócio tenha a plaquinha de ASSINANTE
+    if (business.user.role !== "ASSINANTE") {
+      await db.user.update({
+        where: { id: business.userId },
+        data: { role: "ASSINANTE" as Role },
+      });
+    }
+
     revalidatePath("/admin");
     return { success: true };
   } catch (error) {
-    return { error: "Erro adicionar tempo." };
+    console.error("Erro no adminAddDays:", error);
+    return { error: "Erro ao adicionar tempo." };
   }
 }
 export async function setInitialPassword(password: string) {
@@ -1093,36 +1270,46 @@ export async function setInitialPassword(password: string) {
     return { error: "Erro ao definir senha." };
   }
 }
-export async function cancelSubscriptionAction() {
-  const session = await auth();
+// 🚀 ATUALIZAÇÃO: Agora a função pede o 'businessId' para saber qual assinatura cancelar
+export async function cancelSubscriptionAction(businessId: string) {
+  const session = await auth(); // Certifique-se de que a forma como você chama sua auth() está correta no seu arquivo original
   const userId = session?.user?.id;
 
   if (!userId) return { error: "Não autorizado." };
+  if (!businessId) return { error: "ID do negócio não fornecido." };
 
   try {
-    const user = await db.user.findUnique({
-      where: { id: userId },
+    // 1. Busca o negócio específico no banco
+    const business = await db.business.findUnique({
+      where: {
+        id: businessId,
+        userId: userId, // 🛡️ SEGURANÇA: Garante que o usuário só pode cancelar o próprio negócio
+      },
       select: { mpSubscriptionId: true },
     });
 
-    // 1. Avisa o Mercado Pago para cancelar a recorrência
-    if (user?.mpSubscriptionId) {
-      const preApproval = new PreApproval(client);
+    if (!business)
+      return { error: "Negócio não encontrado ou não pertence a você." };
+
+    // 2. Avisa o Mercado Pago para cancelar a recorrência
+    if (business.mpSubscriptionId) {
+      const preApproval = new PreApproval(client); // Certifique-se de que 'client' do Mercado Pago está importado no topo do arquivo
       await preApproval.update({
-        id: user.mpSubscriptionId,
+        id: business.mpSubscriptionId,
         body: { status: "cancelled" },
       });
     }
 
-    // 2. ATUALIZAÇÃO GENTIL NO BANCO (Deixa ele usar até o fim)
-    await db.user.update({
-      where: { id: userId },
+    // 3. ATUALIZAÇÃO GENTIL NO BANCO (Deixa ele usar até o fim)
+    await db.business.update({
+      where: { id: businessId },
       data: {
-        mpSubscriptionId: null, // Limpa apenas a gaveta de cobrança
+        mpSubscriptionId: null, // Limpa apenas a gaveta de cobrança deste negócio específico
       },
     });
 
     revalidatePath("/dashboard/perfil");
+    revalidatePath("/dashboard");
     revalidatePath("/");
 
     return { success: true };
@@ -1255,19 +1442,20 @@ export async function getHomeBusinesses(userId?: string) {
       where: {
         isActive: true,
         published: true,
-        user: {
-          OR: [
-            { role: "ADMIN" as Role },
-            { role: "ASSINANTE" as Role, expiresAt: { gt: new Date() } },
-          ],
-        },
+        // 🚀 AJUSTE AQUI: Mudamos a forma de perguntar ao banco
+        OR: [
+          { user: { role: "ADMIN" as Role } }, // Se o dono for Admin, conta sempre
+          {
+            user: { role: "ASSINANTE" as Role },
+            expiresAt: { gt: new Date() }, // Se for assinante, checa a validade DA LOJA
+          },
+        ],
       },
     });
 
     if (totalBusinesses === 0) return [];
 
     // 3. MATEMÁTICA DO PULO ALEATÓRIO (OFFSET O(1))
-    // Calcula um número aleatório para "pular", garantindo que sobrem 12 itens
     const skipAmount = Math.max(
       0,
       Math.floor(Math.random() * (totalBusinesses - 12)),
@@ -1278,12 +1466,14 @@ export async function getHomeBusinesses(userId?: string) {
       where: {
         isActive: true,
         published: true,
-        user: {
-          OR: [
-            { role: "ADMIN" as Role },
-            { role: "ASSINANTE" as Role, expiresAt: { gt: new Date() } },
-          ],
-        },
+        // 🚀 AJUSTE AQUI TAMBÉM: Igual ao passo 2
+        OR: [
+          { user: { role: "ADMIN" as Role } },
+          {
+            user: { role: "ASSINANTE" as Role },
+            expiresAt: { gt: new Date() },
+          },
+        ],
       },
       take: 12,
       skip: skipAmount,
@@ -1304,7 +1494,7 @@ export async function getHomeBusinesses(userId?: string) {
         favoritesCount: b._count.favorites,
         userLoggedInVerified: isVerified,
       }))
-      .sort(() => Math.random() - 0.5); // Embaralha só os 12 na tela (Super leve)
+      .sort(() => Math.random() - 0.5);
   } catch (error) {
     console.error("Erro ao buscar aleatórios:", error);
     return [];
@@ -1562,25 +1752,38 @@ export async function getAffiliateStats() {
         email: true,
         phone: true,
         role: true,
-        planType: true,
         createdAt: true,
-        expiresAt: true,
-        businesses: { select: { slug: true }, take: 1 }, // Pega o site do cliente se existir
+        // 🚀 ATUALIZAÇÃO: Removidos planType/expiresAt daqui.
+        // Agora pegamos as assinaturas através dos negócios do indicado:
+        businesses: {
+          select: {
+            slug: true,
+            planType: true,
+            expiresAt: true,
+            isActive: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
+    // 🚀 ATUALIZAÇÃO: Um cliente é ativo se ele tem a role ASSINANTE e PELO MENOS UM negócio com data válida
     const clientesAtivos = indicados.filter(
-      (i) => i.role === "ASSINANTE" && i.expiresAt && i.expiresAt > hoje,
+      (i) =>
+        i.role === "ASSINANTE" &&
+        i.businesses.some(
+          (b) => b.isActive && b.expiresAt && b.expiresAt > hoje,
+        ),
     ).length;
 
     return {
       success: true,
       referralCode: partner?.referralCode,
       stats: { pendente, disponivel, pago, vendasConfirmadas: clientesAtivos },
-      indicados, // ⬅️ AGORA MANDAMOS A LISTA PARA O PAINEL!
+      indicados, // ⬅️ A lista agora leva o array 'businesses' completo com os dados do plano
     };
   } catch (error) {
+    console.error("Erro no getAffiliateStats:", error);
     return { error: "Erro interno ao carregar painel." };
   }
 }
@@ -1605,19 +1808,22 @@ export async function getAffiliateDashboardData() {
             name: true,
             email: true,
             phone: true,
-            expiresAt: true,
             createdAt: true,
-            role: true, // 🚀 AGORA ELE TRAZ O CARGO (ASSINANTE/VISITANTE)
-            planType: true, // 🚀 TRAZ O PLANO
-            mpSubscriptionId: true, // 🚀 TRAZ O ID DO MP PARA SABER SE É PIX MANUAL
+            role: true, // 🚀 MANTÉM O CARGO (ASSINANTE/VISITANTE)
+            // ❌ REMOVIDOS DAQUI: expiresAt, planType, mpSubscriptionId
             businesses: {
               select: {
                 slug: true,
+                isActive: true,
+                planType: true, // 🚀 AGORA VEM DO NEGÓCIO
+                expiresAt: true, // 🚀 AGORA VEM DO NEGÓCIO
+                mpSubscriptionId: true, // 🚀 AGORA VEM DO NEGÓCIO
               },
-              take: 1, // Só precisamos da primeira loja
+              // Não podemos mais usar o orderBy na raiz do cliente com base no expiresAt,
+              // então trazemos todos os negócios ou apenas o primeiro para exibir.
             },
           },
-          orderBy: { expiresAt: "asc" },
+          orderBy: { createdAt: "desc" }, // Mudamos a ordenação para os clientes mais recentes
         },
         commissions: {
           // Vendas automáticas do Mercado Pago
@@ -1638,6 +1844,7 @@ export async function getAffiliateDashboardData() {
       commissions: affiliate.commissions,
     };
   } catch (error) {
+    console.error("Erro no getAffiliateDashboardData:", error);
     return { error: "Erro ao carregar dados do parceiro." };
   }
 }
@@ -1781,25 +1988,37 @@ export async function markAffiliateAsPaid(affiliateId: string) {
     return { error: "Erro interno no banco de dados." };
   }
 }
-
 export async function createSubscription(
   userId: string,
   userEmail: string,
+  businessId: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
   const session = await auth();
   if (session?.user?.id !== userId) {
     return { error: "Não autorizado." };
   }
-  const dbUser = await db.user.findUnique({ where: { id: userId } });
+
+  // 1. Busca o usuário e os negócios dele para checar a regra do Trial
+  const dbUser = await db.user.findUnique({
+    where: { id: userId },
+    include: { businesses: true },
+  });
 
   if (dbUser?.isBanned) {
     return { error: "Sua conta possui restrições." };
   }
 
-  const hasUsedTrial = !!dbUser?.expiresAt;
+  // 🛡️ SEGURANÇA: Garante que o negócio existe e pertence a este usuário
+  const targetBusiness = dbUser?.businesses.find((b) => b.id === businessId);
+  if (!targetBusiness) {
+    return { error: "Negócio não encontrado." };
+  }
 
-  const subscriptionClient = new PreApproval(client);
+  // 2. REGRA DO TRIAL: Se ele tem ou já teve algum negócio com plano ativo, ele perde o direito aos 7 dias grátis
+  const hasUsedTrial = dbUser?.businesses.some((b) => b.expiresAt !== null);
+
+  const subscriptionClient = new PreApproval(client); // Certifique-se de que o 'client' do MP está no topo do arquivo
 
   const planConfigs = {
     monthly: {
@@ -1824,14 +2043,13 @@ export async function createSubscription(
   try {
     const body = {
       reason: config.reason,
-      payer_email: userEmail, // ⬅️ O seu e-mail real do site!
+      payer_email: userEmail,
       auto_recurring: {
         frequency:
           planType === "quarterly" ? 3 : planType === "yearly" ? 12 : 1,
         frequency_type: "months",
         transaction_amount: config.amount,
         currency_id: "BRL",
-        // Só adiciona trial se for o caso
         ...(config.trialDays > 0 && {
           free_trial: {
             frequency: config.trialDays,
@@ -1839,11 +2057,10 @@ export async function createSubscription(
           },
         }),
       },
+      back_url: "https://tafanu.vercel.app/checkout/sucesso",
 
-      back_url: "https://tafanu.vercel.app/checkout/sucesso", // ⬅️ Mudamos para a tela de sucesso!
-      external_reference: userId,
-
-      // 🚨 Removi o payment_methods_allowed para evitar o erro do Mercado Pago
+      // 🚀 O PULO DO GATO: Juntamos os dois IDs separados por "___" para o Webhook saber de quem é e de qual negócio é!
+      external_reference: `${userId}___${businessId}`,
     };
 
     const response = await subscriptionClient.create({ body });
@@ -1866,49 +2083,68 @@ export async function getAuthSession() {
     role: session.user.role,
   };
 }
+export async function getBusinessExpiration() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const biz = await db.business.findFirst({
+    where: { userId: session.user.id },
+    select: { expiresAt: true },
+  });
+
+  return biz?.expiresAt || null;
+}
 // 🔨 BANIR USUÁRIO, CANCELAR PAGAMENTO E DERRUBAR ANÚNCIOS
 export async function banUserAction(userId: string) {
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
 
   try {
+    // 1. Buscamos o usuário e todas as lojas dele de uma vez
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { mpSubscriptionId: true, role: true },
+      include: {
+        businesses: {
+          select: { id: true, mpSubscriptionId: true },
+        },
+      },
     });
 
     if (!user) return { error: "Usuário não encontrado." };
 
-    // 1. Se ele tiver assinatura ativa, cancelamos no Mercado Pago agora!
-    if (user.mpSubscriptionId) {
-      try {
-        const preApproval = new PreApproval(client);
-        await preApproval.update({
-          id: user.mpSubscriptionId,
-          body: { status: "cancelled" },
-        });
-      } catch (mpError) {
-        console.error("Erro ao cancelar no MP:", mpError);
+    // 2. Se ele tiver lojas com assinatura ativa, cancelamos TODAS no Mercado Pago
+    for (const biz of user.businesses) {
+      if (biz.mpSubscriptionId) {
+        try {
+          const preApproval = new PreApproval(client);
+          await preApproval.update({
+            id: biz.mpSubscriptionId,
+            body: { status: "cancelled" },
+          });
+        } catch (mpError) {
+          console.error(`Erro ao cancelar MP da loja ${biz.id}:`, mpError);
+        }
       }
     }
 
-    // 2. Aplicamos o Banimento no Banco de Dados
+    // 3. Aplicamos o Banimento no Usuário (Limpamos apenas o que existe no model User)
     await db.user.update({
       where: { id: userId },
       data: {
         isBanned: true,
-        role: "VISITANTE" as Role, // Rebaixa na hora
-        mpSubscriptionId: null,
-        expiresAt: null,
+        role: "VISITANTE" as Role, // Rebaixa para visitante
+        // 🛡️ expiresAt e mpSubscriptionId foram removidos daqui pois não existem mais no User
       },
     });
 
-    // 3. Derruba os anúncios do usuário!
+    // 4. Derruba os anúncios e limpa as assinaturas nas LOJAS do usuário
     await db.business.updateMany({
       where: { userId: userId },
       data: {
         isActive: false,
         published: false,
+        mpSubscriptionId: null, // Limpa o ID da assinatura na loja
+        expiresAt: null, // Remove o tempo de validade da loja
       },
     });
 
@@ -1918,9 +2154,10 @@ export async function banUserAction(userId: string) {
 
     return {
       success: true,
-      message: "Usuário banido e anúncios removidos do ar.",
+      message: "Usuário banido e todos os seus negócios foram desativados.",
     };
   } catch (error) {
+    console.error("Erro ao processar banimento:", error);
     return { error: "Erro ao processar banimento." };
   }
 }
@@ -1958,39 +2195,59 @@ export async function unbanUserAction(userId: string) {
     return { error: "Erro ao desbanir usuário." };
   }
 }
-// ⏱️ ADICIONAR DIAS EXATOS (TESTE GRÁTIS)
-export async function adminAddExactDaysToUser(
-  userId: string,
+
+// 🚀 ATUALIZAÇÃO: Mudamos o nome e agora ela pede o 'businessId'
+export async function adminAddExactDaysToBusiness(
+  businessId: string,
   daysToAdd: number,
 ) {
-  const adminId = await requireAdmin();
+  const adminId = await requireAdmin(); // Certifique-se de que isso funciona no seu código atual
   if (!adminId) return { error: "Acesso negado." };
 
   try {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) return { error: "Não encontrado." };
+    // 1. Busca o negócio e já traz os dados do dono (user) junto
+    const business = await db.business.findUnique({
+      where: { id: businessId },
+      include: { user: true },
+    });
+
+    if (!business) return { error: "Negócio não encontrado." };
 
     const now = new Date();
-    // Se ele já tem tempo, soma a partir do tempo dele. Se tá vencido, soma a partir de hoje.
+
+    // Se o negócio já tem tempo válido, soma a partir dele. Se tá vencido, soma a partir de hoje.
     const base =
-      user.expiresAt && new Date(user.expiresAt) > now
-        ? new Date(user.expiresAt)
+      business.expiresAt && new Date(business.expiresAt) > now
+        ? new Date(business.expiresAt)
         : now;
 
     const newDate = new Date(base);
     newDate.setDate(newDate.getDate() + daysToAdd); // Soma os dias precisos
 
-    await db.user.update({
-      where: { id: userId },
-      data: { role: "ASSINANTE" as Role, expiresAt: newDate },
+    // 2. Atualiza o negócio com a nova data
+    await db.business.update({
+      where: { id: businessId },
+      data: {
+        expiresAt: newDate,
+        isActive: true, // Garante que a vitrine volte ao ar, se estivesse caída
+      },
     });
+
+    // 3. Garante que o dono continue com a tag de ASSINANTE
+    if (business.user.role !== "ASSINANTE") {
+      await db.user.update({
+        where: { id: business.userId },
+        data: { role: "ASSINANTE" as Role },
+      });
+    }
 
     revalidatePath("/admin");
     return {
       success: true,
-      message: `${daysToAdd} dias adicionados com sucesso!`,
+      message: `${daysToAdd} dias adicionados ao negócio com sucesso!`,
     };
   } catch (error) {
+    console.error("Erro ao adicionar dias exatos:", error);
     return { error: "Erro ao adicionar dias." };
   }
 }

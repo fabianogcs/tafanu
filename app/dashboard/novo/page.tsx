@@ -8,12 +8,18 @@ export default async function NewBusinessPage() {
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
 
+  // 🚀 CORREÇÃO SÊNIOR: Já puxamos o "count" de lojas para saber quantas ele tem!
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { role: true, document: true, phone: true },
+    select: {
+      role: true,
+      document: true,
+      phone: true,
+      _count: { select: { businesses: true } }, // ⬅️ Conta as lojas no banco rapidinho
+    },
   });
 
-  // TRAVA DE SEGURANÇA: Libera Assinante, Admin e Afiliado. Bloqueia o resto.
+  // TRAVA DE SEGURANÇA 1: Libera Assinante, Admin e Afiliado. Bloqueia o resto.
   if (
     !user ||
     (user.role !== "ASSINANTE" &&
@@ -23,9 +29,16 @@ export default async function NewBusinessPage() {
     redirect("/anunciar");
   }
 
-  // Apenas o Assinante comum é obrigado a ter os dados completos para criar anúncio
+  // TRAVA DE SEGURANÇA 2: Dados incompletos
   if (user.role === "ASSINANTE" && (!user.document || !user.phone)) {
     redirect("/dashboard/perfil?error=validacao");
+  }
+
+  // 🚀 NOVA TRAVA DE SEGURANÇA 3: Limite de Lojas!
+  // Se for Assinante comum e já tiver 1 loja ou mais, volta pro dashboard!
+  if (user.role === "ASSINANTE" && user._count.businesses >= 1) {
+    // Redireciona com um aviso na URL para você poder mostrar um Toast de erro se quiser
+    redirect("/dashboard?error=limite_lojas");
   }
 
   const emptyBusiness = {

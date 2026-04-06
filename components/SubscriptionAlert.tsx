@@ -6,12 +6,15 @@ import { useRouter } from "next/navigation";
 import { ptBR } from "date-fns/locale";
 
 export default function SubscriptionAlert({ user }: { user: any }) {
-  // 1. Se não tem data de expiração, não mostramos nada (Lead ou Admin)
-  if (!user.expiresAt) return null;
+  // 🚀 AJUSTE CIRÚRGICO: A data de expiração agora vem da loja!
+  const expirationDateRaw = user?.businesses?.[0]?.expiresAt;
+
+  // 1. Se não tem data de expiração na loja, não mostramos nada (Visitante ou Admin)
+  if (!expirationDateRaw) return null;
 
   const router = useRouter();
   const now = new Date();
-  const expiresAt = new Date(user.expiresAt);
+  const expiresAt = new Date(expirationDateRaw);
   const isPastDueDate = now > expiresAt;
 
   const expiryDate = format(expiresAt, "dd 'de' MMMM 'de' yyyy", {

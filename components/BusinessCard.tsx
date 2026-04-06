@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Heart,
 } from "lucide-react";
-import FavoriteButton from "./FavoriteButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 

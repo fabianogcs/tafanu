@@ -45,7 +45,16 @@ export default async function DashboardPage() {
   if (!user) redirect("/login");
   if (user.role === "VISITANTE") redirect("/dashboard/favoritos");
 
-  const isProfileComplete = !!(user.document && user.phone);
+  // 🚀 Lógica Inteligente:
+  // Se for ASSINANTE, checa se tem documento e telefone.
+  // Se for ADMIN ou AFILIADO, considera "completo" automaticamente (true).
+  const isProfileComplete =
+    user.role === "ASSINANTE" ? !!(user.document && user.phone) : true;
+
+  const canCreateBusiness =
+    user.role === "ADMIN" ||
+    user.role === "AFILIADO" ||
+    (user.role === "ASSINANTE" && user.businesses.length === 0);
 
   return (
     <div className="min-h-screen font-sans text-slate-900 bg-[#F8FAFC] overflow-x-hidden">
@@ -93,16 +102,18 @@ export default async function DashboardPage() {
                 </h1>
               </div>
 
-              <Link
-                href="/dashboard/novo"
-                className="group w-full md:w-auto bg-slate-900 text-white font-black px-8 py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all text-xs uppercase tracking-widest"
-              >
-                <Plus
-                  size={20}
-                  className="group-hover:rotate-90 transition-transform"
-                />
-                Criar Novo Anúncio
-              </Link>
+              {canCreateBusiness && (
+                <Link
+                  href="/dashboard/novo"
+                  className="group w-full md:w-auto bg-slate-900 text-white font-black px-8 py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all text-xs uppercase tracking-widest"
+                >
+                  <Plus
+                    size={20}
+                    className="group-hover:rotate-90 transition-transform"
+                  />
+                  Criar Novo Anúncio
+                </Link>
+              )}
             </div>
 
             {user.businesses.length === 0 ? (
