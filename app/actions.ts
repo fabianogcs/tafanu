@@ -735,18 +735,19 @@ export async function updateFullBusiness(slug: string, payload: any) {
         name: validatedData.name,
         slug: validatedData.slug.toLowerCase().trim(),
         description: validatedData.description,
+        address: validatedData.address,
         category: validatedData.category,
         subcategory: payload.subcategory || [],
         theme: validatedData.theme,
-        layout: validatedData.layout as LayoutType,
+        layout: validatedData.layout as any, // Ajustado para evitar erro de tipo
         whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
         phone: (validatedData.phone || "").replace(/\D/g, ""),
-        number: validatedData.number || "", // ⬅️ NOVO: Salvando número
-        complement: validatedData.complement || "", // ⬅️ NOVO: Salvando complemento
-        cep: payload.cep || "", // ⬅️ NOVO: Salvando CEP
+        number: validatedData.number || "",
+        complement: validatedData.complement || "",
+        cep: validatedData.cep || payload.cep || "",
         city: normalizeText(validatedData.city || ""),
         neighborhood: normalizeText(payload.neighborhood || ""),
-        state: validatedData.state, // 🚀 TAVA FALTANDO
+        state: validatedData.state,
         latitude: lat,
         longitude: lng,
         keywords: Array.from(
