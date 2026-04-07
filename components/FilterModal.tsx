@@ -17,24 +17,27 @@ import {
   CheckSquare,
   RotateCcw,
   MapPin,
-  CalendarDays, // 🚀 Ícone novo para "Mais Recentes"
+  CalendarDays,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+// 🚀 Tipagem forte garantida: Adicionado availableCities
 interface FilterModalProps {
   availableCategories?: Record<string, string[]>;
+  availableCities?: string[];
   currentSort?: string;
 }
 
 export default function FilterModal({
   availableCategories = {},
+  availableCities = [],
   currentSort,
 }: FilterModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [catStep, setCatStep] = useState<"main" | "sub">("main");
   const [tempCat, setTempCat] = useState("");
-  const cityInputRef = useRef<HTMLInputElement>(null);
+  const citySelectRef = useRef<HTMLSelectElement>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,7 +45,7 @@ export default function FilterModal({
   const [draftCategory, setDraftCategory] = useState("");
   const [draftSubs, setDraftSubs] = useState<string[]>([]);
   const [draftStatus, setDraftStatus] = useState("all");
-  const [draftSort, setDraftSort] = useState("popular"); // 🚀 Default mudou para popular
+  const [draftSort, setDraftSort] = useState("popular");
   const [draftCity, setDraftCity] = useState("");
 
   useEffect(() => {
@@ -61,7 +64,7 @@ export default function FilterModal({
   useEffect(() => {
     if (isOpen) {
       requestAnimationFrame(() => {
-        cityInputRef.current?.focus();
+        citySelectRef.current?.focus();
       });
     }
   }, [isOpen]);
@@ -72,7 +75,6 @@ export default function FilterModal({
       const subsParam = searchParams.get("subcategory");
       setDraftSubs(subsParam ? subsParam.split(",") : []);
       setDraftStatus(searchParams.get("status") || "all");
-      // Se a URL estiver "distance" (por causa do botão externo), mantemos, senão default é popular
       setDraftSort(currentSort || searchParams.get("sort") || "popular");
       setDraftCity(searchParams.get("city") || "");
       setCatStep("main");
@@ -86,7 +88,6 @@ export default function FilterModal({
     };
   }, [isOpen]);
 
-  // 🚀 applyFilters AGORA É INSTANTÂNEO! Sem check de GPS.
   const applyFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", "1");
@@ -178,27 +179,32 @@ export default function FilterModal({
 
               {/* CONTEÚDO */}
               <div className="flex-1 overflow-y-auto p-8 space-y-10 pb-36 no-scrollbar">
-                {/* ONDE */}
+                {/* ONDE - 🚀 Refatorado para Select Dropdown */}
                 <section className="space-y-4">
                   <label
-                    htmlFor="city-input"
+                    htmlFor="city-select"
                     className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest"
                   >
                     <MapPin size={14} className="text-rose-500" />
                     Onde você procura?
                   </label>
-                  <input
-                    id="city-input"
-                    ref={cityInputRef}
-                    type="text"
-                    placeholder="Ex: São Paulo, Santos, RJ..."
+                  <select
+                    id="city-select"
+                    ref={citySelectRef}
                     value={draftCity}
                     onChange={(e) => setDraftCity(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none"
-                  />
+                    className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="">Todas as regiões</option>
+                    {availableCities.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
                 </section>
 
-                {/* ORDENAÇÃO (Limpa e sem GPS) */}
+                {/* ORDENAÇÃO */}
                 <section className="space-y-4">
                   <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
                     <Navigation size={14} className="text-tafanu-blue" />

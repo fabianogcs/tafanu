@@ -247,13 +247,13 @@ export default function BusinessEditor({
 
     // 🛡️ Agora o radar vigia o endereço COMPLETO vindo do CEP
     const isAddressDifferent =
-      addressData.cep !== (safeBusiness.cep || "") ||
-      addressData.address !== (safeBusiness.address || "") ||
-      addressData.neighborhood !== (safeBusiness.neighborhood || "") ||
-      addressData.city !== (safeBusiness.city || "") ||
-      addressData.state !== (safeBusiness.state || "") ||
-      addressData.number !== (safeBusiness.number || "") ||
-      addressData.complement !== (safeBusiness.complement || "");
+      (addressData.cep || "") !== (safeBusiness.cep || "") ||
+      (addressData.address || "") !== (safeBusiness.address || "") ||
+      (addressData.neighborhood || "") !== (safeBusiness.neighborhood || "") ||
+      (addressData.city || "") !== (safeBusiness.city || "") ||
+      (addressData.state || "") !== (safeBusiness.state || "") ||
+      (addressData.number || "") !== (safeBusiness.number || "") ||
+      (addressData.complement || "") !== (safeBusiness.complement || "");
 
     return (
       isBasicDifferent ||
@@ -512,6 +512,8 @@ export default function BusinessEditor({
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
         toast.success("Alterações salvas com sucesso!");
+
+        hasInitialized.current = false;
 
         if (updateResult.newSlug && updateResult.newSlug !== business.slug) {
           router.push(`/dashboard/editar/${updateResult.newSlug}`);

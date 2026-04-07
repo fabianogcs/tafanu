@@ -682,7 +682,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
 
     const validatedData = validatedFields.data;
 
-    // 💰 ECONOMIA: SÓ CHAMA O GOOGLE SE O ENDEREÇO MUDOU
+    // 💰 ECONOMIA E PREVENÇÃO DE ERRO NO MAPA
     let lat = old.latitude;
     let lng = old.longitude;
     const addressChanged =
@@ -691,22 +691,26 @@ export async function updateFullBusiness(slug: string, payload: any) {
       old.state !== validatedData.state;
 
     if (addressChanged) {
-      const newCoords = await getCoordinates(
-        validatedData.address || "",
-        validatedData.city || "",
-        validatedData.state || "",
-      );
-
-      // 🛡️ Validação: Só atualiza se o Google realmente encontrou o local
-      if (newCoords.lat && newCoords.lng) {
-        lat = newCoords.lat;
-        lng = newCoords.lng;
+      // 🚀 NOVA REGRA: Se a RUA estiver vazia, zera o mapa e pula o Google
+      if (!validatedData.address || validatedData.address.trim() === "") {
+        lat = null;
+        lng = null;
       } else {
-        // 🛑 Para o processo e avisa o usuário sem estragar os dados antigos
-        return {
-          error:
-            "Não conseguimos localizar este endereço no mapa. Verifique se os dados estão corretos.",
-        };
+        const newCoords = await getCoordinates(
+          validatedData.address || "",
+          validatedData.city || "",
+          validatedData.state || "",
+        );
+
+        if (newCoords.lat && newCoords.lng) {
+          lat = newCoords.lat;
+          lng = newCoords.lng;
+        } else {
+          return {
+            error:
+              "Não conseguimos localizar este endereço no mapa. Verifique se os dados estão corretos.",
+          };
+        }
       }
     }
     // ✂️ CIRURGIA: Faxina do UploadThing
