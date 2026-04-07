@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { SlidersHorizontal } from "lucide-react";
 import LocationTracker from "@/components/LocationTracker";
 import SearchBar from "@/components/SearchBar";
-import FilterModal from "@/components/FilterModal";
+import FilterModal, { LocationTree } from "@/components/FilterModal";
 import BusinessCard from "@/components/BusinessCard";
 import { auth } from "@/auth";
 import Link from "next/link";
@@ -271,11 +271,18 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     ],
   };
 
-  // --- 2. BUSCA DE CATEGORIAS DINÂMICAS ---
-  const categoriesData = await db.business.findMany({
-    where: baseWhereClause,
-    select: { category: true, subcategory: true },
-  });
+  // --- 2. BUSCA DE CATEGORIAS DINÂMICAS E LOCALIZAÇÃO ---
+  const [categoriesData, locationRaw] = await Promise.all([
+    db.business.findMany({
+      where: baseWhereClause,
+      select: { category: true, subcategory: true },
+    }),
+    db.business.findMany({
+      where: { isActive: true, published: true },
+      select: { state: true, city: true, neighborhood: true },
+      distinct: ["state", "city", "neighborhood"],
+    }),
+  ]);
 
   const filterMap: Record<string, Set<string>> = {};
   categoriesData.forEach((item) => {
@@ -289,6 +296,19 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     .forEach((key) => {
       orderedFilterMap[key] = Array.from(filterMap[key]).sort();
     });
+
+  // 🚀 Monta a Árvore de Localização em Cascata
+  const locationData: LocationTree = {};
+  locationRaw.forEach((b) => {
+    if (!b.state || !b.city || !b.neighborhood) return;
+
+    if (!locationData[b.state]) locationData[b.state] = {};
+    if (!locationData[b.state][b.city]) locationData[b.state][b.city] = [];
+
+    if (!locationData[b.state][b.city].includes(b.neighborhood)) {
+      locationData[b.state][b.city].push(b.neighborhood);
+    }
+  });
 
   // 🚀 O FILTRO DO BANCO: Sem a subcategoria para não engessar
   const finalWhereClause: Prisma.BusinessWhereInput = {
@@ -455,6 +475,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             </div>
             <FilterModal
               availableCategories={orderedFilterMap}
+              locationData={locationData}
               currentSort={sort}
             />
           </div>
