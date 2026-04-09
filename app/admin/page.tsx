@@ -11,16 +11,25 @@ export default async function AdminPage() {
   }
 
   const emailSessao = session.user.email.toLowerCase();
-  const isEmailAutorizado =
-    emailSessao === process.env.ADMIN_EMAIL?.toLowerCase();
-  const isAdminNoBanco = session.user.role === "ADMIN";
 
+  // 🚀 BUSCA A VERDADE ABSOLUTA DIRETO NO BANCO, IGNORANDO O NEXTAUTH
+  const usuarioNoBanco = await db.user.findUnique({
+    where: { email: emailSessao },
+    select: { role: true },
+  });
+
+  const adminEmailEnv =
+    process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
+  const isEmailAutorizado = emailSessao === adminEmailEnv;
+  const isAdminNoBanco = usuarioNoBanco?.role === "ADMIN";
+
+  // Se não for o email do dono E não for ADMIN no banco, chuta pra Home
   if (!isEmailAutorizado && !isAdminNoBanco) {
     redirect("/");
   }
 
   const agora = new Date();
-  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase() || "";
+  const adminEmail = adminEmailEnv;
 
   const [usersData, reports, flaggedComments, allCommissions] =
     await Promise.all([
@@ -50,38 +59,33 @@ export default async function AdminPage() {
           amount: { gt: 0 },
         },
       }),
-    ]);
+    ]); // ✅ Mapeia usuários com metadados
 
-  // ✅ Mapeia usuários com metadados
   const users = usersData.map((u) => ({
     ...u,
     referredBy: u.affiliate
       ? `${u.affiliate.name} (${u.affiliate.referralCode})`
       : null,
     referralCount: u.referrals.length,
-  }));
+  })); // ✅ Corrige O(n²): monta Map de businessId → dono
 
-  // ✅ Corrige O(n²): monta Map de businessId → dono
   const businessOwnerMap = new Map<string, string>();
   users.forEach((u) => {
     u.businesses.forEach((b) => {
       businessOwnerMap.set(b.id, u.id);
     });
-  });
+  }); // 🚀 ATUALIZAÇÃO: Cálculo de Faturamento e Pagantes baseado na NOVA estrutura
 
-  // 🚀 ATUALIZAÇÃO: Cálculo de Faturamento e Pagantes baseado na NOVA estrutura
   let faturamentoBruto = 0;
 
   const pagantes = users.filter((u) => {
     // Ignora banidos ou o próprio admin
-    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false;
+    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false; // Filtra apenas os negócios que estão ativos e no prazo
 
-    // Filtra apenas os negócios que estão ativos e no prazo
     const negociosAtivos = u.businesses.filter(
       (b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora,
-    );
+    ); // Se o usuário tem negócios ativos, ele é um pagante
 
-    // Se o usuário tem negócios ativos, ele é um pagante
     if (negociosAtivos.length > 0) {
       // Soma o valor de cada negócio ativo baseado no planType
       negociosAtivos.forEach((negocio) => {
@@ -93,18 +97,16 @@ export default async function AdminPage() {
     }
 
     return false;
-  });
+  }); // ✅ Comissões devidas — fonte confiável (só afiliados)
 
-  // ✅ Comissões devidas — fonte confiável (só afiliados)
   const totalComissoesDevidas = allCommissions
     .filter((c) => c.status === "AVAILABLE")
     .reduce((acc, c) => acc + c.amount, 0);
 
   const totalComissoesPagas = allCommissions
     .filter((c) => c.status === "PAID")
-    .reduce((acc, c) => acc + c.amount, 0);
+    .reduce((acc, c) => acc + c.amount, 0); // ✅ Lucro líquido = bruto − comissões devidas − comissões já pagas
 
-  // ✅ Lucro líquido = bruto − comissões devidas − comissões já pagas
   const faturamentoLiquido =
     faturamentoBruto - totalComissoesDevidas - totalComissoesPagas;
 

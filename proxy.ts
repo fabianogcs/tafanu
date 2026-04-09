@@ -60,9 +60,14 @@ export const proxy = auth((req) => {
     const isAfiliado = userRole === "AFILIADO";
     const isAssinante = userRole === "ASSINANTE";
 
-    // No Middleware, confiamos na flag do cargo. A trava de data de validade
-    // deve ser conferida dentro do Layout do Dashboard para não quebrar no Edge.
-    const isPro = isAssinante || isAfiliado || isAdmin;
+    // 🚀 A MÁGICA CONTRA O PING-PONG: O Middleware confia no seu e-mail de dono!
+    const emailSessao = req.auth?.user?.email?.toLowerCase();
+    const donoEmail =
+      process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
+    const isDono = emailSessao === donoEmail;
+
+    // Adicionamos o "isDono" aqui. O dono tem passe livre imediato!
+    const isPro = isAssinante || isAfiliado || isAdmin || isDono;
 
     // Nível A: Visitante Logado, Assinante, Afiliado e Admin
     if (pathname.startsWith("/dashboard/favoritos")) {
@@ -82,10 +87,15 @@ export const proxy = auth((req) => {
       return NextResponse.redirect(new URL("/checkout", nextUrl));
     }
   }
-
   // 🔐 BARREIRA 3: PROTEÇÃO ESTILHAÇADA DO ADMIN
   if (isAdminRoute) {
-    if (userRole !== "ADMIN") {
+    // 🚀 Se o email for o do dono, o Middleware deixa passar para a página
+    // fazer a verificação segura no banco de dados e atualizar o cargo.
+    const emailSessao = req.auth?.user?.email?.toLowerCase();
+    const donoEmail =
+      process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
+
+    if (userRole !== "ADMIN" && emailSessao !== donoEmail) {
       return NextResponse.redirect(new URL("/", nextUrl));
     }
   }

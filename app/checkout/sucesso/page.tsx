@@ -3,14 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import {
-  CheckCircle2,
-  ArrowRight,
-  Loader2,
-  ShieldCheck,
-  PartyPopper,
-} from "lucide-react";
+import { CheckCircle2, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import confetti from "canvas-confetti";
+import SessionRefresher from "@/components/SessionRefresher"; // 🚀 1. AQUI: Importamos o Garçom Invisível
 
 export default function SuccessPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -32,7 +27,6 @@ export default function SuccessPage() {
 
   // --- 2. O CORAÇÃO DA PÁGINA: APENAS CONFETES E CONFIRMAÇÃO ---
   useEffect(() => {
-    // Se o usuário já for assinante, a gente assume que ele só está visitando a página
     if (session?.user?.role === "ASSINANTE") {
       setTimeout(() => {
         setStatus("success");
@@ -41,8 +35,6 @@ export default function SuccessPage() {
       return;
     }
 
-    // Se ele for visitante, a gente assume que ele acaba de vir do pagamento.
-    // Mas nós NÃO fazemos o upgrade aqui. O Webhook cuidará disso.
     setTimeout(() => {
       setStatus("success");
       triggerConfetti();
@@ -86,6 +78,9 @@ export default function SuccessPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-slate-50">
+      {/* 🚀 2. AQUI: O Garçom Invisível é chamado para atualizar o crachá nos bastidores! */}
+      <SessionRefresher />
+
       <div className="w-full max-w-xl bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in duration-700">
         {/* HEADER */}
         <div className="bg-[#050814] p-12 flex flex-col items-center text-center relative">

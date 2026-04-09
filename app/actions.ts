@@ -2051,16 +2051,46 @@ export async function createSubscription(
     return { error: "Sua conta possui restrições." };
   }
 
-  // 🛡️ SEGURANÇA: Garante que o negócio existe e pertence a este usuário
-  const targetBusiness = dbUser?.businesses.find((b) => b.id === businessId);
-  if (!targetBusiness) {
-    return { error: "Negócio não encontrado." };
+  // 🚀 O PULO DO GATO: Lógica inteligente para o businessId vazio
+  let finalBusinessId = businessId;
+
+  if (!finalBusinessId) {
+    // Tenta pegar a primeira loja que o usuário já tenha
+    const firstBusiness = dbUser?.businesses[0];
+
+    if (firstBusiness) {
+      finalBusinessId = firstBusiness.id;
+    } else {
+      // 🏗️ VISITANTE NOVO: Cria uma loja fantasma (Gaveta) para ancorar a assinatura!
+      try {
+        const novaLoja = await db.business.create({
+          data: {
+            userId: userId,
+            name: "Minha Vitrine",
+            slug: `vitrine-${userId.substring(0, 5)}-${Date.now()}`,
+            category: "Geral", // 🚀 AQUI: O campo que o TypeScript estava exigindo!
+          },
+        });
+        finalBusinessId = novaLoja.id;
+      } catch (e) {
+        console.error("Erro ao criar Loja Gaveta:", e);
+        return { error: "Erro ao preparar sua vitrine." };
+      }
+    }
+  } else {
+    // 🛡️ SEGURANÇA: Se enviou um ID, garante que a loja existe e pertence a ele
+    const targetBusiness = dbUser?.businesses.find(
+      (b) => b.id === finalBusinessId,
+    );
+    if (!targetBusiness) {
+      return { error: "Negócio não encontrado ou não pertence a você." };
+    }
   }
 
-  // 2. REGRA DO TRIAL: Se ele tem ou já teve algum negócio com plano ativo, ele perde o direito aos 7 dias grátis
+  // 2. REGRA DO TRIAL: Se ele tem ou já teve algum negócio com plano ativo, ele perde os 7 dias
   const hasUsedTrial = dbUser?.businesses.some((b) => b.expiresAt !== null);
 
-  const subscriptionClient = new PreApproval(client); // Certifique-se de que o 'client' do MP está no topo do arquivo
+  const subscriptionClient = new PreApproval(client);
 
   const planConfigs = {
     monthly: {
@@ -2101,8 +2131,8 @@ export async function createSubscription(
       },
       back_url: "https://tafanu.vercel.app/checkout/sucesso",
 
-      // 🚀 O PULO DO GATO: Juntamos os dois IDs separados por "___" para o Webhook saber de quem é e de qual negócio é!
-      external_reference: `${userId}___${businessId}`,
+      // 🚀 AGORA SIM: Enviamos o finalBusinessId garantido para o Webhook!
+      external_reference: `${userId}___${finalBusinessId}`,
     };
 
     const response = await subscriptionClient.create({ body });
