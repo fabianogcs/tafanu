@@ -1205,7 +1205,6 @@ export async function banBusiness(businessId: string) {
   return { success: true };
 }
 
-// 🚀 ATUALIZAÇÃO: Mudamos o nome e agora ela pede o 'businessId'
 export async function adminAddDaysToBusiness(
   businessId: string,
   monthsToAdd: number = 1,
@@ -1256,6 +1255,44 @@ export async function adminAddDaysToBusiness(
     return { error: "Erro ao adicionar tempo." };
   }
 }
+export async function adminActivateVisitor(userId: string, daysToAdd: number) {
+  const adminId = await requireAdmin(); // Certifique-se de que isso funciona no seu código atual
+  if (!adminId) return { error: "Acesso negado." };
+
+  try {
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) return { error: "Usuário não encontrado." };
+
+    const newDate = new Date();
+    newDate.setDate(newDate.getDate() + daysToAdd);
+
+    // 1. Cria a vitrine âncora com os dados obrigatórios do Schema
+    await db.business.create({
+      data: {
+        userId: userId,
+        name: "Vitrine Oculta",
+        slug: `loja-${userId.substring(0, 8)}-${Date.now().toString().slice(-4)}`,
+        category: "Geral", // ⬅️ Obrigatório pelo seu Schema
+        planType: "monthly", // ⬅️ Agora bate com o seu Enum
+        isActive: true,
+        expiresAt: newDate,
+      },
+    });
+
+    // 2. Vira a chave de Visitante para Assinante
+    await db.user.update({
+      where: { id: userId },
+      data: { role: "ASSINANTE" },
+    });
+
+    revalidatePath("/admin");
+    return { success: true, message: "Vitrine âncora criada e ativada!" };
+  } catch (error) {
+    console.error("Erro ao criar vitrine âncora:", error);
+    return { error: "Erro interno ao ativar visitante." };
+  }
+}
+
 export async function setInitialPassword(password: string) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };

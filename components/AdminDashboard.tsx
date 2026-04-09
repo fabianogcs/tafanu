@@ -55,6 +55,7 @@ import {
   unbanUserAction,
   deleteComment,
   assignUserToAffiliate,
+  adminActivateVisitor,
 } from "@/app/actions";
 
 type AdminData = {
@@ -352,6 +353,21 @@ export default function AdminDashboard({
     });
   };
 
+  const handleActivateVisitor = (
+    e: React.MouseEvent,
+    userId: string,
+    days: number,
+  ) => {
+    e.stopPropagation();
+    startTransition(async () => {
+      const res = await adminActivateVisitor(userId, days);
+      if (res?.success) {
+        toast.success(res.message);
+        router.refresh();
+      } else toast.error(res?.error || "Erro ao ativar.");
+    });
+  };
+
   const handleConfirmPayment = (
     affiliateId: string,
     valor: number,
@@ -439,7 +455,7 @@ export default function AdminDashboard({
 
       <main className="max-w-7xl mx-auto space-y-6">
         {/* TABS NÍVEL 1 */}
-        <div className="flex gap-2 bg-white p-2 rounded-2xl border border-slate-100 w-fit shadow-sm overflow-x-auto">
+        <div className="flex gap-2 bg-white p-2 rounded-2xl border border-slate-100 w-full md:w-fit max-w-full shadow-sm overflow-x-auto">
           {[
             {
               key: "overview",
@@ -450,7 +466,7 @@ export default function AdminDashboard({
               key: "users",
               label: "Membros",
               icon: <Users size={15} />,
-              count: segments.all.length,
+              count: segments.all.length - segments.affiliates.length, // 🚀 Aqui está a mágica: subtrai os afiliados do total
             },
             {
               key: "affiliates",
@@ -497,7 +513,7 @@ export default function AdminDashboard({
 
         {/* TABS NÍVEL 2 */}
         {mainTab === "users" && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
             {[
               {
                 key: "subscribers",
@@ -539,7 +555,7 @@ export default function AdminDashboard({
         )}
 
         {mainTab === "affiliates" && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
             {[
               {
                 key: "affiliates",
@@ -564,7 +580,7 @@ export default function AdminDashboard({
         )}
 
         {mainTab === "security" && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
             {[
               {
                 key: "reports",
@@ -1207,7 +1223,8 @@ export default function AdminDashboard({
 
                       {/* Botões de controle de tempo isolados para esta loja */}
                       {!selectedUser.isBanned &&
-                        selectedUser.role !== "ADMIN" && (
+                        (selectedUser.role === "ASSINANTE" ||
+                          selectedUser.role === "VISITANTE") && (
                           <div className="flex items-center gap-2 flex-wrap pt-1">
                             <CalendarPlus
                               size={14}
@@ -1254,9 +1271,37 @@ export default function AdminDashboard({
                   ))}
                   {(!selectedUser.businesses ||
                     selectedUser.businesses.length === 0) && (
-                    <p className="text-[11px] text-slate-400 p-4 border border-dashed rounded-xl text-center">
-                      Este usuário ainda não criou nenhuma vitrine.
-                    </p>
+                    <div className="p-5 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center text-center bg-slate-50/50">
+                      <p className="text-[11px] text-slate-500 font-bold mb-3 uppercase tracking-widest">
+                        Este membro ainda não tem vitrine.
+                      </p>
+
+                      {/* 🚀 Botões blindados: só aparecem para Visitantes e Assinantes sem loja */}
+                      {!selectedUser.isBanned &&
+                        (selectedUser.role === "ASSINANTE" ||
+                          selectedUser.role === "VISITANTE") && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) =>
+                                handleActivateVisitor(e, selectedUser.id, 1)
+                              }
+                              disabled={isPending}
+                              className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white shadow-sm"
+                            >
+                              Ativar + 1 dia
+                            </button>
+                            <button
+                              onClick={(e) =>
+                                handleActivateVisitor(e, selectedUser.id, 30)
+                              }
+                              disabled={isPending}
+                              className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white shadow-sm"
+                            >
+                              Ativar + 30 dias
+                            </button>
+                          </div>
+                        )}
+                    </div>
                   )}
                 </div>
               </div>
