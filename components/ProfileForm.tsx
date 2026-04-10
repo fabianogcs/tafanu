@@ -133,24 +133,17 @@ export default function ProfileForm({ user }: { user: any }) {
   // --- 5. CANCELAMENTO ORIGINAL (PRESERVADO E CORRIGIDO IMPORT) ---
   async function handleCancelSubscription() {
     const confirmar = confirm(
-      "Deseja realmente cancelar sua assinatura? Seu negócio deixará de aparecer para os visitantes.",
+      "Deseja realmente cancelar sua assinatura? Você não será mais cobrado e sua loja sairá do ar quando o prazo atual vencer.",
     );
     if (!confirmar) return;
+
     setIsSaving(true);
     try {
-      // 🚀 Pegamos o ID da primeira (e única) loja do assinante
-      const businessId = user?.businesses?.[0]?.id;
+      // 🚀 Não passamos mais ID nenhum! O Backend é inteligente e vai achar a assinatura sozinho.
+      const res = await cancelSubscriptionAction();
 
-      if (!businessId) {
-        toast.error("Não encontramos uma loja ativa para cancelar.");
-        return;
-      }
-
-      const res = await cancelSubscriptionAction(businessId); // 👈 Agora passamos o ID!
       if (res.success) {
-        toast.success(
-          "Sua assinatura foi cancelada. Você agora é um Visitante.",
-        );
+        toast.success("Assinatura cancelada com sucesso!");
         router.refresh();
       } else {
         toast.error(res.error || "Erro ao cancelar assinatura.");

@@ -352,7 +352,7 @@ export default function BusinessEditor({
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (overridePublished?: boolean) => {
     if (isLoading) return;
     if (!name || name.trim() === "") {
       toast.error("Por favor, digite o nome do negócio antes de salvar.", {
@@ -389,7 +389,9 @@ export default function BusinessEditor({
         keywords: keywords.map((k) => normalizeText(k)), // Limpa as palavras-chave
         theme: selectedTheme,
         layout: layoutInfo[selectedLayout] ? selectedLayout : "urban",
-        published: isPublished,
+        // 🚀 O pulo do gato: Se o botão enviou um novo status, usa ele. Se não, usa o que tá na tela.
+        published:
+          overridePublished !== undefined ? overridePublished : isPublished,
         urban_tag: layoutText,
         luxe_quote: layoutText,
         showroom_collection: layoutText,
@@ -592,10 +594,20 @@ export default function BusinessEditor({
                   <Eye size={18} />
                 </button>
                 <button
-                  onClick={() => setIsPublished(!isPublished)}
-                  className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm ${isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-100 text-rose-600 border-rose-200 animate-pulse ring-4 ring-rose-50"}`}
+                  onClick={() => {
+                    const newStatus = !isPublished;
+                    setIsPublished(newStatus); // Atualiza a cor do botão na hora
+                    handleUpdate(newStatus); // 🚀 Salva no banco instantaneamente com o valor correto!
+                  }}
+                  disabled={isLoading}
+                  className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm ${isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100" : "bg-rose-100 text-rose-600 border-rose-200 hover:bg-rose-200"}`}
                 >
-                  <Power size={14} /> {isPublished ? "Online" : "Pausado"}
+                  {isLoading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Power size={14} />
+                  )}
+                  {isPublished ? "Online" : "Pausado"}
                 </button>
                 <button
                   onClick={() => {
@@ -611,7 +623,7 @@ export default function BusinessEditor({
               </>
             )}
             <button
-              onClick={handleUpdate}
+              onClick={() => handleUpdate()} // 🚀 Agora ele só chama a função limpa!
               disabled={isLoading || !hasChanges}
               className={`hidden md:flex items-center gap-3 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-sm ${
                 !hasChanges && !isNew && !isLoading
@@ -763,7 +775,7 @@ export default function BusinessEditor({
               )}
             </AnimatePresence>
             <button
-              onClick={handleUpdate}
+              onClick={() => handleUpdate()} // 🚀 O mesmo ajuste aqui!
               disabled={isLoading || !hasChanges}
               className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic ${
                 isLoading || (!hasChanges && !isNew)

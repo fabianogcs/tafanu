@@ -989,6 +989,65 @@ export async function deleteBusiness(slug: string) {
   }
 }
 
+// --- 1. O MOTOR DA FAXINA (Lógica pura, sem checar quem chamou) ---
+async function executeCoreCleanup() {
+  const trintaDiasAtras = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  try {
+    const ghosts = await db.business.findMany({
+      where: {
+        user: { role: "VISITANTE" },
+        OR: [
+          { expiresAt: null, createdAt: { lt: trintaDiasAtras } },
+          { expiresAt: { lt: trintaDiasAtras } },
+        ],
+      },
+      select: { id: true, imageUrl: true, gallery: true },
+    });
+
+    if (ghosts.length === 0) return { success: true, message: "Banco limpo." };
+
+    const linksParaDeletar: string[] = [];
+    ghosts.forEach((business) => {
+      if (business.imageUrl) linksParaDeletar.push(business.imageUrl);
+      if (business.gallery && Array.isArray(business.gallery)) {
+        linksParaDeletar.push(...(business.gallery as string[]));
+      }
+    });
+
+    if (linksParaDeletar.length > 0) {
+      await deleteFilesFromUploadThing(linksParaDeletar);
+    }
+
+    const idsToDelete = ghosts.map((b) => b.id);
+    const deleted = await db.business.deleteMany({
+      where: { id: { in: idsToDelete } },
+    });
+
+    return {
+      success: true,
+      message: `Faxina: ${deleted.count} lojas e ${linksParaDeletar.length} imagens removidas.`,
+    };
+  } catch (error) {
+    console.error("Erro Crítico na Faxina:", error);
+    return { error: "Erro interno ao executar a limpeza." };
+  }
+}
+
+// --- 2. O BOTÃO DO ADMIN (Usa no Front-end) ---
+export async function runGhostCleanup() {
+  const user = await getSafeUser();
+  if (!user || user.role !== "ADMIN") return { error: "Acesso Negado." };
+
+  return await executeCoreCleanup();
+}
+
+// --- 3. O ROBÔ DA VERCEL (Usa no Cron Job) ---
+export async function runSystemGhostCleanup() {
+  // A proteção não fica aqui, fica na Rota da API que o robô vai chamar
+  return await executeCoreCleanup();
+}
+
 // Função auxiliar para não repetir código de deletar arquivos
 async function cleanStorageFiles(slug: string) {
   const business = await db.business.findUnique({
@@ -1312,41 +1371,39 @@ export async function setInitialPassword(password: string) {
     return { error: "Erro ao definir senha." };
   }
 }
-// 🚀 ATUALIZAÇÃO: Agora a função pede o 'businessId' para saber qual assinatura cancelar
-export async function cancelSubscriptionAction(businessId: string) {
-  const session = await auth(); // Certifique-se de que a forma como você chama sua auth() está correta no seu arquivo original
-  const userId = session?.user?.id;
+// 🚀 ATUALIZAÇÃO SÊNIOR: A função não precisa mais receber parâmetros. Ela busca a assinatura sozinha!
+export async function cancelSubscriptionAction() {
+  const session = await getSafeUser();
+  if (!session) return { error: "Não autorizado." };
 
-  if (!userId) return { error: "Não autorizado." };
-  if (!businessId) return { error: "ID do negócio não fornecido." };
+  const userId = session.id;
 
   try {
-    // 1. Busca o negócio específico no banco
-    const business = await db.business.findUnique({
+    // 1. Busca no banco QUALQUER loja deste usuário que tenha um ID de assinatura do MP salvo
+    const businessWithSub = await db.business.findFirst({
       where: {
-        id: businessId,
-        userId: userId, // 🛡️ SEGURANÇA: Garante que o usuário só pode cancelar o próprio negócio
+        userId: userId,
+        mpSubscriptionId: { not: null },
       },
-      select: { mpSubscriptionId: true },
+      select: { id: true, mpSubscriptionId: true },
     });
 
-    if (!business)
-      return { error: "Negócio não encontrado ou não pertence a você." };
-
-    // 2. Avisa o Mercado Pago para cancelar a recorrência
-    if (business.mpSubscriptionId) {
-      const preApproval = new PreApproval(client); // Certifique-se de que 'client' do Mercado Pago está importado no topo do arquivo
-      await preApproval.update({
-        id: business.mpSubscriptionId,
-        body: { status: "cancelled" },
-      });
+    if (!businessWithSub || !businessWithSub.mpSubscriptionId) {
+      return { error: "Nenhuma assinatura ativa encontrada para cancelar." };
     }
 
-    // 3. ATUALIZAÇÃO GENTIL NO BANCO (Deixa ele usar até o fim)
+    // 2. Avisa o Mercado Pago para cancelar a cobrança
+    const preApproval = new PreApproval(client);
+    await preApproval.update({
+      id: businessWithSub.mpSubscriptionId,
+      body: { status: "cancelled" },
+    });
+
+    // 3. Limpa o ID da assinatura na gaveta do banco (mas a loja continua no ar até o expiresAt vencer!)
     await db.business.update({
-      where: { id: businessId },
+      where: { id: businessWithSub.id },
       data: {
-        mpSubscriptionId: null, // Limpa apenas a gaveta de cobrança deste negócio específico
+        mpSubscriptionId: null,
       },
     });
 
@@ -1356,8 +1413,10 @@ export async function cancelSubscriptionAction(businessId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao cancelar:", error);
-    return { error: "Erro ao processar o cancelamento." };
+    console.error("Erro Crítico ao cancelar no MP:", error);
+    return {
+      error: "Falha de comunicação com o Mercado Pago. Tente novamente.",
+    };
   }
 }
 // ==============================================================================
@@ -2073,7 +2132,10 @@ export async function createSubscription(
             userId: userId,
             name: "Minha Vitrine",
             slug: `vitrine-${userId.substring(0, 5)}-${Date.now()}`,
-            category: "Geral", // 🚀 AQUI: O campo que o TypeScript estava exigindo!
+            category: "Geral",
+            // 🚀 CIRURGIA 1: Garante que a loja nasça TOTALMENTE INVISÍVEL
+            isActive: false, // Loja Pausada/Offline
+            published: false, // Não aparece nas buscas do site
           },
         });
         finalBusinessId = novaLoja.id;
