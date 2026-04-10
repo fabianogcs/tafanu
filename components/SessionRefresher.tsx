@@ -1,22 +1,35 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SessionRefresher() {
   const { update, status } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    // Só tenta atualizar se o usuário estiver de fato logado
-    if (status === "authenticated") {
-      update().then(() => {
-        // Dá um "F5" silencioso no Next.js para o servidor reconhecer o novo crachá
-        router.refresh();
-      });
-    }
-  }, [update, status, router]);
+  // 🚀 A TRAVA DE AÇO: useRef não reseta quando o Next.js dá o refresh na tela
+  const hasRefreshed = useRef(false);
 
-  return null; // O componente não renderiza nada na tela, trabalha nos bastidores
+  useEffect(() => {
+    // Só roda se estiver logado e se a trava estiver aberta
+    if (status === "authenticated" && !hasRefreshed.current) {
+      const syncSession = async () => {
+        try {
+          // Tranca a porta IMEDIATAMENTE antes de fazer qualquer coisa
+          hasRefreshed.current = true;
+
+          await update();
+          router.refresh();
+          console.log("✅ [SessionRefresher] Crachá atualizado com sucesso.");
+        } catch (error) {
+          console.error("❌ [SessionRefresher] Erro ao sincronizar:", error);
+        }
+      };
+
+      syncSession();
+    }
+  }, [status, update, router]);
+
+  return null;
 }

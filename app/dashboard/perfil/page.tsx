@@ -14,9 +14,11 @@ export default async function ProfilePage() {
   });
 
   if (!user) redirect("/login");
-  if (user.role === "VISITANTE") {
-    redirect("/");
-  }
+
+  // 🚀 A TRAVA FOI REMOVIDA: Visitantes não chegam aqui por causa do Middleware,
+  // mas se um Assinante recém-comprado chegar e o crachá ainda estiver atualizando,
+  // nós permitimos que ele preencha o perfil sem ser expulso!
+
   return (
     <div className="max-w-2xl mx-auto pb-20 p-6 animate-in fade-in">
       <div className="mb-8 border-b border-gray-200 pb-6">

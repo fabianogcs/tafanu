@@ -20,6 +20,7 @@ import {
   Download,
   Briefcase,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function Navbar({
   isLoggedIn,
@@ -73,11 +74,19 @@ export default function Navbar({
     };
   }, [isOpen]);
 
-  const isAdmin = isLoggedIn && userRole === "ADMIN";
-  const isAfiliado = isLoggedIn && userRole === "AFILIADO";
-  const isSubscriber = isLoggedIn && userRole === "ASSINANTE";
-  const isVisitor = isLoggedIn && !isSubscriber && !isAdmin && !isAfiliado;
-  const isGuest = !isLoggedIn;
+  // 🚀 O PULO DO GATO: Pegamos a sessão do cliente para ser reativo ao SessionRefresher
+  const { data: session } = useSession();
+
+  // Se o SessionRefresher atualizar o cargo, a 'session' do cliente muda na hora!
+  const currentRole = session?.user?.role || userRole;
+  const isCurrentlyLoggedIn = !!session || isLoggedIn;
+
+  const isAdmin = isCurrentlyLoggedIn && currentRole === "ADMIN";
+  const isAfiliado = isCurrentlyLoggedIn && currentRole === "AFILIADO";
+  const isSubscriber = isCurrentlyLoggedIn && currentRole === "ASSINANTE";
+  const isVisitor =
+    isCurrentlyLoggedIn && !isSubscriber && !isAdmin && !isAfiliado;
+  const isGuest = !isCurrentlyLoggedIn;
 
   return (
     <nav className="bg-tafanu-blue sticky top-0 z-[1000] border-b border-white/10 w-full transition-all duration-300">

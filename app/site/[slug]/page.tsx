@@ -155,7 +155,9 @@ export default async function BusinessPage({
   if (!business) return notFound();
 
   const now = new Date();
-  const isOwnerAdmin = business.user?.role === "ADMIN";
+  // 🚀 CORREÇÃO: Admins e Afiliados têm imunidade vitalícia na vitrine
+  const isOwnerImmune =
+    business.user?.role === "ADMIN" || business.user?.role === "AFILIADO";
   const isVisitorAdmin = loggedUser?.role === "ADMIN";
 
   // 🚀 CORREÇÃO 2: Agora olhamos o expiresAt direto da raiz do 'business'
@@ -163,8 +165,8 @@ export default async function BusinessPage({
     ? new Date(business.expiresAt) < now
     : true;
 
-  // 🛡️ SEGURANÇA EXTRA: Se o dono não for ADMIN e o negócio estiver expirado OU inativo, manda pro 404
-  if (!isOwnerAdmin && (isExpired || !business.isActive)) {
+  // 🛡️ SEGURANÇA EXTRA: Se o dono não tiver imunidade e o negócio estiver expirado OU inativo, manda pro 404
+  if (!isOwnerImmune && (isExpired || !business.isActive)) {
     return notFound();
   }
 

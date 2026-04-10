@@ -41,7 +41,6 @@ export default function AffiliateDashboard() {
     loadStats();
   }, []);
 
-  // 🚀 CÁLCULO FINANCEIRO EXCLUSIVO DO MERCADO PAGO
   const stats = useMemo(() => {
     let disponivel = 0;
     let pendente = 0;
@@ -49,6 +48,10 @@ export default function AffiliateDashboard() {
 
     if (data?.commissions) {
       data.commissions.forEach((c: any) => {
+        // 🚀 IGNORAR AUTO-PAGAMENTOS: Se o ID do usuário da comissão for o do afiliado, pula.
+        // (Apenas se sua tabela de Commission tiver o userId do pagador)
+        if (c.payerId === data.affiliate.id) return;
+
         if (c.status === "AVAILABLE") disponivel += c.amount;
         if (c.status === "PENDING") pendente += c.amount;
         if (c.status === "PAID") pago += c.amount;
@@ -81,8 +84,10 @@ export default function AffiliateDashboard() {
   const listVencidos: any[] = [];
 
   // COLOQUE ISSO:
-  // COLOQUE ISSO:
   clients.forEach((u: any) => {
+    // 🛡️ FILTRO DE SEGURANÇA: Se o "cliente" for um afiliado, ele é ignorado nos cálculos e nas listas
+    if (u.role === "AFILIADO") return;
+
     // 🚀 NOVO: Puxamos os dados da assinatura a partir do negócio!
     const business = u.businesses?.[0];
     const expDate = business?.expiresAt ? new Date(business.expiresAt) : null;

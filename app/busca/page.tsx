@@ -221,9 +221,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const baseWhereClause: Prisma.BusinessWhereInput = {
     isActive: true,
     published: true,
-    // 🚀 AJUSTE CIRÚRGICO: O filtro de validade agora olha para a LOJA e não para o USUÁRIO
+    // 🚀 AJUSTE CIRÚRGICO: Afiliados agora também aparecem na busca sem precisar de data de expiração
     OR: [
       { user: { role: "ADMIN" as any } },
+      { user: { role: "AFILIADO" as any } },
       {
         user: { role: "ASSINANTE" as any },
         expiresAt: { gt: new Date() },

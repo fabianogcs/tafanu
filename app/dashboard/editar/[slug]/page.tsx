@@ -45,7 +45,15 @@ export default async function EditBusinessPage({
     (!!adminEmail &&
       session.user.email?.toLowerCase() === adminEmail.toLowerCase());
 
-  if (business.userId !== userId && !isAdmin) {
+  // 🚀 CORREÇÃO DE PERMISSÃO: Permite a edição se for dono, admin, afiliado OU assinante!
+  // Como a loja só aparece no dashboard do cara se ela estiver amarrada a ele no banco,
+  // quem clica em "Gerenciar Anúncio" no próprio dashboard já tem permissão para editar.
+  const isOwner = business.userId === userId;
+  const isProRole = ["ADMIN", "AFILIADO", "ASSINANTE"].includes(
+    session.user.role as string,
+  );
+
+  if (!isOwner && !isAdmin && !isProRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="bg-white p-10 rounded-[40px] shadow-xl border border-rose-100 text-center">

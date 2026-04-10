@@ -10,11 +10,11 @@ import {
   Heart,
   Home,
   Lock,
-  AlertTriangle,
   Briefcase,
 } from "lucide-react";
 import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
+import SessionRefresher from "@/components/SessionRefresher";
 
 export default async function DashboardLayout({
   children,
@@ -25,7 +25,6 @@ export default async function DashboardLayout({
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
 
-  // 1. Busca dados do usuário + Negócios para validar expiração
   const user = await db.user.findUnique({
     where: { id: userId },
     select: {
@@ -47,13 +46,9 @@ export default async function DashboardLayout({
   const isAfiliado = currentRole === "AFILIADO";
   const isAssinante = currentRole === "ASSINANTE";
 
-  // ==============================================================================
-  // 1.2 🚀 LÓGICA DE VALIDADE (Focada na loja principal)
-  // ==============================================================================
   const mainBusiness = user.businesses[0];
   const businessExpiresAt = mainBusiness?.expiresAt;
 
-  // 🛡️ GUILHOTINA (48h de carência para Assinantes)
   if (isAssinante && businessExpiresAt) {
     const dataComCarencia = new Date(
       new Date(businessExpiresAt).getTime() + 48 * 60 * 60 * 1000,
@@ -68,7 +63,6 @@ export default async function DashboardLayout({
     }
   }
 
-  // Definição de Membro Ativo
   let hasValidSubscription = false;
   if (businessExpiresAt) {
     const dataComCarencia = new Date(
@@ -84,9 +78,9 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
-      {/* --- SIDEBAR --- */}
+      <SessionRefresher />
+
       <aside className="w-full md:w-64 bg-[#0F172A] text-white flex flex-col md:fixed md:h-full z-20 shadow-2xl">
-        {/* Identidade do Usuário */}
         <div className="p-6 md:p-8 border-b border-white/5">
           <div>
             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">
@@ -112,7 +106,6 @@ export default async function DashboardLayout({
           )}
         </div>
 
-        {/* Menu de Navegação */}
         <nav className="flex flex-row md:flex-col p-2 md:p-4 gap-1 md:gap-2 overflow-x-auto scrollbar-hide">
           {isLocked ? (
             <div className="flex flex-col gap-4 w-full">
@@ -148,7 +141,6 @@ export default async function DashboardLayout({
                 <>
                   <div className="my-2 border-t border-white/5 mx-4 hidden md:block opacity-50"></div>
 
-                  {/* 🚀 BOTÃO UNIFICADO: Minha Vitrine / Meus Negócios */}
                   <Link
                     href="/dashboard"
                     className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
@@ -159,7 +151,6 @@ export default async function DashboardLayout({
                     </span>
                   </Link>
 
-                  {/* 🚀 BOTÃO CONDICIONAL: Apenas Admins e Afiliados criam novos */}
                   {(isAdmin || isAfiliado) && (
                     <Link
                       href="/dashboard/novo"
@@ -178,7 +169,7 @@ export default async function DashboardLayout({
                     <span className="text-sm">Meus Dados</span>
                   </Link>
 
-                  {(isAfiliado || isAdmin) && (
+                  {isAfiliado && (
                     <Link
                       href="/dashboard/parceiro"
                       className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
@@ -202,7 +193,6 @@ export default async function DashboardLayout({
         </div>
       </aside>
 
-      {/* Conteúdo Principal */}
       <main className="flex-1 md:ml-64 w-full min-h-screen bg-gray-50">
         <div className="w-full">{children}</div>
       </main>

@@ -1484,12 +1484,13 @@ export async function getHomeBusinesses(userId?: string) {
       where: {
         isActive: true,
         published: true,
-        // 🚀 AJUSTE AQUI: Mudamos a forma de perguntar ao banco
+        // 🚀 AJUSTE AQUI: Afiliados ganham imunidade vitalícia junto com Admins
         OR: [
-          { user: { role: "ADMIN" as Role } }, // Se o dono for Admin, conta sempre
+          { user: { role: "ADMIN" as Role } },
+          { user: { role: "AFILIADO" as Role } }, // VIP do Parceiro Oficial
           {
             user: { role: "ASSINANTE" as Role },
-            expiresAt: { gt: new Date() }, // Se for assinante, checa a validade DA LOJA
+            expiresAt: { gt: new Date() },
           },
         ],
       },
@@ -1511,6 +1512,7 @@ export async function getHomeBusinesses(userId?: string) {
         // 🚀 AJUSTE AQUI TAMBÉM: Igual ao passo 2
         OR: [
           { user: { role: "ADMIN" as Role } },
+          { user: { role: "AFILIADO" as Role } },
           {
             user: { role: "ASSINANTE" as Role },
             expiresAt: { gt: new Date() },
@@ -1844,7 +1846,10 @@ export async function getAffiliateDashboardData() {
       where: { id: sessionUser.id },
       include: {
         referrals: {
-          // Estes são os clientes amarrados a ele!
+          where: {
+            // 🚀 TRAVA SÊNIOR: Não traz o próprio afiliado na lista de clientes
+            NOT: { id: sessionUser.id },
+          },
           select: {
             id: true,
             name: true,

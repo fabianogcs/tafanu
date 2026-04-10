@@ -60,29 +60,37 @@ export const proxy = auth((req) => {
     const isAfiliado = userRole === "AFILIADO";
     const isAssinante = userRole === "ASSINANTE";
 
-    // 🚀 A MÁGICA CONTRA O PING-PONG: O Middleware confia no seu e-mail de dono!
     const emailSessao = req.auth?.user?.email?.toLowerCase();
     const donoEmail =
       process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
     const isDono = emailSessao === donoEmail;
 
-    // Adicionamos o "isDono" aqui. O dono tem passe livre imediato!
-    const isPro = isAssinante || isAfiliado || isAdmin || isDono;
+    // 🚀 O SEGREDO: Delegamos a segurança real para as páginas (Server Components)
+    // porque elas olham direto no banco de dados e nunca falham.
+    if (
+      pathname === "/dashboard" ||
+      pathname.startsWith("/dashboard/editar") ||
+      pathname.startsWith("/dashboard/perfil") ||
+      pathname.startsWith("/dashboard/novo")
+    ) {
+      return NextResponse.next();
+    }
 
-    // Nível A: Visitante Logado, Assinante, Afiliado e Admin
+    const isPro =
+      isAssinante ||
+      isAfiliado ||
+      isAdmin ||
+      isDono ||
+      pathname.startsWith("/dashboard/parceiro");
+
     if (pathname.startsWith("/dashboard/favoritos")) {
       return NextResponse.next();
     }
 
-    // Nível B: Apenas Afiliado e Admin
     if (pathname.startsWith("/dashboard/parceiro")) {
-      if (!isAfiliado && !isAdmin) {
-        return NextResponse.redirect(new URL("/dashboard", nextUrl));
-      }
       return NextResponse.next();
     }
 
-    // Nível C: Restante do Dashboard. Requer status PRO.
     if (!isPro) {
       return NextResponse.redirect(new URL("/checkout", nextUrl));
     }

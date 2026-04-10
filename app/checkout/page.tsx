@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -12,12 +12,12 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
-// 🚀 Importamos a nova função getBusinessExpiration
 import {
   createSubscription,
   getAuthSession,
   getBusinessExpiration,
 } from "@/app/actions";
+import SessionRefresher from "@/components/SessionRefresher";
 
 const PLANS = {
   monthly: {
@@ -57,9 +57,10 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("monthly");
 
-  // 🚀 Novo estado para guardar a data de validade vinda do banco
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     async function checkStatus() {
@@ -70,19 +71,33 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Busca a validade real da loja no servidor
-      const expiration = await getBusinessExpiration();
-      if (expiration) setExpiresAt(new Date(expiration));
-      setIsLoadingData(false);
+      // 🚀 TRAVA DO LOOP: Se já buscou uma vez, ignora as próximas!
+      if (hasFetched.current) return;
+      hasFetched.current = true;
+
+      let expirationDate = null;
+
+      try {
+        const expiration = await getBusinessExpiration();
+        if (expiration) {
+          expirationDate = new Date(expiration);
+          setExpiresAt(expirationDate);
+        }
+      } catch (error) {
+        console.log("Usuário não possui loja ainda.");
+      } finally {
+        setIsLoadingData(false);
+      }
 
       const role = session?.user?.role;
-      const isExpired = expiration ? new Date(expiration) < new Date() : false;
+      const isExpired = expirationDate ? expirationDate < new Date() : false;
 
+      // 🚀 CONSERTO AQUI: Redireciona Admins e Afiliados para fora do Checkout
       if (role === "ADMIN") {
         router.replace("/admin");
-      }
-      // Se for assinante e ainda estiver no prazo, não precisa estar aqui
-      else if (role === "ASSINANTE" && !isExpired) {
+      } else if (role === "AFILIADO") {
+        router.replace("/dashboard");
+      } else if (role === "ASSINANTE" && !isExpired) {
         router.replace("/dashboard");
       }
     }
@@ -101,13 +116,10 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Buscamos a primeira loja do usuário para ter o ID dela
-      // Nota: Em um sistema multi-loja, aqui você passaria o ID da loja específica
-      // Para o seu caso (assinante = 1 loja), buscamos a dele.
       const res = await createSubscription(
         serverSession.id,
         serverSession.email,
-        "", // O createSubscription lá no actions já busca o businessId se enviarmos vazio ou ajustarmos
+        "",
         selectedPlan,
       );
 
@@ -123,11 +135,14 @@ export default function CheckoutPage() {
     }
   };
 
-  // Trava de carregamento
   const isExpired = expiresAt ? expiresAt < new Date() : false;
+
+  // 🚀 CONSERTO AQUI: Bloqueia a visão da página para Admins e Afiliados enquanto redireciona
   if (
     status === "loading" ||
     isLoadingData ||
+    session?.user?.role === "ADMIN" ||
+    session?.user?.role === "AFILIADO" ||
     (session?.user?.role === "ASSINANTE" && !isExpired)
   ) {
     return (
@@ -139,7 +154,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 font-sans">
-      {/* O RESTANTE DO SEU HTML CONTINUA IGUAL... */}
       <div className="max-w-6xl mx-auto pt-8 pb-4 px-6 text-center">
         <h1 className="text-2xl md:text-4xl lg:text-5xl font-black text-[#050814] tracking-tighter uppercase italic">
           Escolha seu plano <span className="text-emerald-500">Tafanu PRO</span>
