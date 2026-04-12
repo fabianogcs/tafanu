@@ -88,49 +88,54 @@ export function ConnectionsSection({
       </div>
 
       {/* REDES SOCIAIS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           {
             id: "instagram",
-            icon: <Instagram size={16} />,
-            color: "hover:text-pink-500",
+            icon: <Instagram size={20} />,
+            color: "bg-[#E1306C] text-white",
             label: "Instagram",
           },
           {
             id: "tiktok",
-            icon: <Music2 size={16} />,
-            color: "hover:text-black",
+            icon: <Music2 size={20} />,
+            color: "bg-black text-white",
             label: "TikTok",
           },
           {
             id: "facebook",
-            icon: <Facebook size={16} />,
-            color: "hover:text-blue-600",
+            icon: <Facebook size={20} />,
+            color: "bg-[#1877F2] text-white",
             label: "Facebook",
           },
           {
             id: "website",
-            icon: <Globe size={16} />,
-            color: "hover:text-indigo-500",
-            label: "Website",
+            icon: <Globe size={20} />,
+            color: "bg-indigo-500 text-white",
+            label: "Website Oficial",
           },
         ].map((social) => (
-          <div
+          <label
             key={social.id}
-            className="group bg-slate-50 p-3 rounded-2xl border border-transparent hover:border-slate-200 hover:bg-white transition-all flex items-center gap-3 shadow-sm"
+            className="flex items-center gap-3 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all focus-within:bg-white focus-within:ring-4 focus-within:border-transparent group cursor-text"
           >
             <div
-              className={`p-2 rounded-lg bg-white shadow-sm text-slate-400 transition-colors ${social.color}`}
+              className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center shadow-sm transition-transform group-focus-within:scale-105 ${social.color}`}
             >
               {social.icon}
             </div>
-            <input
-              value={(socials as any)[social.id]}
-              onChange={(e) => updateSocial(social.id as any, e.target.value)}
-              placeholder={contactPlaceholders[social.id]}
-              className="bg-transparent w-full text-xs font-bold text-slate-600 outline-none placeholder:font-normal placeholder:opacity-30"
-            />
-          </div>
+            <div className="flex-1 pr-4">
+              <span className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
+                {social.label}
+              </span>
+              <input
+                value={(socials as any)[social.id]}
+                onChange={(e) => updateSocial(social.id as any, e.target.value)}
+                placeholder={contactPlaceholders[social.id]}
+                className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
+              />
+            </div>
+          </label>
         ))}
       </div>
 
@@ -170,19 +175,19 @@ export function ConnectionsSection({
               placeholder: "shein.com/...",
             },
           ].map((store) => (
-            <div
+            <label
               key={store.key}
-              className="flex items-center gap-3 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all focus-within:bg-white focus-within:ring-4 focus-within:border-transparent group"
+              className="flex items-center gap-3 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all focus-within:bg-white focus-within:ring-4 focus-within:border-transparent group cursor-text"
             >
               <div
-                className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-black text-xl shadow-sm ${store.color}`}
+                className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-black text-xl shadow-sm transition-transform group-focus-within:scale-105 ${store.color}`}
               >
                 {store.icon}
               </div>
               <div className="flex-1 pr-4">
-                <label className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
+                <span className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
                   {store.label}
-                </label>
+                </span>
                 <input
                   value={(socials as any)[store.key]}
                   onChange={(e) =>
@@ -192,7 +197,7 @@ export function ConnectionsSection({
                   className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
                 />
               </div>
-            </div>
+            </label>
           ))}
         </div>
       </div>

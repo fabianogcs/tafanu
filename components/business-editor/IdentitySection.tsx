@@ -10,6 +10,7 @@ import {
   Lock,
   Unlock,
   AlertTriangle,
+  AlertOctagon, // Ícone novo para chamar atenção
 } from "lucide-react";
 import { layoutInfo } from "./constants";
 import { businessThemes } from "@/lib/themes";
@@ -18,7 +19,6 @@ interface IdentitySectionProps {
   name: string;
   handleNameChange: (val: string) => void;
   nameError: boolean;
-  // 🛡️ Tipagem correta para Refs de inputs do React
   nameRef: React.RefObject<HTMLInputElement | null>;
   slug: string;
   handleSlugChange: (val: string) => void;
@@ -67,11 +67,40 @@ export function IdentitySection({
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
   const isChanged = !isNew && slug !== safeBusinessSlug;
 
+  // 1. A IMPRESSÃO DIGITAL: Verifica se o link original tem exatamente o padrão gerado pelo Backend
+  // Padrão 1: "vitrine-" + 5 caracteres + "-" + 13 números (Date.now)
+  // Padrão 2: "loja-" + 8 caracteres + "-" + 4 números (usado no adminActivateVisitor)
+  const isGhostOriginal =
+    /^vitrine-[a-z0-9]{5}-\d{13}$/i.test(safeBusinessSlug) ||
+    /^loja-[a-z0-9]{8}-\d{4}$/i.test(safeBusinessSlug);
+
+  // 2. Verifica se o usuário já limpou os dados genéricos
+  const stillHasGhostName =
+    name === "Minha Vitrine" || name === "Vitrine Oculta";
+  const stillHasGhostSlug = slug === safeBusinessSlug;
+
+  // 3. O RADAR FINAL: Só pisca a sirene se a loja nasceu fantasma E a pessoa ainda não editou os DOIS campos!
+  const isGhostBusiness =
+    isGhostOriginal && (stillHasGhostName || stillHasGhostSlug);
+
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col items-center text-center">
-        {/* FOTO DE PERFIL */}
-        <div className="relative w-32 h-32 md:w-36 md:h-36 mb-4 group">
+      <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col items-center text-center relative overflow-hidden">
+        {/* 🚨 O ALERTA GIGANTE (Só aparece para a loja fantasma) */}
+        {isGhostBusiness && (
+          <div className="absolute top-0 left-0 w-full bg-rose-500 text-white p-3 md:p-4 flex items-center justify-center gap-3 animate-pulse shadow-md z-10">
+            <AlertOctagon size={20} className="shrink-0" />
+            <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-center leading-tight">
+              Ação Necessária: Mude o "Nome" e o "Link" abaixo para personalizar
+              seu site!
+            </p>
+          </div>
+        )}
+
+        {/* FOTO DE PERFIL (Empurrado um pouco para baixo se tiver o alerta) */}
+        <div
+          className={`relative w-32 h-32 md:w-36 md:h-36 mb-4 group ${isGhostBusiness ? "mt-12" : ""}`}
+        >
           <div
             className="w-full h-full rounded-full bg-slate-50 border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center relative cursor-pointer"
             onClick={() => !isUploadingLogo && fileInputRef.current?.click()}
@@ -120,7 +149,9 @@ export function IdentitySection({
 
         {/* NOME */}
         <div className="w-full relative group mb-2">
-          <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1 block opacity-60">
+          <label
+            className={`text-[10px] font-bold uppercase tracking-widest mb-1 block transition-colors ${isGhostBusiness ? "text-rose-500 animate-bounce" : "text-indigo-400 opacity-60"}`}
+          >
             Nome do Negócio
           </label>
           <input
@@ -130,7 +161,9 @@ export function IdentitySection({
             className={`w-full text-center bg-transparent text-2xl md:text-3xl font-black outline-none border-b-2 py-2 italic tracking-tighter transition-all ${
               nameError
                 ? "border-rose-500 text-rose-600 bg-rose-50 animate-pulse"
-                : "border-dashed border-slate-300 focus:border-indigo-500 hover:bg-slate-50 text-slate-900"
+                : isGhostBusiness
+                  ? "border-rose-300 text-slate-400 focus:text-slate-900 focus:border-indigo-500"
+                  : "border-dashed border-slate-300 focus:border-indigo-500 hover:bg-slate-50 text-slate-900"
             }`}
             placeholder="Digite o Nome Aqui..."
           />
@@ -142,7 +175,6 @@ export function IdentitySection({
             <span className="bg-slate-100 px-2 py-1 rounded">
               tafanu.com.br/site/
             </span>
-            {/* Mostra cadeado aberto se mudou, ou fechado se está original */}
             {!isNew &&
               (isChanged ? (
                 <Unlock size={12} className="text-amber-500" />
@@ -159,12 +191,15 @@ export function IdentitySection({
                 ? "bg-rose-50 border-rose-500 text-rose-700 animate-pulse"
                 : isChanged
                   ? "bg-amber-50 border-amber-400 text-amber-700 ring-4 ring-amber-100"
-                  : "bg-slate-50 border-slate-200 text-slate-600"
+                  : isGhostBusiness
+                    ? "bg-rose-50 border-rose-200 text-rose-400 focus:text-slate-900 focus:border-indigo-500"
+                    : "bg-slate-50 border-slate-200 text-slate-600"
             }`}
           />
 
-          {/* Este é o aviso que "pula" embaixo do input quando você mexe */}
-          {isChanged && (
+          {/* 🚀 O AVISO DE CUIDADO AGORA É INTELIGENTE */}
+          {/* Se a pessoa está na loja fantasma, nós QUEREMOS que ela mude. Então NÃO mostramos o aviso de perigo. */}
+          {isChanged && !isGhostBusiness && (
             <div className="mt-2 text-[10px] font-black uppercase text-amber-600 flex items-center justify-center gap-1 animate-pulse">
               <AlertTriangle size={12} /> Cuidado: Links antigos vão parar de
               funcionar!

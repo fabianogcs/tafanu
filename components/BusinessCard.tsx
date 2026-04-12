@@ -54,7 +54,9 @@ export default function BusinessCard({ business, showDistance }: any) {
       : business.city || business.state,
   ].filter((part) => part && part.trim() !== "");
 
-  const locationText = locationParts.join(" • ") || "Ver localização";
+  // 🚀 Se a array locationParts estiver vazia, retorna null para podermos esconder o ícone depois
+  const locationText =
+    locationParts.length > 0 ? locationParts.join(" • ") : null;
 
   return (
     <motion.div
@@ -147,16 +149,18 @@ export default function BusinessCard({ business, showDistance }: any) {
             {business.name}
           </h3>
 
-          {/* ENDEREÇO (TEXTO LIMPO) */}
-          <div className="flex items-center justify-center gap-1 text-slate-400 mt-auto px-1">
-            <MapPin
-              size={10}
-              className="text-blue-600 shrink-0 md:w-3 md:h-3"
-            />
-            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
-              {locationText}
-            </span>
-          </div>
+          {/* ENDEREÇO (TEXTO LIMPO) - Renderização Condicional */}
+          {locationText && (
+            <div className="flex items-center justify-center gap-1 text-slate-400 mt-auto px-1">
+              <MapPin
+                size={10}
+                className="text-blue-600 shrink-0 md:w-3 md:h-3"
+              />
+              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+                {locationText}
+              </span>
+            </div>
+          )}
         </div>
       </Link>
 

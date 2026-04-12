@@ -594,7 +594,10 @@ export async function createBusiness(payload: any) {
           cep: payload.cep || "",
           city: normalizeText(validatedData.city || ""),
           neighborhood: normalizeText(payload.neighborhood || ""),
-          state: validatedData.state,
+          state:
+            !validatedData.address && !validatedData.city
+              ? ""
+              : validatedData.state,
           latitude: coords.lat,
           longitude: coords.lng,
           imageUrl: payload.imageUrl || "",
@@ -751,7 +754,10 @@ export async function updateFullBusiness(slug: string, payload: any) {
         cep: validatedData.cep || payload.cep || "",
         city: normalizeText(validatedData.city || ""),
         neighborhood: normalizeText(payload.neighborhood || ""),
-        state: validatedData.state,
+        state:
+          !validatedData.address && !validatedData.city
+            ? ""
+            : validatedData.state,
         latitude: lat,
         longitude: lng,
         keywords: Array.from(
@@ -1379,8 +1385,8 @@ export async function cancelSubscriptionAction() {
   const userId = session.id;
 
   try {
-    // 1. Busca no banco QUALQUER loja deste usuário que tenha um ID de assinatura do MP salvo
-    const businessWithSub = await db.business.findFirst({
+    // 1. Localiza a loja que possui a assinatura ativa
+    const business = await db.business.findFirst({
       where: {
         userId: userId,
         mpSubscriptionId: { not: null },
@@ -1388,35 +1394,34 @@ export async function cancelSubscriptionAction() {
       select: { id: true, mpSubscriptionId: true },
     });
 
-    if (!businessWithSub || !businessWithSub.mpSubscriptionId) {
+    if (!business || !business.mpSubscriptionId) {
       return { error: "Nenhuma assinatura ativa encontrada para cancelar." };
     }
 
-    // 2. Avisa o Mercado Pago para cancelar a cobrança
+    // 2. Avisa o Mercado Pago para interromper as cobranças futuras
     const preApproval = new PreApproval(client);
     await preApproval.update({
-      id: businessWithSub.mpSubscriptionId,
+      id: business.mpSubscriptionId,
       body: { status: "cancelled" },
     });
 
-    // 3. Limpa o ID da assinatura na gaveta do banco (mas a loja continua no ar até o expiresAt vencer!)
+    // 3. Atualizamos o banco: Removemos o ID da assinatura (para parar o vínculo)
+    // Mas MANTEMOS 'isActive: true' e o 'expiresAt' intacto.
     await db.business.update({
-      where: { id: businessWithSub.id },
+      where: { id: business.id },
       data: {
         mpSubscriptionId: null,
+        subscriptionStatus: "cancelled",
       },
     });
 
     revalidatePath("/dashboard/perfil");
     revalidatePath("/dashboard");
-    revalidatePath("/");
 
     return { success: true };
   } catch (error) {
-    console.error("Erro Crítico ao cancelar no MP:", error);
-    return {
-      error: "Falha de comunicação com o Mercado Pago. Tente novamente.",
-    };
+    console.error("Erro ao cancelar recorrência:", error);
+    return { error: "Falha ao cancelar a renovação. Tente novamente." };
   }
 }
 // ==============================================================================

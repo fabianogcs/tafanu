@@ -27,7 +27,6 @@ import {
 import {
   updateFullBusiness,
   updateBusinessHours,
-  deleteBusiness,
   createBusiness,
 } from "@/app/actions";
 import HoursForm from "@/components/HoursForm";
@@ -352,6 +351,56 @@ export default function BusinessEditor({
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
+  // 🚀 A BORRACHA SEGURA: Limpa a tela e deixa o Backend fazer o trabalho sujo na hora de salvar
+  const handleClearContent = async () => {
+    const confirmClear = window.confirm(
+      "⚠️ ATENÇÃO: Isso vai limpar todas as suas fotos e textos da tela.\n\nO Nome e o Link NÃO serão alterados.\n\nDeseja continuar?",
+    );
+
+    if (!confirmClear) return;
+
+    setIsLoading(true);
+
+    try {
+      // 1. Limpa a vitrine APENAS no Front-end (Visual)
+      setDescription("");
+      setGallery([]);
+      setProfileImage("");
+      setFeatures([]);
+      setFaqs([]);
+      setWhatsapp("");
+      setPhone("");
+      setSocials({
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        website: "",
+        shopee: "",
+        mercadoLivre: "",
+        shein: "",
+        ifood: "",
+      });
+      setLayoutText("");
+      setAddressData({
+        address: "",
+        cep: "",
+        neighborhood: "",
+        city: "",
+        state: "",
+        number: "",
+        complement: "",
+      });
+
+      // 2. Avisa o usuário que o trabalho só termina quando ele salvar
+      toast.success(
+        "Tela limpa! Clique no botão SALVAR para confirmar a exclusão do servidor.",
+      );
+    } catch (error) {
+      toast.error("Ops! Algo deu errado ao tentar limpar.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleUpdate = async (overridePublished?: boolean) => {
     if (isLoading) return;
     if (!name || name.trim() === "") {
@@ -364,16 +413,25 @@ export default function BusinessEditor({
       setTimeout(() => setNameError(false), 4000);
       return;
     }
+    // Verifica se ele alterou o link
     if (!isNew && slug !== safeBusiness.slug) {
-      const confirmChange = window.confirm(
-        "⚠️ PERIGO: Você alterou o LINK do seu negócio.\n\n" +
-          "Isso fará com que seus links compartilhados antigos PAREM DE FUNCIONAR imediatamente.\n\n" +
-          "Tem certeza absoluta que deseja mudar de:\n" +
-          `"${safeBusiness.slug}" para "${slug}"?`,
-      );
-      if (!confirmChange) {
-        setSlug(safeBusiness.slug);
-        return;
+      // 🚀 O RADAR: Verifica a "Impressão Digital" do link antigo. Ele era uma loja automática?
+      const isGhostOriginal =
+        /^vitrine-[a-z0-9]{5}-\d{13}$/i.test(safeBusiness.slug) ||
+        /^loja-[a-z0-9]{8}-\d{4}$/i.test(safeBusiness.slug);
+
+      // Só exibe o alerta aterrorizante se o link anterior era de fato um link oficial (não fantasma)
+      if (!isGhostOriginal) {
+        const confirmChange = window.confirm(
+          "⚠️ PERIGO: Você alterou o LINK do seu negócio.\n\n" +
+            "Isso fará com que seus links compartilhados antigos PAREM DE FUNCIONAR imediatamente.\n\n" +
+            "Tem certeza absoluta que deseja mudar de:\n" +
+            `"${safeBusiness.slug}" para "${slug}"?`,
+        );
+        if (!confirmChange) {
+          setSlug(safeBusiness.slug);
+          return;
+        }
       }
     }
 
@@ -548,7 +606,18 @@ export default function BusinessEditor({
   };
 
   const handleSlugChange = (val: string) => {
-    const newSlug = toSlug(val);
+    // 1. Troca qualquer espaço digitado por hífen IMEDIATAMENTE
+    let newSlug = val.replace(/\s+/g, "-");
+
+    // 2. Força tudo para minúsculo
+    newSlug = newSlug.toLowerCase();
+
+    // 3. Remove acentos (ex: á vira a, ç vira c)
+    newSlug = newSlug.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // 4. Arranca fora qualquer caractere especial que quebre o link (deixa só letra, número e hífen)
+    newSlug = newSlug.replace(/[^a-z0-9\-]/g, "");
+
     setSlug(newSlug);
   };
 
@@ -610,13 +679,12 @@ export default function BusinessEditor({
                   {isPublished ? "Online" : "Pausado"}
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm("Deseja realmente excluir?"))
-                      deleteBusiness(business.slug).then(() =>
-                        router.push("/dashboard"),
-                      );
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleClearContent();
                   }}
-                  className="p-3 text-rose-300 hover:text-rose-500 transition-all"
+                  title="Limpar Conteúdo da Vitrine"
+                  className="p-3 text-rose-300 hover:text-rose-500 transition-all shadow-sm bg-white rounded-xl border border-rose-100 hover:bg-rose-50"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -761,17 +829,27 @@ export default function BusinessEditor({
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
             <AnimatePresence>
               {!isPublished && !isLoading && (
-                <motion.div
+                <motion.button
+                  onClick={(e) => {
+                    e.preventDefault(); // Evita qualquer comportamento padrão
+                    setIsPublished(true); // Muda o estado visualmente na hora
+                    handleUpdate(true); // 🚀 Manda pro banco de dados salvar como Online!
+                  }}
                   initial={{ y: 5, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 5, opacity: 0 }}
-                  className="bg-rose-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center gap-2 border border-rose-400"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-rose-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center gap-2 border border-rose-400 hover:bg-rose-600 transition-colors cursor-pointer group"
                 >
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse shrink-0" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-1">
                     Status: Pausado
+                    <span className="hidden group-hover:inline ml-1 opacity-80">
+                      • Clique para Publicar
+                    </span>
                   </span>
-                </motion.div>
+                </motion.button>
               )}
             </AnimatePresence>
             <button
