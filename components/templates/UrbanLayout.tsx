@@ -296,6 +296,25 @@ export default function UrbanLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
+  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
+  const addressPartsForMap = [
+    business.address,
+    business.number,
+    business.neighborhood,
+    business.city,
+    business.state,
+    business.cep,
+  ].filter(Boolean);
+
+  const completeAddressForMap = addressPartsForMap.join(", ");
+
+  const mapDestination =
+    business.latitude && business.longitude
+      ? `${business.latitude},${business.longitude}`
+      : completeAddressForMap;
+
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
+
   if (!theme) return null;
 
   return (
@@ -711,10 +730,10 @@ export default function UrbanLayout({
 
             {hasAddress && (
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
+                href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => Actions.registerClickEvent(business.id, "MAP")} // 🚀 ESPIÃO AQUI
+                onClick={() => Actions.registerClickEvent(business.id, "MAP")}
                 className={`w-full ${glassEffect} border border-white/10 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-white/40 transition-all`}
               >
                 <div
@@ -728,13 +747,11 @@ export default function UrbanLayout({
                     Location
                   </p>
                   <p className="text-base md:text-lg font-bold italic uppercase tracking-wide leading-tight">
-                    {/* Mostra o endereço e só adiciona o número se ele já não estiver lá */}
-                    {business.address}
+                    {business.address || "Endereço não cadastrado"}
                     {business.number &&
                       !business.address?.includes(business.number) &&
                       `, ${business.number}`}
 
-                    {/* Complemento sempre em linha separada e discreta */}
                     {business.complement && (
                       <span className="block text-xs md:text-sm opacity-70 not-italic font-medium mt-1">
                         {business.complement}
@@ -743,6 +760,7 @@ export default function UrbanLayout({
                   </p>
                   <p className="text-[10px] md:text-xs opacity-40 uppercase tracking-widest mt-1">
                     {business.neighborhood} • {business.city} — {business.state}
+                    {business.cep && ` • CEP: ${business.cep}`}
                   </p>
                 </div>
               </a>

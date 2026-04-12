@@ -247,6 +247,26 @@ export default function ShowroomLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
+  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
+  const addressPartsForMap = [
+    business.address,
+    business.number,
+    business.neighborhood,
+    business.city,
+    business.state,
+    business.cep,
+  ].filter(Boolean);
+
+  const completeAddressForMap = addressPartsForMap.join(", ");
+
+  const mapDestination =
+    business.latitude && business.longitude
+      ? `${business.latitude},${business.longitude}`
+      : completeAddressForMap;
+
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
+  // ------------------------------------------
+
   if (!theme) return null;
 
   return (
@@ -491,7 +511,7 @@ export default function ShowroomLayout({
           {/* Endereço Seguro e Oficial */}
           {hasAddress && (
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress || business.address)}`}
+              href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => Actions.registerClickEvent(business.id, "MAP")}
@@ -504,14 +524,26 @@ export default function ShowroomLayout({
                 </h3>
               </div>
 
-              {/* PARTE DE CIMA: Limpa para não repetir a cidade */}
+              {/* PARTE DE CIMA: Rua e Número */}
               <p className="text-sm font-bold leading-relaxed mb-1 opacity-90 break-words">
-                {business.address?.split(" - ").slice(0, 2).join(" - ")}
+                {business.address || "Endereço não cadastrado"}
+                {business.number &&
+                  !business.address?.includes(business.number) &&
+                  `, ${business.number}`}
               </p>
 
-              {/* PARTE DE BAIXO: Cidade e Estado que você já tem */}
-              <p className="text-[10px] uppercase tracking-widest opacity-50">
+              {/* COMPLEMENTO (Se houver) */}
+              {business.complement && (
+                <p className="text-[11px] font-medium opacity-70 mb-1">
+                  {business.complement}
+                </p>
+              )}
+
+              {/* PARTE DE BAIXO: Bairro, Cidade, Estado e CEP */}
+              <p className="text-[10px] uppercase tracking-widest opacity-50 mt-2">
+                {business.neighborhood && `${business.neighborhood} • `}
                 {business.city} {business.state ? `— ${business.state}` : ""}
+                {business.cep && ` • CEP: ${business.cep}`}
               </p>
             </a>
           )}

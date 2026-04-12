@@ -112,13 +112,13 @@ export default function MainLayoutSwitcher({
 
     default:
       return (
-        <LuxeLayout
+        <ShowroomLayout
           business={business}
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn} // ⬅️ Repassando
-          isFavorited={isFavorited} // ⬅️ Repassando
+          isLoggedIn={isLoggedIn}
+          isFavorited={isFavorited}
           emailVerified={emailVerified}
           currentUserId={currentUserId}
           isAdmin={isAdmin}

@@ -294,6 +294,27 @@ export default function ComercialLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
+  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
+  const addressPartsForMap = [
+    business.address,
+    business.number,
+    business.neighborhood,
+    business.city,
+    business.state,
+    business.cep,
+  ].filter(Boolean);
+
+  const completeAddressForMap = addressPartsForMap.join(", ");
+
+  const mapDestination =
+    business.latitude && business.longitude
+      ? `${business.latitude},${business.longitude}`
+      : completeAddressForMap;
+
+  // URL Oficial de Rotas com Origem Inteligente via GPS do usuário
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
+  // ------------------------------------------
+
   if (!theme) return null;
 
   return (
@@ -716,13 +737,13 @@ export default function ComercialLayout({
 
                   {hasAddress && (
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+                      href={mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() =>
                         Actions.registerClickEvent(business.id, "MAP")
                       }
-                      /* AJUSTE AQUI: Removemos h-64, justify-between e usamos min-h com gap */
+                      /* Mantendo as classes perfeitas do tema Comercial */
                       className={`p-6 md:p-8 ${theme.cardBg} rounded-[2.5rem] flex flex-col gap-6 h-full group border ${theme.border} shadow-sm transition-all hover:shadow-md`}
                     >
                       {/* ÍCONE COM TAMANHO AJUSTADO */}
@@ -739,19 +760,31 @@ export default function ComercialLayout({
                           Localização
                         </h4>
 
-                        {/* ENDEREÇO PRINCIPAL */}
+                        {/* ENDEREÇO PRINCIPAL E COMPLEMENTO */}
                         <p
                           className={`text-sm md:text-base font-black uppercase italic leading-tight ${theme.textColor}`}
                         >
-                          {business.address?.split("-").slice(0, 2).join(" - ")}
+                          {business.address || "Endereço não cadastrado"}
+                          {business.number &&
+                            !business.address?.includes(business.number) &&
+                            `, ${business.number}`}
                         </p>
 
-                        {/* CIDADE E ESTADO */}
+                        {business.complement && (
+                          <p className="text-[11px] font-medium opacity-70">
+                            {business.complement}
+                          </p>
+                        )}
+
+                        {/* BAIRRO, CIDADE, ESTADO E CEP */}
                         <p
                           className={`text-[10px] font-bold opacity-40 uppercase tracking-widest ${theme.textColor}`}
                         >
+                          {business.neighborhood &&
+                            `${business.neighborhood} • `}
                           {business.city}{" "}
                           {business.state ? `— ${business.state}` : ""}
+                          {business.cep && ` • CEP: ${business.cep}`}
                         </p>
                       </div>
                     </a>

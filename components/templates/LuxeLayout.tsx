@@ -243,6 +243,27 @@ export default function LuxeLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
+  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
+  const addressPartsForMap = [
+    business.address,
+    business.number,
+    business.neighborhood,
+    business.city,
+    business.state,
+    business.cep,
+  ].filter(Boolean);
+
+  const completeAddressForMap = addressPartsForMap.join(", ");
+
+  const mapDestination =
+    business.latitude && business.longitude
+      ? `${business.latitude},${business.longitude}`
+      : completeAddressForMap;
+
+  // URL Oficial de Rotas: Força a Origem ser o GPS do cliente e o Destino ser a loja
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
+  // ------------------------------------------
+
   if (!theme) return null;
 
   return (
@@ -640,23 +661,35 @@ export default function LuxeLayout({
                       Localização
                     </span>
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(safeAddress)}`}
+                      href={mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      // 🚀 ESPIÃO ADICIONADO: Agora contabiliza cliques na Rota (MAP)
                       onClick={() =>
                         Actions.registerClickEvent(business.id, "MAP")
                       }
                       className="group block"
                     >
-                      {/* Pegamos só as 2 primeiras partes (Rua e Bairro) e forçamos Iniciais Maiúsculas */}
+                      {/* Rua e Número */}
                       <p className="text-lg font-serif italic leading-snug capitalize group-hover:underline opacity-90">
-                        {business.address?.split("-").slice(0, 2).join(" - ")}
+                        {business.address || "Endereço não cadastrado"}
+                        {business.number &&
+                          !business.address?.includes(business.number) &&
+                          `, ${business.number}`}
                       </p>
 
-                      {/* O seu amado Cidade - Estado intacto aqui embaixo! */}
-                      <p className="text-[10px] opacity-50 mt-2 uppercase tracking-widest">
-                        {business.city} — {business.state}
+                      {/* Complemento */}
+                      {business.complement && (
+                        <p className="text-sm font-sans font-light opacity-80 mt-1">
+                          {business.complement}
+                        </p>
+                      )}
+
+                      {/* Bairro, Cidade, Estado e CEP */}
+                      <p className="text-[10px] opacity-50 mt-3 uppercase tracking-widest leading-relaxed">
+                        {business.neighborhood && `${business.neighborhood} • `}
+                        {business.city}{" "}
+                        {business.state ? `— ${business.state}` : ""}
+                        {business.cep && ` • CEP: ${business.cep}`}
                       </p>
                     </a>
                   </div>
