@@ -10,98 +10,122 @@ import {
   Briefcase,
   ShoppingBag,
   Dog,
-  Zap, // Ícone genérico de segurança
 } from "lucide-react";
 
-// Mapeamento EXATO com as chaves do seu BusinessEditor (TAFANU_CATEGORIES)
-const categoriesData = [
+// 🛡️ Tipagem forte garantida
+interface CategoryConfig {
+  dbKey: string;
+  name: string;
+  icon: React.ElementType;
+  colorTheme: string;
+}
+
+const categoriesData: CategoryConfig[] = [
   {
+    dbKey: "Alimentacao",
     name: "Alimentação",
     icon: Utensils,
-    color: "bg-orange-100 text-orange-600",
+    colorTheme:
+      "hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 active:bg-orange-100",
   },
   {
+    dbKey: "Automotivo",
     name: "Automotivo",
     icon: Car,
-    color: "bg-red-100 text-red-600",
+    colorTheme:
+      "hover:bg-red-50 hover:text-red-600 hover:border-red-200 active:bg-red-100",
   },
   {
+    dbKey: "Beleza",
     name: "Beleza e Estética",
     icon: Scissors,
-    color: "bg-pink-100 text-pink-600",
+    colorTheme:
+      "hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200 active:bg-pink-100",
   },
   {
+    dbKey: "Comercio",
     name: "Comércio Local",
     icon: ShoppingBag,
-    color: "bg-green-100 text-green-600",
+    colorTheme:
+      "hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 active:bg-emerald-100",
   },
   {
-    name: "Pets", // Agora bate com o editor
+    dbKey: "Pets",
+    name: "Pets",
     icon: Dog,
-    color: "bg-teal-100 text-teal-600",
+    colorTheme:
+      "hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 active:bg-teal-100",
   },
   {
+    dbKey: "Profissionais",
     name: "Profissionais",
     icon: Briefcase,
-    color: "bg-purple-100 text-purple-600",
+    colorTheme:
+      "hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 active:bg-purple-100",
   },
   {
-    name: "Saúde e Bem-Estar", // Atenção ao hífen e maiúsculas
+    dbKey: "Saude",
+    name: "Saúde e Bem-Estar",
     icon: Stethoscope,
-    color: "bg-blue-100 text-blue-600",
+    colorTheme:
+      "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 active:bg-blue-100",
   },
   {
+    dbKey: "Servicos",
     name: "Serviços Casa",
     icon: Wrench,
-    color: "bg-yellow-100 text-yellow-600",
+    colorTheme:
+      "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 active:bg-amber-100",
   },
 ];
 
-export default function Categories({ activeCats }: { activeCats: string[] }) {
-  // Se a lista do banco vier vazia ou nula, não mostra nada
+interface CategoriesProps {
+  activeCats?: string[];
+}
+
+export default function Categories({ activeCats = [] }: CategoriesProps) {
   if (!activeCats || activeCats.length === 0) return null;
 
-  // Filtra para mostrar SÓ o que tem no banco
   const visibleCategories = categoriesData.filter((cat) =>
-    activeCats.includes(cat.name),
+    activeCats.includes(cat.dbKey),
   );
 
-  // Se depois de filtrar não sobrar nada, esconde a seção
   if (visibleCategories.length === 0) return null;
 
   return (
-    <section className="py-16 px-4 max-w-7xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-tafanu-blue mb-4 uppercase italic tracking-tighter">
-          Explore por Categorias
-        </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Tudo está organizado para facilitar sua vida. Escolha uma área e
-          encontre o profissional ideal em segundos.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <section className="py-6 md:py-8 max-w-7xl mx-auto overflow-hidden">
+      {/* 🚀 REMOVIDO: snap-x. ADICIONADO: justify-start md:justify-center */}
+      <div className="flex items-center justify-start md:justify-center gap-2 md:gap-3 px-6 overflow-x-auto no-scrollbar pb-2">
         {visibleCategories.map((cat) => (
           <Link
-            key={cat.name}
-            href={`/busca?category=${encodeURIComponent(cat.name)}`}
-            className="group cursor-pointer bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-tafanu-blue transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center"
+            key={cat.dbKey}
+            href={`/busca?category=${encodeURIComponent(cat.dbKey)}`}
+            className={`
+              shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full 
+              text-slate-500 transition-all duration-200 cursor-pointer
+              active:scale-95 ${cat.colorTheme}
+            `}
           >
-            <div
-              className={`w-14 h-14 ${cat.color} rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-inner`}
-            >
-              <cat.icon size={28} />
-            </div>
-            <h3 className="font-bold text-gray-800 group-hover:text-tafanu-blue transition-colors uppercase text-sm">
+            <cat.icon size={14} strokeWidth={2.5} />
+            <span className="text-[11px] font-bold uppercase tracking-wider">
               {cat.name}
-            </h3>
-            <p className="text-xs text-gray-400 mt-2 font-medium bg-gray-50 px-2 py-1 rounded-full group-hover:bg-tafanu-blue/10 group-hover:text-tafanu-blue transition-colors">
-              Ver opções &rarr;
-            </p>
+            </span>
           </Link>
         ))}
+
+        {/* Espaçador invisível no final apenas para mobile */}
+        <div className="shrink-0 w-2 md:hidden" />
       </div>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </section>
   );
 }

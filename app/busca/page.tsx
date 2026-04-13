@@ -319,25 +319,31 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       : undefined,
   };
 
-  // --- 3. BUSCA DOS NEGÓCIOS E COUNT ---
-  const [businessesData, totalCount] = await Promise.all([
-    db.business.findMany({
-      where: finalWhereClause,
-      take: 400, // Limite saudável
-      include: {
-        hours: true,
-        favorites: userId ? { where: { userId } } : false,
-        _count: { select: { favorites: true } },
-      },
-    }),
-    db.business.count({ where: finalWhereClause }),
-  ]);
+  // --- 3. VALIDAÇÃO DE INTENÇÃO DE BUSCA ---
+  // Só buscamos se houver texto, categoria ou subcategoria.
+  // Caso contrário, evitamos o processamento pesado e retornamos vazio.
+  const hasSearchTarget = !!(rawQuery || category || subcategoryParam);
 
-  // --- 4. RANKING E SCORE ---
-  // 🚀 CORREÇÃO SÊNIOR: Forçando o fuso horário de Brasília (evita o bug do servidor gringo)
+  const [businessesData, totalCount] = hasSearchTarget
+    ? await Promise.all([
+        db.business.findMany({
+          where: finalWhereClause,
+          take: 400,
+          include: {
+            hours: true,
+            favorites: userId ? { where: { userId } } : false,
+            _count: { select: { favorites: true } },
+          },
+        }),
+        db.business.count({ where: finalWhereClause }),
+      ])
+    : [[], 0]; // Retorna array vazio e contagem zero sem tocar no banco
+
+  // --- 4. RANKING E SCORE (Mantemos o restante igual, mas agora businessesData pode ser vazio) ---
   const serverTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Sao_Paulo",
   });
+  // ... restante do seu código ...
   const now = new Date(serverTime);
   const currentDay = now.getDay();
   const currentTime = now.getHours() * 100 + now.getMinutes();
