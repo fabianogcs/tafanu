@@ -1963,18 +1963,23 @@ export async function getAffiliateDashboardData() {
 // ==============================================================================
 export async function assignUserToAffiliate(
   userId: string,
-  referralCode: string,
+  input: string, // Mudamos para 'input' para aceitar o link completo ou só o código
 ) {
-  const sessionUser = await getSafeUser();
-  if (!sessionUser || sessionUser.role !== "ADMIN")
-    return { error: "Não autorizado." };
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Não autorizado." };
 
   try {
-    // Procura o parceiro ignorando se está maiúsculo ou minúsculo
+    // 🚀 Lógica para extrair o código se o Admin colar o link completo
+    let finalCode = input.trim();
+    if (input.includes("?ref=")) {
+      finalCode = input.split("?ref=")[1].split("&")[0];
+    }
+
+    // Busca o parceiro (case-insensitive)
     const affiliate = await db.user.findFirst({
       where: {
         referralCode: {
-          equals: referralCode,
+          equals: finalCode.toLowerCase(),
           mode: "insensitive",
         },
         role: "AFILIADO",
@@ -1982,30 +1987,41 @@ export async function assignUserToAffiliate(
     });
 
     if (!affiliate) {
-      return {
-        error:
-          "Parceiro não encontrado ou o dono do código não tem cargo de Parceiro.",
-      };
+      return { error: `Parceiro com o código "${finalCode}" não encontrado.` };
     }
 
     if (userId === affiliate.id) {
       return { error: "O usuário não pode ser afiliado de si mesmo." };
     }
 
-    // Atualiza o usuário conectando o ID oficial no banco de dados
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        affiliateId: affiliate.id,
-      },
-    });
+    // 🚀 TRANSACTION: Garante que o vínculo no User e no Log aconteçam juntos
+    await db.$transaction([
+      // 1. Atualiza o 'pai' do usuário na tabela User
+      db.user.update({
+        where: { id: userId },
+        data: { affiliateId: affiliate.id },
+      }),
 
+      // 2. UPSERT: A chave para permitir trocas.
+      // Se já existe um log de indicação, ele atualiza. Se não, ele cria.
+      db.referralLog.upsert({
+        where: { referredId: userId },
+        update: { affiliateId: affiliate.id },
+        create: {
+          referredId: userId,
+          affiliateId: affiliate.id,
+        },
+      }),
+    ]);
+
+    revalidatePath("/admin");
     return {
       success: true,
       message: `Cliente vinculado a ${affiliate.name} com sucesso!`,
     };
   } catch (error) {
-    return { error: "Erro interno ao vincular." };
+    console.error("Erro ao vincular:", error);
+    return { error: "Erro interno ao processar o vínculo." };
   }
 }
 // ==============================================================================
@@ -2258,7 +2274,7 @@ export async function banUserAction(userId: string) {
 
     if (!user) return { error: "Usuário não encontrado." };
 
-    // 1. Cancelamento no Mercado Pago
+    // 1. Cancelamento no Mercado Pago (Fora da Transaction para não travar o Banco)
     for (const biz of user.businesses) {
       if (biz.mpSubscriptionId) {
         try {
@@ -2273,31 +2289,47 @@ export async function banUserAction(userId: string) {
       }
     }
 
-    // 2. Banimento do Usuário
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        isBanned: true,
-        role: "VISITANTE" as Role, // 🛡️ Faltava a tipagem do Prisma aqui para o Build não reclamar!
-      },
-    });
+    // 🚀 2, 3 e 4. TRANSAÇÃO ATÔMICA: Banir, Derrubar Lojas e APAGAR Comentários
+    await db.$transaction([
+      // A) Banimento do Usuário
+      db.user.update({
+        where: { id: userId },
+        data: {
+          isBanned: true,
+          role: "VISITANTE" as Role,
+        },
+      }),
 
-    // 3. 🛡️ Atualização das Lojas (Sincronizado com seu Prisma)
-    await db.business.updateMany({
-      where: { userId: userId },
-      data: {
-        isActive: false,
-        published: false,
-        mpSubscriptionId: null,
-        expiresAt: null,
-        subscriptionStatus: "cancelled", // ⬅️ AJUSTE: Mantém o status real da assinatura
-      },
-    });
+      // B) Atualização das Lojas (Sincronizado com seu Prisma)
+      db.business.updateMany({
+        where: { userId: userId },
+        data: {
+          isActive: false,
+          published: false,
+          mpSubscriptionId: null,
+          expiresAt: null,
+          subscriptionStatus: "cancelled",
+        },
+      }),
+
+      // C) 🚀 FAXINA DE COMENTÁRIOS: Remove tudo que o usuário já escreveu
+      db.comment.deleteMany({
+        where: { userId: userId },
+      }),
+    ]);
 
     revalidatePath("/admin");
-    return { success: true, message: "Usuário banido e assinatura cancelada." };
+    // Se você tiver uma rota de busca ou home que mostre comentários recentes, revalide-as aqui:
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message:
+        "Usuário banido, assinaturas canceladas e histórico de comentários limpo.",
+    };
   } catch (error) {
-    return { error: "Erro ao processar banimento." };
+    console.error("Erro ao processar banimento:", error);
+    return { error: "Erro ao processar banimento completo." };
   }
 }
 
