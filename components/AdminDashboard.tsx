@@ -436,7 +436,7 @@ export default function AdminDashboard({
               />
               <input
                 type="text"
-                placeholder="Buscar por nome, e-mail ou CPF..."
+                placeholder="Buscar por nome, e-mail, CPF ou Loja..."
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-emerald-500/20 text-sm font-medium border border-slate-100"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

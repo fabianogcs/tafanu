@@ -23,29 +23,29 @@ const PLANS = {
   monthly: {
     id: "monthly",
     name: "Mensal",
-    price: "29,90",
-    initialPrice: "0,00",
+    price: "39,90",
+    initialPrice: "0,00", // Continua zero por causa do Trial de 7 dias
     description: "7 dias grátis",
-    footer: "R$ 29,90 / mês após o teste",
+    footer: "R$ 39,90 / mês após o teste",
     badge: "O mais popular",
   },
   quarterly: {
     id: "quarterly",
     name: "Trimestral",
-    price: "74,70",
-    initialPrice: "74,70",
-    description: "R$ 24,90/mês",
+    price: "104,70",
+    initialPrice: "104,70", // Cobrado na hora, sem trial
+    description: "Equivale a R$ 34,90/mês",
     footer: "Cobrado a cada 3 meses",
-    badge: "17% OFF",
+    badge: "Plano Seguro",
   },
   yearly: {
     id: "yearly",
     name: "Anual",
-    price: "238,80",
-    initialPrice: "238,80",
-    description: "R$ 19,90/mês",
+    price: "358,80",
+    initialPrice: "358,80", // Cobrado na hora, sem trial
+    description: "Equivale a R$ 29,90/mês",
     footer: "Cobrado anualmente",
-    badge: "MELHOR VALOR",
+    badge: "SUPER OFERTA",
   },
 } as const;
 

@@ -5,7 +5,7 @@ import {
   Globe,
   BarChart3,
   ShieldCheck,
-} from "lucide-react"; // 🚀 Limpeza: Deixei apenas os ícones que você realmente usa
+} from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Impulsione seu Negócio com o Tafanu",
     description:
-      "Crie sua vitrine profissional e receba contatos direto no seu WhatsApp. Teste todas as funções PRO por 7 dias grátis.",
+      "Crie sua vitrine profissional e receba contatos direto no seu WhatsApp. Teste todas as funções PRO por 7 dias grátis sem compromisso.",
     type: "website",
   },
 };
@@ -42,10 +42,10 @@ export default async function AnunciarPage() {
     mainEntity: [
       {
         "@type": "Question",
-        name: "COMO FUNCIONA O PERÍODO GRÁTIS?",
+        name: "COMO FUNCIONA O PERÍODO GRÁTIS E A GARANTIA?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Você inicia sua assinatura hoje e não paga nada. Tem 7 dias para usar todas as ferramentas. A primeira cobrança de R$ 29,90 só acontece no 8º dia, caso você decida continuar.",
+          text: "No plano Mensal, você tem 7 dias de Teste Grátis e a primeira cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
         },
       },
       {
@@ -53,15 +53,15 @@ export default async function AnunciarPage() {
         name: "PRECISO DE CARTÃO PARA COMEÇAR?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço após o período de teste e evitar interrupções no seu anúncio.",
+          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções no seu anúncio. No plano Mensal, nada será cobrado hoje.",
         },
       },
       {
         "@type": "Question",
-        name: "POSSO CANCELAR ANTES DE SER COBRADO?",
+        name: "POSSO CANCELAR E RECEBER MEU DINHEIRO DE VOLTA?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Com certeza. Se você cancelar dentro dos 7 dias, nada será cobrado do seu cartão. O controle é totalmente seu pelo painel.",
+          text: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste, nada será cobrado. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, estornamos 100% do valor pago. Risco zero.",
         },
       },
     ],
@@ -97,21 +97,20 @@ export default async function AnunciarPage() {
             Crie sua vitrine profissional no Tafanu. Seja encontrado por
             clientes da sua região e receba contatos direto no seu WhatsApp.
             <span className="text-white block mt-2">
-              Experimente todas as funções PRO por 7 dias.
+              Teste o Plano Mensal grátis por 7 dias.
             </span>
           </p>
 
           <div className="flex flex-col items-center gap-6">
             <Link
               href={destination}
-              aria-label="Começar teste grátis de 7 dias"
+              aria-label="Começar agora"
               className="bg-emerald-500 text-[#050814] font-black text-lg px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-tighter"
             >
-              COMEÇAR MEU TESTE GRÁTIS{" "}
-              <ArrowRight size={20} aria-hidden="true" />
+              CRIAR MINHA VITRINE <ArrowRight size={20} aria-hidden="true" />
             </Link>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
-              7 dias grátis • Depois R$ 29,90/mês • Cancele quando quiser
+              7 dias grátis no Plano Mensal • Cancele a qualquer momento
             </p>
           </div>
         </div>
@@ -178,13 +177,13 @@ export default async function AnunciarPage() {
             </h2>
 
             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mb-8">
-              TESTE COMPLETO POR 7 DIAS SEM COBRANÇA
+              TESTE O PLANO MENSAL GRÁTIS POR 7 DIAS
             </p>
 
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-6">
               <div className="text-center">
                 <span className="block text-slate-400 font-black text-xs uppercase mb-1">
-                  Hoje
+                  Hoje (Plano Mensal)
                 </span>
                 <span className="text-5xl font-black text-emerald-500 tracking-tighter italic">
                   GRÁTIS
@@ -199,17 +198,22 @@ export default async function AnunciarPage() {
                   Após 7 dias
                 </span>
                 <span className="text-5xl font-black text-slate-900 tracking-tighter italic">
-                  R$ 29,90
+                  R$ 39,90
                 </span>
               </div>
             </div>
+
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-10">
+              Ou escolha os planos Trimestral/Anual com garantia de 7 dias e{" "}
+              <span className="text-emerald-500">descontos de até 25%</span>
+            </p>
 
             <Link
               href={destination}
               aria-label="Criar minha vitrine agora"
               className="w-full bg-[#050814] text-white font-black py-6 rounded-2xl hover:bg-emerald-500 hover:text-[#050814] transition-all uppercase text-sm tracking-widest flex items-center justify-center gap-3 shadow-2xl"
             >
-              CRIAR MINHA VITRINE AGORA
+              VER TODOS OS PLANOS
             </Link>
           </div>
         </div>
@@ -221,16 +225,16 @@ export default async function AnunciarPage() {
         <div className="space-y-4">
           {[
             {
-              q: "COMO FUNCIONA O PERÍODO GRÁTIS?",
-              a: "Você inicia sua assinatura hoje e não paga nada. Tem 7 dias para usar todas as ferramentas. A primeira cobrança de R$ 29,90 só acontece no 8º dia, caso você decida continuar.",
+              q: "COMO FUNCIONA O PERÍODO GRÁTIS E A GARANTIA?",
+              a: "No plano Mensal, você tem 7 dias de Teste Grátis e a primeira cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
             },
             {
               q: "PRECISO DE CARTÃO PARA COMEÇAR?",
-              a: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço após o período de teste e evitar interrupções no seu anúncio.",
+              a: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções no seu anúncio. Lembrando que no plano Mensal, nada será cobrado hoje.",
             },
             {
-              q: "POSSO CANCELAR ANTES DE SER COBRADO?",
-              a: "Com certeza. Se você cancelar dentro dos 7 dias, nada será cobrado do seu cartão. O controle é totalmente seu pelo painel.",
+              q: "POSSO CANCELAR E RECEBER MEU DINHEIRO DE VOLTA?",
+              a: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste, a cobrança nem chega a ser feita. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, nós estornamos 100% do valor pago direto no seu cartão. Risco zero.",
             },
           ].map((item, i) => (
             <article
