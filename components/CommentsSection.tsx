@@ -7,12 +7,13 @@ import { addComment, deleteComment, flagComment } from "@/app/actions";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import LoginModal from "@/components/LoginModal"; // ⬅️ IMPORTAÇÃO DO MODAL (ajuste o caminho se necessário)
 
 interface CommentsSectionProps {
   businessId: string;
   businessOwnerId: string;
   currentUserId?: string;
-  isAdmin?: boolean; // ⬅️ Adicionei para saber se quem vê é o Admin
+  isAdmin?: boolean;
   emailVerified?: boolean;
   themeColor?: string;
   comments: any[];
@@ -29,9 +30,12 @@ export default function CommentsSection({
 }: CommentsSectionProps) {
   const router = useRouter();
   const commentFormRef = useRef<HTMLDivElement>(null);
+
   const [isPending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // ⬅️ ESTADO DO MODAL
+
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
     name: string;
@@ -41,14 +45,17 @@ export default function CommentsSection({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUserId) return toast.error("Faça login para comentar!");
+    if (!currentUserId) {
+      setIsLoginModalOpen(true);
+      return toast.error("Faça login para comentar!");
+    }
     if (!emailVerified) return toast.error("Verifique seu e-mail primeiro!");
     if (!newComment.trim()) return;
 
     setIsSubmitting(true);
     const result = await addComment(
       businessId,
-      newComment.trim(), // ✅ O texto agora é o segundo parâmetro
+      newComment.trim(),
       replyingTo?.id,
     );
     setIsSubmitting(false);
@@ -66,7 +73,6 @@ export default function CommentsSection({
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja apagar este comentário permanentemente?")) return;
     startTransition(async () => {
-      // 🛡️ Versão Segura: O servidor checa se você é dono ou Admin
       const res = await deleteComment(id);
       if (res.success) {
         toast.success("Comentário removido!");
@@ -80,7 +86,6 @@ export default function CommentsSection({
   const handleFlag = async (id: string) => {
     if (!confirm("Denunciar este comentário para a administração?")) return;
     startTransition(async () => {
-      // 🛡️ Versão Segura: Servidor valida a denúncia
       const res = await flagComment(id);
       if (res.success) {
         toast.success("Comentário denunciado!");
@@ -93,12 +98,17 @@ export default function CommentsSection({
 
   return (
     <section className="mt-16 w-full max-w-4xl mx-auto">
+      {/* ⬅️ O MODAL FICA AQUI */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+
       {/* CAMPO DE ENVIO COM HEADER EMBUTIDO */}
       <div
         ref={commentFormRef}
         className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12"
       >
-        {/* HEADER MOVIDO PARA DENTRO DA CAIXA BRANCA */}
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-md">
@@ -118,7 +128,6 @@ export default function CommentsSection({
         {currentUserId ? (
           emailVerified ? (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* AVISO DE RESPOSTA (Aparece quando você clica em Responder) */}
               {replyingTo && (
                 <div className="flex items-center justify-between bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-500 uppercase">
@@ -152,14 +161,11 @@ export default function CommentsSection({
                   disabled={isSubmitting || isPending || !newComment.trim()}
                   className="flex items-center justify-center gap-2 px-10 py-4 rounded-2xl font-black uppercase text-[12px] tracking-[0.2em] transition-all hover:scale-105 active:scale-95 disabled:opacity-30 shadow-xl shadow-orange-900/20"
                   style={{
-                    // 🛠️ CORREÇÃO MÁGICA:
-                    // Se a cor for uma classe (como text-orange), ou branca, ou vazia...
-                    // ...nós usamos uma cor Laranja Viva (#f97316) ou o Azul Escuro (#0f172a)
                     backgroundColor:
                       !themeColor ||
                       themeColor.includes("-") ||
                       themeColor.toLowerCase() === "#ffffff"
-                        ? "#f97316" // Um laranja bem bonito e chamativo
+                        ? "#f97316"
                         : themeColor,
                     color: "#ffffff",
                     border: "none",
@@ -186,9 +192,10 @@ export default function CommentsSection({
             <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-2">
               Quer deixar sua avaliação?
             </p>
+            {/* ⬅️ AÇÃO DO BOTÃO ALTERADA AQUI */}
             <button
-              onClick={() => router.push("/login")}
-              className="text-slate-900 font-black text-sm border-b-2 border-slate-900 pb-1 hover:text-emerald-500 hover:border-emerald-500 transition-all"
+              onClick={() => setIsLoginModalOpen(true)}
+              className="text-slate-900 font-black text-sm border-b-2 border-slate-900 pb-1 hover:text-emerald-500 hover:border-emerald-500 transition-all cursor-pointer"
             >
               FAÇA LOGIN NA SUA CONTA
             </button>
@@ -234,9 +241,7 @@ export default function CommentsSection({
                 {comment.content}
               </div>
 
-              {/* 🛠️ BOTÕES DE AÇÃO: LÓGICA DE PERMISSÃO ATUALIZADA */}
               <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
-                {/* BOTÃO RESPONDER: Aparece para o Dono ou Admin em comentários principais */}
                 {(currentUserId === businessOwnerId || isAdmin) &&
                   !comment.parentId && (
                     <button
@@ -246,20 +251,17 @@ export default function CommentsSection({
                           name: comment.user?.name || "Visitante",
                         });
 
-                        // 🚀 O MOTOR NOVO (Suave e preciso):
-                        // Ele usa a âncora 'ref' que criamos no passo anterior
                         commentFormRef.current?.scrollIntoView({
                           behavior: "smooth",
                           block: "center",
                         });
                       }}
-                      // 🎨 SEU ESTILO ORIGINAL (Não mexi em nada aqui):
                       className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
                     >
                       <MessageSquare size={12} /> Responder
                     </button>
                   )}
-                {/* APAGAR: Quem escreveu OU Admin */}
+
                 {(currentUserId === comment.userId || isAdmin) && (
                   <button
                     onClick={() => handleDelete(comment.id)}
@@ -270,7 +272,6 @@ export default function CommentsSection({
                   </button>
                 )}
 
-                {/* DENUNCIAR: Admin OU Qualquer um logado (desde que não seja o dono do comentário) */}
                 {currentUserId &&
                   currentUserId !== comment.userId &&
                   !comment.isFlagged && (
@@ -283,7 +284,7 @@ export default function CommentsSection({
                     </button>
                   )}
               </div>
-              {/* --- LISTA DE RESPOSTAS (THREADS) - BLOCO ÚNICO E CORRIGIDO --- */}
+
               {comment.replies && comment.replies.length > 0 && (
                 <div className="mt-4 ml-6 md:ml-12 space-y-4 border-l-2 border-orange-500/20 pl-4 md:pl-6 animate-in slide-in-from-left-2">
                   {comment.replies.map((reply: any) => (
@@ -291,7 +292,6 @@ export default function CommentsSection({
                       key={reply.id}
                       className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 relative group/reply"
                     >
-                      {/* Linha conectora visual */}
                       <div className="absolute -left-[1.6rem] top-6 w-4 h-0.5 bg-orange-500/20" />
 
                       <div className="flex justify-between items-center mb-1">
@@ -312,7 +312,6 @@ export default function CommentsSection({
                             })}
                           </span>
 
-                          {/* 🗑️ BOTÃO APAGAR RESPOSTA: Dono da resposta ou Admin podem apagar */}
                           {(currentUserId === reply.userId || isAdmin) && (
                             <button
                               onClick={() => handleDelete(reply.id)}

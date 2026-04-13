@@ -1097,7 +1097,6 @@ export async function incrementViews(businessId: string) {
       secure: process.env.NODE_ENV === "production",
     });
 
-    console.log(`[Analytics] +1 visualização real para a loja: ${businessId}`);
     return { success: true };
   } catch (error) {
     console.error("Erro ao incrementar views:", error);

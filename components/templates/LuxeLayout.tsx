@@ -270,25 +270,36 @@ export default function LuxeLayout({
     <div
       className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-serif pb-0 overflow-x-hidden transition-colors duration-1000`}
     >
-      {/* --- HEADER --- */}
+      {/* --- HEADER LUXE: THE EXHIBITION --- */}
       <header
-        className={`relative pt-16 pb-12 w-full ${theme.bgPage} border-b ${theme.border} text-center`}
+        className={`relative w-full min-h-[65vh] md:min-h-[75vh] flex flex-col items-center justify-center overflow-hidden ${theme.bgPage} border-b ${theme.border}`}
       >
+        {/* Grid Arquitetônico */}
+        <div className="absolute inset-0 pointer-events-none flex justify-center">
+          <div className="w-[1px] h-full bg-gradient-to-b from-transparent via-black/10 to-transparent" />
+          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-y-1/2" />
+        </div>
+
+        {/* Marca d'água Monumental */}
+        {business.name && (
+          <div
+            className="absolute top-0 left-[-5%] text-[60vh] md:text-[80vh] leading-none font-serif italic select-none pointer-events-none opacity-[0.02] -z-0"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            {business.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+
         {/* Pílula de Ações */}
-        <div className="absolute top-4 right-4 z-10">
-          <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/5 shadow-xl">
-            {/* Botão de Compartilhar */}
+        <div className="absolute top-6 right-6 z-50">
+          <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl px-4 py-2 rounded-full border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all hover:bg-white/90">
             <button
               onClick={() => handleShare(business.name)}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all text-slate-700"
+              className="w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full transition-colors text-slate-900"
             >
-              <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+              <Share2 size={16} strokeWidth={1.5} />
             </button>
-
-            {/* Divisor */}
-            <div className="w-[1px] h-3 md:h-4 bg-black/10 mx-0.5" />
-
-            {/* Botão de Favoritar Novo */}
+            <div className="w-[1px] h-4 bg-black/10" />
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -298,30 +309,68 @@ export default function LuxeLayout({
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 flex flex-col items-center">
-          {/* LOGO: Fixa e Estável, sem animações */}
-          {business.imageUrl && (
-            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full border border-black/5 shadow-2xl overflow-hidden mb-8">
-              <img
-                src={business.imageUrl}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-                alt="Logo"
-              />
-            </div>
+        {/* --- CONTEÚDO PRINCIPAL --- */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col items-center justify-center mt-16 md:mt-24">
+          {/* Overline Elegante (Sem palavras fixas, apenas a cidade se existir) */}
+          {business.city && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="flex items-center gap-6 mb-8 md:mb-10"
+            >
+              <div className="w-12 md:w-24 h-[1px] bg-black/20" />
+              <span className="text-[9px] md:text-[11px] uppercase tracking-[0.4em] font-bold opacity-60">
+                {business.city}
+              </span>
+              <div className="w-12 md:w-24 h-[1px] bg-black/20" />
+            </motion.div>
           )}
 
-          {/* NOME: Fixo e Estável, sem animações */}
-          <h1
+          {/* A Logo (Agora ACIMA do texto para manter a leitura impecável) */}
+          {business.imageUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 1.2,
+                delay: 0.1,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="relative z-20 flex flex-col items-center group mb-8 md:mb-12"
+            >
+              {/* Anéis de energia gravitacional */}
+              <div className="absolute -inset-6 md:-inset-10 border border-black/10 rounded-full scale-100 group-hover:scale-110 transition-transform duration-1000 ease-out" />
+              <div className="absolute -inset-2 md:-inset-4 border border-black/5 rounded-full scale-100 group-hover:scale-[1.15] transition-transform duration-700 ease-out delay-75" />
+
+              {/* Contêiner da Imagem */}
+              <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 md:border-8 border-white bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden relative">
+                <img
+                  src={business.imageUrl}
+                  loading="eager"
+                  decoding="async"
+                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-[1.5s]"
+                  alt={`Logo de ${business.name}`}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* O Nome (Destaque absoluto, totalmente legível) */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              fontFamily:
-                "'Playfair Display', 'Didot', 'Bodoni MT', 'Times New Roman', serif",
+              fontFamily: "'Playfair Display', 'Didot', 'Bodoni MT', serif",
             }}
-            className={`text-3xl md:text-5xl lg:text-6xl font-normal uppercase tracking-[0.15em] leading-tight opacity-95 ${theme.textColor}`}
+            className={`text-[clamp(3rem,8vw,8rem)] font-normal uppercase tracking-[0.05em] md:tracking-[0.1em] leading-[0.9] text-center ${theme.textColor} relative z-30 drop-shadow-sm px-4`}
           >
             {business.name}
-          </h1>
+          </motion.h1>
+
+          {/* Linha de ancoragem inferior que liga o header ao resto do site */}
+          <div className="w-[1px] h-16 md:h-24 bg-gradient-to-b from-black/20 to-transparent mt-12 md:mt-16" />
         </div>
       </header>
 

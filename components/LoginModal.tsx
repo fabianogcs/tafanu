@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation"; // 🚀 ADICIONADO useRouter
 import {
   Mail,
   Lock,
@@ -21,7 +21,7 @@ import {
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { getSession } from "next-auth/react";
 
-// 🛡️ DEFINIÇÃO DE TIPOS (Igual ao seu Prisma)
+// 🛡️ DEFINIÇÃO DE TIPOS
 type UserRole = "VISITANTE" | "CLIENTE" | "ADMIN" | "AFILIADO" | "ASSINANTE";
 
 interface LoginModalProps {
@@ -41,6 +41,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter(); // 🚀 INSTANCIADO
   const currentUrl =
     pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
 
@@ -81,57 +82,81 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    if (isLogin) {
-      const result = await loginUser(formData);
+    try {
+      if (isLogin) {
+        const result = await loginUser(formData);
 
-      if (result?.error) {
-        setLoginError(result.error);
-        if (result.notVerified) {
-          setShowResend(true);
-          setUnverifiedEmail(result.email || (formData.get("email") as string));
+        if (result?.error) {
+          setLoginError(result.error);
+          if (result.notVerified) {
+            setShowResend(true);
+            setUnverifiedEmail(
+              result.email || (formData.get("email") as string),
+            );
+          } else {
+            toast.error(result.error);
+          }
+          setIsLoading(false); // 🚀 Só para de carregar se der erro local
         } else {
-          toast.error(result.error);
-        }
-        setIsLoading(false);
-      } else {
-        toast.success("Login realizado com sucesso!");
-
-        const session = await getSession();
-        // 🛡️ Aplicando a tipagem correta aqui
-        const role = session?.user?.role as UserRole | undefined;
-
-        setIsLoading(false);
-        onClose(); // ⬅️ FECHA O MODAL ANTES DE SAIR
-        window.location.assign(getDestination(role));
-      }
-    } else {
-      const registerResult = await registerUser(formData);
-
-      if (registerResult?.error) {
-        toast.error(registerResult.error);
-        setIsLoading(false);
-        return;
-      }
-
-      if (registerResult?.success) {
-        const loginResult = await loginUser(formData);
-
-        if (loginResult?.error) {
-          toast.success("Conta criada! Verifique seu e-mail.");
-          setIsLogin(true);
-          setLoginError("Verifique sua caixa de entrada para ativar a conta.");
-          setShowResend(true);
-          setUnverifiedEmail(formData.get("email") as string);
-          setIsLoading(false);
-        } else {
-          toast.success("Conta criada com sucesso!");
+          toast.success("Login realizado com sucesso!");
           const session = await getSession();
           const role = session?.user?.role as UserRole | undefined;
 
           setIsLoading(false);
-          onClose(); // ⬅️ FECHA O MODAL ANTES DE SAIR
-          window.location.assign(getDestination(role));
+          onClose();
+
+          // 🚀 NAVEGAÇÃO SEGURA: Atualiza a árvore do Next.js e força o redirect absoluto
+          router.refresh();
+          window.location.href = getDestination(role);
         }
+      } else {
+        const registerResult = await registerUser(formData);
+
+        if (registerResult?.error) {
+          toast.error(registerResult.error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (registerResult?.success) {
+          const loginResult = await loginUser(formData);
+
+          if (loginResult?.error) {
+            toast.success("Conta criada! Verifique seu e-mail.");
+            setIsLogin(true);
+            setLoginError(
+              "Verifique sua caixa de entrada para ativar a conta.",
+            );
+            setShowResend(true);
+            setUnverifiedEmail(formData.get("email") as string);
+            setIsLoading(false);
+          } else {
+            toast.success("Conta criada com sucesso!");
+            const session = await getSession();
+            const role = session?.user?.role as UserRole | undefined;
+
+            setIsLoading(false);
+            onClose();
+
+            router.refresh();
+            window.location.href = getDestination(role);
+          }
+        }
+      }
+    } catch (error) {
+      // 🚀 A CIRURGIA: Captura estrita do erro de redirecionamento interno do Next.js/NextAuth
+      const err = error as any;
+      if (
+        err?.message?.includes("NEXT_REDIRECT") ||
+        err?.digest?.includes("NEXT_REDIRECT")
+      ) {
+        setIsLoading(false);
+        onClose();
+        throw error; // Deixa o Next.js continuar o redirecionamento
+      } else {
+        console.error("Erro no formulário:", error);
+        setLoginError("Ocorreu um erro de conexão. Tente novamente.");
+        setIsLoading(false);
       }
     }
   }

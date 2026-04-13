@@ -323,101 +323,93 @@ export default function UrbanLayout({
     >
       <div className="hidden md:block fixed inset-0 pointer-events-none z-[10] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      {/* --- HEADER URBANO: CONCEITO "THE POSTER" --- */}
-      <header className="relative pt-24 md:pt-32 pb-12 w-full px-4 md:px-6 flex flex-col items-center justify-center">
-        {/* Grid Background Geral */}
-        <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, white 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-
-        <div className="w-full max-w-6xl relative z-20">
-          {/* Pílula de Ações (Agora ancorada no topo do Pôster) */}
-          <div className="absolute -top-14 right-0 md:-top-16 z-30">
-            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md p-1.5 rounded-full border border-white/20 shadow-xl">
-              <button
-                onClick={() => handleShare(business.name)}
-                className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center hover:bg-white/20 rounded-full transition-all text-white"
-              >
-                <Share2 className="w-[18px] h-[18px]" />
-              </button>
-              <div className="w-[1px] h-4 bg-white/20 mx-1" />
-              <FavoriteButton
-                businessId={business.id}
-                isLoggedIn={isLoggedIn}
-                initialIsFavorited={isFavorited}
-                emailVerified={emailVerified}
-              />
-            </div>
-          </div>
-
-          {/* O PÔSTER (Onde a mágica acontece) */}
+      {/* --- HEADER URBANO: CONCEITO "STREET MURAL" --- */}
+      <header className="relative w-full pt-32 pb-20 md:pt-40 md:pb-32 px-4 md:px-8 flex flex-col items-center justify-center min-h-[50vh] overflow-hidden">
+        {/* Background Noise & Grid Estourado (Sem caixas) */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
           <div
-            className={`relative w-full ${glassEffect} border border-white/10 ${radius} overflow-hidden shadow-2xl`}
-          >
-            {/* Faixa de cor no topo do pôster para dar identidade */}
-            <div className={`h-2 w-full ${theme.primary} opacity-80`} />
+            className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, white 2px, transparent 2.5px)",
+              backgroundSize: "32px 32px",
+            }}
+          />
+        </div>
 
-            <div className="px-6 py-16 md:p-20 flex flex-col items-center text-center relative overflow-hidden">
-              {/* NOME MARCA D'ÁGUA (Preenche o vazio do fundo) */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] select-none pointer-events-none overflow-hidden">
-                <span className="text-[20vw] font-black uppercase whitespace-nowrap leading-none italic -skew-x-[6deg]">
-                  {business.name}
-                </span>
-              </div>
-
-              {/* LOGO */}
-              {business.imageUrl && (
-                <div className="relative z-10 w-28 h-28 md:w-40 md:h-40 mb-8">
-                  <div
-                    className={`w-full h-full border-4 border-white/10 overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-black`}
-                  >
-                    <img
-                      src={business.imageUrl}
-                      className="w-full h-full object-cover"
-                      alt="Logo"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* NOME DA EMPRESA */}
-              <h1
-                className={`relative z-10 font-black uppercase italic tracking-tighter ${theme.textColor} break-words text-[clamp(2.5rem,9vw,6.5rem)] leading-[0.85] -skew-x-[6deg] drop-shadow-2xl mb-8 md:mb-12`}
-              >
-                {business.name}
-              </h1>
-
-              {/* TAG URBANA (BLOCO PESADO ANIMADO) */}
-              {business.urban_tag && (
-                <motion.div
-                  initial={{
-                    y: 20,
-                    opacity: 0,
-                    clipPath: "polygon(0 0, 0 0, 0 100%, 0% 100%)",
-                  }}
-                  animate={{
-                    y: 0,
-                    opacity: 1,
-                    clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
-                  }}
-                  transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-                  className="relative z-10"
-                >
-                  <div
-                    className={`px-8 py-3 md:px-12 md:py-4 ${theme.bgAction} font-black uppercase italic tracking-[0.3em] text-sm md:text-xl -skew-x-[8deg] shadow-[8px_8px_0px_rgba(0,0,0,0.5)] md:shadow-[12px_12px_0px_rgba(0,0,0,0.5)] border border-white/20 text-black`}
-                  >
-                    {business.urban_tag}
-                  </div>
-                </motion.div>
-              )}
-            </div>
+        {/* Pílula de Ações (Flutuante, solta no layout) */}
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-40">
+          <div className="flex items-center gap-1 bg-black/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+            <button
+              onClick={() => handleShare(business.name)}
+              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-all text-white"
+            >
+              <Share2 className="w-[18px] h-[18px]" />
+            </button>
+            <div className="w-[1px] h-4 bg-white/20 mx-1" />
+            <FavoriteButton
+              businessId={business.id}
+              isLoggedIn={isLoggedIn}
+              initialIsFavorited={isFavorited}
+              emailVerified={emailVerified}
+            />
           </div>
         </div>
+
+        {/* --- CONTEÚDO FLUIDO --- */}
+        <div className="relative z-20 w-full max-w-6xl mx-auto flex flex-col items-center text-center">
+          {/* Logo (Aparece como um "Sticker" colado) */}
+          {business.imageUrl && (
+            <motion.div
+              initial={{ scale: 0, rotate: -15 }}
+              animate={{ scale: 1, rotate: -3 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="mb-8 md:mb-12 relative z-30"
+            >
+              <div className="w-24 h-24 md:w-36 md:h-36 rounded-2xl bg-black border-4 border-white/10 shadow-2xl overflow-hidden p-1">
+                <img
+                  src={business.imageUrl}
+                  className="w-full h-full object-cover rounded-xl"
+                  alt="Logo"
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* NOME DA EMPRESA (Estética Brutalista / Letreiro Quebrado) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            className="relative z-20 w-full"
+          >
+            <h1
+              className={`font-black uppercase italic tracking-tighter ${theme.textColor} break-words text-[clamp(3.5rem,12vw,8rem)] leading-[0.8] drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2`}
+            >
+              {business.name}
+            </h1>
+          </motion.div>
+
+          {/* TAG URBANA (Fita Isolante) */}
+          {business.urban_tag && (
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.6, delay: 0.6, ease: "circOut" }}
+              className="relative z-30 mt-10 md:mt-16 origin-left inline-block"
+            >
+              <div
+                className={`px-6 py-2 md:px-10 md:py-3 ${theme.bgAction} font-black uppercase tracking-[0.4em] text-xs md:text-lg -skew-x-[12deg] shadow-[5px_5px_0px_rgba(0,0,0,1)] border-y border-white/20 text-black whitespace-nowrap`}
+              >
+                {business.urban_tag}
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Linha de Fechamento (Conecta com a seção debaixo) */}
+        <div className="absolute bottom-0 w-px h-16 md:h-24 bg-gradient-to-t from-white/30 to-transparent z-10" />
       </header>
 
       <main className="container mx-auto px-4 md:px-6 relative z-30 space-y-20 md:space-y-32 pb-24 mt-10 md:mt-20">
