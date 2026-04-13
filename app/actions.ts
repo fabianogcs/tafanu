@@ -2157,8 +2157,14 @@ export async function createSubscription(
     }
   }
 
-  // 2. REGRA DO TRIAL: Se ele tem ou já teve algum negócio com plano ativo, ele perde os 7 dias
-  const hasUsedTrial = dbUser?.businesses.some((b) => b.expiresAt !== null);
+  // 2. REGRA DO TRIAL (LEÃO DE CHÁCARA): A TRAVA CONTRA O TRIAL INFINITO
+  // Se a loja tem um ID do MP OU já saiu do status 'inactive' OU tem data, o trial acaba.
+  const hasUsedTrial = dbUser?.businesses.some(
+    (b) =>
+      b.mpSubscriptionId !== null ||
+      (b.subscriptionStatus !== null && b.subscriptionStatus !== "inactive") ||
+      b.expiresAt !== null,
+  );
 
   const subscriptionClient = new PreApproval(client);
 
@@ -2312,7 +2318,7 @@ export async function unbanUserAction(userId: string) {
       data: {
         isActive: true,
         published: true,
-        subscriptionStatus: "inactive", // ⬅️ AJUSTE: Remove o "cancelled" do banimento
+        subscriptionStatus: "cancelled", // ✅ Consertado!
       },
     });
 

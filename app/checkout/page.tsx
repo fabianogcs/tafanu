@@ -19,15 +19,16 @@ import {
 } from "@/app/actions";
 import SessionRefresher from "@/components/SessionRefresher";
 
+// 🚀 AJUSTES NOS TEXTOS PARA CLAREZA DO TRIAL
 const PLANS = {
   monthly: {
     id: "monthly",
     name: "Mensal",
     price: "39,90",
     initialPrice: "0,00", // Continua zero por causa do Trial de 7 dias
-    description: "7 dias grátis",
+    description: "7 dias grátis na 1ª vez",
     footer: "R$ 39,90 / mês após o teste",
-    badge: "O mais popular",
+    badge: "1ª Assinatura: 7 Dias Grátis",
   },
   quarterly: {
     id: "quarterly",
@@ -36,7 +37,7 @@ const PLANS = {
     initialPrice: "104,70", // Cobrado na hora, sem trial
     description: "Equivale a R$ 34,90/mês",
     footer: "Cobrado a cada 3 meses",
-    badge: "Plano Seguro",
+    badge: "Plano Seguro - 7 Dias de Garantia",
   },
   yearly: {
     id: "yearly",
@@ -45,7 +46,7 @@ const PLANS = {
     initialPrice: "358,80", // Cobrado na hora, sem trial
     description: "Equivale a R$ 29,90/mês",
     footer: "Cobrado anualmente",
-    badge: "SUPER OFERTA",
+    badge: "SUPER OFERTA - 7 Dias de Garantia",
   },
 } as const;
 
@@ -180,7 +181,7 @@ export default function CheckoutPage() {
                   }`}
                 >
                   {isSelected && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest whitespace-nowrap">
                       {plan.badge}
                     </div>
                   )}
@@ -257,7 +258,7 @@ export default function CheckoutPage() {
             </div>
             <div className="p-10 text-center">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                Total a pagar
+                Total a pagar hoje
               </p>
               <div className="flex items-start justify-center gap-1">
                 <span className="text-xl font-black mt-2 text-emerald-500">
@@ -278,6 +279,13 @@ export default function CheckoutPage() {
                   "Ativar Plano"
                 )}
               </button>
+
+              {/* 🚀 AVISO EXTRA DE SEGURANÇA ABAIXO DO BOTÃO */}
+              <p className="text-slate-500 text-[10px] uppercase font-bold mt-6 px-4 leading-relaxed">
+                {selectedPlan === "monthly"
+                  ? "Cobrança de R$ 39,90 programada para o 8º dia (apenas na sua 1ª assinatura)."
+                  : "Você está coberto pela nossa Garantia de 7 Dias. Risco Zero."}
+              </p>
             </div>
           </div>
         </div>

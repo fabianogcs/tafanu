@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Impulsione seu Negócio com o Tafanu",
     description:
-      "Crie sua vitrine profissional e receba contatos direto no seu WhatsApp. Teste todas as funções PRO por 7 dias grátis sem compromisso.",
+      "Crie sua vitrine profissional e receba contatos direto no seu WhatsApp. Teste todas as funções PRO por 7 dias grátis na sua primeira assinatura.",
     type: "website",
   },
 };
@@ -45,7 +45,7 @@ export default async function AnunciarPage() {
         name: "COMO FUNCIONA O PERÍODO GRÁTIS E A GARANTIA?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No plano Mensal, você tem 7 dias de Teste Grátis e a primeira cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
+          text: "Na sua primeira assinatura do plano Mensal, você tem 7 dias de Teste Grátis e a cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
         },
       },
       {
@@ -53,7 +53,7 @@ export default async function AnunciarPage() {
         name: "PRECISO DE CARTÃO PARA COMEÇAR?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções no seu anúncio. No plano Mensal, nada será cobrado hoje.",
+          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Na sua primeira assinatura do plano Mensal, nada será cobrado hoje.",
         },
       },
       {
@@ -61,7 +61,7 @@ export default async function AnunciarPage() {
         name: "POSSO CANCELAR E RECEBER MEU DINHEIRO DE VOLTA?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste, nada será cobrado. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, estornamos 100% do valor pago. Risco zero.",
+          text: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste da sua primeira assinatura, nada será cobrado. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, estornamos 100% do valor pago. Risco zero.",
         },
       },
     ],
@@ -97,7 +97,7 @@ export default async function AnunciarPage() {
             Crie sua vitrine profissional no Tafanu. Seja encontrado por
             clientes da sua região e receba contatos direto no seu WhatsApp.
             <span className="text-white block mt-2">
-              Teste o Plano Mensal grátis por 7 dias.
+              Teste o Plano Mensal grátis por 7 dias na sua primeira assinatura.
             </span>
           </p>
 
@@ -110,7 +110,8 @@ export default async function AnunciarPage() {
               CRIAR MINHA VITRINE <ArrowRight size={20} aria-hidden="true" />
             </Link>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
-              7 dias grátis no Plano Mensal • Cancele a qualquer momento
+              7 dias grátis na 1ª assinatura do Mensal • Cancele a qualquer
+              momento
             </p>
           </div>
         </div>
@@ -177,7 +178,7 @@ export default async function AnunciarPage() {
             </h2>
 
             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mb-8">
-              TESTE O PLANO MENSAL GRÁTIS POR 7 DIAS
+              TESTE O PLANO MENSAL GRÁTIS POR 7 DIAS (VÁLIDO NA 1ª ASSINATURA)
             </p>
 
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-6">
@@ -226,15 +227,15 @@ export default async function AnunciarPage() {
           {[
             {
               q: "COMO FUNCIONA O PERÍODO GRÁTIS E A GARANTIA?",
-              a: "No plano Mensal, você tem 7 dias de Teste Grátis e a primeira cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
+              a: "Na sua primeira assinatura do plano Mensal, você tem 7 dias de Teste Grátis e a cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
             },
             {
               q: "PRECISO DE CARTÃO PARA COMEÇAR?",
-              a: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções no seu anúncio. Lembrando que no plano Mensal, nada será cobrado hoje.",
+              a: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Lembrando que na sua primeira assinatura do plano Mensal, nada será cobrado hoje.",
             },
             {
               q: "POSSO CANCELAR E RECEBER MEU DINHEIRO DE VOLTA?",
-              a: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste, a cobrança nem chega a ser feita. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, nós estornamos 100% do valor pago direto no seu cartão. Risco zero.",
+              a: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste da primeira assinatura, a cobrança nem chega a ser feita. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, nós estornamos 100% do valor pago direto no seu cartão. Risco zero.",
             },
           ].map((item, i) => (
             <article
