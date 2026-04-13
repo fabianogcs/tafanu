@@ -1132,43 +1132,50 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              {/* Origem */}
+              {/* Origem e Vínculo de Parceiro */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
                     Origem da Venda
                   </p>
                   <p className="text-sm font-bold text-slate-700">
-                    {selectedUser.referredBy || "Orgânico"}
+                    {/* 🚀 Mostra o nome do parceiro atual ou "Orgânico" */}
+                    {selectedUser.affiliate?.name ? (
+                      <span className="text-purple-600">
+                        Indicado por: {selectedUser.affiliate.name}
+                      </span>
+                    ) : (
+                      selectedUser.referredBy || "Orgânico"
+                    )}
                   </p>
                 </div>
-                {!selectedUser.affiliateId && (
-                  <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-full md:w-auto">
-                    <input
-                      type="text"
-                      placeholder="Código parceiro"
-                      value={assignCodeInput}
-                      onChange={(e) =>
-                        setAssignCodeInput(
-                          e.target.value.toUpperCase().replace(/\s/g, "-"),
-                        )
-                      }
-                      className="bg-transparent border-none outline-none text-xs font-bold px-2 w-28 uppercase"
-                    />
-                    <button
-                      onClick={handleAssignAffiliate}
-                      disabled={isPending}
-                      className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-1.5"
-                    >
-                      {isPending ? (
-                        <Loader2 size={11} className="animate-spin" />
-                      ) : (
-                        <Link2 size={11} />
-                      )}{" "}
-                      Vincular
-                    </button>
-                  </div>
-                )}
+
+                {/* 🚀 REMOVIDA A TRAVA: Agora o campo sempre aparece para permitir trocas */}
+                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-full md:w-auto">
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedUser.affiliateId
+                        ? "Trocar parceiro..."
+                        : "Código ou Link"
+                    }
+                    value={assignCodeInput}
+                    onChange={(e) => setAssignCodeInput(e.target.value)} // 🚀 REMOVIDO o toUpperCase() para não quebrar o link colado
+                    className="bg-transparent border-none outline-none text-xs font-bold px-2 w-32 md:w-40"
+                  />
+                  <button
+                    onClick={handleAssignAffiliate}
+                    disabled={isPending}
+                    className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-1.5 shrink-0"
+                  >
+                    {isPending ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <Link2 size={11} />
+                    )}
+                    {selectedUser.affiliateId ? "Trocar" : "Vincular"}
+                  </button>
+                </div>
               </div>
 
               {/* 🚀 AJUSTE: Lojas com o Gerenciador de Tempo embutido */}

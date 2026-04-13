@@ -13,7 +13,7 @@ export default async function AdminPage() {
 
   const emailSessao = session.user.email.toLowerCase();
 
-  // 🚀 BUSCA A VERDADE ABSOLUTA DIRETO NO BANCO, IGNORANDO O NEXTAUTH
+  // 🚀 BUSCA A VERDADE ABSOLUTA DIRETO NO BANCO
   const usuarioNoBanco = await db.user.findUnique({
     where: { email: emailSessao },
     select: { role: true },
@@ -24,7 +24,6 @@ export default async function AdminPage() {
   const isEmailAutorizado = emailSessao === adminEmailEnv;
   const isAdminNoBanco = usuarioNoBanco?.role === "ADMIN";
 
-  // Se não for o email do dono E não for ADMIN no banco, chuta pra Home
   if (!isEmailAutorizado && !isAdminNoBanco) {
     redirect("/");
   }
@@ -38,7 +37,8 @@ export default async function AdminPage() {
         include: {
           businesses: true,
           referrals: { select: { id: true } },
-          affiliate: { select: { name: true, referralCode: true } },
+          // 🚀 AJUSTE: 'id' incluído para o front-end gerenciar a troca de parceiro
+          affiliate: { select: { id: true, name: true, referralCode: true } },
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -56,11 +56,11 @@ export default async function AdminPage() {
       }),
       db.commission.findMany({
         where: {
-          status: { in: [CommissionStatus.AVAILABLE, CommissionStatus.PAID] }, // 🛡️ Tipagem forte!
+          status: { in: [CommissionStatus.AVAILABLE, CommissionStatus.PAID] },
           amount: { gt: 0 },
         },
       }),
-    ]); // ✅ Mapeia usuários com metadados
+    ]);
 
   const users = usersData.map((u) => ({
     ...u,
@@ -68,50 +68,53 @@ export default async function AdminPage() {
       ? `${u.affiliate.name} (${u.affiliate.referralCode})`
       : null,
     referralCount: u.referrals.length,
-  })); // ✅ Corrige O(n²): monta Map de businessId → dono
+  }));
 
   const businessOwnerMap = new Map<string, string>();
   users.forEach((u) => {
     u.businesses.forEach((b) => {
       businessOwnerMap.set(b.id, u.id);
     });
-  }); // 🚀 ATUALIZAÇÃO: Cálculo de Faturamento e Pagantes baseado na NOVA estrutura
+  });
 
-  let faturamentoBruto = 0;
+  // 🚀 NOVA LÓGICA DE MÉTRICAS (ROBUSTA)
 
-  const pagantes = users.filter((u) => {
-    // Ignora banidos ou o próprio admin
-    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false; // Filtra apenas os negócios que estão ativos e no prazo
-
-    const negociosAtivos = u.businesses.filter(
+  // 1. Lista de usuários pagantes (que têm ao menos 1 negócio ativo)
+  const pagantesList = users.filter((u) => {
+    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false;
+    return u.businesses.some(
       (b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora,
-    ); // Se o usuário tem negócios ativos, ele é um pagante
+    );
+  });
 
-    if (negociosAtivos.length > 0) {
-      // Soma o valor de cada negócio ativo baseado no planType
-      negociosAtivos.forEach((negocio) => {
-        if (negocio.planType === "yearly") faturamentoBruto += 358.8;
-        else if (negocio.planType === "quarterly") faturamentoBruto += 104.7;
-        else faturamentoBruto += 39.9; // Mensal é o padrão
-      });
-      return true; // Mantém o usuário na lista de pagantes
-    }
+  // 2. Cálculo de Faturamento Bruto (Soma todas as lojas ativas de todos os usuários)
+  const faturamentoBruto = users.reduce((total, u) => {
+    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return total;
 
-    return false;
-  }); // ✅ Comissões devidas — fonte confiável (só afiliados)
+    const valorDoUsuario = u.businesses
+      .filter((b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora)
+      .reduce((subtotal, biz) => {
+        if (biz.planType === "yearly") return subtotal + 358.8;
+        if (biz.planType === "quarterly") return subtotal + 104.7;
+        return subtotal + 39.9; // Mensal
+      }, 0);
 
+    return total + valorDoUsuario;
+  }, 0);
+
+  // 3. Soma de comissões usando tipagem do Prisma
   const totalComissoesDevidas = allCommissions
-    .filter((c) => c.status === CommissionStatus.AVAILABLE) // 🛡️ Tipagem forte!
+    .filter((c) => c.status === CommissionStatus.AVAILABLE)
     .reduce((acc, c) => acc + c.amount, 0);
 
   const totalComissoesPagas = allCommissions
-    .filter((c) => c.status === CommissionStatus.PAID) // 🛡️ Tipagem forte!
+    .filter((c) => c.status === CommissionStatus.PAID)
     .reduce((acc, c) => acc + c.amount, 0);
 
+  // 4. Consolidação das métricas
   const faturamentoLiquido =
     faturamentoBruto - totalComissoesDevidas - totalComissoesPagas;
-
-  const totalPagantes = pagantes.length;
+  const totalPagantes = pagantesList.length;
 
   const adminData = {
     users,
