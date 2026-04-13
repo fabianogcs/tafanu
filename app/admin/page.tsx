@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
+import { CommissionStatus } from "@prisma/client";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -55,7 +56,7 @@ export default async function AdminPage() {
       }),
       db.commission.findMany({
         where: {
-          status: { in: ["AVAILABLE", "PAID"] },
+          status: { in: [CommissionStatus.AVAILABLE, CommissionStatus.PAID] }, // 🛡️ Tipagem forte!
           amount: { gt: 0 },
         },
       }),
@@ -89,9 +90,9 @@ export default async function AdminPage() {
     if (negociosAtivos.length > 0) {
       // Soma o valor de cada negócio ativo baseado no planType
       negociosAtivos.forEach((negocio) => {
-        if (negocio.planType === "yearly") faturamentoBruto += 238.8;
-        else if (negocio.planType === "quarterly") faturamentoBruto += 74.7;
-        else faturamentoBruto += 29.9; // Mensal é o padrão
+        if (negocio.planType === "yearly") faturamentoBruto += 358.8;
+        else if (negocio.planType === "quarterly") faturamentoBruto += 104.7;
+        else faturamentoBruto += 39.9; // Mensal é o padrão
       });
       return true; // Mantém o usuário na lista de pagantes
     }
@@ -100,12 +101,12 @@ export default async function AdminPage() {
   }); // ✅ Comissões devidas — fonte confiável (só afiliados)
 
   const totalComissoesDevidas = allCommissions
-    .filter((c) => c.status === "AVAILABLE")
+    .filter((c) => c.status === CommissionStatus.AVAILABLE) // 🛡️ Tipagem forte!
     .reduce((acc, c) => acc + c.amount, 0);
 
   const totalComissoesPagas = allCommissions
-    .filter((c) => c.status === "PAID")
-    .reduce((acc, c) => acc + c.amount, 0); // ✅ Lucro líquido = bruto − comissões devidas − comissões já pagas
+    .filter((c) => c.status === CommissionStatus.PAID) // 🛡️ Tipagem forte!
+    .reduce((acc, c) => acc + c.amount, 0);
 
   const faturamentoLiquido =
     faturamentoBruto - totalComissoesDevidas - totalComissoesPagas;

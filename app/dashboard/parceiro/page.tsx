@@ -18,6 +18,7 @@ import {
   Target,
   QrCode, // ⬅️ Ícone novo para a aba de PIX
 } from "lucide-react";
+import { CommissionStatus } from "@prisma/client";
 
 export default function AffiliateDashboard() {
   const [data, setData] = useState<any>(null);
@@ -52,9 +53,9 @@ export default function AffiliateDashboard() {
         // (Apenas se sua tabela de Commission tiver o userId do pagador)
         if (c.payerId === data.affiliate.id) return;
 
-        if (c.status === "AVAILABLE") disponivel += c.amount;
-        if (c.status === "PENDING") pendente += c.amount;
-        if (c.status === "PAID") pago += c.amount;
+        if (c.status === CommissionStatus.AVAILABLE) disponivel += c.amount;
+        if (c.status === CommissionStatus.PENDING) pendente += c.amount;
+        if (c.status === CommissionStatus.PAID) pago += c.amount;
       });
     }
     return { disponivel, pendente, pago };
@@ -94,7 +95,9 @@ export default function AffiliateDashboard() {
     const planType = business?.planType;
     const mpSubId = business?.mpSubscriptionId;
 
-    const creationDate = new Date(u.createdAt);
+    const creationDate = business?.createdAt
+      ? new Date(business.createdAt)
+      : new Date(u.createdAt);
     const isActive = expDate && expDate > hoje;
 
     if (u.role === "VISITANTE") {
@@ -103,27 +106,26 @@ export default function AffiliateDashboard() {
       if (!isActive) {
         listVencidos.push(u); // Se venceu, vai pra aba de recuperação
       } else if (!mpSubId) {
-        // ⬅️ Atualizado
         listPix.push(u); // Ativação manual via Admin
       } else {
         // Lógica Automática (Mercado Pago)
         if (planType === "monthly") {
-          // ⬅️ Atualizado
-          const idadeConta = Math.ceil(
-            (hoje.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24),
+          // 🚀 O PULO DO GATO FINANCEIRO:
+          // Procura se já existe alguma comissão válida gerada por este cliente
+          const jaPagou = data.commissions.some(
+            (c: any) =>
+              c.userId === u.id && c.status !== CommissionStatus.CANCELLED,
           );
 
-          // Se for conta nova (menos de 7 dias) e plano mensal, é o TRIAL
-          if (idadeConta <= 7) {
+          // Se a loja está online (ativa) mas ainda não gerou comissão, está no Trial!
+          if (!jaPagou) {
             listTeste.push(u);
           } else {
             listMensal.push(u);
           }
         } else if (planType === "quarterly") {
-          // ⬅️ Atualizado
           listTrimestral.push(u);
         } else if (planType === "yearly") {
-          // ⬅️ Atualizado
           listAnual.push(u);
         }
       }

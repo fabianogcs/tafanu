@@ -304,8 +304,8 @@ model Commission {
   id            String           @id @default(cuid())
   affiliateId   String
   userId        String           // Cliente que pagou
-  amount        Float            // Valor da comissão (ex: 5.98)
-  orderAmount   Float            // Valor total da venda (ex: 29.90)
+  amount        Float            // Valor da comissão (ex: 7.98)
+  orderAmount   Float            // Valor total da venda (ex: 39.90)
   status        CommissionStatus @default(PENDING)
   description   String?          // Ex: "Mensalidade Março - Cliente X"
   createdAt     DateTime         @default(now())

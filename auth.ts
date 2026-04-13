@@ -42,6 +42,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    // 🛡️ ADICIONE ESTE BLOCO AQUI (LOGO NO INÍCIO DOS CALLBACKS):
+    async signIn({ user, account }) {
+      // Se for login por credenciais, o dbUser já foi checado na Action,
+      // mas para Google/Outros, precisamos checar o banco aqui:
+      if (account?.provider !== "credentials") {
+        const dbUser = await db.user.findUnique({
+          where: { email: user.email as string },
+          select: { isBanned: true },
+        });
+
+        if (dbUser?.isBanned) return false; // Bloqueia o login na hora
+      }
+      return true;
+    },
+    // ... seu código do jwt
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) return { ...token, ...session };
 

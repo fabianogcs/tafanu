@@ -289,24 +289,31 @@ export async function registerUser(formData: FormData) {
 export async function loginUser(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-
-  // 1. CAPTURA O DESTINO QUE VEM DA TELA (Original mantido)
   const callbackUrl = formData.get("callbackUrl") as string;
 
+  // 1. Busca o usuário no banco
   let dbUser = await db.user.findUnique({ where: { email } });
 
-  // 2. VERIFICA SE USUÁRIO EXISTE (Segurança básica)
+  // 🛡️ TRAVA DE SEGURANÇA: Bloqueio imediato de usuários banidos
+  if (dbUser?.isBanned) {
+    return {
+      error:
+        "Esta conta foi suspensa permanentemente por violação dos termos de uso.",
+    };
+  }
+
+  // 2. VERIFICA SE USUÁRIO EXISTE
   if (!dbUser || !dbUser.password) {
     return { error: "E-mail ou senha inválidos." };
   }
 
-  // 3. VERIFICA SENHA E TRAVA E-MAIL NÃO VERIFICADO
+  // 3. VERIFICA SENHA
   const isPasswordCorrect = await compare(password, dbUser.password);
   if (!isPasswordCorrect) {
     return { error: "E-mail ou senha inválidos." };
   }
 
-  // 👇 O PULO DO GATO: Se a senha tá certa, mas não verificou o e-mail, barramos aqui.
+  // 4. VERIFICA E-MAIL
   if (!dbUser.emailVerified) {
     return {
       error: "E-mail não verificado.",
@@ -315,45 +322,36 @@ export async function loginUser(formData: FormData) {
     };
   }
 
-  // 4. LÓGICA DE EXPIRAÇÃO (Com Carência de 48h para o Mercado Pago trabalhar)
-  // Agora a assinatura pertence ao Negócio, não mais ao Usuário.
-
+  // 5. LÓGICA DE EXPIRAÇÃO (Assinatura por Negócio)
   if (dbUser.role === "ASSINANTE") {
-    // 1. Busca todos os negócios ativos desse usuário
     const negociosDoUsuario = await db.business.findMany({
       where: { userId: dbUser.id, isActive: true },
-      select: { id: true, expiresAt: true }, // Pegamos só o que importa para economizar memória
+      select: { id: true, expiresAt: true },
     });
 
     let temAlgumNegocioAtivo = false;
     const dataAtual = new Date();
 
-    // 2. Verifica a expiração de cada negócio separadamente
     for (const negocio of negociosDoUsuario) {
       if (negocio.expiresAt) {
         const dataExpiracao = new Date(negocio.expiresAt);
-        // Adiciona 48 horas (2 dias) de carência na data
         const dataComCarencia = new Date(
           dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
         );
 
         if (dataComCarencia < dataAtual) {
-          // A assinatura deste negócio específico expirou. Vamos inativá-lo.
           await db.business.update({
             where: { id: negocio.id },
             data: { isActive: false },
           });
         } else {
-          // Este negócio ainda está no prazo, então o usuário continua sendo assinante
           temAlgumNegocioAtivo = true;
         }
       } else {
-        // Se por algum motivo o negócio não tem data de expiração, consideramos ativo
         temAlgumNegocioAtivo = true;
       }
     }
 
-    // 3. Se todos os negócios expiraram, rebaixamos o usuário
     if (!temAlgumNegocioAtivo) {
       await db.user.update({
         where: { id: dbUser.id },
@@ -363,7 +361,6 @@ export async function loginUser(formData: FormData) {
   }
 
   try {
-    // 5. DEFINE O DESTINO (Original mantido)
     let destino = callbackUrl || "/";
 
     if (!callbackUrl) {
@@ -371,7 +368,6 @@ export async function loginUser(formData: FormData) {
       else if (dbUser?.role === ("ASSINANTE" as Role)) destino = "/dashboard";
     }
 
-    // 6. REALIZA O LOGIN DE FATO
     await signIn("credentials", {
       email,
       password,
@@ -582,7 +578,7 @@ export async function createBusiness(payload: any) {
           slug: validatedData.slug.toLowerCase().trim(),
           // ... (todos os outros campos que você já mapeou)
           theme: validatedData.theme,
-          layout: validatedData.layout as any,
+          layout: validatedData.layout as LayoutType, // 🛡️ Blindado igual fizemos na edição!
           category: validatedData.category,
           subcategory: payload.subcategory || [],
           description: validatedData.description,
@@ -746,7 +742,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         category: validatedData.category,
         subcategory: payload.subcategory || [],
         theme: validatedData.theme,
-        layout: validatedData.layout as any, // Ajustado para evitar erro de tipo
+        layout: validatedData.layout as LayoutType, // 🛡️ Tipagem segura do Prisma
         whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
         phone: (validatedData.phone || "").replace(/\D/g, ""),
         number: validatedData.number || "",
@@ -1301,6 +1297,7 @@ export async function adminAddDaysToBusiness(
       data: {
         expiresAt: newDate,
         isActive: true, // Garante que a vitrine volte ao ar
+        subscriptionStatus: "active",
       },
     });
 
@@ -1336,8 +1333,9 @@ export async function adminActivateVisitor(userId: string, daysToAdd: number) {
         userId: userId,
         name: "Vitrine Oculta",
         slug: `loja-${userId.substring(0, 8)}-${Date.now().toString().slice(-4)}`,
-        category: "Geral", // ⬅️ Obrigatório pelo seu Schema
-        planType: "monthly", // ⬅️ Agora bate com o seu Enum
+        category: "Geral",
+        planType: "monthly" as PlanType, // 🛡️ Tipagem segura do TS
+        subscriptionStatus: "active", // ⬅️ Nova linha vital: já nasce ativa!
         isActive: true,
         expiresAt: newDate,
       },
@@ -1346,7 +1344,7 @@ export async function adminActivateVisitor(userId: string, daysToAdd: number) {
     // 2. Vira a chave de Visitante para Assinante
     await db.user.update({
       where: { id: userId },
-      data: { role: "ASSINANTE" },
+      data: { role: "ASSINANTE" as Role }, // 🛡️ Tipagem segura do TS
     });
 
     revalidatePath("/admin");
@@ -1792,7 +1790,7 @@ export async function generateCommission(
         userId: userId,
         amount: commissionAmount,
         orderAmount: orderAmount,
-        status: "PENDING",
+        status: CommissionStatus.PENDING, // 🛡️ Usa o Enum oficial que você já importou lá no topo!
         description: description,
         releaseDate: releaseDate,
       },
@@ -1928,6 +1926,7 @@ export async function getAffiliateDashboardData() {
                 planType: true, // 🚀 AGORA VEM DO NEGÓCIO
                 expiresAt: true, // 🚀 AGORA VEM DO NEGÓCIO
                 mpSubscriptionId: true, // 🚀 AGORA VEM DO NEGÓCIO
+                createdAt: true,
               },
               // Não podemos mais usar o orderBy na raiz do cliente com base no expiresAt,
               // então trazemos todos os negócios ou apenas o primeiro para exibir.
@@ -2019,9 +2018,8 @@ export async function getAffiliatePayouts() {
   try {
     const hoje = new Date();
 
-    // Busca afiliados que têm comissões liberadas (passaram da garantia)
     const partners = await db.user.findMany({
-      where: { role: "AFILIADO" },
+      where: { role: "AFILIADO" as Role }, // 🛡️ Garantindo o Enum do Prisma
       select: {
         id: true,
         name: true,
@@ -2030,8 +2028,8 @@ export async function getAffiliatePayouts() {
         commissions: {
           where: {
             OR: [
-              { status: "AVAILABLE" },
-              { status: "PENDING", releaseDate: { lte: hoje } }, // Virou disponível hoje
+              { status: CommissionStatus.AVAILABLE }, // 🛡️ Usa o Enum oficial
+              { status: CommissionStatus.PENDING, releaseDate: { lte: hoje } }, // 🛡️ Usa o Enum oficial
             ],
           },
         },
@@ -2137,9 +2135,10 @@ export async function createSubscription(
             name: "Minha Vitrine",
             slug: `vitrine-${userId.substring(0, 5)}-${Date.now()}`,
             category: "Geral",
-            // 🚀 CIRURGIA 1: Garante que a loja nasça TOTALMENTE INVISÍVEL
-            isActive: false, // Loja Pausada/Offline
-            published: false, // Não aparece nas buscas do site
+            planType: planType as PlanType, // 🛡️ Já grava qual plano ele escolheu
+            subscriptionStatus: "inactive", // ⬅️ Nasce inativa, esperando o Mercado Pago confirmar!
+            isActive: false,
+            published: false,
           },
         });
         finalBusinessId = novaLoja.id;
@@ -2165,19 +2164,19 @@ export async function createSubscription(
 
   const planConfigs = {
     monthly: {
-      amount: 29.9,
+      amount: 39.9, // Nova âncora mensal
       reason: "Assinatura Tafanu PRO - Mensal",
-      trialDays: hasUsedTrial ? 0 : 7,
+      trialDays: hasUsedTrial ? 0 : 7, // Mantemos o trial apenas aqui
     },
     quarterly: {
-      amount: 74.7,
+      amount: 104.7, // R$ 34,90 por mês
       reason: "Assinatura Tafanu PRO - Trimestral",
-      trialDays: 0,
+      trialDays: 0, // Sem trial para proteger o caixa
     },
     yearly: {
-      amount: 238.8,
+      amount: 358.8, // R$ 29,90 por mês (A oferta matadora)
       reason: "Assinatura Tafanu PRO - Anual",
-      trialDays: 0,
+      trialDays: 0, // Sem trial para proteger o caixa
     },
   };
 
@@ -2238,24 +2237,22 @@ export async function getBusinessExpiration() {
   return biz?.expiresAt || null;
 }
 // 🔨 BANIR USUÁRIO, CANCELAR PAGAMENTO E DERRUBAR ANÚNCIOS
+
 export async function banUserAction(userId: string) {
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
 
   try {
-    // 1. Buscamos o usuário e todas as lojas dele de uma vez
     const user = await db.user.findUnique({
       where: { id: userId },
       include: {
-        businesses: {
-          select: { id: true, mpSubscriptionId: true },
-        },
+        businesses: { select: { id: true, mpSubscriptionId: true } },
       },
     });
 
     if (!user) return { error: "Usuário não encontrado." };
 
-    // 2. Se ele tiver lojas com assinatura ativa, cancelamos TODAS no Mercado Pago
+    // 1. Cancelamento no Mercado Pago
     for (const biz of user.businesses) {
       if (biz.mpSubscriptionId) {
         try {
@@ -2265,47 +2262,39 @@ export async function banUserAction(userId: string) {
             body: { status: "cancelled" },
           });
         } catch (mpError) {
-          console.error(`Erro ao cancelar MP da loja ${biz.id}:`, mpError);
+          console.error(`Erro MP loja ${biz.id}:`, mpError);
         }
       }
     }
 
-    // 3. Aplicamos o Banimento no Usuário (Limpamos apenas o que existe no model User)
+    // 2. Banimento do Usuário
     await db.user.update({
       where: { id: userId },
       data: {
         isBanned: true,
-        role: "VISITANTE" as Role, // Rebaixa para visitante
-        // 🛡️ expiresAt e mpSubscriptionId foram removidos daqui pois não existem mais no User
+        role: "VISITANTE" as Role, // 🛡️ Faltava a tipagem do Prisma aqui para o Build não reclamar!
       },
     });
 
-    // 4. Derruba os anúncios e limpa as assinaturas nas LOJAS do usuário
+    // 3. 🛡️ Atualização das Lojas (Sincronizado com seu Prisma)
     await db.business.updateMany({
       where: { userId: userId },
       data: {
         isActive: false,
         published: false,
-        mpSubscriptionId: null, // Limpa o ID da assinatura na loja
-        expiresAt: null, // Remove o tempo de validade da loja
+        mpSubscriptionId: null,
+        expiresAt: null,
+        subscriptionStatus: "cancelled", // ⬅️ AJUSTE: Mantém o status real da assinatura
       },
     });
 
-    revalidatePath("/");
-    revalidatePath("/busca");
     revalidatePath("/admin");
-
-    return {
-      success: true,
-      message: "Usuário banido e todos os seus negócios foram desativados.",
-    };
+    return { success: true, message: "Usuário banido e assinatura cancelada." };
   } catch (error) {
-    console.error("Erro ao processar banimento:", error);
     return { error: "Erro ao processar banimento." };
   }
 }
 
-// 🔓 DESBANIR USUÁRIO E RESTAURAR ANÚNCIOS
 export async function unbanUserAction(userId: string) {
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
@@ -2317,12 +2306,13 @@ export async function unbanUserAction(userId: string) {
       data: { isBanned: false },
     });
 
-    // 2. Traz os anúncios de volta à vida!
+    // 2. Traz os anúncios de volta e limpa o status de cancelamento
     await db.business.updateMany({
       where: { userId: userId },
       data: {
         isActive: true,
         published: true,
+        subscriptionStatus: "inactive", // ⬅️ AJUSTE: Remove o "cancelled" do banimento
       },
     });
 
@@ -2335,6 +2325,7 @@ export async function unbanUserAction(userId: string) {
       message: "Usuário desbanido e anúncios reativados!",
     };
   } catch (error) {
+    console.error("Erro ao desbanir:", error);
     return { error: "Erro ao desbanir usuário." };
   }
 }
@@ -2373,6 +2364,7 @@ export async function adminAddExactDaysToBusiness(
       data: {
         expiresAt: newDate,
         isActive: true, // Garante que a vitrine volte ao ar, se estivesse caída
+        subscriptionStatus: "active",
       },
     });
 
