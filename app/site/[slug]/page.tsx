@@ -165,9 +165,21 @@ export default async function BusinessPage({
     ? new Date(business.expiresAt) < now
     : true;
 
-  // 🛡️ SEGURANÇA EXTRA: Se o dono não tiver imunidade e o negócio estiver expirado OU inativo, manda pro 404
+  // 🚀 TRAVA TAFANU: Separação entre Financeiro (isActive) e Visual (published)
+  const isOwner = userId === business.userId;
+
+  // 1. Bloqueio por falta de pagamento ou expiração
   if (!isOwnerImmune && (isExpired || !business.isActive)) {
+    // Se estiver expirado/inativo, nem o dono vê (força o cara a pagar)
     return notFound();
+  }
+
+  // 2. Bloqueio por "Modo Rascunho" (published: false)
+  if (!business.published) {
+    // Se a loja está pausada, SÓ o Dono ou o Admin podem entrar
+    if (!isOwner && !isVisitorAdmin) {
+      return notFound();
+    }
   }
 
   const siteUrl =

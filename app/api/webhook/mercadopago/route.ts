@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { PlanType, Role } from "@prisma/client";
+import { PlanType, Role, CommissionStatus } from "@prisma/client";
 import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
@@ -235,17 +235,14 @@ export async function POST(request: Request) {
           },
         });
 
-        // 🚀 ATUALIZAÇÃO SÊNIOR: Cancelar apenas as comissões exatas DESTE negócio
+        // 🚀 AJUSTE SUGERIDO (Trocar strings por Enums)
         await db.commission.updateMany({
           where: {
             userId: userId,
-            status: "PENDING",
-            // Garante que só cancela a comissão vinculada a esta vitrine específica
-            description: {
-              contains: businessId,
-            },
+            status: CommissionStatus.PENDING, // ⬅️ Use o Enum
+            description: { contains: businessId },
           },
-          data: { status: "CANCELLED" },
+          data: { status: CommissionStatus.CANCELLED }, // ⬅️ Use o Enum
         });
 
         revalidatePath("/", "layout");

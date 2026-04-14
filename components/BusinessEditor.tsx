@@ -125,7 +125,9 @@ export default function BusinessEditor({
   // Estados
   const [name, setName] = useState(safeBusiness.name);
   const [slug, setSlug] = useState(safeBusiness.slug);
-  const [isPublished, setIsPublished] = useState(safeBusiness.published);
+  const [isPublished, setIsPublished] = useState(
+    isNew ? false : safeBusiness.published,
+  );
   const [gallery, setGallery] = useState<string[]>(safeBusiness.gallery);
   const [profileImage, setProfileImage] = useState<string>(
     safeBusiness.imageUrl,

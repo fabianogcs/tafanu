@@ -620,7 +620,7 @@ export async function createBusiness(payload: any) {
           shein: validatedData.shein?.trim() || "",
           ifood: validatedData.ifood?.trim() || "",
           website: payload.website || "",
-          published: payload.published !== undefined ? payload.published : true,
+          published: false,
           urban_tag: payload.urban_tag || "",
           luxe_quote: payload.luxe_quote || "",
           showroom_collection: payload.showroom_collection || "",
@@ -1337,6 +1337,7 @@ export async function adminActivateVisitor(userId: string, daysToAdd: number) {
         planType: "monthly" as PlanType, // 🛡️ Tipagem segura do TS
         subscriptionStatus: "active", // ⬅️ Nova linha vital: já nasce ativa!
         isActive: true,
+        published: false,
         expiresAt: newDate,
       },
     });
