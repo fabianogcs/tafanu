@@ -87,33 +87,37 @@ export default async function AdminPage() {
     );
   });
 
-  // 2. Cálculo de Faturamento Bruto (Soma todas as lojas ativas de todos os usuários)
-  const faturamentoBruto = users.reduce((total, u) => {
-    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return total;
+  // 🎯 2. Cálculo de Faturamento (Bruto e Líquido com Regra de 20% para Afiliados)
+  let faturamentoBruto = 0;
+  let faturamentoLiquido = 0;
 
+  users.forEach((u) => {
+    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return;
+
+    // Soma o valor de todas as lojas ativas deste usuário
     const valorDoUsuario = u.businesses
       .filter((b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora)
       .reduce((subtotal, biz) => {
         if (biz.planType === "yearly") return subtotal + 358.8;
         if (biz.planType === "quarterly") return subtotal + 104.7;
-        return subtotal + 39.9; // Mensal
+        return subtotal + 39.9;
       }, 0);
 
-    return total + valorDoUsuario;
-  }, 0);
+    faturamentoBruto += valorDoUsuario;
 
-  // 3. Soma de comissões usando tipagem do Prisma
+    // 🛡️ CIRURGIA AQUI: Se o usuário tem um parceiro/afiliado vinculado
+    if (u.affiliateId || u.affiliate) {
+      faturamentoLiquido += valorDoUsuario * 0.8; // Você fica com 80%, 20% é do parceiro
+    } else {
+      faturamentoLiquido += valorDoUsuario; // Você fica com 100%
+    }
+  });
+
+  // 3. Mantemos o cálculo apenas para exibir no Card de "Comissões a Pagar" no Dashboard
   const totalComissoesDevidas = allCommissions
     .filter((c) => c.status === CommissionStatus.AVAILABLE)
     .reduce((acc, c) => acc + c.amount, 0);
 
-  const totalComissoesPagas = allCommissions
-    .filter((c) => c.status === CommissionStatus.PAID)
-    .reduce((acc, c) => acc + c.amount, 0);
-
-  // 4. Consolidação das métricas
-  const faturamentoLiquido =
-    faturamentoBruto - totalComissoesDevidas - totalComissoesPagas;
   const totalPagantes = pagantesList.length;
 
   const adminData = {
