@@ -27,12 +27,14 @@ interface FilterModalProps {
   availableCategories?: Record<string, string[]>;
   locationData?: LocationTree;
   currentSort?: string;
+  isDisabled?: boolean;
 }
 
 export default function FilterModal({
   availableCategories = {},
   locationData = {},
   currentSort,
+  isDisabled = false,
 }: FilterModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -157,12 +159,20 @@ export default function FilterModal({
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
-        className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-white text-[#0f172a] rounded-2xl shadow-xl hover:bg-tafanu-action hover:text-tafanu-blue transition-all group font-black uppercase text-xs tracking-widest border border-slate-100"
+        onClick={() => !isDisabled && setIsOpen(true)}
+        disabled={isDisabled}
+        className={`w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest border transition-all ${
+          isDisabled
+            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed shadow-none"
+            : "bg-white text-[#0f172a] shadow-xl hover:bg-tafanu-action hover:text-tafanu-blue border-slate-100 group"
+        }`}
       >
-        <Filter size={18} className="text-tafanu-blue" />
+        <Filter
+          size={18}
+          className={isDisabled ? "text-slate-400" : "text-tafanu-blue"}
+        />
         Filtros Avançados
-        {isFilterActive && (
+        {isFilterActive && !isDisabled && (
           <span className="w-2.5 h-2.5 bg-tafanu-blue rounded-full animate-bounce" />
         )}
       </button>

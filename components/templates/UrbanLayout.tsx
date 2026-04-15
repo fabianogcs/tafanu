@@ -387,7 +387,7 @@ export default function UrbanLayout({
         </div>
 
         {/* Pílula de Ações (Flutuante, solta no layout) */}
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-40">
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
           <div className="flex items-center gap-1 bg-black/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
             <button
               onClick={() => handleShare(business.name)}

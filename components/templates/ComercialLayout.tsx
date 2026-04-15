@@ -426,7 +426,7 @@ export default function ComercialLayout({
       </header>
 
       {/* --- MENU TABS --- */}
-      <div className="sticky top-4 z-40 px-4 my-8 md:my-12 flex justify-center">
+      <div className="sticky top-4 z-30 px-4 my-8 md:my-12 flex justify-center">
         {/* Adicionei gap-1 para separar os botões e deixei o fundo um pouco mais "visível" */}
         <div className="bg-slate-900/95 backdrop-blur-xl p-1.5 md:p-2 rounded-full border border-black/10 shadow-2xl flex gap-1">
           {["perfil", "infos"].map((t: any) => (

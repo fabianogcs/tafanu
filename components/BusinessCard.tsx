@@ -6,17 +6,14 @@ import {
   MessageCircle,
   Sparkles,
   Navigation,
-  CheckCircle2,
   Heart,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
-// 🚀 1. RECEBENDO O AVISO "showDistance" DO PAI
 export default function BusinessCard({ business, showDistance }: any) {
   const favoriteCount = business._count?.favorites || 0;
 
-  // --- 2. SUBCATEGORIAS (MECÂNICA NOVA: 1 POR VEZ) ---
+  // --- SUBCATEGORIAS (Limitando a 2) ---
   let allSubcategories: string[] = [];
   if (Array.isArray(business.subcategory)) {
     allSubcategories = business.subcategory;
@@ -26,18 +23,17 @@ export default function BusinessCard({ business, showDistance }: any) {
       .map((s: string) => s.trim());
   }
 
-  // Pega até 2 subcategorias e junta com um pontinho (Ex: "Pizzaria • Hamburgueria")
   const currentSub =
     allSubcategories.length > 0
       ? allSubcategories.slice(0, 2).join(" • ")
       : null;
 
-  // --- NOVA LÓGICA: VERIFICAR SE ESTÁ ABERTO/FECHADO ---
+  // --- LÓGICA ABERTO/FECHADO ---
   const checkIsOpen = (hours: any[]) => {
-    if (!hours || hours.length === 0) return null; // Se não tem horário cadastrado, não mostra a badge
+    if (!hours || hours.length === 0) return null;
     const now = new Date();
-    const today = now.getDay(); // 0 = Domingo, 6 = Sábado
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutos atuais do dia
+    const today = now.getDay();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
 
     const todayHours = hours.find((h: any) => h.dayOfWeek === today);
     if (!todayHours || todayHours.isClosed) return false;
@@ -52,12 +48,12 @@ export default function BusinessCard({ business, showDistance }: any) {
 
   const isOpen = checkIsOpen(business.hours);
 
-  // --- 3. CONTATO ---
+  // --- CONTATO WHATSAPP ---
   const rawPhone = business.whatsapp || business.phone;
   const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, "") : null;
   const wppLink = cleanPhone ? `https://wa.me/55${cleanPhone}` : null;
 
-  // --- 4. ENDEREÇO TEXTO LIMPO ---
+  // --- ENDEREÇO TEXTO LIMPO ---
   const locationParts = [
     business.neighborhood,
     business.city && business.state
@@ -65,138 +61,132 @@ export default function BusinessCard({ business, showDistance }: any) {
       : business.city || business.state,
   ].filter((part) => part && part.trim() !== "");
 
-  // 🚀 Se a array locationParts estiver vazia, retorna null para podermos esconder o ícone depois
   const locationText =
     locationParts.length > 0 ? locationParts.join(" • ") : null;
 
   return (
     <motion.div
-      whileHover={{ y: -6 }}
-      className="relative bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-sm hover:shadow-[0_20px_40px_rgba(2,48,89,0.08)] transition-all duration-500 group flex flex-col h-full overflow-hidden"
+      whileHover={{ y: -4 }}
+      className="relative bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full overflow-hidden"
     >
-      {/* --- CONTADOR DE FAVORITOS (Apenas Visual) --- */}
-      {favoriteCount > 0 && (
-        <div className="absolute top-2 right-2 md:top-3 md:right-3 z-30 scale-[0.85] md:scale-100 origin-top-right pointer-events-none">
-          <div className="bg-white/90 backdrop-blur-md px-2 py-1.5 rounded-full shadow-sm border border-black/5 flex items-center gap-1.5">
-            <Heart size={14} className="fill-rose-500 text-rose-500" />
-            <span className="text-[10px] md:text-xs font-black text-slate-700 pr-0.5">
-              {favoriteCount}
-            </span>
-          </div>
-        </div>
-      )}
-
       <Link
         href={`/site/${business.slug}`}
-        className="flex flex-col flex-1 relative z-10"
+        className="flex flex-col flex-1 relative z-10 outline-none"
       >
-        {/* --- IMAGEM HEADER --- */}
-        <div className="p-1.5 md:p-2 pb-0">
-          <div className="relative aspect-[16/11] md:aspect-[16/10] w-full bg-slate-100 overflow-hidden rounded-[20px] md:rounded-[24px] shadow-inner">
-            <img
-              src={business.imageUrl || "/og-default.png"}
-              alt={business.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-            />
-            {/* Sombreamento inferior para dar leitura nas tags */}
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
-            {/* 🚀 BADGE ABERTO/FECHADO */}
-            {isOpen !== null && (
-              <div className="absolute top-2 right-2 md:top-3 md:right-3 z-20">
+        {/* --- HEADER VISUAL (IMAGEM E BADGES) --- */}
+        <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden shrink-0">
+          <img
+            src={business.imageUrl || "/og-default.png"}
+            alt={business.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-black/20" />
+
+          {/* TOPO: Aberto/Fechado (Esquerda) e Favoritos (Direita) */}
+          <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-20">
+            {/* Aberto/Fechado e Distância (Esquerda) */}
+            <div className="flex gap-2 flex-col items-start">
+              {isOpen !== null && (
                 <div
-                  className={`px-2.5 md:px-3 py-1 md:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border ${
+                  className={`px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-md border ${
                     isOpen
                       ? "bg-emerald-500/90 border-emerald-400 text-white"
                       : "bg-red-500/90 border-red-400 text-white"
                   }`}
                 >
                   <div
-                    className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isOpen ? "bg-white animate-pulse" : "bg-white/70"}`}
+                    className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-white animate-pulse" : "bg-white/70"}`}
                   />
-                  <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">
+                  <span className="text-[9px] font-black uppercase tracking-widest">
                     {isOpen ? "Aberto" : "Fechado"}
                   </span>
                 </div>
-              </div>
-            )}
-            {/* 🚀 2. BADGE DE DISTÂNCIA (Travado pelo showDistance) */}
-            {showDistance &&
-              business.distance !== null &&
-              business.distance !== undefined && (
-                <div className="absolute top-2 left-2 md:top-3 md:left-3 z-20">
-                  <div className="bg-blue-600/90 backdrop-blur-sm text-white px-2.5 md:px-3 py-1 md:py-1.5 rounded-full flex items-center gap-1 shadow-lg border border-white/20">
-                    <Navigation
-                      size={10}
-                      className="fill-white md:w-3 md:h-3"
-                    />
-                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide">
+              )}
+
+              {showDistance &&
+                business.distance !== null &&
+                business.distance !== undefined && (
+                  <div className="bg-blue-600/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md border border-white/20">
+                    <Navigation size={10} className="fill-white" />
+                    <span className="text-[9px] font-bold uppercase tracking-wide">
                       {business.distance < 1
                         ? `${(business.distance * 1000).toFixed(0)}m`
                         : `${business.distance.toFixed(1)}km`}
                     </span>
                   </div>
-                </div>
-              )}
-
-            {/* BADGE CATEGORIA PRINCIPAL */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-max max-w-[90%] z-20">
-              <span className="bg-black/40 backdrop-blur-md text-white text-[9px] md:text-[10px] font-black px-3 py-1 md:py-1.5 rounded-full uppercase tracking-widest flex items-center justify-center gap-1.5 border border-white/20 truncate shadow-lg">
-                <Sparkles
-                  size={10}
-                  className="text-yellow-400 shrink-0 md:w-3 md:h-3"
-                />
-                {business.category || "Geral"}
-              </span>
+                )}
             </div>
+
+            {/* Favoritos (Direita) */}
+            {favoriteCount > 0 && (
+              <div className="bg-white/95 backdrop-blur-md px-2 py-1 rounded-full shadow-md border border-black/5 flex items-center gap-1.5 shrink-0">
+                <Heart size={12} className="fill-rose-500 text-rose-500" />
+                <span className="text-[10px] font-black text-slate-800 pr-0.5">
+                  {favoriteCount}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* BOTTOM: Categoria Principal */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-max max-w-[90%] z-20">
+            <span className="bg-white/10 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest flex items-center justify-center gap-1.5 border border-white/20 truncate shadow-lg">
+              <Sparkles size={10} className="text-amber-300 shrink-0" />
+              {business.category || "Geral"}
+            </span>
           </div>
         </div>
 
-        {/* --- CONTEÚDO DO CARD --- */}
-        <div className="px-3 pt-4 pb-3 md:p-5 flex flex-col flex-1 items-center text-center">
-          {/* SUBCATEGORIAS (FIXAS, MAIS MODERNO) */}
-          <div className="h-5 md:h-6 mb-2 w-full flex justify-center items-center px-1">
+        {/* --- CORPO DE TEXTO --- */}
+        {/* 🚀 AQUI FOI O AJUSTE: px-2 e md:px-3 para esticar mais, e itens centralizados! */}
+        <div className="py-3.5 px-2 md:py-4 md:px-3 flex flex-col flex-1 text-center justify-start items-center">
+          {/* Subcategorias */}
+          <div className="h-4 mb-1.5 w-full flex justify-center items-center">
             {currentSub && (
-              <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate w-full text-center">
+              <span className="text-center text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate w-full">
                 {currentSub}
               </span>
             )}
           </div>
 
-          {/* NOME DO NEGÓCIO */}
-          <h3 className="text-[15px] md:text-xl font-black text-slate-900 leading-[1.1] mb-2 md:mb-3 group-hover:text-blue-600 transition-colors line-clamp-2 px-1">
+          {/* Nome do Negócio */}
+          <h3 className="text-center text-base md:text-lg font-black text-slate-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2 w-full">
             {business.name}
           </h3>
 
-          {/* ENDEREÇO (TEXTO LIMPO) - Renderização Condicional */}
-          {locationText && (
-            <div className="flex items-center justify-center gap-1 text-slate-400 mt-auto px-1">
-              <MapPin
-                size={10}
-                className="text-blue-600 shrink-0 md:w-3 md:h-3"
-              />
-              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
-                {locationText}
+          {/* Endereço */}
+          <div className="mt-auto pt-1 w-full flex items-center justify-center gap-1.5 text-slate-400">
+            {locationText ? (
+              <>
+                <MapPin size={12} className="text-slate-300 shrink-0" />
+                <span className="text-center text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+                  {locationText}
+                </span>
+              </>
+            ) : (
+              <span className="text-[9px] text-transparent select-none">
+                Sem endereço
               </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Link>
 
-      {/* --- BOTÃO WHATSAPP --- */}
+      {/* --- RODAPÉ: BOTÃO WHATSAPP --- */}
       {wppLink ? (
-        <div className="px-2 md:px-3 pb-2 md:pb-3 relative z-20 mt-auto">
+        <div className="px-3 pb-3 pt-0 relative z-20 mt-auto">
           <a
             href={wppLink}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-1.5 bg-[#F0FDF4] text-emerald-600 hover:bg-emerald-500 hover:text-white py-2.5 md:py-3.5 rounded-xl md:rounded-[18px] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all border border-emerald-100 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20 w-full group/btn"
+            className="flex items-center justify-center gap-2 bg-[#F0FDF4] text-emerald-600 hover:bg-emerald-500 hover:text-white py-3 rounded-[16px] text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all border border-emerald-100 hover:border-emerald-500 w-full"
           >
-            <MessageCircle size={14} className="md:w-4 md:h-4" /> WhatsApp
+            <MessageCircle size={14} /> WhatsApp
           </a>
         </div>
       ) : (
-        <div className="pb-3" />
+        <div className="pb-4 mt-auto" />
       )}
     </motion.div>
   );

@@ -484,6 +484,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               availableCategories={orderedFilterMap}
               locationData={locationData}
               currentSort={sort}
+              isDisabled={totalCount === 0} // 🚀 AVISA SE ESTÁ VAZIO!
             />
           </div>
           <div className="w-full">

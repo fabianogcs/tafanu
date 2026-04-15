@@ -907,89 +907,106 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
 export async function deleteBusiness(slug: string) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
-  const userId = user.id;
 
   try {
-    // 1. Buscamos a loja e contamos quantas o usuário tem no total
-    const userWithBusinesses = await db.user.findUnique({
-      where: { id: userId },
-      include: {
-        businesses: {
-          select: { id: true, slug: true },
-        },
-      },
+    // 1. Busca a loja diretamente pelo slug (Permite ao Admin achar lojas de outros)
+    const business = await db.business.findUnique({
+      where: { slug },
+      select: { id: true, userId: true },
     });
 
-    const b = userWithBusinesses?.businesses.find((item) => item.slug === slug);
-    if (!b) return { error: "Negado ou loja não encontrada." };
+    if (!business) return { error: "Loja não encontrada." };
 
-    const totalBusinesses = userWithBusinesses?.businesses.length || 0;
-    const isPowerUser = user.role === "ADMIN" || user.role === "AFILIADO";
+    // 2. Trava de segurança: Só o dono ou um ADMIN Master pode apagar
+    if (business.userId !== user.id && user.role !== "ADMIN") {
+      return { error: "Acesso Negado. Você não é o dono desta loja." };
+    }
+
+    // 3. Conta quantas lojas o dono desta loja tem no total
+    const totalBusinesses = await db.business.count({
+      where: { userId: business.userId },
+    });
+
+    const donoDaLoja = await db.user.findUnique({
+      where: { id: business.userId },
+      select: { role: true },
+    });
+
+    // 🚀 O PULO DO GATO: A faxina das imagens TEM que ser feita ANTES de apagar no banco!
+    await cleanStorageFiles(slug);
 
     // --- DECISÃO CIRÚRGICA ---
-
-    // Se for Assinante e for a ÚNICA loja dele, entramos no modo RESET
-    if (user.role === "ASSINANTE" && totalBusinesses <= 1) {
-      // 🚀 MODO RESET: Limpamos os dados, mas mantemos o registro e o tempo (expiresAt)
+    // Se o dono for ASSINANTE e for a ÚNICA loja dele, entra no modo RESET para não quebrar a assinatura
+    if (
+      donoDaLoja?.role === "ASSINANTE" &&
+      totalBusinesses <= 1 &&
+      user.role !== "ADMIN"
+    ) {
       await db.$transaction([
-        // Removemos dados vinculados
-        db.businessHour.deleteMany({ where: { businessId: b.id } }),
-        db.favorite.deleteMany({ where: { businessId: b.id } }),
-        db.report.deleteMany({ where: { businessId: b.id } }),
-        // Adicione aqui outros deletes como db.product.deleteMany se houver
-
-        // Resetamos o registro principal para o estado inicial
+        db.businessHour.deleteMany({ where: { businessId: business.id } }),
+        db.favorite.deleteMany({ where: { businessId: business.id } }),
+        db.report.deleteMany({ where: { businessId: business.id } }),
         db.business.update({
-          where: { id: b.id },
+          where: { id: business.id },
           data: {
             name: "Minha Nova Vitrine",
-            slug: `reiniciar-${Math.random().toString(36).substring(7)}`, // Novo slug para evitar conflito
+            slug: `reiniciar-${Math.random().toString(36).substring(7)}`,
             description: "",
             imageUrl: "",
             gallery: [],
+            videos: [],
+            features: [],
+            faqs: [],
             keywords: [],
-            category: "",
+            category: "Geral",
             subcategory: [],
-            published: false, // Ocultamos até ele editar de novo
+            published: false,
             whatsapp: "",
             phone: "",
             instagram: "",
             facebook: "",
             tiktok: "",
-            // O campo 'userId' e campos de tempo (como expiresAt) NÃO são tocados aqui
+            website: "",
+            shopee: "",
+            mercadoLivre: "",
+            shein: "",
+            ifood: "",
+            urban_tag: "",
+            luxe_quote: "",
+            showroom_collection: "",
+            comercial_badge: "",
           },
         }),
       ]);
-
-      // Coleta arquivos para apagar do storage e não deixar lixo
-      await cleanStorageFiles(slug);
 
       revalidatePath("/dashboard");
       return {
         success: true,
         message:
-          "Sua vitrine foi resetada. Como você é assinante, sua loja base permanece ativa para nova edição.",
+          "Sua vitrine foi limpa/resetada. Como assinante, sua loja base permanece ativa para nova edição.",
       };
     }
 
-    // 🗑️ MODO EXCLUSÃO TOTAL: Se for Admin/Afiliado ou se o assinante tiver mais de uma (segurança extra)
+    // 🗑️ MODO EXCLUSÃO TOTAL: Para Admins, Afiliados ou Assinantes deletando lojas secundárias
     await db.$transaction([
-      db.businessHour.deleteMany({ where: { businessId: b.id } }),
-      db.favorite.deleteMany({ where: { businessId: b.id } }),
-      db.report.deleteMany({ where: { businessId: b.id } }),
-      db.business.delete({ where: { id: b.id } }),
+      db.businessHour.deleteMany({ where: { businessId: business.id } }),
+      db.favorite.deleteMany({ where: { businessId: business.id } }),
+      db.report.deleteMany({ where: { businessId: business.id } }),
+      db.business.delete({ where: { id: business.id } }),
     ]);
 
-    await cleanStorageFiles(slug);
-
+    revalidatePath("/admin");
     revalidatePath("/dashboard");
     revalidatePath("/busca");
     revalidatePath(`/site/${slug}`);
 
-    return { success: true, message: "Loja excluída com sucesso." };
+    return {
+      success: true,
+      message: "Loja excluída permanentemente com sucesso!",
+    };
   } catch (error) {
     console.error("Erro ao processar exclusão:", error);
-    return { error: "Erro ao excluir. Tente novamente." };
+    return { error: "Erro interno ao excluir. Tente novamente." };
   }
 }
 

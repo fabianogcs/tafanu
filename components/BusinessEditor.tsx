@@ -28,6 +28,7 @@ import {
   updateFullBusiness,
   updateBusinessHours,
   createBusiness,
+  deleteBusiness,
 } from "@/app/actions";
 import HoursForm from "@/components/HoursForm";
 import { motion, AnimatePresence } from "framer-motion";
@@ -357,53 +358,25 @@ export default function BusinessEditor({
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
-  // 🚀 A BORRACHA SEGURA: Limpa a tela e deixa o Backend fazer o trabalho sujo na hora de salvar
-  const handleClearContent = async () => {
-    const confirmClear = window.confirm(
-      "⚠️ ATENÇÃO: Isso vai limpar todas as suas fotos e textos da tela.\n\nO Nome e o Link NÃO serão alterados.\n\nDeseja continuar?",
+  // 🚀 A NOVA FUNÇÃO DE EXCLUSÃO REAL E INTELIGENTE
+  const handleDeleteAction = async () => {
+    const confirmDelete = window.confirm(
+      "⚠️ ATENÇÃO: Tem certeza que deseja excluir esta vitrine?\n\n(Se você for um assinante e esta for sua única loja, ela será apenas resetada para proteger sua assinatura).",
     );
 
-    if (!confirmClear) return;
+    if (!confirmDelete) return;
 
     setIsLoading(true);
-
     try {
-      // 1. Limpa a vitrine APENAS no Front-end (Visual)
-      setDescription("");
-      setGallery([]);
-      setVideos([]); // 🚀 LIMPA OS VÍDEOS
-      setProfileImage("");
-      setFeatures([]);
-      setFaqs([]);
-      setWhatsapp("");
-      setPhone("");
-      setSocials({
-        instagram: "",
-        facebook: "",
-        tiktok: "",
-        website: "",
-        shopee: "",
-        mercadoLivre: "",
-        shein: "",
-        ifood: "",
-      });
-      setLayoutText("");
-      setAddressData({
-        address: "",
-        cep: "",
-        neighborhood: "",
-        city: "",
-        state: "",
-        number: "",
-        complement: "",
-      });
-
-      // 2. Avisa o usuário que o trabalho só termina quando ele salvar
-      toast.success(
-        "Tela limpa! Clique no botão SALVAR para confirmar a exclusão do servidor.",
-      );
+      const res = await deleteBusiness(safeBusiness.slug);
+      if (res.success) {
+        toast.success(res.message);
+        router.push("/dashboard"); // Volta para o painel principal imediatamente!
+      } else {
+        toast.error(res.error || "Erro ao excluir.");
+      }
     } catch (error) {
-      toast.error("Ops! Algo deu errado ao tentar limpar.");
+      toast.error("Ops! Algo deu errado ao tentar excluir.");
     } finally {
       setIsLoading(false);
     }
@@ -689,9 +662,9 @@ export default function BusinessEditor({
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    handleClearContent();
+                    handleDeleteAction(); // 🚀 AGORA ELE REALMENTE DELETA!
                   }}
-                  title="Limpar Conteúdo da Vitrine"
+                  title="Excluir Vitrine"
                   className="p-3 text-rose-300 hover:text-rose-500 transition-all shadow-sm bg-white rounded-xl border border-rose-100 hover:bg-rose-50"
                 >
                   <Trash2 size={18} />

@@ -339,7 +339,7 @@ export default function LuxeLayout({
         )}
 
         {/* Pílula de Ações */}
-        <div className="absolute top-6 right-6 z-50">
+        <div className="absolute top-6 right-6 z-30">
           <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl px-4 py-2 rounded-full border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all hover:bg-white/90">
             <button
               onClick={() => handleShare(business.name)}
