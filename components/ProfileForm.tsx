@@ -307,7 +307,7 @@ export default function ProfileForm({ user }: { user: any }) {
                   />
                 </div>
               ) : (
-                <div className="bg-indigo-50 p-6 rounded-3xl flex items-center gap-4 md:col-span-1">
+                <div className="bg-indigo-50 p-4 md:p-6 rounded-2xl flex items-center justify-center text-center h-full md:col-span-1">
                   <p className="text-[10px] font-bold text-indigo-900 leading-tight italic">
                     Como você entrou via Google, defina sua senha ao lado.
                   </p>

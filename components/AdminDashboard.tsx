@@ -39,7 +39,8 @@ import {
   Clock,
   Copy,
   Check,
-  CalendarPlus, // 🚀 AJUSTE: Ícone adicionado para os botões de tempo
+  CalendarPlus,
+  MessageCircle, // 🚀 NOVO: Ícone adicionado para o botão de WhatsApp
 } from "lucide-react";
 
 import {
@@ -1132,6 +1133,40 @@ export default function AdminDashboard({
                 </div>
               </div>
 
+              {/* 🚀 CRM ADMIN: BOTÕES DE CONTATO (CLIENTE/LEAD) */}
+              <div className="flex gap-2 w-full">
+                <a
+                  href={
+                    selectedUser.phone
+                      ? `https://wa.me/55${selectedUser.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                          `Olá ${selectedUser.name?.split(" ")[0]}, aqui é do suporte Tafanu. Tudo bem?`,
+                        )}`
+                      : "#"
+                  }
+                  target="_blank"
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                    selectedUser.phone
+                      ? "bg-[#25D366] text-white shadow-sm hover:bg-[#1ebd57]"
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  }`}
+                  onClick={(e) => {
+                    if (!selectedUser.phone) {
+                      e.preventDefault();
+                      toast.error("Este membro não tem telefone cadastrado.");
+                    }
+                  }}
+                >
+                  <MessageCircle size={16} /> Contatar no WhatsApp
+                </a>
+                <a
+                  href={`mailto:${selectedUser.email}?subject=Contato%20Suporte%20Tafanu`}
+                  className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"
+                  title="Enviar E-mail"
+                >
+                  <Mail size={16} />
+                </a>
+              </div>
+
               {/* Origem e Vínculo de Parceiro */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div>
@@ -1394,6 +1429,40 @@ export default function AdminDashboard({
                     {selectedUser.referralCode || "—"}
                   </code>
                 </div>
+              </div>
+
+              {/* 🚀 CRM ADMIN: BOTÕES DE CONTATO (PARCEIRO) */}
+              <div className="flex gap-2 w-full">
+                <a
+                  href={
+                    selectedUser.phone
+                      ? `https://wa.me/55${selectedUser.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                          `Olá ${selectedUser.name?.split(" ")[0]}, aqui é do Tafanu HQ. Como estão as suas vendas de afiliado?`,
+                        )}`
+                      : "#"
+                  }
+                  target="_blank"
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                    selectedUser.phone
+                      ? "bg-[#25D366] text-white shadow-sm hover:bg-[#1ebd57]"
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  }`}
+                  onClick={(e) => {
+                    if (!selectedUser.phone) {
+                      e.preventDefault();
+                      toast.error("Este parceiro não tem telefone cadastrado.");
+                    }
+                  }}
+                >
+                  <MessageCircle size={16} /> Suporte ao Parceiro
+                </a>
+                <a
+                  href={`mailto:${selectedUser.email}?subject=Parceria%20Tafanu`}
+                  className="w-14 shrink-0 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all border border-purple-100 shadow-sm"
+                  title="Enviar E-mail"
+                >
+                  <Mail size={16} />
+                </a>
               </div>
 
               {/* Link de afiliado */}

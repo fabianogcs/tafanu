@@ -17,6 +17,7 @@ import {
   Zap,
   Target,
   QrCode, // ⬅️ Ícone novo para a aba de PIX
+  Mail, // ⬅️ Ícone para o botão de E-mail
 } from "lucide-react";
 import { CommissionStatus } from "@prisma/client";
 
@@ -141,11 +142,22 @@ export default function AffiliateDashboard() {
     return listVencidos;
   };
 
-  const filteredList = getRawList().filter(
-    (ref: any) =>
-      ref.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredList = getRawList()
+    .filter(
+      (ref: any) =>
+        ref.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+    .sort((a: any, b: any) => {
+      // 🚀 ORDENAÇÃO: Quem vence primeiro aparece no topo!
+      const expA = a.businesses?.[0]?.expiresAt
+        ? new Date(a.businesses[0].expiresAt).getTime()
+        : 0;
+      const expB = b.businesses?.[0]?.expiresAt
+        ? new Date(b.businesses[0].expiresAt).getTime()
+        : 0;
+      return expA - expB;
+    });
 
   const copyLink = () => {
     const linkCompleto = `${origin}/?ref=${affiliate.referralCode}`; // 🚀 Usa o estado origin
@@ -367,9 +379,17 @@ export default function AffiliateDashboard() {
                   <div>
                     <div className="flex justify-between items-start">
                       <div className="truncate max-w-[80%]">
-                        <h3 className="font-black text-[#023059] text-lg uppercase leading-tight truncate">
-                          {ref.name || "Sem Nome"}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-black text-[#023059] text-lg uppercase leading-tight truncate">
+                            {ref.name || "Sem Nome"}
+                          </h3>
+                          {/* 🚀 BADGE DE TRIAL */}
+                          {activeTab === "teste" && (
+                            <span className="bg-[#F28705] text-white text-[8px] md:text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0 shadow-sm">
+                              Trial 7 Dias
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] font-bold text-gray-400 mt-1 truncate">
                           {ref.email}
                         </p>
@@ -421,37 +441,49 @@ export default function AffiliateDashboard() {
                     )}
                   </div>
 
-                  {/* BOTÃO WHATSAPP - CRM COMPLETO */}
-                  <a
-                    href={
-                      ref.phone
-                        ? `https://wa.me/55${ref.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
-                            daysLeft <= 0
-                              ? `Olá ${ref.name?.split(" ")[0]}, sua assinatura na plataforma venceu! Vamos renovar?`
-                              : activeTab === "pix" && daysLeft <= 5
-                                ? `Olá ${ref.name?.split(" ")[0]}, passando para lembrar que sua assinatura vence em ${daysLeft} dias. Segue a chave PIX para renovação:`
-                                : `Olá ${ref.name?.split(" ")[0]}, tudo bem? Como estão os acessos na sua loja?`,
-                          )}`
-                        : "#"
-                    }
-                    target="_blank"
-                    className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                      ref.phone
-                        ? "bg-[#25D366] text-white shadow-lg hover:bg-[#1ebd57]"
-                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    }`}
-                    onClick={(e) => {
-                      if (!ref.phone) {
-                        e.preventDefault();
-                        toast.error(
-                          "Este cliente não tem telefone cadastrado.",
-                        );
+                  {/* BOTÕES DE CONTATO - CRM COMPLETO */}
+                  <div className="flex gap-2 w-full mt-2">
+                    <a
+                      href={
+                        ref.phone
+                          ? `https://wa.me/55${ref.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                              daysLeft <= 0
+                                ? `Olá ${ref.name?.split(" ")[0]}, sua assinatura na plataforma venceu! Vamos renovar?`
+                                : activeTab === "pix" && daysLeft <= 5
+                                  ? `Olá ${ref.name?.split(" ")[0]}, passando para lembrar que sua assinatura vence em ${daysLeft} dias. Segue a chave PIX para renovação:`
+                                  : `Olá ${ref.name?.split(" ")[0]}, tudo bem? Como estão os acessos na sua vitrine?`,
+                            )}`
+                          : "#"
                       }
-                    }}
-                  >
-                    <MessageCircle size={18} />
-                    {ref.phone ? "Atendimento WhatsApp" : "Sem Telefone Salvo"}
-                  </a>
+                      target="_blank"
+                      className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                        ref.phone
+                          ? "bg-[#25D366] text-white shadow-lg hover:bg-[#1ebd57]"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                      onClick={(e) => {
+                        if (!ref.phone) {
+                          e.preventDefault();
+                          toast.error(
+                            "Este cliente não tem telefone cadastrado.",
+                          );
+                        }
+                      }}
+                    >
+                      <MessageCircle size={18} />
+                      <span className="hidden sm:inline">WhatsApp</span>
+                      <span className="sm:hidden">WPP</span>
+                    </a>
+
+                    {/* 🚀 NOVO: BOTÃO DE E-MAIL */}
+                    <a
+                      href={`mailto:${ref.email}?subject=Sua%20Vitrine%20no%20Tafanu`}
+                      className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"
+                      title="Enviar E-mail"
+                    >
+                      <Mail size={18} />
+                    </a>
+                  </div>
                 </div>
               </div>
             );

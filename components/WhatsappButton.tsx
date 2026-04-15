@@ -26,7 +26,7 @@ export default function WhatsappButton({
 
     // 2. Abre o WhatsApp
     const message = encodeURIComponent(
-      `Olá! Vi seu anúncio no Tafanu e gostaria de mais informações.`,
+      "Olá, vi seu anúncio no Tafanu e gostaria de mais informações.",
     );
     const whatsappUrl = `https://wa.me/55${phone.replace(/\D/g, "")}?text=${message}`;
 

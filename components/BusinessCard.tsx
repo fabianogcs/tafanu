@@ -26,20 +26,31 @@ export default function BusinessCard({ business, showDistance }: any) {
       .map((s: string) => s.trim());
   }
 
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    // Agora ele pula de 1 em 1
-    if (allSubcategories.length > 1) {
-      const timer = setInterval(() => {
-        setIndex((prev) =>
-          prev + 1 >= allSubcategories.length ? 0 : prev + 1,
-        );
-      }, 3000);
-      return () => clearInterval(timer);
-    }
-  }, [allSubcategories.length]);
+  // Pega até 2 subcategorias e junta com um pontinho (Ex: "Pizzaria • Hamburgueria")
+  const currentSub =
+    allSubcategories.length > 0
+      ? allSubcategories.slice(0, 2).join(" • ")
+      : null;
 
-  const currentSub = allSubcategories[index];
+  // --- NOVA LÓGICA: VERIFICAR SE ESTÁ ABERTO/FECHADO ---
+  const checkIsOpen = (hours: any[]) => {
+    if (!hours || hours.length === 0) return null; // Se não tem horário cadastrado, não mostra a badge
+    const now = new Date();
+    const today = now.getDay(); // 0 = Domingo, 6 = Sábado
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutos atuais do dia
+
+    const todayHours = hours.find((h: any) => h.dayOfWeek === today);
+    if (!todayHours || todayHours.isClosed) return false;
+
+    const [openH, openM] = todayHours.openTime.split(":").map(Number);
+    const [closeH, closeM] = todayHours.closeTime.split(":").map(Number);
+    const openMinutes = openH * 60 + openM;
+    const closeMinutes = closeH * 60 + closeM;
+
+    return currentTime >= openMinutes && currentTime <= closeMinutes;
+  };
+
+  const isOpen = checkIsOpen(business.hours);
 
   // --- 3. CONTATO ---
   const rawPhone = business.whatsapp || business.phone;
@@ -89,7 +100,25 @@ export default function BusinessCard({ business, showDistance }: any) {
             />
             {/* Sombreamento inferior para dar leitura nas tags */}
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
-
+            {/* 🚀 BADGE ABERTO/FECHADO */}
+            {isOpen !== null && (
+              <div className="absolute top-2 right-2 md:top-3 md:right-3 z-20">
+                <div
+                  className={`px-2.5 md:px-3 py-1 md:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border ${
+                    isOpen
+                      ? "bg-emerald-500/90 border-emerald-400 text-white"
+                      : "bg-red-500/90 border-red-400 text-white"
+                  }`}
+                >
+                  <div
+                    className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isOpen ? "bg-white animate-pulse" : "bg-white/70"}`}
+                  />
+                  <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">
+                    {isOpen ? "Aberto" : "Fechado"}
+                  </span>
+                </div>
+              </div>
+            )}
             {/* 🚀 2. BADGE DE DISTÂNCIA (Travado pelo showDistance) */}
             {showDistance &&
               business.distance !== null &&
@@ -124,24 +153,13 @@ export default function BusinessCard({ business, showDistance }: any) {
 
         {/* --- CONTEÚDO DO CARD --- */}
         <div className="px-3 pt-4 pb-3 md:p-5 flex flex-col flex-1 items-center text-center">
-          {/* ANIMAÇÃO SUBCATEGORIAS */}
-          <div className="h-5 md:h-6 mb-2 overflow-hidden relative w-full flex justify-center items-center px-1">
-            <AnimatePresence mode="wait">
-              {currentSub && (
-                <motion.div
-                  key={index}
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -10, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute w-full flex justify-center"
-                >
-                  <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate w-full text-center px-1">
-                    {currentSub}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* SUBCATEGORIAS (FIXAS, MAIS MODERNO) */}
+          <div className="h-5 md:h-6 mb-2 w-full flex justify-center items-center px-1">
+            {currentSub && (
+              <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate w-full text-center">
+                {currentSub}
+              </span>
+            )}
           </div>
 
           {/* NOME DO NEGÓCIO */}
