@@ -16,6 +16,7 @@ import {
   Minus,
   Maximize2,
   Quote,
+  Video,
   MessageCircle,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
@@ -57,7 +58,50 @@ const SheinIcon = ({ className }: { className?: string }) => (
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
+// --- MOTOR DE VÍDEOS EMBED (YOUTUBE, INSTAGRAM, TIKTOK) ---
+const VideoEmbed = ({ url }: { url: string }) => {
+  let embedUrl = "";
+  let isVertical = false;
 
+  try {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      const videoId = url.includes("youtu.be/")
+        ? url.split("youtu.be/")[1]?.split("?")[0]
+        : url.includes("shorts/")
+          ? url.split("shorts/")[1]?.split("?")[0]
+          : new URL(url).searchParams.get("v");
+      if (videoId) {
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        isVertical = url.includes("shorts/");
+      }
+    } else if (url.includes("instagram.com")) {
+      const cleanUrl = url.split("?")[0].replace(/\/$/, "");
+      embedUrl = `${cleanUrl}/embed`;
+      isVertical = true;
+    } else if (url.includes("tiktok.com")) {
+      const videoId = url.split("/video/")[1]?.split("?")[0];
+      if (videoId) {
+        embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
+        isVertical = true;
+      }
+    }
+  } catch (e) {}
+
+  if (!embedUrl) return null;
+
+  return (
+    <div
+      className={`w-full overflow-hidden rounded-sm bg-black/5 border border-black/5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ${isVertical ? "aspect-[9/16] max-w-[350px] mx-auto" : "aspect-video"}`}
+    >
+      <iframe
+        src={embedUrl}
+        className="w-full h-full border-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  );
+};
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
   if (navigator.share) {
@@ -164,6 +208,10 @@ export default function LuxeLayout({
   const safeAddress = fullAddress || business.address;
   const gallery = Array.isArray(business.gallery)
     ? business.gallery.filter(Boolean)
+    : [];
+
+  const videos = Array.isArray(business.videos) // 🚀 PUXANDO OS VÍDEOS
+    ? business.videos.filter(Boolean)
     : [];
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
@@ -504,6 +552,30 @@ export default function LuxeLayout({
                     <Maximize2 className="text-white" size={24} />
                   </div>
                 </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 🚀 SEÇÃO DE VÍDEOS EMBED (ESTILO LUXE) */}
+        {videos.length > 0 && (
+          <section className="py-24 border-b border-black/5">
+            <div className="text-center mb-16">
+              <h3
+                className={`text-4xl md:text-6xl font-serif italic mb-4 ${theme.primary}`}
+              >
+                Motion & Experiência
+              </h3>
+              <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 flex items-center justify-center gap-2">
+                <Video size={14} /> Cinema
+              </span>
+            </div>
+
+            <div
+              className={`grid gap-12 max-w-6xl mx-auto px-4 ${videos.some((v: string) => v.includes("shorts") || v.includes("instagram") || v.includes("tiktok")) ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}
+            >
+              {videos.map((vid: string, i: number) => (
+                <VideoEmbed key={i} url={vid} />
               ))}
             </div>
           </section>

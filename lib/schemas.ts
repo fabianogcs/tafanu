@@ -63,10 +63,11 @@ export const businessSchema = z.object({
   imageUrl: z.string().optional().or(z.literal("")),
   gallery: z
     .array(z.string().url())
-    .max(8, "O limite é de 8 fotos na galeria")
+    .max(12, "O limite é de 12 fotos na galeria") // 🚀 AUMENTADO PARA 12
     .default([]),
 
   // --- Listas e Arrays ---
+  videos: z.array(z.string()).default([]), // 🚀 NOVO CAMPO: Lista de links de vídeos
   subcategory: z.array(z.string()).default([]),
   keywords: z
     .array(z.string())

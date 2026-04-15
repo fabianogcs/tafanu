@@ -129,6 +129,7 @@ export default function BusinessEditor({
     isNew ? false : safeBusiness.published,
   );
   const [gallery, setGallery] = useState<string[]>(safeBusiness.gallery);
+  const [videos, setVideos] = useState<string[]>(safeBusiness.videos || []); // 🚀 NOVO ESTADO DOS VÍDEOS
   const [profileImage, setProfileImage] = useState<string>(
     safeBusiness.imageUrl,
   );
@@ -227,6 +228,7 @@ export default function BusinessEditor({
 
     const isArraysDifferent =
       !isDeepEqual(gallery, safeBusiness.gallery) ||
+      !isDeepEqual(videos, safeBusiness.videos || []) || // 🚀 RADAR VIGIANDO VÍDEOS
       !isDeepEqual(selectedSubs, safeBusiness.subcategory) ||
       !isDeepEqual(keywords, safeBusiness.keywords) ||
       !isDeepEqual(features, safeBusiness.features) ||
@@ -275,6 +277,7 @@ export default function BusinessEditor({
     whatsapp,
     phone,
     gallery,
+    videos, // 🚀 VÍDEOS NA DEPENDÊNCIA DO RADAR
     selectedSubs,
     keywords,
     features,
@@ -329,6 +332,7 @@ export default function BusinessEditor({
       setName(safeBusiness.name);
       setSlug(safeBusiness.slug);
       setGallery(safeBusiness.gallery);
+      setVideos(safeBusiness.videos || []); // 🚀 CARREGA OS VÍDEOS SALVOS
       setProfileImage(safeBusiness.imageUrl);
       setIsPublished(safeBusiness.published);
 
@@ -367,6 +371,7 @@ export default function BusinessEditor({
       // 1. Limpa a vitrine APENAS no Front-end (Visual)
       setDescription("");
       setGallery([]);
+      setVideos([]); // 🚀 LIMPA OS VÍDEOS
       setProfileImage("");
       setFeatures([]);
       setFaqs([]);
@@ -501,6 +506,7 @@ export default function BusinessEditor({
             : `https://${socials.website}`
           : "",
         gallery: validGallery,
+        videos: videos.filter((v) => v.trim() !== ""), // 🚀 SALVA APENAS LINKS NÃO VAZIOS
         imageUrl: profileImage,
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
@@ -767,10 +773,12 @@ export default function BusinessEditor({
             categoryKeys={categoryKeys}
           />
 
-          {/* SEÇÃO DE CONTEÚDO (Galeria, Sobre, Diferenciais e FAQ) */}
+          {/* SEÇÃO DE CONTEÚDO (Galeria, Vídeos, Sobre, Diferenciais e FAQ) */}
           <ContentSection
             validGallery={validGallery}
             setGallery={setGallery}
+            videos={videos} // 🚀 PASSA OS VÍDEOS
+            setVideos={setVideos} // 🚀 PASSA A FUNÇÃO DE EDITAR VÍDEOS
             description={description}
             setDescription={setDescription}
             features={features}

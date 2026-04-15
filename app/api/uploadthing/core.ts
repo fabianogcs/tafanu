@@ -15,9 +15,9 @@ const handleAuth = async () => {
 };
 
 export const ourFileRouter = {
-  // 1. IMAGENS (Galeria) - Agora aceita até 6MB por foto
+  // 1. IMAGENS (Galeria) - Agora aceita até 8MB por foto e 12 fotos
   imageUploader: f({
-    image: { maxFileSize: "8MB", maxFileCount: 8 },
+    image: { maxFileSize: "8MB", maxFileCount: 12 }, // 🚀 AUMENTADO PARA 12
   })
     .middleware(handleAuth)
     .onUploadComplete(async ({ metadata, file }) => {

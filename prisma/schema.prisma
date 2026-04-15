@@ -102,9 +102,10 @@ model Business {
   map_clicks          Int @default(0) 
   views               Int            @default(0) // Centralizado aqui
 
-  // Mídia
+// Mídia
   imageUrl            String?        @db.Text 
   gallery             String[]       @default([])
+  videos              String[]       @default([]) // 🚀 NOVO: Gaveta para os links de vídeos (YouTube/Insta/TikTok)
 
   // Tags e Conteúdo Extra
   urban_tag           String?

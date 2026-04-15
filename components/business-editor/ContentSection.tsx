@@ -7,6 +7,7 @@ import {
   AlignLeft,
   ListChecks,
   HelpCircle,
+  Video, // 🚀 NOVO ÍCONE
 } from "lucide-react";
 import { UploadButton as UTButton } from "@uploadthing/react";
 import { OurFileRouter } from "@/app/api/uploadthing/core";
@@ -16,6 +17,8 @@ import { toast } from "sonner";
 interface ContentSectionProps {
   validGallery: string[];
   setGallery: (val: string[] | ((prev: string[]) => string[])) => void;
+  videos: string[]; // 🚀 NOVA PROP
+  setVideos: (val: string[]) => void; // 🚀 NOVA PROP
   description: string;
   setDescription: (val: string) => void;
   features: string[];
@@ -27,6 +30,8 @@ interface ContentSectionProps {
 export function ContentSection({
   validGallery,
   setGallery,
+  videos, // 🚀 DECLARADO AQUI
+  setVideos, // 🚀 DECLARADO AQUI
   description,
   setDescription,
   features,
@@ -43,7 +48,7 @@ export function ContentSection({
             <Layout size={18} className="text-indigo-500" /> Galeria Vitrine
           </h2>
           <span className="text-[10px] font-black text-indigo-600 uppercase">
-            {validGallery.length} / 8
+            {validGallery.length} / 12 {/* 🚀 ATUALIZADO PARA 12 */}
           </span>
         </div>
 
@@ -66,7 +71,7 @@ export function ContentSection({
           ))}
 
           {/* BOTÃO DE UPLOADTHING (Agora posicionado certinho) */}
-          {validGallery.length < 8 && (
+          {validGallery.length < 12 && (
             <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative transition-all group overflow-hidden">
               <Plus
                 size={24}
@@ -92,7 +97,7 @@ export function ContentSection({
                   onClientUploadComplete={(res) => {
                     if (res && res.length > 0) {
                       const newUrls = res.map((r) => r.url);
-                      setGallery([...validGallery, ...newUrls].slice(0, 8));
+                      setGallery([...validGallery, ...newUrls].slice(0, 12)); // 🚀 LIMITADO A 12
                       toast.success("Imagens adicionadas com sucesso!");
                     }
                   }}
@@ -103,6 +108,54 @@ export function ContentSection({
               </div>
             </div>
           )}
+        </div>
+      </div>
+      {/* 🚀 VÍDEOS EMBED */}
+      <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+        <div className="flex flex-col gap-2 mb-6">
+          <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+            <Video size={18} className="text-rose-500" /> Vídeos Destacados
+          </label>
+          <div className="bg-rose-50/50 p-4 rounded-xl border border-rose-100">
+            <p className="text-[10px] text-rose-600 font-bold leading-tight">
+              Aumente suas conversões com vídeos! Cole o link completo do
+              YouTube, Instagram (Reels) ou TikTok.
+              <br />
+              <span className="text-rose-400">
+                Atenção: Perfis fechados (privados) não permitem exibição do
+                vídeo.
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {videos.map((v, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={v}
+                onChange={(e) => {
+                  const n = [...videos];
+                  n[i] = e.target.value;
+                  setVideos(n);
+                }}
+                className="flex-1 bg-slate-50 p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-rose-500/20"
+                placeholder="Ex: https://www.youtube.com/watch?v=..."
+              />
+              <button
+                onClick={() => setVideos(videos.filter((_, idx) => idx !== i))}
+                className="p-4 bg-slate-50 text-slate-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all border"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => setVideos([...videos, ""])}
+            className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-rose-500 uppercase hover:border-rose-400 hover:bg-rose-50 transition-all flex items-center justify-center gap-2"
+          >
+            <Plus size={14} /> Adicionar Link de Vídeo
+          </button>
         </div>
       </div>
 

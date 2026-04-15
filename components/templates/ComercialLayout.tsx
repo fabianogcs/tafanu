@@ -24,6 +24,8 @@ import {
   PhoneCall,
   Maximize2,
   Camera,
+  Video,
+  Play,
   MessageCircle,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
@@ -64,7 +66,50 @@ const SheinIcon = ({ className }: { className?: string }) => (
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
+// --- MOTOR DE VÍDEOS EMBED (YOUTUBE, INSTAGRAM, TIKTOK) ---
+const VideoEmbed = ({ url }: { url: string }) => {
+  let embedUrl = "";
+  let isVertical = false;
 
+  try {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      const videoId = url.includes("youtu.be/")
+        ? url.split("youtu.be/")[1]?.split("?")[0]
+        : url.includes("shorts/")
+          ? url.split("shorts/")[1]?.split("?")[0]
+          : new URL(url).searchParams.get("v");
+      if (videoId) {
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        isVertical = url.includes("shorts/");
+      }
+    } else if (url.includes("instagram.com")) {
+      const cleanUrl = url.split("?")[0].replace(/\/$/, "");
+      embedUrl = `${cleanUrl}/embed`;
+      isVertical = true;
+    } else if (url.includes("tiktok.com")) {
+      const videoId = url.split("/video/")[1]?.split("?")[0];
+      if (videoId) {
+        embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
+        isVertical = true;
+      }
+    }
+  } catch (e) {}
+
+  if (!embedUrl) return null;
+
+  return (
+    <div
+      className={`w-full overflow-hidden rounded-[2rem] bg-black/5 border border-black/5 shadow-md ${isVertical ? "aspect-[9/16] max-w-[350px] mx-auto" : "aspect-video"}`}
+    >
+      <iframe
+        src={embedUrl}
+        className="w-full h-full border-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  );
+};
 // --- LÓGICA DE COMPARTILHAMENTO NATIVO + BLINDAGEM ---
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
@@ -212,6 +257,10 @@ export default function ComercialLayout({
 
   const gallery = Array.isArray(business.gallery)
     ? business.gallery.filter(Boolean)
+    : [];
+
+  const videos = Array.isArray(business.videos) // 🚀 PUXANDO OS VÍDEOS
+    ? business.videos.filter(Boolean)
     : [];
 
   const faqs = (business.faqs || []).filter(
@@ -499,6 +548,26 @@ export default function ComercialLayout({
                   </div>
                 </section>
               )}
+
+              {/* 🚀 SEÇÃO DE VÍDEOS EMBED */}
+              {videos.length > 0 && (
+                <section className="space-y-8">
+                  <div className="flex items-center justify-between px-2 mb-2">
+                    <h3 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
+                      Vídeos
+                    </h3>
+                    <Video size={20} className="opacity-40" />
+                  </div>
+                  <div
+                    className={`grid gap-6 ${videos.some((v: string) => v.includes("shorts") || v.includes("instagram") || v.includes("tiktok")) ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}
+                  >
+                    {videos.map((vid: string, i: number) => (
+                      <VideoEmbed key={i} url={vid} />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {/* FIM DA SEÇÃO DE VÍDEOS */}
             </motion.div>
           )}
 
