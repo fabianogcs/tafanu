@@ -15,6 +15,7 @@ import {
 import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
 import SessionRefresher from "@/components/SessionRefresher";
+import EditableUserName from "@/components/EditableUserName";
 
 export default async function DashboardLayout({
   children,
@@ -92,9 +93,11 @@ export default async function DashboardLayout({
                     ? "Membro Premium"
                     : "Visitante"}
             </p>
-            <h1 className="text-lg font-bold text-white leading-tight truncate w-40">
-              {displayName}
-            </h1>
+            {/* 🚀 COMPONENTE MÁGICO DE EDIÇÃO (SÓ ATIVA SE FOR VISITANTE) */}
+            <EditableUserName
+              initialName={displayName}
+              canEdit={currentRole === "VISITANTE"}
+            />
           </div>
           {isLocked && (
             <div className="mt-2 flex items-center gap-2 text-red-400 animate-pulse">

@@ -598,6 +598,7 @@ export async function createBusiness(payload: any) {
           longitude: coords.lng,
           imageUrl: payload.imageUrl || "",
           gallery: payload.gallery || [],
+          videos: payload.videos || [],
           features: payload.features || [],
           keywords: Array.from(
             new Set([
@@ -786,6 +787,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         shein: validatedData.shein?.trim() || "",
         ifood: validatedData.ifood?.trim() || "",
         gallery: payload.gallery || [],
+        videos: payload.videos || [],
         faqs: payload.faqs || [],
       },
     });
@@ -2632,5 +2634,27 @@ export async function approveComment(commentId: string) {
   } catch (error) {
     console.error("Erro ao aprovar comentário:", error);
     return { success: false, error: "Erro interno ao processar a aprovação." };
+  }
+}
+// ✏️ FUNÇÃO RÁPIDA PARA VISITANTES TROCAREM DE NOME
+export async function updateUserNameInline(newName: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autorizado." };
+
+  if (!newName || newName.trim().length < 3) {
+    return { error: "O nome deve ter pelo menos 3 letras." };
+  }
+
+  try {
+    await db.user.update({
+      where: { id: session.user.id },
+      data: { name: newName.trim() },
+    });
+
+    revalidatePath("/dashboard", "layout");
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar nome:", error);
+    return { error: "Erro ao salvar o nome." };
   }
 }

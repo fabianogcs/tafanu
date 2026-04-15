@@ -99,6 +99,7 @@ export function normalizeBusiness(raw: any) {
     comercial_badge: b.comercial_badge || "",
     showroom_collection: b.showroom_collection || "",
     gallery: Array.isArray(b.gallery) ? b.gallery : [],
+    videos: Array.isArray(b.videos) ? b.videos : [], // 🚀 CORREÇÃO: Filtro agora reconhece os vídeos!
     features: Array.isArray(b.features) ? b.features : [],
     faqs: Array.isArray(b.faqs) ? b.faqs : [],
     hours: Array.isArray(b.hours) ? b.hours : [],

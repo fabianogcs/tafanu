@@ -1,12 +1,13 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState, useEffect } from "react"; // 👈 Adicionamos useEffect
+import { useState, useEffect } from "react";
 import { UploadDropzone } from "@/lib/uploadthing";
 import { X, Image as ImageIcon, Save, Loader2 } from "lucide-react";
 import { updateBusinessMedia } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { compressImage } from "@/lib/compressImage";
+
 interface MediaFormProps {
   businessSlug: string;
   initialGallery?: string[];
@@ -19,9 +20,8 @@ export default function MediaForm({
   const router = useRouter();
   const [gallery, setGallery] = useState<string[]>(initialGallery || []);
   const [isSaving, setIsSaving] = useState(false);
-  const [isMounted, setIsMounted] = useState(false); // 👈 Filtro de segurança SSR
+  const [isMounted, setIsMounted] = useState(false);
 
-  // 🛡️ Garante que o componente só renderize no cliente
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -36,7 +36,7 @@ export default function MediaForm({
       const result = await updateBusinessMedia(businessSlug, gallery);
 
       if (result.success) {
-        toast.success("Mídia atualizada com sucesso!");
+        toast.success("Galeria atualizada com sucesso!");
         router.refresh();
       } else {
         toast.error(result.error || "Erro ao salvar mídia.");
@@ -48,11 +48,11 @@ export default function MediaForm({
     }
   };
 
-  if (!isMounted) return null; // 👈 Evita o erro de "null reading useState"
+  if (!isMounted) return null;
 
   return (
     <div className="space-y-8 bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 max-w-4xl mx-auto">
-      {/* --- SEÇÃO 2: GALERIA DE FOTOS --- */}
+      {/* --- GALERIA DE FOTOS --- */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
@@ -60,14 +60,13 @@ export default function MediaForm({
             Galeria de Fotos
           </h3>
           <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-            {gallery.length} / 8
+            {gallery.length} / 12 {/* 🚀 ATUALIZADO PARA 12 */}
           </span>
         </div>
 
-        {gallery.length < 8 ? (
+        {gallery.length < 12 /* 🚀 ATUALIZADO PARA 12 */ ? (
           <UploadDropzone
             endpoint="imageUploader"
-            // 🚀 ADICIONE ESTE BLOCO (Faz a compressão antes de subir)
             onBeforeUploadBegin={async (files) => {
               return await Promise.all(
                 files.map(async (file) => {
@@ -77,11 +76,12 @@ export default function MediaForm({
             }}
             onClientUploadComplete={(res) => {
               const newPhotos = res.map((r) => r.ufsUrl);
-              setGallery((prev) => [...prev, ...newPhotos].slice(0, 8));
-              toast.success("Fotos enviadas e comprimidas!"); // 👈 MENSAGEM ATUALIZADA
+              setGallery((prev) =>
+                [...prev, ...newPhotos].slice(0, 12),
+              ); /* 🚀 ATUALIZADO PARA 12 */
+              toast.success("Fotos enviadas e comprimidas!");
             }}
             onUploadError={(error: Error) => {
-              // 👈 LIMITE ATUALIZADO PARA 6MB
               toast.error("Erro: Verifique se a foto tem menos de 6MB.");
             }}
             className="ut-label:text-indigo-500 ut-button:bg-indigo-600 ut-button:hover:bg-indigo-700 border-dashed border-2 border-slate-200 bg-slate-50 rounded-[2rem] p-8 transition-all hover:bg-slate-100/50 ut-allowed-content:text-[10px] ut-allowed-content:uppercase ut-allowed-content:font-bold"
@@ -89,7 +89,7 @@ export default function MediaForm({
         ) : (
           <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-center">
             <p className="text-amber-700 text-xs font-bold uppercase tracking-tight">
-              Limite de 8 fotos atingido.
+              Limite de 12 fotos atingido. {/* 🚀 ATUALIZADO PARA 12 */}
             </p>
           </div>
         )}
