@@ -165,12 +165,12 @@ export default async function BusinessPage({
     ? new Date(business.expiresAt) < now
     : true;
 
-  // 🚀 TRAVA TAFANU: Separação entre Financeiro (isActive) e Visual (published)
+  // 🚀 TRAVA TAFANU: Visibilidade vinculada ao status financeiro (isActive)
   const isOwner = userId === business.userId;
 
-  // 1. Bloqueio por falta de pagamento ou expiração
-  if (!isOwnerImmune && (isExpired || !business.isActive)) {
-    // Se estiver expirado/inativo, nem o dono vê (força o cara a pagar)
+  // O negócio só "some" do mapa se estiver inativo (isActive: false)
+  // Isso dá ao usuário os dias de carência do Mercado Pago/Cron
+  if (!isOwnerImmune && !business.isActive) {
     return notFound();
   }
 

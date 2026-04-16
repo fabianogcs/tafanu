@@ -1561,19 +1561,11 @@ export async function getHomeBusinesses(userId?: string) {
     }
 
     // 2. CONTA QUANTOS NEGÓCIOS VÁLIDOS EXISTEM
+    // 🚀 AJUSTE: O banco agora confia 100% no status 'isActive'
     const totalBusinesses = await db.business.count({
       where: {
         isActive: true,
         published: true,
-        // 🚀 AJUSTE AQUI: Afiliados ganham imunidade vitalícia junto com Admins
-        OR: [
-          { user: { role: "ADMIN" as Role } },
-          { user: { role: "AFILIADO" as Role } }, // VIP do Parceiro Oficial
-          {
-            user: { role: "ASSINANTE" as Role },
-            expiresAt: { gt: new Date() },
-          },
-        ],
       },
     });
 
@@ -1590,15 +1582,6 @@ export async function getHomeBusinesses(userId?: string) {
       where: {
         isActive: true,
         published: true,
-        // 🚀 AJUSTE AQUI TAMBÉM: Igual ao passo 2
-        OR: [
-          { user: { role: "ADMIN" as Role } },
-          { user: { role: "AFILIADO" as Role } },
-          {
-            user: { role: "ASSINANTE" as Role },
-            expiresAt: { gt: new Date() },
-          },
-        ],
       },
       take: 12,
       skip: skipAmount,

@@ -219,17 +219,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   // --- 1. CONSTRUÇÃO DO FILTRO BASE (O que o usuário digitou + Onde ele está) ---
   const baseWhereClause: Prisma.BusinessWhereInput = {
+    // 🚀 AJUSTE: O banco agora confia 100% no status 'isActive'
     isActive: true,
     published: true,
-    // 🚀 AJUSTE CIRÚRGICO: Afiliados agora também aparecem na busca sem precisar de data de expiração
-    OR: [
-      { user: { role: "ADMIN" as any } },
-      { user: { role: "AFILIADO" as any } },
-      {
-        user: { role: "ASSINANTE" as any },
-        expiresAt: { gt: new Date() },
-      },
-    ],
     AND: [
       ...(cityFilter
         ? [

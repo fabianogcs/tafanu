@@ -312,7 +312,14 @@ export default function AdminDashboard({
   const handleAssignAffiliate = () => {
     if (!assignCodeInput) return toast.error("Digite o código do parceiro!");
     startTransition(async () => {
-      const res = await assignUserToAffiliate(selectedUser.id, assignCodeInput);
+      // 🚀 AJUSTE: Se o Admin colar o link inteiro, nós extraímos só a parte depois do "?ref="
+      let cleanCode = assignCodeInput.trim();
+      if (cleanCode.includes("?ref=")) {
+        cleanCode = cleanCode.split("?ref=")[1].split("&")[0];
+      }
+      cleanCode = cleanCode.toUpperCase(); // Garante que vai em maiúsculo pro banco
+
+      const res = await assignUserToAffiliate(selectedUser.id, cleanCode);
       if (res.success) {
         toast.success(res.message);
         setAssignCodeInput("");

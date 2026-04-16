@@ -16,8 +16,8 @@ import {
   CheckCircle2,
   Zap,
   Target,
-  QrCode, // ⬅️ Ícone novo para a aba de PIX
-  Mail, // ⬅️ Ícone para o botão de E-mail
+  QrCode,
+  Mail,
 } from "lucide-react";
 import { CommissionStatus } from "@prisma/client";
 
@@ -29,12 +29,11 @@ export default function AffiliateDashboard() {
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
-    setOrigin(window.location.origin); // 🚀 Só captura a URL quando chegar no navegador
+    setOrigin(window.location.origin);
   }, []);
 
   useEffect(() => {
     async function loadStats() {
-      // 🚀 Usando a nova função super otimizada que criamos
       const res = await getAffiliateDashboardData();
       if (res.error) toast.error(res.error);
       else setData(res);
@@ -50,8 +49,6 @@ export default function AffiliateDashboard() {
 
     if (data?.commissions) {
       data.commissions.forEach((c: any) => {
-        // 🚀 IGNORAR AUTO-PAGAMENTOS: Se o ID do usuário da comissão for o do afiliado, pula.
-        // (Apenas se sua tabela de Commission tiver o userId do pagador)
         if (c.payerId === data.affiliate.id) return;
 
         if (c.status === CommissionStatus.AVAILABLE) disponivel += c.amount;
@@ -76,7 +73,6 @@ export default function AffiliateDashboard() {
   const { affiliate, clients } = data;
   const hoje = new Date();
 
-  // 🛡️ O FUNIL DE VENDAS PERFEITO (CRM) - VERSÃO BLINDADA
   const listMensal: any[] = [];
   const listTrimestral: any[] = [];
   const listAnual: any[] = [];
@@ -85,58 +81,69 @@ export default function AffiliateDashboard() {
   const listLeads: any[] = [];
   const listVencidos: any[] = [];
 
-  // COLOQUE ISSO:
   clients.forEach((u: any) => {
-    // 🛡️ FILTRO DE SEGURANÇA: Se o "cliente" for um afiliado, ele é ignorado nos cálculos e nas listas
     if (u.role === "AFILIADO") return;
 
-    // 🚀 NOVO: Puxamos os dados da assinatura a partir do negócio!
     const business = u.businesses?.[0];
-    const expDate = business?.expiresAt ? new Date(business.expiresAt) : null;
-    const planType = business?.planType;
-    const mpSubId = business?.mpSubscriptionId;
 
-    const creationDate = business?.createdAt
-      ? new Date(business.createdAt)
-      : new Date(u.createdAt);
-    const isActive = expDate && expDate > hoje;
-
-    if (u.role === "VISITANTE") {
+    // 1. LEADS PUROS
+    if (!business) {
       listLeads.push(u);
-    } else if (u.role === "ASSINANTE") {
-      if (!isActive) {
-        listVencidos.push(u); // Se venceu, vai pra aba de recuperação
-      } else if (!mpSubId) {
-        listPix.push(u); // Ativação manual via Admin
-      } else {
-        // Lógica Automática (Mercado Pago)
-        if (planType === "monthly") {
-          // 🚀 O PULO DO GATO FINANCEIRO:
-          // Procura se já existe alguma comissão válida gerada por este cliente
-          const jaPagou = data.commissions.some(
-            (c: any) =>
-              c.userId === u.id && c.status !== CommissionStatus.CANCELLED,
-          );
+      return;
+    }
 
-          // Se a loja está online (ativa) mas ainda não gerou comissão, está no Trial!
-          if (!jaPagou) {
-            listTeste.push(u);
-          } else {
-            listMensal.push(u);
-          }
-        } else if (planType === "quarterly") {
-          listTrimestral.push(u);
-        } else if (planType === "yearly") {
-          listAnual.push(u);
-        }
+    const expDate = business.expiresAt ? new Date(business.expiresAt) : null;
+    const planType = business.planType;
+    const mpSubId = business.mpSubscriptionId;
+    const subStatus = business.subscriptionStatus;
+
+    // 2. VENCIDOS OU CANCELADOS
+    const isExpired = expDate ? hoje > expDate : false;
+    const isCancelled = subStatus === "cancelled";
+    const isExAssinante = u.role === "VISITANTE" && expDate !== null;
+
+    if (isExpired || isCancelled || isExAssinante) {
+      listVencidos.push(u);
+      return;
+    }
+
+    // 3. LEADS COM LOJA INCOMPLETA
+    if (u.role === "VISITANTE" && !expDate) {
+      listLeads.push(u);
+      return;
+    }
+
+    // 4. PIX / MANUAIS
+    if (!mpSubId) {
+      listPix.push(u);
+      return;
+    }
+
+    // 5. MERCADO PAGO ATIVOS (Mensal, Trimestral, Anual e Teste)
+    // 🛡️ AJUSTE DE SEGURANÇA: Adicionado (data?.commissions || []) para evitar crash!
+    const jaPassouDaGarantia = (data?.commissions || []).some(
+      (c: any) =>
+        c.userId === u.id && (c.status === "AVAILABLE" || c.status === "PAID"),
+    );
+
+    if (!jaPassouDaGarantia) {
+      listTeste.push(u); // Está nos 7 dias de Trial / Garantia (Comissão PENDING)
+    } else {
+      if (planType === "quarterly") {
+        listTrimestral.push(u);
+      } else if (planType === "yearly") {
+        listAnual.push(u);
+      } else {
+        listMensal.push(u);
       }
     }
   });
+
   const getRawList = () => {
     if (activeTab === "mensal") return listMensal;
     if (activeTab === "trimestral") return listTrimestral;
     if (activeTab === "anual") return listAnual;
-    if (activeTab === "pix") return listPix; // 🚀 Retorna a lista de PIX
+    if (activeTab === "pix") return listPix;
     if (activeTab === "teste") return listTeste;
     if (activeTab === "leads") return listLeads;
     return listVencidos;
@@ -149,7 +156,6 @@ export default function AffiliateDashboard() {
         ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a: any, b: any) => {
-      // 🚀 ORDENAÇÃO: Quem vence primeiro aparece no topo!
       const expA = a.businesses?.[0]?.expiresAt
         ? new Date(a.businesses[0].expiresAt).getTime()
         : 0;
@@ -160,7 +166,7 @@ export default function AffiliateDashboard() {
     });
 
   const copyLink = () => {
-    const linkCompleto = `${origin}/?ref=${affiliate.referralCode}`; // 🚀 Usa o estado origin
+    const linkCompleto = `${origin}/?ref=${affiliate.referralCode}`;
     navigator.clipboard.writeText(linkCompleto);
     toast.success("Link copiado! Boas vendas!", { icon: <Share2 size={16} /> });
   };
@@ -277,7 +283,6 @@ export default function AffiliateDashboard() {
           />
           <div className="w-px h-8 bg-gray-200 mx-1 shrink-0"></div>
 
-          {/* 🚀 NOVA ABA DE PIX MANUAL (Controle Privado do Afiliado) */}
           <TabButton
             active={activeTab === "pix"}
             onClick={() => setActiveTab("pix")}
@@ -315,7 +320,6 @@ export default function AffiliateDashboard() {
         {/* 3. LISTAGEM DE CLIENTES */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredList.map((ref: any) => {
-            // 🚀 NOVO: Buscamos o negócio e a data dele primeiro
             const business = ref.businesses?.[0];
             const expDate = business?.expiresAt
               ? new Date(business.expiresAt)
@@ -332,7 +336,7 @@ export default function AffiliateDashboard() {
                 key={ref.id}
                 className="bg-white rounded-[2rem] border border-gray-100 shadow-md hover:shadow-xl transition-all flex flex-col overflow-hidden group"
               >
-                {/* CABEÇALHO DO CARD (Dinâmico por Aba) */}
+                {/* CABEÇALHO DO CARD */}
                 <div
                   className={`px-5 py-3 flex justify-between items-center border-b ${
                     activeTab === "leads"
@@ -342,7 +346,7 @@ export default function AffiliateDashboard() {
                         : activeTab === "vencidos"
                           ? "bg-rose-50 border-rose-100"
                           : activeTab === "pix"
-                            ? "bg-purple-50 border-purple-100" // 🚀 Cor da aba PIX
+                            ? "bg-purple-50 border-purple-100"
                             : "bg-emerald-50 border-emerald-100"
                   }`}
                 >
@@ -383,7 +387,6 @@ export default function AffiliateDashboard() {
                           <h3 className="font-black text-[#023059] text-lg uppercase leading-tight truncate">
                             {ref.name || "Sem Nome"}
                           </h3>
-                          {/* 🚀 BADGE DE TRIAL */}
                           {activeTab === "teste" && (
                             <span className="bg-[#F28705] text-white text-[8px] md:text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0 shadow-sm">
                               Trial 7 Dias
@@ -395,7 +398,6 @@ export default function AffiliateDashboard() {
                         </p>
                       </div>
 
-                      {/* Botão de Ver Loja */}
                       {business && (
                         <Link
                           href={`/site/${business.slug}`}
@@ -408,7 +410,6 @@ export default function AffiliateDashboard() {
                       )}
                     </div>
 
-                    {/* STATUS DE TEMPO E AVISOS */}
                     {ref.role === "ASSINANTE" && expDate && (
                       <div className="mt-4 flex flex-col gap-2">
                         <div
@@ -430,7 +431,6 @@ export default function AffiliateDashboard() {
                             : `Vence em ${daysLeft} dias`}
                         </div>
 
-                        {/* 🚀 AVISO ESPECIAL PARA A ABA DE PIX */}
                         {activeTab === "pix" && (
                           <p className="text-[9px] font-bold text-purple-500/70 leading-tight">
                             *Você deve cobrar este cliente diretamente e
@@ -441,7 +441,7 @@ export default function AffiliateDashboard() {
                     )}
                   </div>
 
-                  {/* BOTÕES DE CONTATO - CRM COMPLETO */}
+                  {/* BOTÕES DE CONTATO */}
                   <div className="flex gap-2 w-full mt-2">
                     <a
                       href={
@@ -475,7 +475,6 @@ export default function AffiliateDashboard() {
                       <span className="sm:hidden">WPP</span>
                     </a>
 
-                    {/* 🚀 NOVO: BOTÃO DE E-MAIL */}
                     <a
                       href={`mailto:${ref.email}?subject=Sua%20Vitrine%20no%20Tafanu`}
                       className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"

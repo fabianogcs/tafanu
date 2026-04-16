@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import confetti from "canvas-confetti";
-import SessionRefresher from "@/components/SessionRefresher"; // 🚀 1. AQUI: Importamos o Garçom Invisível
+import SessionRefresher from "@/components/SessionRefresher";
 
 export default function SuccessPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -25,21 +25,23 @@ export default function SuccessPage() {
     }
   }, [session, sessionStatus, router]);
 
-  // --- 2. O CORAÇÃO DA PÁGINA: APENAS CONFETES E CONFIRMAÇÃO ---
+  // --- 2. O CORAÇÃO DA PÁGINA: APENAS CONFETES (UMA VEZ) ---
   useEffect(() => {
-    if (session?.user?.role === "ASSINANTE") {
-      setTimeout(() => {
-        setStatus("success");
-        triggerConfetti();
-      }, 1000);
-      return;
-    }
+    // Se a sessão ainda não carregou, espera quietinho.
+    if (sessionStatus === "loading") return;
 
-    setTimeout(() => {
+    // Dispara a tela de sucesso e os fogos apenas UMA vez após 1.5s
+    const timer = setTimeout(() => {
       setStatus("success");
       triggerConfetti();
     }, 1500);
-  }, [sessionStatus, session?.user?.role]);
+
+    // 🛡️ PROTEÇÃO CONTRA VAZAMENTO DE MEMÓRIA
+    // Se o usuário clicar no botão antes de dar 1.5s, isso aborta o timer!
+    return () => clearTimeout(timer);
+
+    // 🚀 O pulo do gato: Tiramos a sessão daqui de dentro para não dar loop
+  }, [sessionStatus]);
 
   // 🎉 Função de Confetes isolada
   const triggerConfetti = () => {
@@ -78,7 +80,7 @@ export default function SuccessPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-slate-50">
-      {/* 🚀 2. AQUI: O Garçom Invisível é chamado para atualizar o crachá nos bastidores! */}
+      {/* 🚀 O Garçom Invisível continua aqui para atualizar o crachá em silêncio! */}
       <SessionRefresher />
 
       <div className="w-full max-w-xl bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in duration-700">

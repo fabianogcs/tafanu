@@ -1,13 +1,21 @@
 "use client";
 
-import { AlertTriangle, Calendar, ArrowRight, Clock } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  ArrowRight,
+  Clock,
+  ShieldCheck,
+} from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { ptBR } from "date-fns/locale";
 
 export default function SubscriptionAlert({ user }: { user: any }) {
-  // 🚀 AJUSTE CIRÚRGICO: A data de expiração agora vem da loja!
-  const expirationDateRaw = user?.businesses?.[0]?.expiresAt;
+  // 🚀 AJUSTE CIRÚRGICO: Puxando a data e o status do banco!
+  const business = user?.businesses?.[0];
+  const expirationDateRaw = business?.expiresAt;
+  const subscriptionStatus = business?.subscriptionStatus;
 
   // 1. Se não tem data de expiração na loja, não mostramos nada (Visitante ou Admin)
   if (!expirationDateRaw) return null;
@@ -21,8 +29,38 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     locale: ptBR,
   });
 
+  // 🚀 FASE NOVA: CANCELADO, MAS COM ACESSO GARANTIDO (UX de Ouro)
+  if (
+    user.role === "ASSINANTE" &&
+    subscriptionStatus === "cancelled" &&
+    !isPastDueDate
+  ) {
+    return (
+      <div className="bg-slate-100 border border-slate-200 p-4 md:p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-slate-700 text-white p-2.5 rounded-xl">
+            <ShieldCheck size={20} />
+          </div>
+          <div>
+            <p className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-wider">
+              Assinatura Cancelada
+            </p>
+            <p className="text-[11px] md:text-xs font-bold text-slate-500 mt-1">
+              Não haverá novas cobranças. Seu acesso PRO continua garantido até
+              o dia <span className="text-slate-900">{expiryDate}</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 2. FASE 1: ATIVO E NO PRAZO (O aviso verdinho)
-  if (user.role === "ASSINANTE" && !isPastDueDate) {
+  if (
+    user.role === "ASSINANTE" &&
+    subscriptionStatus !== "cancelled" &&
+    !isPastDueDate
+  ) {
     return (
       <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-3xl flex items-center justify-between mb-8 shadow-sm">
         <div className="flex items-center gap-3">
@@ -38,7 +76,6 @@ export default function SubscriptionAlert({ user }: { user: any }) {
   }
 
   // 3. FASE 2: CARÊNCIA / PROCESSANDO (O aviso tranquilizador)
-  // Venceu a data, mas o sistema (Layout.tsx) ainda não rebaixou ele para Visitante
   if (user.role === "ASSINANTE" && isPastDueDate) {
     return (
       <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4">
@@ -50,7 +87,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
             <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">
               Processando Renovação...
             </p>
-            <p className="text-[10px] font-bold text-amber-600/70">
+            <p className="text-[10px] font-bold text-amber-600/70 mt-0.5">
               Aguardando confirmação do Mercado Pago. Seu acesso continua
               liberado!
             </p>
@@ -61,11 +98,9 @@ export default function SubscriptionAlert({ user }: { user: any }) {
   }
 
   // 4. FASE 3: EXPIRADO DE VERDADE (O aviso vermelhão)
-  // Se a data passou e ele não é mais ASSINANTE (a guilhotina das 48h caiu)
   if (user.role === "VISITANTE" && isPastDueDate) {
     return (
       <div className="bg-rose-600 text-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl shadow-rose-200 relative overflow-hidden mb-10 animate-pulse">
-        {/* Detalhe de fundo */}
         <div className="absolute top-[-20px] right-[-20px] opacity-10 rotate-12">
           <AlertTriangle size={150} />
         </div>
@@ -79,7 +114,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
               <h2 className="text-xl font-black uppercase italic tracking-tighter leading-none mb-1">
                 Assinatura Expirada! ⚠️
               </h2>
-              <p className="text-xs font-bold text-rose-100 uppercase tracking-widest">
+              <p className="text-xs font-bold text-rose-100 uppercase tracking-widest mt-1">
                 Seu anúncio foi <span className="underline">ocultado</span> das
                 buscas no dia {expiryDate}.
               </p>
@@ -88,7 +123,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
 
           <button
             onClick={() => router.push("/checkout")}
-            className="w-full md:w-auto bg-white text-rose-600 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-3"
+            className="w-full md:w-auto bg-white text-rose-600 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-3 shrink-0"
           >
             Renovar Agora <ArrowRight size={16} />
           </button>
@@ -97,6 +132,5 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     );
   }
 
-  // Se não caiu em nada, previne quebrar a tela
   return null;
 }
