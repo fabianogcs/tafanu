@@ -1,6 +1,6 @@
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
-import "./globals.css";
+import "@/app/globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { auth } from "@/auth";
@@ -15,8 +15,42 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
-  description: "Encontre os melhores serviços e comércios.",
-  manifest: "/manifest.json",
+  description:
+    "Encontre os melhores serviços e comércios. Explore vitrines exclusivas e conecte-se diretamente pelo WhatsApp.",
+  manifest: "/manifest.json", // 🚀 Mantivemos o seu PWA intacto!
+  keywords: [
+    "guia comercial",
+    "negócios locais",
+    "serviços",
+    "vitrine virtual",
+    "empresas",
+  ],
+  applicationName: "Tafanu",
+  openGraph: {
+    title: "TAFANU | Descubra e Conecte-se",
+    description:
+      "O guia mais completo para você achar exatamente o que precisa, perto de você.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app",
+    siteName: "Tafanu",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app"}/og-default.png`,
+        width: 1200,
+        height: 630,
+        alt: "Logo Tafanu",
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TAFANU | Guia de Negócios",
+    description: "Encontre os melhores serviços da sua cidade em um só lugar.",
+    images: [
+      `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app"}/og-default.png`,
+    ],
+  },
 };
 
 export default async function RootLayout({

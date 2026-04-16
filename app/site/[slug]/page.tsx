@@ -290,7 +290,35 @@ export default async function BusinessPage({
           `,
         }}
       />
-
+      {/* 🚀 SEO AVANÇADO: SCHEMA MARKUP PARA O GOOGLE (LocalBusiness) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            name: business.name,
+            image: appIcon,
+            description: business.description,
+            telephone: business.whatsapp || business.phone,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: streetWithNumber,
+              addressLocality: business.city,
+              addressRegion: business.state,
+              addressCountry: "BR",
+            },
+            ...(business.latitude &&
+              business.longitude && {
+                geo: {
+                  "@type": "GeoCoordinates",
+                  latitude: business.latitude,
+                  longitude: business.longitude,
+                },
+              }),
+          }),
+        }}
+      />
       {currentLayout === "editorial" && <LuxeLayout {...layoutProps} />}
       {currentLayout === "urban" && <UrbanLayout {...layoutProps} />}
       {currentLayout === "businessList" && <ComercialLayout {...layoutProps} />}

@@ -51,7 +51,12 @@ export default function BusinessCard({ business, showDistance }: any) {
   // --- CONTATO WHATSAPP ---
   const rawPhone = business.whatsapp || business.phone;
   const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, "") : null;
-  const wppLink = cleanPhone ? `https://wa.me/55${cleanPhone}` : null;
+
+  // 🚀 MENSAGEM AUTOMÁTICA INTELIGENTE
+  const defaultMessage = `Olá! Encontrei o anúncio "${business.name}" no Tafanu e gostaria de saber mais.`;
+  const wppLink = cleanPhone
+    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMessage)}`
+    : null;
 
   // --- ENDEREÇO TEXTO LIMPO ---
   const locationParts = [
