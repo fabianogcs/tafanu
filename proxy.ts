@@ -21,13 +21,16 @@ export const proxy = auth((req) => {
   const isPublicRoute =
     pathname === "/" ||
     pathname.startsWith("/login") ||
+    pathname.startsWith("/esqueci-senha") || // 🚀 VIP LIBERADA
+    pathname.startsWith("/nova-senha") || // 🚀 VIP LIBERADA
+    pathname.startsWith("/verificar-email") || // 🚀 VIP LIBERADA
     pathname.startsWith("/sobre") ||
     pathname.startsWith("/termos") ||
     pathname.startsWith("/busca") ||
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/webhook") || // 🚀 ADICIONADO: Essencial para o Mercado Pago funcionar!
+    pathname.startsWith("/api/webhook") ||
     pathname.startsWith("/_next") ||
     pathname === "/manifest.json" ||
     pathname === "/sw.js" ||

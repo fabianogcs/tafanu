@@ -322,43 +322,8 @@ export async function loginUser(formData: FormData) {
     };
   }
 
-  // 5. LÓGICA DE EXPIRAÇÃO (Assinatura por Negócio)
-  if (dbUser.role === "ASSINANTE") {
-    const negociosDoUsuario = await db.business.findMany({
-      where: { userId: dbUser.id, isActive: true },
-      select: { id: true, expiresAt: true },
-    });
-
-    let temAlgumNegocioAtivo = false;
-    const dataAtual = new Date();
-
-    for (const negocio of negociosDoUsuario) {
-      if (negocio.expiresAt) {
-        const dataExpiracao = new Date(negocio.expiresAt);
-        const dataComCarencia = new Date(
-          dataExpiracao.getTime() + 48 * 60 * 60 * 1000,
-        );
-
-        if (dataComCarencia < dataAtual) {
-          await db.business.update({
-            where: { id: negocio.id },
-            data: { isActive: false },
-          });
-        } else {
-          temAlgumNegocioAtivo = true;
-        }
-      } else {
-        temAlgumNegocioAtivo = true;
-      }
-    }
-
-    if (!temAlgumNegocioAtivo) {
-      await db.user.update({
-        where: { id: dbUser.id },
-        data: { role: "VISITANTE" as Role },
-      });
-    }
-  }
+  // 🚀 O BLOCO 5 (Lógica de Expiração/Corte de 48h) FOI REMOVIDO DAQUI!
+  // Agora o Webhook e o Cron Job são os únicos responsáveis por cortar acessos.
 
   try {
     let destino = callbackUrl || "/";
@@ -1921,21 +1886,19 @@ export async function getAffiliateDashboardData() {
             phone: true,
             createdAt: true,
             role: true, // 🚀 MANTÉM O CARGO (ASSINANTE/VISITANTE)
-            // ❌ REMOVIDOS DAQUI: expiresAt, planType, mpSubscriptionId
             businesses: {
               select: {
                 slug: true,
                 isActive: true,
-                planType: true, // 🚀 AGORA VEM DO NEGÓCIO
-                expiresAt: true, // 🚀 AGORA VEM DO NEGÓCIO
-                mpSubscriptionId: true, // 🚀 AGORA VEM DO NEGÓCIO
+                planType: true,
+                expiresAt: true,
+                mpSubscriptionId: true,
+                subscriptionStatus: true, // 🚀 FALTAVA ISSO: Vital para a aba "Cancelados"
                 createdAt: true,
               },
-              // Não podemos mais usar o orderBy na raiz do cliente com base no expiresAt,
-              // então trazemos todos os negócios ou apenas o primeiro para exibir.
             },
           },
-          orderBy: { createdAt: "desc" }, // Mudamos a ordenação para os clientes mais recentes
+          orderBy: { createdAt: "desc" },
         },
         commissions: {
           // Vendas automáticas do Mercado Pago
@@ -1949,6 +1912,7 @@ export async function getAffiliateDashboardData() {
     return {
       success: true,
       affiliate: {
+        id: affiliate.id, // 🚀 FALTAVA ISSO: Vital para a trava de auto-compra do afiliado
         name: affiliate.name,
         referralCode: affiliate.referralCode,
       },
@@ -2035,8 +1999,6 @@ export async function getAffiliatePayouts() {
   if (!adminId) return { error: "Não autorizado." };
 
   try {
-    const hoje = new Date();
-
     const partners = await db.user.findMany({
       where: { role: "AFILIADO" as Role }, // 🛡️ Garantindo o Enum do Prisma
       select: {
@@ -2046,10 +2008,8 @@ export async function getAffiliatePayouts() {
         phone: true,
         commissions: {
           where: {
-            OR: [
-              { status: CommissionStatus.AVAILABLE }, // 🛡️ Usa o Enum oficial
-              { status: CommissionStatus.PENDING, releaseDate: { lte: hoje } }, // 🛡️ Usa o Enum oficial
-            ],
+            // 🚀 CORREÇÃO SÊNIOR: O Admin SÓ enxerga o que o Cron Job já liberou!
+            status: CommissionStatus.AVAILABLE,
           },
         },
       },
