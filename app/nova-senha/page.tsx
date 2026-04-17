@@ -1,133 +1,188 @@
 "use client";
 
+import { useState, Suspense } from "react";
 import { toast } from "sonner";
-import { useState } from "react";
-import { resetPassword } from "@/app/actions";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Lock, CheckCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Lock,
+  ArrowRight,
+  Loader2,
+  KeyRound,
+  CheckCircle2,
+} from "lucide-react";
+import { resetPassword } from "@/app/actions";
 
-export default function NewPasswordPage() {
+function NovaSenhaForm() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
   const router = useRouter();
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  // Substitua APENAS a função handleSubmit dentro de nova-senha/page.tsx
+  const token = searchParams.get("token");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSaving(true);
-    setError("");
+    setIsLoading(true);
 
     if (!token) {
-      setError("Token inválido.");
-      setIsSaving(false);
+      toast.error("Token inválido ou ausente.");
+      setIsLoading(false);
       return;
     }
 
     const formData = new FormData(event.currentTarget);
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
 
-    // Chama a Server Action
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem!");
+      setIsLoading(false);
+      return;
+    }
+
+    // 🚀 AQUI: Usando a exata assinatura que já existe no seu actions.ts
     const result = await resetPassword(token, formData);
 
     if (result?.error) {
-      // Se deu erro, paramos de carregar e mostramos o erro
-      setError(result.error);
-      setIsSaving(false);
+      toast.error(result.error);
     } else if (result?.success) {
-      // --- A CORREÇÃO ESTÁ AQUI ---
-      // Se deu certo, avisamos o usuário e redirecionamos
-      toast.success("Senha alterada com sucesso! Faça login com a nova senha.");
-      router.push("/login");
-    } else {
-      // Caso genérico de falha
-      setIsSaving(false);
+      toast.success("Senha atualizada com sucesso!");
+      setIsSuccess(true);
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
     }
+
+    setIsLoading(false);
   }
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-center p-4">
-        <div>
-          <AlertTriangle className="mx-auto text-red-500 mb-4" size={48} />
-          <h1 className="text-xl font-bold text-gray-900">Link Inválido</h1>
-          <p className="text-gray-500 mb-4">
-            Este link de recuperação parece estar quebrado.
-          </p>
-          <Link
-            href="/login"
-            className="text-tafanu-blue font-bold hover:underline"
-          >
-            Voltar ao Login
-          </Link>
+      <div className="text-center animate-in fade-in zoom-in duration-500">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+          <KeyRound size={32} />
         </div>
+        <h1 className="text-3xl font-black text-slate-900 mb-3 uppercase italic tracking-tighter leading-none">
+          Link Inválido
+        </h1>
+        <p className="text-slate-400 font-medium mb-8">
+          Este link de recuperação está incompleto ou já expirou.
+        </p>
+        <Link
+          href="/esqueci-senha"
+          className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest italic"
+        >
+          Solicitar novo link
+        </Link>
+      </div>
+    );
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="text-center animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle2 size={40} />
+        </div>
+        <h1 className="text-3xl font-black text-slate-900 mb-3 uppercase italic tracking-tighter leading-none">
+          Senha Alterada!
+        </h1>
+        <p className="text-slate-500 font-medium mb-8">
+          Sua nova senha foi salva com sucesso. Você será redirecionado para o
+          login em instantes.
+        </p>
+        <Loader2 className="animate-spin text-tafanu-blue mx-auto" size={24} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-tafanu-blue">
-            <Lock size={32} />
-          </div>
-          <h1 className="text-2xl font-black text-gray-900 mb-2">
-            Criar Nova Senha
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Digite sua nova senha abaixo para recuperar o acesso.
-          </p>
-        </div>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-16 h-16 bg-tafanu-blue text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+        <Lock size={32} />
+      </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-bold mb-4 flex items-center gap-2">
-            <AlertTriangle size={16} /> {error}
-          </div>
-        )}
+      <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3 uppercase italic tracking-tighter leading-none">
+        Nova <br /> <span className="text-tafanu-blue">Senha.</span>
+      </h1>
+      <p className="text-slate-400 font-medium mb-8">
+        Digite sua nova senha abaixo. Escolha uma senha forte e segura.
+      </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
-              Nova Senha
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1">
+          <label
+            htmlFor="password"
+            className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+          >
+            Nova Senha
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
+              <Lock size={18} />
+            </div>
             <input
+              id="password"
               name="password"
               type="password"
-              placeholder="••••••••"
-              className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-tafanu-blue outline-none"
               required
+              placeholder="••••••••"
+              className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold text-slate-700"
             />
           </div>
+        </div>
 
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
-              Confirme a Senha
-            </label>
+        <div className="space-y-1">
+          <label
+            htmlFor="confirmPassword"
+            className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+          >
+            Confirme a Nova Senha
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-300">
+              <Lock size={18} />
+            </div>
             <input
+              id="confirmPassword"
               name="confirmPassword"
               type="password"
-              placeholder="••••••••"
-              className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-tafanu-blue outline-none"
               required
+              placeholder="••••••••"
+              className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold text-slate-700"
             />
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full py-4 bg-tafanu-blue hover:bg-blue-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-70"
-          >
-            {isSaving ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              "Salvar Nova Senha"
-            )}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full bg-tafanu-blue text-white font-black py-5 rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest italic mt-4 disabled:opacity-70"
+        >
+          {isLoading ? <Loader2 className="animate-spin" /> : "Salvar Senha"}
+          {!isLoading && <ArrowRight size={18} />}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// 🛡️ O Suspense protege o build da Vercel
+export default function NovaSenhaPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
+      <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-slate-100">
+        <Suspense
+          fallback={
+            <Loader2
+              className="animate-spin text-tafanu-blue mx-auto"
+              size={32}
+            />
+          }
+        >
+          <NovaSenhaForm />
+        </Suspense>
       </div>
     </div>
   );
