@@ -50,8 +50,7 @@ export async function generateMetadata({
 
   if (!business) return { title: "Negócio não encontrado | Tafanu" };
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
 
   // 🎯 O ALVO: imageUrl
@@ -182,8 +181,7 @@ export default async function BusinessPage({
     }
   }
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br";
   const rawImage = business.imageUrl;
 
   const appIcon = rawImage

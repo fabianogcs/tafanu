@@ -30,12 +30,22 @@ export function AddressSection({
   const cepController = useRef<AbortController | null>(null);
   const numberInputRef = useRef<HTMLInputElement>(null);
 
+  // 🚀 AQUI: A memória que sabe se é a primeira vez que a tela abre!
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
     const cep = addressData.cep.replace(/\D/g, "");
 
     const timeoutId = setTimeout(() => {
       if (cep.length === 8) {
-        fetchAddress(cep);
+        // 🚀 O SEGREDO: Se for a primeira vez (tela carregando), busca sem focar.
+        if (isFirstRender.current) {
+          fetchAddress(cep, false);
+          isFirstRender.current = false; // Desliga a trava
+        } else {
+          // Se não for a primeira vez (usuário digitando), busca e foca!
+          fetchAddress(cep, true);
+        }
       }
     }, 300);
 
@@ -45,7 +55,8 @@ export function AddressSection({
     };
   }, [addressData.cep]);
 
-  const fetchAddress = async (cep: string) => {
+  // 🚀 AQUI: Adicionamos o parâmetro shouldFocus (padrão true pra quando ele digitar manual)
+  const fetchAddress = async (cep: string, shouldFocus: boolean = true) => {
     setIsSearching(true);
     const controller = new AbortController();
     cepController.current = controller;
@@ -69,9 +80,12 @@ export function AddressSection({
         state: data.uf || "",
       }));
 
-      requestAnimationFrame(() => {
-        numberInputRef.current?.focus();
-      });
+      // 🚀 AQUI: Só foca se a trava estiver liberada
+      if (shouldFocus) {
+        requestAnimationFrame(() => {
+          numberInputRef.current?.focus();
+        });
+      }
     } catch (err: any) {
       if (err.name === "AbortError") return;
       console.error("Erro ao buscar CEP:", err);
@@ -114,9 +128,11 @@ export function AddressSection({
           <input
             name="cep"
             value={addressData.cep}
-            onChange={(e) =>
-              setAddressData((prev) => ({ ...prev, cep: e.target.value }))
-            }
+            onChange={(e) => {
+              // 🚀 SE O USUÁRIO APAGAR E COMEÇAR A DIGITAR, JÁ DESLIGAMOS A TRAVA!
+              isFirstRender.current = false;
+              setAddressData((prev) => ({ ...prev, cep: e.target.value }));
+            }}
             placeholder="00000-000"
             maxLength={9}
             className="w-full h-12 px-5 bg-white rounded-xl font-bold text-xs border-2 border-indigo-100 outline-none focus:border-indigo-500"

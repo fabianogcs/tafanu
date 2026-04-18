@@ -179,9 +179,9 @@ export default async function DashboardPage() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent flex flex-col justify-end p-8">
                               <span
-                                className={`self-start px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest mb-3 border ${business.isActive ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 backdrop-blur-md" : "bg-rose-500/20 text-rose-300 border-rose-500/30 backdrop-blur-md"}`}
+                                className={`self-start px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest mb-3 border ${business.published ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 backdrop-blur-md" : "bg-rose-500/20 text-rose-300 border-rose-500/30 backdrop-blur-md"}`}
                               >
-                                {business.isActive ? "● Online" : "● Pausado"}
+                                {business.published ? "● Online" : "● Pausado"}
                               </span>
                               <h2 className="text-3xl font-black text-white uppercase italic leading-none truncate">
                                 {business.name}

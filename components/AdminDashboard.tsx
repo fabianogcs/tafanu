@@ -96,7 +96,7 @@ export default function AdminDashboard({
 
   const ADMIN_EMAIL = adminEmail || "";
 
-  const [baseUrl, setBaseUrl] = useState("https://tafanu.vercel.app");
+  const [baseUrl, setBaseUrl] = useState("https://tafanu.com.br");
   useEffect(() => {
     setBaseUrl(window.location.origin);
   }, []);

@@ -2,8 +2,7 @@ import { db } from "@/lib/db";
 import { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br";
 
   // 1. Busca todos os negócios ativos e publicados do banco de dados
   const businesses = await db.business.findMany({

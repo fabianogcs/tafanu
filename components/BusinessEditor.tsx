@@ -302,6 +302,9 @@ export default function BusinessEditor({
 
   useEffect(() => {
     setIsMounted(true);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, 50);
   }, []);
   // 🛡️ Vigia de Memória
   useEffect(() => {
@@ -371,7 +374,8 @@ export default function BusinessEditor({
       const res = await deleteBusiness(safeBusiness.slug);
       if (res.success) {
         toast.success(res.message);
-        router.push("/dashboard"); // Volta para o painel principal imediatamente!
+        router.push("/dashboard");
+        router.refresh(); // Força o dashboard a ler do banco de novo
       } else {
         toast.error(res.error || "Erro ao excluir.");
       }
@@ -568,6 +572,7 @@ export default function BusinessEditor({
         fireConfetti();
         toast.success("Seu negócio foi criado com sucesso!");
         router.push("/dashboard");
+        router.refresh(); // Força o dashboard a ler do banco de novo
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {

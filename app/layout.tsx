@@ -30,11 +30,11 @@ export const metadata: Metadata = {
     title: "TAFANU | Descubra e Conecte-se",
     description:
       "O guia mais completo para você achar exatamente o que precisa, perto de você.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br",
     siteName: "Tafanu",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app"}/og-default.png`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br"}/og-default.png`,
         width: 1200,
         height: 630,
         alt: "Logo Tafanu",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     title: "TAFANU | Guia de Negócios",
     description: "Encontre os melhores serviços da sua cidade em um só lugar.",
     images: [
-      `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.vercel.app"}/og-default.png`,
+      `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br"}/og-default.png`,
     ],
   },
 };

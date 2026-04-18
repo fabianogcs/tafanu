@@ -255,7 +255,7 @@ export async function registerUser(formData: FormData) {
 
     try {
       await resend.emails.send({
-        from: "Tafanu <onboarding@resend.dev>",
+        from: "Tafanu <contato@tafanu.com.br>",
         to: email,
         subject: "Ative sua conta no Tafanu",
         html: `
@@ -1444,7 +1444,7 @@ export async function sendPasswordResetEmail(formData: FormData) {
 
   try {
     await resend.emails.send({
-      from: "Tafanu <onboarding@resend.dev>", // Ou seu e-mail verificado no Resend
+      from: "Equipe Tafanu <contato@tafanu.com.br>",
       to: email,
       subject: "Redefinir sua senha - Tafanu",
       html: `<p>Você solicitou a troca de senha. Clique no link abaixo para criar uma nova:</p>
@@ -2184,7 +2184,7 @@ export async function createSubscription(
           },
         }),
       },
-      back_url: "https://tafanu.vercel.app/checkout/sucesso",
+      back_url: "https://tafanu.com.br/checkout/sucesso",
 
       // 🚀 AGORA SIM: Enviamos o finalBusinessId garantido para o Webhook!
       external_reference: `${userId}___${finalBusinessId}`,
@@ -2460,7 +2460,7 @@ export async function resendVerificationEmail(email: string) {
 
     // 3. Dispara o e-mail
     await resend.emails.send({
-      from: "Tafanu <onboarding@resend.dev>",
+      from: "Tafanu <contato@tafanu.com.br>",
       to: email,
       subject: "Novo link de ativação - Tafanu",
       html: `
