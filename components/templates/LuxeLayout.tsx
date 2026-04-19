@@ -18,6 +18,8 @@ import {
   Quote,
   Video,
   MessageCircle,
+  MapPin,
+  Clock,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
 import ReportModal from "@/components/ReportModal";
@@ -58,7 +60,8 @@ const SheinIcon = ({ className }: { className?: string }) => (
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
-// --- MOTOR DE VÍDEOS EMBED (YOUTUBE, INSTAGRAM, TIKTOK) ---
+
+// --- MOTOR DE VÍDEOS EMBED (ESTILO LUXE - PURO & MINIMALISTA) ---
 const VideoEmbed = ({ url }: { url: string }) => {
   let embedUrl = "";
   let isVertical = false;
@@ -91,17 +94,19 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   return (
     <div
-      className={`w-full overflow-hidden rounded-sm bg-black/5 border border-black/5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ${isVertical ? "aspect-[9/16] max-w-[350px] mx-auto" : "aspect-video"}`}
+      className={`overflow-hidden bg-black/5 rounded-sm border border-black/5 shadow-md ${isVertical ? "aspect-[9/16] w-full" : "aspect-video w-full"}`}
     >
       <iframe
         src={embedUrl}
-        className="w-full h-full border-0"
+        className="w-full h-full border-0 pointer-events-auto"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
+        scrolling="no" /* 🚀 MATA O SCROLL DO INSTAGRAM */
       />
     </div>
   );
 };
+
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
   if (navigator.share) {
@@ -210,7 +215,7 @@ export default function LuxeLayout({
     ? business.gallery.filter(Boolean)
     : [];
 
-  const videos = Array.isArray(business.videos) // 🚀 PUXANDO OS VÍDEOS
+  const videos = Array.isArray(business.videos)
     ? business.videos.filter(Boolean)
     : [];
   const faqs = (business.faqs || []).filter(
@@ -278,7 +283,6 @@ export default function LuxeLayout({
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
       try {
-        // 🚀 O NOVO ESPIÃO ENTRA AQUI!
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         window.location.href = targetUrl;
@@ -308,9 +312,7 @@ export default function LuxeLayout({
       ? `${business.latitude},${business.longitude}`
       : completeAddressForMap;
 
-  // URL Oficial de Rotas: Força a Origem ser o GPS do cliente e o Destino ser a loja
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
-  // ------------------------------------------
 
   if (!theme) return null;
 
@@ -322,13 +324,11 @@ export default function LuxeLayout({
       <header
         className={`relative w-full min-h-[65vh] md:min-h-[75vh] flex flex-col items-center justify-center overflow-hidden ${theme.bgPage} border-b ${theme.border}`}
       >
-        {/* Grid Arquitetônico */}
         <div className="absolute inset-0 pointer-events-none flex justify-center">
           <div className="w-[1px] h-full bg-gradient-to-b from-transparent via-black/10 to-transparent" />
           <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-y-1/2" />
         </div>
 
-        {/* Marca d'água Monumental */}
         {business.name && (
           <div
             className="absolute top-0 left-[-5%] text-[60vh] md:text-[80vh] leading-none font-serif italic select-none pointer-events-none opacity-[0.02] -z-0"
@@ -338,7 +338,6 @@ export default function LuxeLayout({
           </div>
         )}
 
-        {/* Pílula de Ações */}
         <div className="absolute top-6 right-6 z-30">
           <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl px-4 py-2 rounded-full border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all hover:bg-white/90">
             <button
@@ -357,9 +356,7 @@ export default function LuxeLayout({
           </div>
         </div>
 
-        {/* --- CONTEÚDO PRINCIPAL --- */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col items-center justify-center mt-16 md:mt-24">
-          {/* Overline Elegante (Sem palavras fixas, apenas a cidade se existir) */}
           {business.city && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -375,7 +372,6 @@ export default function LuxeLayout({
             </motion.div>
           )}
 
-          {/* A Logo (Agora ACIMA do texto para manter a leitura impecável) */}
           {business.imageUrl && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -387,11 +383,9 @@ export default function LuxeLayout({
               }}
               className="relative z-20 flex flex-col items-center group mb-8 md:mb-12"
             >
-              {/* Anéis de energia gravitacional */}
               <div className="absolute -inset-6 md:-inset-10 border border-black/10 rounded-full scale-100 group-hover:scale-110 transition-transform duration-1000 ease-out" />
               <div className="absolute -inset-2 md:-inset-4 border border-black/5 rounded-full scale-100 group-hover:scale-[1.15] transition-transform duration-700 ease-out delay-75" />
 
-              {/* Contêiner da Imagem */}
               <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 md:border-8 border-white bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden relative">
                 <img
                   src={business.imageUrl}
@@ -404,7 +398,6 @@ export default function LuxeLayout({
             </motion.div>
           )}
 
-          {/* O Nome (Destaque absoluto, totalmente legível) */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -417,13 +410,12 @@ export default function LuxeLayout({
             {business.name}
           </motion.h1>
 
-          {/* Linha de ancoragem inferior que liga o header ao resto do site */}
           <div className="w-[1px] h-16 md:h-24 bg-gradient-to-b from-black/20 to-transparent mt-12 md:mt-16" />
         </div>
       </header>
 
       <main className="relative z-10 px-4 container mx-auto max-w-7xl pb-20 pt-16">
-        {/* STORY & QUOTE (Layout Elegante Invertido - Ajustado) */}
+        {/* STORY & QUOTE */}
         {(hasDescription || business.luxe_quote) && (
           <section className="pt-8 pb-12 md:pt-10 md:pb-16 border-b border-black/5 px-4 md:px-0 overflow-hidden">
             <div
@@ -433,7 +425,6 @@ export default function LuxeLayout({
                   : "flex flex-col items-center text-center max-w-5xl mx-auto"
               }`}
             >
-              {/* LADO ESQUERDO: O Texto Editorial */}
               {hasDescription && (
                 <div
                   className={`flex flex-col ${business.luxe_quote ? "md:col-span-7 text-left md:border-r border-black/10 md:pr-12" : "items-center text-center"}`}
@@ -444,7 +435,6 @@ export default function LuxeLayout({
                     Editorial
                   </span>
 
-                  {/* Linha divisória charmosa */}
                   <div
                     className={`w-12 h-[1px] ${theme.bgAction} mb-6 md:mb-8 opacity-50 ${!business.luxe_quote ? "mx-auto" : ""}`}
                   />
@@ -455,23 +445,19 @@ export default function LuxeLayout({
                 </div>
               )}
 
-              {/* LADO DIREITO: A Frase de Impacto (Centralizada e Expandida) */}
               {business.luxe_quote && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, ease: "easeOut" }}
                   viewport={{ once: true, margin: "-50px" }}
-                  /* 🚀 Removi o md:text-right e deixei text-center total, sem paddings laterais */
                   className={`relative z-0 ${!hasDescription ? "text-center" : "md:col-span-5 text-center mt-12 md:mt-0 px-0"}`}
                 >
-                  {/* Ícone de Aspas - Posicionado para não roubar espaço do texto */}
                   <Quote
                     className={`absolute -top-6 left-1/2 -translate-x-1/2 md:-top-10 md:right-[-20px] md:left-auto md:translate-x-0 w-20 h-20 md:w-32 md:h-32 opacity-5 ${theme.primary} -z-10`}
                   />
 
                   <h2
-                    /* 🚀 Fonte em 4xl (menor como pedido) e leading-[1.2] para o texto respirar e expandir */
                     className={`text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-serif italic leading-[1.2] opacity-95 ${theme.primary} w-full inline-block px-0`}
                   >
                     "{business.luxe_quote}"
@@ -482,37 +468,45 @@ export default function LuxeLayout({
           </section>
         )}
 
-        {/* FEATURES (Mobile 2 Colunas, Desktop Flex Centralizado) - APENAS UMA VEZ AGORA! */}
+        {/* DESTAQUES */}
         {hasFeatures && (
-          <section className="py-16 md:py-24 border-b border-black/5 px-4 md:px-0">
-            <div className="max-w-5xl mx-auto flex flex-col items-center">
-              {/* Título Elegante da Seção */}
+          <section className="py-16 md:py-20 border-b border-current/5 px-4 md:px-0">
+            <div className="max-w-6xl mx-auto flex flex-col items-center">
               <div className="text-center mb-12 md:mb-16">
-                <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
-                  Exclusividade
+                <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-3 opacity-50">
+                  A Assinatura
                 </span>
                 <h3
-                  className={`text-4xl md:text-5xl lg:text-6xl font-serif italic mb-6 opacity-90 ${theme.primary}`}
+                  className={`text-4xl md:text-5xl font-serif italic mb-5 opacity-90 ${theme.primary}`}
                 >
-                  Destaques
+                  Nossos Destaques
                 </h3>
                 <div
-                  className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
+                  className={`w-10 h-[1.5px] ${theme.bgAction} mx-auto opacity-40`}
                 />
               </div>
 
-              {/* grid no mobile, flex no desktop */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:flex md:flex-wrap md:justify-center md:gap-6 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full">
                 {rawBusiness.features
                   .filter((f: string) => f.trim() !== "")
                   .map((f: string, i: number) => (
                     <div
                       key={i}
-                      className="flex flex-col items-center justify-center text-center w-full md:w-[220px] lg:w-[240px] min-h-[90px] sm:min-h-[100px] md:min-h-[130px] p-3 sm:p-4 md:p-8 rounded-2xl md:rounded-3xl bg-white/40 backdrop-blur-md border border-black/5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08)] hover:bg-white/80 transition-all duration-500 cursor-default group"
+                      className={`relative group flex flex-col items-center justify-center text-center p-8 md:p-10 ${theme.bgSecondary} border border-current/10 hover:border-current/30 transition-all duration-500 shadow-xl hover:-translate-y-1 overflow-hidden rounded-xl`}
                     >
-                      <span className="text-[9px] sm:text-[10px] md:text-xs uppercase tracking-[0.15em] md:tracking-[0.2em] font-semibold opacity-70 group-hover:opacity-100 transition-opacity leading-relaxed md:leading-loose text-balance break-words">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                      <div className="absolute inset-2 border border-current/5 group-hover:border-current/10 transition-colors duration-500 pointer-events-none rounded-lg" />
+                      <div className="relative z-10 w-2 h-2 mb-5">
+                        <div
+                          className={`absolute inset-0 rotate-45 ${theme.bgAction} shadow-[0_0_10px_currentColor]`}
+                        />
+                      </div>
+                      <span className="relative z-10 font-serif text-sm md:text-base uppercase tracking-[0.1em] font-medium opacity-90 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed text-balance">
                         {f}
                       </span>
+                      <div
+                        className={`absolute bottom-0 left-0 h-[3px] ${theme.bgAction} w-0 group-hover:w-full transition-all duration-700`}
+                      />
                     </div>
                   ))}
               </div>
@@ -557,34 +551,73 @@ export default function LuxeLayout({
           </section>
         )}
 
-        {/* 🚀 SEÇÃO DE VÍDEOS EMBED (ESTILO LUXE) */}
-        {videos.length > 0 && (
-          <section className="py-24 border-b border-black/5">
-            <div className="text-center mb-16">
-              <h3
-                className={`text-4xl md:text-6xl font-serif italic mb-4 ${theme.primary}`}
-              >
-                Motion & Experiência
-              </h3>
-              <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 flex items-center justify-center gap-2">
-                <Video size={14} /> Cinema
-              </span>
-            </div>
+        {/* VÍDEOS */}
+        {videos.length > 0 &&
+          (() => {
+            const horizontalVideos = videos.filter(
+              (vid: string) =>
+                (vid.includes("youtube.com") || vid.includes("youtu.be")) &&
+                !vid.includes("shorts"),
+            );
+            const verticalVideos = videos.filter(
+              (vid: string) =>
+                vid.includes("shorts") ||
+                vid.includes("instagram.com") ||
+                vid.includes("tiktok.com"),
+            );
 
-            <div
-              className={`grid gap-12 max-w-6xl mx-auto px-4 ${videos.some((v: string) => v.includes("shorts") || v.includes("instagram") || v.includes("tiktok")) ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}
-            >
-              {videos.map((vid: string, i: number) => (
-                <VideoEmbed key={i} url={vid} />
-              ))}
-            </div>
-          </section>
-        )}
+            return (
+              <section className="py-24 border-b border-black/5 max-w-7xl mx-auto px-4 md:px-0">
+                <div className="text-center mb-16 md:mb-24">
+                  <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
+                    Motion
+                  </span>
+                  <h3
+                    className={`text-4xl md:text-7xl font-serif italic mb-6 opacity-95 ${theme.primary}`}
+                  >
+                    Experiência Cinema
+                  </h3>
+                  <div
+                    className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
+                  />
+                </div>
 
-        {/* FAQ (Ajustado: Menos espaço superior e Título Editorial) */}
+                {horizontalVideos.length > 0 && (
+                  <div className="mb-24 last:mb-0">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-16 max-w-6xl mx-auto">
+                      {horizontalVideos.map((vid: string, i: number) => (
+                        <div
+                          key={`h-${i}`}
+                          className="p-3 md:p-4 bg-white/40 backdrop-blur-md rounded-2xl border border-black/5 shadow-2xl hover:-translate-y-2 transition-transform duration-700"
+                        >
+                          <VideoEmbed url={vid} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {verticalVideos.length > 0 && (
+                  <div className="flex justify-center w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16 w-full max-w-6xl">
+                      {verticalVideos.map((vid: string, i: number) => (
+                        <div
+                          key={`v-${i}`}
+                          className="p-3 md:p-4 bg-white/40 backdrop-blur-md rounded-2xl border border-black/5 shadow-2xl w-full max-w-[380px] mx-auto hover:-translate-y-2 transition-transform duration-700"
+                        >
+                          <VideoEmbed url={vid} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            );
+          })()}
+
+        {/* FAQ */}
         {hasFaqs && (
           <section className="pt-10 pb-24 md:pt-16 md:pb-32 border-b border-black/5 max-w-5xl mx-auto px-4 md:px-0">
-            {/* Título Padronizado (Estilo Editorial) */}
             <div className="text-center mb-10 md:mb-16">
               <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
                 Informações
@@ -598,8 +631,6 @@ export default function LuxeLayout({
                 className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
               />
             </div>
-
-            {/* Grid de Acordeons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 items-start">
               {faqs.map((f: any, i: number) => (
                 <LuxeAccordion
@@ -612,15 +643,15 @@ export default function LuxeLayout({
             </div>
           </section>
         )}
-        {/* CONTATO & PRESENÇA (True Colors & Full Schedule) */}
+
+        {/* CONTATO & PRESENÇA (Ajustado com Rótulos de Luxo) */}
         <section className="pt-24 pb-12">
           <div
             className={`p-8 md:p-16 ${theme.bgSecondary} border ${theme.border} rounded-[3rem] shadow-2xl`}
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 items-start">
-              {/* BLOCO 1: CONEXÃO (Cores Reais) */}
-              <div className="space-y-10 md:border-r border-black/5 md:pr-8">
-                {/* 👇 A CIRURGIA É SÓ ESTA LINHA AQUI */}
+              {/* BLOCO 1: CONEXÃO (Adaptável Claro/Escuro) */}
+              <div className="space-y-10 md:border-r border-current/10 md:pr-8">
                 {(hasWhatsapp || hasPhone) && (
                   <div>
                     <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
@@ -646,9 +677,9 @@ export default function LuxeLayout({
                           className="flex items-center gap-4 group"
                         >
                           <div
-                            className={`w-10 h-10 rounded-full border border-black/10 flex items-center justify-center transition-transform group-hover:scale-110`}
+                            className={`w-10 h-10 rounded-full border border-current/20 flex items-center justify-center transition-transform group-hover:scale-110`}
                           >
-                            <PhoneCall size={18} className="text-slate-600" />
+                            <PhoneCall size={18} className="opacity-70" />
                           </div>
                           <span className="text-sm font-bold uppercase tracking-widest opacity-70">
                             {formatPhoneNumber(business.phone)}
@@ -689,7 +720,7 @@ export default function LuxeLayout({
                             "text-[#E4405F] border-[#E4405F]/20 bg-[#E4405F]/5",
                           facebook:
                             "text-[#1877F2] border-[#1877F2]/20 bg-[#1877F2]/5",
-                          tiktok: "text-black border-black/20 bg-black/5",
+                          tiktok: "text-current border-current/20 bg-current/5", // 🚀 Adaptável!
                           website:
                             "text-blue-500 border-blue-500/20 bg-blue-500/5",
                         };
@@ -700,16 +731,13 @@ export default function LuxeLayout({
                             href={finalUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            // 🚀 ESPIÃO ADICIONADO: Agora contabiliza redes e sites!
-                            onClick={() => {
-                              try {
-                                Actions.registerClickEvent(
-                                  business.id,
-                                  s.toUpperCase(),
-                                );
-                              } catch (e) {}
-                            }}
-                            className={`w-11 h-11 flex items-center justify-center rounded-full border transition-all hover:scale-110 ${colors[s] || "border-black/10"}`}
+                            onClick={() =>
+                              Actions.registerClickEvent(
+                                business.id,
+                                s.toUpperCase(),
+                              )
+                            }
+                            className={`w-11 h-11 flex items-center justify-center rounded-full border transition-all hover:scale-110 ${colors[s] || "border-current/10"}`}
                           >
                             {s === "instagram" ? (
                               <Instagram size={20} />
@@ -728,9 +756,9 @@ export default function LuxeLayout({
                 )}
               </div>
 
-              {/* 🚀 BLOCO 2: SÓ APARECE SE TIVER LOJAS CADASTRADAS */}
+              {/* BLOCO 2: LOJAS (Adaptável Claro/Escuro) */}
               {salesChannels.length > 0 && (
-                <div className="space-y-8 md:border-r border-black/5 md:px-8">
+                <div className="space-y-8 md:border-r border-current/10 md:px-8">
                   <div>
                     <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
                       Boutique Online
@@ -739,12 +767,12 @@ export default function LuxeLayout({
                       {salesChannels.map((channel) => {
                         const storeColors: any = {
                           mercadoLivre:
-                            "border-[#FFE600] bg-[#FFE600]/10 text-[#2D3277]",
+                            "border-[#FFE600] bg-[#FFE600]/10 text-current", // 🚀 Texto adapta à cor principal!
                           shopee:
                             "border-[#EE4D2D] bg-[#EE4D2D]/5 text-[#EE4D2D]",
                           ifood:
                             "border-[#EA1D2C] bg-[#EA1D2C]/5 text-[#EA1D2C]",
-                          shein: "border-black bg-black/5 text-black",
+                          shein: "border-current bg-current/5 text-current", // 🚀 Adaptável!
                         };
                         return (
                           <a
@@ -752,19 +780,16 @@ export default function LuxeLayout({
                             href={formatExternalLink(channel.url)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            // 🚀 ESPIÃO ADICIONADO: Agora contabiliza as lojas!
-                            onClick={() => {
-                              try {
-                                Actions.registerClickEvent(
-                                  business.id,
-                                  channel.key.toUpperCase(),
-                                );
-                              } catch (e) {}
-                            }}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 hover:shadow-md ${storeColors[channel.key] || "border-black/5"}`}
+                            onClick={() =>
+                              Actions.registerClickEvent(
+                                business.id,
+                                channel.key.toUpperCase(),
+                              )
+                            }
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 hover:shadow-md ${storeColors[channel.key] || "border-current/10"}`}
                           >
                             <div className="scale-110">{channel.icon}</div>
-                            <span className="text-[10px] font-bold tracking-[0.1em] uppercase">
+                            <span className="text-[10px] font-bold tracking-[0.1em] uppercase opacity-90">
                               {channel.name}
                             </span>
                           </a>
@@ -774,13 +799,15 @@ export default function LuxeLayout({
                   </div>
                 </div>
               )}
-              {/* BLOCO 3: PRESENÇA (Agenda Completa) */}
-              <div className="space-y-10 md:pl-8">
+              {/* 🚀 BLOCO 3: PRESENÇA (Estilo Editorial Livre e Respirando) */}
+              <div className="space-y-12 md:pl-8">
+                {/* ENDEREÇO LIVRE E CLICÁVEL */}
                 {hasAddress && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                      Localização
+                  <div className="relative group">
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6 flex items-center gap-2">
+                      <MapPin size={12} /> Localização
                     </span>
+
                     <a
                       href={mapsUrl}
                       target="_blank"
@@ -788,52 +815,71 @@ export default function LuxeLayout({
                       onClick={() =>
                         Actions.registerClickEvent(business.id, "MAP")
                       }
-                      className="group block"
+                      className="block relative group"
                     >
-                      {/* Rua e Número */}
-                      <p className="text-lg font-serif italic leading-snug capitalize group-hover:underline opacity-90">
-                        {business.address || "Endereço não cadastrado"}
-                        {business.number &&
-                          !business.address?.includes(business.number) &&
-                          `, ${business.number}`}
-                      </p>
-
-                      {/* Complemento */}
-                      {business.complement && (
-                        <p className="text-sm font-sans font-light opacity-80 mt-1">
-                          {business.complement}
+                      <div className="relative z-10 transition-transform duration-500 group-hover:translate-x-1">
+                        <p
+                          className={`text-xl md:text-2xl font-serif italic leading-tight mb-2 opacity-90 transition-opacity group-hover:opacity-100 ${theme.primary}`}
+                        >
+                          {business.address || "Endereço não cadastrado"}
+                          {business.number &&
+                            !business.address?.includes(business.number) &&
+                            `, ${business.number}`}
                         </p>
-                      )}
 
-                      {/* Bairro, Cidade, Estado e CEP */}
-                      <p className="text-[10px] opacity-50 mt-3 uppercase tracking-widest leading-relaxed">
-                        {business.neighborhood && `${business.neighborhood} • `}
-                        {business.city}{" "}
-                        {business.state ? `— ${business.state}` : ""}
-                        {business.cep && ` • CEP: ${business.cep}`}
-                      </p>
+                        {business.complement && (
+                          <p className="text-xs font-sans opacity-60 mb-3 italic">
+                            "{business.complement}"
+                          </p>
+                        )}
+
+                        <p className="text-[9px] opacity-50 uppercase tracking-[0.2em] leading-relaxed mb-6">
+                          {business.neighborhood &&
+                            `${business.neighborhood} • `}
+                          {business.city}{" "}
+                          {business.state ? `— ${business.state}` : ""}
+                          {business.cep && ` • CEP: ${business.cep}`}
+                        </p>
+
+                        {/* Botão Integrado Minimalista */}
+                        <div className="flex items-center gap-3 pt-4 border-t border-current/10 w-max">
+                          <span
+                            className={`text-[9px] uppercase tracking-[0.3em] font-black opacity-50 group-hover:opacity-100 transition-opacity ${theme.primary}`}
+                          >
+                            Traçar Rota
+                          </span>
+                          <ChevronRight
+                            size={14}
+                            className="opacity-40 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300"
+                          />
+                        </div>
+                      </div>
                     </a>
                   </div>
                 )}
+
+                {/* HORÁRIOS LIVRES COM LINHA PONTILHADA */}
                 {hasHours && (
-                  <div className="pt-6">
-                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                      Agenda Semanal
+                  <div className="relative pt-2">
+                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6 flex items-center gap-2">
+                      <Clock size={12} /> Agenda Semanal
                     </span>
-                    <div className="space-y-3">
+
+                    <div className="space-y-4">
                       {realHours.map((h: any, i: number) => (
                         <div
                           key={i}
-                          className="flex justify-between items-center border-b border-black/5 pb-2 last:border-0"
+                          className="flex items-end justify-between group py-1"
                         >
-                          {/* Dia da semana: Maior e menos opaco */}
-                          <span className="text-xs md:text-sm uppercase tracking-widest font-medium opacity-70">
+                          <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-60 shrink-0">
                             {h.day}
                           </span>
 
-                          {/* Horário: Serifado, Itálico e com Destaque */}
+                          {/* A Linha Pontilhada Clássica */}
+                          <div className="flex-grow mx-4 mb-1.5 border-b border-dotted border-current/20 group-hover:border-current/50 transition-colors" />
+
                           <span
-                            className={`text-sm md:text-base font-serif italic ${h.isClosed ? "text-rose-500 font-bold" : "opacity-90 font-semibold"}`}
+                            className={`text-sm md:text-base font-serif italic shrink-0 ${h.isClosed ? "text-rose-500 font-bold" : "opacity-90 font-medium"}`}
                           >
                             {h.time}
                           </span>
@@ -868,7 +914,7 @@ export default function LuxeLayout({
         <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
       </main>
 
-      {/* WHATSAPP FLUTUANTE (z-30 para o Nav) */}
+      {/* WHATSAPP FLUTUANTE */}
       {hasWhatsapp && (
         <motion.button
           animate={
@@ -884,7 +930,7 @@ export default function LuxeLayout({
         </motion.button>
       )}
 
-      {/* LIGHTBOX (z-200) */}
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div

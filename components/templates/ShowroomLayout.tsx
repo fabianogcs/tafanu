@@ -109,9 +109,10 @@ const VideoEmbed = ({
     >
       <iframe
         src={embedUrl}
-        className="w-full h-full border-0"
+        className="w-full h-full border-0 pointer-events-auto"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
+        scrolling="no" /* 🚀 MATA O SCROLL DO INSTAGRAM DEFINITIVAMENTE */
       />
     </div>
   );
@@ -445,21 +446,57 @@ export default function ShowroomLayout({
             </section>
           )}
 
-          {/* 🚀 SEÇÃO DE VÍDEOS EMBED (SHOWROOM) */}
-          {videos.length > 0 && (
-            <section>
-              <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
-                <Video size={14} /> Mídia & Vídeos
-              </h3>
-              <div
-                className={`grid gap-6 ${videos.some((v: string) => v.includes("shorts") || v.includes("instagram") || v.includes("tiktok")) ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}
-              >
-                {videos.map((vid: string, i: number) => (
-                  <VideoEmbed key={i} url={vid} themeBorder={theme.border} />
-                ))}
-              </div>
-            </section>
-          )}
+          {/* 🚀 SEÇÃO DE VÍDEOS EMBED (SEPARADA EM DEITADOS E EM PÉ) */}
+          {videos.length > 0 &&
+            (() => {
+              // Filtra vídeos horizontais (YouTube padrão)
+              const horizontalVideos = videos.filter(
+                (vid: string) =>
+                  (vid.includes("youtube.com") || vid.includes("youtu.be")) &&
+                  !vid.includes("shorts"),
+              );
+              // Filtra vídeos verticaIS (Shorts, Instagram, TikTok)
+              const verticalVideos = videos.filter(
+                (vid: string) =>
+                  vid.includes("shorts") ||
+                  vid.includes("instagram.com") ||
+                  vid.includes("tiktok.com"),
+              );
+
+              return (
+                <section className="space-y-8">
+                  <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
+                    <Video size={14} /> Mídia & Vídeos
+                  </h3>
+
+                  {/* VÍDEOS HORIZONTAIS (YOUTUBE COMUM) */}
+                  {horizontalVideos.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {horizontalVideos.map((vid: string, i: number) => (
+                        <VideoEmbed
+                          key={`h-${i}`}
+                          url={vid}
+                          themeBorder={theme.border}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* VÍDEOS VERTICAIS (REELS, TIKTOK, SHORTS) */}
+                  {verticalVideos.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                      {verticalVideos.map((vid: string, i: number) => (
+                        <VideoEmbed
+                          key={`v-${i}`}
+                          url={vid}
+                          themeBorder={theme.border}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })()}
 
           {/* FAQ Minimalista */}
           {hasFaqs && (

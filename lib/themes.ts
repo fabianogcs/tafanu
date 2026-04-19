@@ -78,101 +78,142 @@ export const businessThemes: Record<string, any> = {
   },
 
   // =========================================================
-  // 💎 EDITORIAL (LUXE) - 3 CLAROS + 2 ESCUROS
+  // 💎 EDITORIAL (LUXE) - 4 CLAROS + 1 ESCUROS
   // =========================================================
 
-  // 1. LIGHT - PÊSSEGO E ROXO
-  luxe_peach_purple: {
-    label: "Luxe - Peach",
+  // 1. Clássico & Camel (O verdadeiro Off-White com Ouro Velho)
+  luxe_ivory: {
+    label: "Luxe - Classic",
     layout: "editorial",
-    bgPage: "bg-[#FFF0E5]",
-    textColor: "text-[#4A044E]",
-    subTextColor: "text-[#86198F]",
-    border: "border-[#FDBA74]",
-    primary: "text-[#FDBA74]",
-    bgSecondary: "bg-[#FAE8FF]",
-    bgAction: "bg-[#7E22CE]",
-    previewColor: "linear-gradient(135deg, #FFF0E5 0%, #7E22CE 100%)",
+    bgPage: "bg-[#F9F6F0]", // Fundo creme real
+    textColor: "text-[#2C2A28]", // Chumbo escuro
+    subTextColor: "text-[#2C2A28]/70",
+    border: "border-[#9A7B4F]/20",
+    primary: "text-[#9A7B4F]", // Dourado Camel
+    bgSecondary: "bg-[#F0ECE4]",
+    bgAction: "bg-[#9A7B4F]",
+    previewColor: "linear-gradient(135deg, #F9F6F0 0%, #9A7B4F 100%)",
   },
 
-  // 2. LIGHT - ROSA CHIC
-  luxe_pastel_rose: {
-    label: "Luxe - Rosa Chic",
+  // 2. Hamptons (Fundo Azul Gelo com Letras Azul Marinho)
+  luxe_hamptons: {
+    label: "Luxe - Hamptons",
     layout: "editorial",
-    bgPage: "bg-[#FDF2F8]",
-    textColor: "text-[#831843]",
-    subTextColor: "text-[#DB2777]",
-    border: "border-[#FBCFE8]",
-    primary: "text-[#F9A8D4]",
-    bgSecondary: "bg-white",
-    bgAction: "bg-[#BE185D]",
-    previewColor: "linear-gradient(135deg, #FDF2F8 0%, #BE185D 100%)",
+    bgPage: "bg-[#F0F4F8]", // Azul gelo/pó
+    textColor: "text-[#0F172A]", // Azul noite quase preto
+    subTextColor: "text-[#0F172A]/70",
+    border: "border-[#1E3A8A]/15",
+    primary: "text-[#1E3A8A]", // Azul Marinho forte e elegante
+    bgSecondary: "bg-[#E2E8F0]",
+    bgAction: "bg-[#1E3A8A]",
+    previewColor: "linear-gradient(135deg, #F0F4F8 0%, #1E3A8A 100%)",
   },
 
-  // 3. LIGHT - MILITAR
-  luxe_military: {
-    label: "Luxe - Militar",
+  // 3. Botânico (Fundo Verde Matcha suave com Verde Floresta)
+  luxe_matcha: {
+    label: "Luxe - Botanic",
     layout: "editorial",
-    bgPage: "bg-[#F4F5F0]",
-    textColor: "text-[#1A2E05]",
-    subTextColor: "text-[#4D7C0F]",
-    border: "border-[#D9E6C3]",
-    primary: "text-[#A3B18A]",
-    bgSecondary: "bg-[#E2E8D5]",
-    bgAction: "bg-[#365314]",
-    previewColor: "linear-gradient(135deg, #F4F5F0 0%, #365314 100%)",
+    bgPage: "bg-[#F2F5F3]", // Verde pastel muito suave
+    textColor: "text-[#1A2E24]", // Verde musgo escuro
+    subTextColor: "text-[#1A2E24]/70",
+    border: "border-[#2F4F40]/15",
+    primary: "text-[#2F4F40]", // Verde Floresta
+    bgSecondary: "bg-[#E6EBE7]",
+    bgAction: "bg-[#2F4F40]",
+    previewColor: "linear-gradient(135deg, #F2F5F3 0%, #2F4F40 100%)",
   },
 
-  // 4. DARK - BLACK & GOLD
-  luxe_gold_black: {
-    label: "Luxe - Gold",
+  // 4. Noir Rosé (Fundo Preto Profundo com Rosa Iluminado)
+  luxe_rose: {
+    label: "Luxe - Dark Rose",
     layout: "editorial",
-    bgPage: "bg-[#000000]",
-    textColor: "text-[#FDE68A]",
-    subTextColor: "text-[#D4D4D8]",
-    border: "border-[#713F12]",
-    primary: "text-[#CA8A04]",
-    bgSecondary: "bg-[#1C1917]",
-    bgAction: "bg-[#EAB308]",
-    previewColor: "linear-gradient(135deg, #000000 20%, #EAB308 100%)",
+    bgPage: "bg-[#0F0A0C]", // Preto super profundo com uma gota de vinho
+    textColor: "text-[#FCE8ED]", // Off-white rosado (perfeito para leitura no escuro)
+    subTextColor: "text-[#FCE8ED]/60",
+    border: "border-[#E67389]/20", // Linhas bem sutis
+    primary: "text-[#E67389]", // Rosa iluminado / Rose Gold nas letras de destaque
+    bgSecondary: "bg-[#170F13]", // Fundo levemente mais claro para criar profundidade
+    bgAction: "bg-[#E67389]", // Botões e detalhes vibrantes em rosa
+    previewColor: "linear-gradient(135deg, #0F0A0C 0%, #E67389 100%)",
   },
 
-  // 5. DARK - BLACK & ROSE GOLD (Ajustado para Leitura)
-  luxe_black_rose: {
-    label: "Luxe - Black Rose",
+  // 5. Meia-Noite & Prata (Escuro - O último da lista)
+  luxe_midnight: {
+    label: "Luxe - Midnight",
     layout: "editorial",
-    bgPage: "bg-[#000000]", // Preto Puro no fundo geral
-    textColor: "text-[#FFE4E6]", // Rose muito claro (quase branco) para leitura principal
-    subTextColor: "text-[#FB7185]", // Rose médio (iluminado) para detalhes - Antes estava muito escuro
-    border: "border-[#881337]",
-    primary: "text-[#BE123C]",
-    bgSecondary: "bg-[#121212]", // O CARD AGORA É NEUTRO (Preto Matte) - Resolve o ofuscamento
-    bgAction: "bg-[#E11D48]",
-    previewColor: "linear-gradient(135deg, #000000 0%, #E11D48 100%)",
+    bgPage: "bg-[#0B1320]", // Azul Noturno Escuro
+    textColor: "text-[#F8FAFC]", // Branco/Prata
+    subTextColor: "text-[#F8FAFC]/60",
+    border: "border-[#E0E5EC]/10",
+    primary: "text-[#E0E5EC]", // Prata
+    bgSecondary: "bg-[#111A2B]",
+    bgAction: "bg-[#8E9EAF]",
+    previewColor: "linear-gradient(135deg, #0B1320 0%, #E0E5EC 100%)",
   },
+  // ==========================================
+  // TEMAS CLAROS (A Nova Inteligência Camaleão)
+  // ==========================================
 
-  // 1. CYBER PINK (Antigo Midnight - Totalmente Refeito)
-  // Identidade: Futurista, Vibrante e Alta Voltagem
-  // Mix: Preto Absoluto + Rosa Neon + Branco Rosado
-  urban_cyber: {
-    label: "Urban - Cyber Pink",
+  // 1. PLATINUM (Claro - Streetwear e Clean)
+  // Identidade: Moda urbana, Arquitetura, Design Limpo (Highsnobiety)
+  urban_platinum: {
+    label: "Urban - Platinum",
     layout: "urban",
-    bgPage: "bg-[#000000]", // Preto Absoluto para o Pink brilhar
-    textColor: "text-[#fce7f3]", // Branco com toque de Rosa (Pink 100)
-    cardBg: "bg-[#0a0a0a]/80", // Card quase preto com transparência
-    cardTextColor: "text-white",
-    border: "border-[#ff007f]", // Rosa Neon Vibrante
-    primary: "text-[#ff007f]", // Ícones e Destaques em Pink
-    bgSecondary: "bg-[#1a1a1a]", // Fundo secundário em cinza muito escuro
-    bgAction: "bg-[#ff007f] text-white", // Botão Pink com texto branco
-    radius: "rounded-2xl", // Bordas modernas e arredondadas
-    shadow: "shadow-[0_0_25px_-5px_rgba(255,0,127,0.4)]", // Glow Rosa Neon
-    previewColor: "linear-gradient(135deg, #000000 0%, #ff007f 100%)",
+    bgPage: "bg-[#f8fafc]", // Cinza Gelo (Aciona o isLight)
+    textColor: "text-[#0f172a]", // Azul marinho absurdamente escuro (quase preto)
+    cardBg: "bg-[#ffffff]/90", // Cards brancos
+    cardTextColor: "text-[#0f172a]",
+    border: "border-[#cbd5e1]", // Borda cinza suave
+    primary: "text-[#0f172a]", // Ícones pretos/chumbo
+    bgSecondary: "bg-[#e2e8f0]",
+    bgAction: "bg-[#0f172a] text-white", // Botão de Ação Preto
+    radius: "rounded-2xl",
+    shadow: "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.08)]", // Sombra flutuante super leve
+    previewColor: "linear-gradient(135deg, #f8fafc 0%, #0f172a 100%)",
   },
 
-  // 2. BLACK IVORY (Preto Absoluto + Nude Vivo)
-  // Identidade: Luxo Moderno, Minimalista e Elegante
-  // Mix: Preto Oled + Nude Orgânico + Texto Off-White
+  // 2. ROSE GOLD (Claro - Beleza e Estética)
+  // Identidade: Clínicas, Maquiadoras, Moda Feminina, Confeitaria
+  urban_rose_gold: {
+    label: "Urban - Rose Gold",
+    layout: "urban",
+    bgPage: "bg-[#ffffff]", // Branco Puro (Aciona o isLight)
+    textColor: "text-[#3f2c32]", // Marrom/Vinho super escuro para texto
+    cardBg: "bg-[#fff5f7]/90", // Fundo do card levemente rosado (bem sutil)
+    cardTextColor: "text-[#3f2c32]",
+    border: "border-[#fbcfe8]", // Borda em um rosa bem macio
+    primary: "text-[#e11d48]", // Rosa forte e chique para ícones
+    bgSecondary: "bg-[#ffe4e6]",
+    bgAction: "bg-[#e11d48] text-white", // Botão Rosa Escuro
+    radius: "rounded-3xl", // Bem arredondado, visual mais orgânico
+    shadow: "shadow-[0_10px_30px_-10px_rgba(225,29,72,0.1)]", // Sombra com tom rosado
+    previewColor: "linear-gradient(135deg, #ffffff 0%, #e11d48 100%)",
+  },
+
+  // 3. OCEAN LIGHT (Claro - Corporativo e Saúde)
+  // Identidade: Dentistas, Advogados, Consultorias, Tecnologia
+  urban_ocean: {
+    label: "Urban - Ocean Light",
+    layout: "urban",
+    bgPage: "bg-[#f8fafc]", // Cinza Gelo (Aciona o isLight)
+    textColor: "text-[#1e293b]", // Slate escuro
+    cardBg: "bg-[#ffffff]/90", // Card branco
+    cardTextColor: "text-[#1e293b]",
+    border: "border-[#bae6fd]", // Azul claro na borda para dar contraste
+    primary: "text-[#0284c7]", // Azul corporativo de alta confiança
+    bgSecondary: "bg-[#e0f2fe]",
+    bgAction: "bg-[#0284c7] text-white", // Botão Azul Vibrante
+    radius: "rounded-lg", // Bordas mais quadradas (passa seriedade)
+    shadow: "shadow-[0_10px_30px_-10px_rgba(2,132,199,0.12)]",
+    previewColor: "linear-gradient(135deg, #f8fafc 0%, #0284c7 100%)",
+  },
+
+  // ==========================================
+  // TEMAS ESCUROS (A Vibe Noturna Original)
+  // ==========================================
+
+  // 4. BLACK IVORY (Escuro - Luxo e Minimalismo)
+  // Identidade: Boutique, Joalherias, Marcas de Alto Padrão
   urban_black_nude: {
     label: "Urban - Black Ivory",
     layout: "urban",
@@ -189,130 +230,98 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #000000 0%, #eab69f 100%)",
   },
 
-  // 3. SAPPHIRE (Versão Electric / Tron)
-  // Identidade: Futurista e Alta Voltagem
-  // Mix: Preto Puro + Azul Ciano Neon (Laser)
-  urban_sapphire: {
-    label: "Urban - Sapphire",
-    layout: "urban",
-    bgPage: "bg-[#000000]", // Mudei para PRETO PURO (o azul brilha mais assim)
-    textColor: "text-[#e0f2fe]", // Branco azulado gelo
-    cardBg: "bg-[#050b14]/80", // Azul quase preto (Deep Navy)
-    cardTextColor: "text-white",
-    border: "border-[#00e1ff]", // Ciano Elétrico (Laser) - Agora destaca de verdade
-    primary: "text-[#00e1ff]", // Ícones brilhando em ciano
-    bgSecondary: "bg-[#082f49]",
-    bgAction: "bg-[#00e1ff] text-black", // Botão Ciano com texto preto (leitura perfeita)
-    radius: "rounded-3xl", // Bordas bem arredondadas (estilo cápsula)
-    shadow: "shadow-[0_0_35px_-5px_rgba(0,225,255,0.5)]", // Glow forte em azul neon
-    previewColor: "linear-gradient(135deg, #000000 40%, #00e1ff 100%)", // O botão vai mostrar Preto misturando com Ciano
-  },
-
-  // 4. TOXIC (Estilo Joker / Vilão)
-  // Identidade: Caótico e Radioativo
-  // Mix: Roxo Escuro + Verde Ácido
-  urban_toxic: {
-    label: "Urban - Toxic",
-    layout: "urban",
-    bgPage: "bg-[#0b0214]", // Roxo/Preto muito escuro
-    textColor: "text-[#d1fae5]", // Menta Claro
-    cardBg: "bg-[#1a0524]/70", // Roxo Uva Escuro
-    cardTextColor: "text-white",
-    border: "border-[#39ff14]", // Verde Neon Puro
-    primary: "text-[#39ff14]",
-    bgSecondary: "bg-[#2e093e]",
-    bgAction: "bg-[#39ff14] text-black", // Botão Verde
-    radius: "rounded-none", // Quadrado (Brutalista)
-    shadow: "shadow-[0_0_25px_-5px_rgba(57,255,20,0.3)]", // Glow Verde
-    previewColor: "linear-gradient(135deg, #0b0214 0%, #39ff14 100%)",
-  },
-
-  // 5. GOLD (Estilo Luxury Noir)
-  // Identidade: Minimalismo de Alto Padrão
-  // Mix: Preto Absoluto (Matte) + Ouro + Branco (Sem tons amarelados no fundo)
+  // 5. GOLD (Escuro - Luxo Urbano e Exclusividade)
+  // Identidade: Estilo VIP, Clubes Privados, Joalherias, Concessionárias Premium
   urban_gold: {
     label: "Urban - Gold",
     layout: "urban",
-    bgPage: "bg-[#000000]", // Preto Puro
-    textColor: "text-[#f4f4f5]", // Branco Gelo
-    cardBg: "bg-[#121212]/80", // Cinza Chumbo
+    bgPage: "bg-[#0A0A0A]", // Preto Absoluto e elegante
+    textColor: "text-[#FEF3C7]", // Off-white levemente dourado (âmbar) para leitura perfeita
+    cardBg: "bg-[#141414]/95", // Card em um tom de asfalto quase preto (translúcido)
     cardTextColor: "text-white",
-    border: "border-[#ffd700]", // Ouro Metálico
-    primary: "text-[#ffd700]",
-    bgSecondary: "bg-[#27272a]",
-    bgAction: "bg-[#ffd700] text-black", // Botão Ouro
-    radius: "rounded-lg", // Clássico
-    shadow: "shadow-[0_0_40px_-10px_rgba(255,215,0,0.15)]", // Glow Dourado Sutil
-    previewColor: "linear-gradient(135deg, #000000 0%, #ffd700 100%)",
+    border: "border-[#D4AF37]", // Dourado Metálico Clássico
+    primary: "text-[#D4AF37]", // Ícones e destaques em Dourado
+    bgSecondary: "bg-[#33290F]", // Um fundo escuro amarronzado para dar profundidade
+    bgAction: "bg-[#D4AF37] text-black", // Botão Dourado com texto Preto (Alto Contraste VIP)
+    radius: "rounded-2xl",
+    shadow: "shadow-[0_0_30px_-5px_rgba(212,175,55,0.25)]", // Glow Dourado de Luxo nos cards
+    previewColor: "linear-gradient(135deg, #0A0A0A 0%, #D4AF37 100%)",
   },
   // =========================================================
   // 🏛️ SHOWROOM (3 CLAROS + 2 ESCUROS)
   // =========================================================
-
-  showroom_tech: {
-    label: "Showroom - Neon Slate",
+  // 1. Showroom Clean (Vibe: Apple, Minimalismo Absoluto, Tech)
+  showroom_clean: {
+    label: "Showroom - Clean",
     layout: "showroom",
-    bgPage: "bg-[#1e293b]", // Fundo Slate 800
-    textColor: "text-[#f1f5f9]",
-    cardBg: "bg-[#0f172a]", // Card muito mais escuro (Slate 900)
-    border: "border-[#38bdf8]/30", // Borda Ciano neon sutil
-    primary: "text-[#38bdf8]",
-    bgSecondary: "bg-[#0c4a6e]",
-    bgAction: "bg-[#38bdf8] text-[#082f49]",
-    previewColor: "linear-gradient(135deg, #1e293b 0%, #38bdf8 100%)",
+    bgPage: "bg-[#FFFFFF]", // Branco puro no fundo
+    cardBg: "bg-[#F9FAFB]", // Cinza quase imperceptível nos cards
+    textColor: "text-[#111827]", // Quase preto
+    subTextColor: "text-[#6B7280]",
+    border: "border-[#E5E7EB]", // Borda cinza super leve
+    primary: "text-[#000000]",
+    bgSecondary: "bg-[#F3F4F6]",
+    bgAction: "bg-[#000000]",
+    previewColor: "linear-gradient(135deg, #FFFFFF 0%, #E5E7EB 100%)",
   },
 
-  // 2. LIGHT - NORDIC SKY (Azul Acinzentado e Sereno)
-  // Foco: Profissionalismo e calma. Ótimo para arquitetura e design.
-  showroom_nordic: {
-    label: "Showroom - Nordic",
+  // 2. Showroom Latte (Vibe: Estúdios de Arquitetura, Móveis Planejados)
+  showroom_latte: {
+    label: "Showroom - Latte",
     layout: "showroom",
-    bgPage: "bg-[#F8FAFC]",
-    textColor: "text-[#0F172A]",
+    bgPage: "bg-[#FDFBF7]", // Fundo creme ultra suave
+    cardBg: "bg-[#FFFFFF]", // Cards brancos saltando do fundo creme
+    textColor: "text-[#433831]", // Marrom acinzentado escuro
+    subTextColor: "text-[#8A7E76]",
+    border: "border-[#E8E2D9]", // Borda areia
+    primary: "text-[#B48E6D]", // Destaques em caramelo
+    bgSecondary: "bg-[#F4EFE6]",
+    bgAction: "bg-[#B48E6D]",
+    previewColor: "linear-gradient(135deg, #FDFBF7 0%, #B48E6D 100%)",
+  },
+
+  // 3. Showroom Cloud (Vibe: Clínicas, Odonto, Startups B2B)
+  showroom_cloud: {
+    label: "Showroom - Cloud",
+    layout: "showroom",
+    bgPage: "bg-[#F4F7FB]", // Fundo azul/gelo bem claro
+    cardBg: "bg-[#FFFFFF]", // Cards brancos
+    textColor: "text-[#0F172A]", // Azul marinho profundo
     subTextColor: "text-[#64748B]",
-    border: "border-slate-200",
-    primary: "text-[#334155]",
-    bgSecondary: "bg-white",
-    bgAction: "bg-[#334155]",
-    previewColor: "linear-gradient(135deg, #F8FAFC 0%, #334155 100%)",
+    border: "border-[#CBD5E1]", // Borda azulada
+    primary: "text-[#0284C7]", // Cyan/Azul Tech
+    bgSecondary: "bg-[#E2E8F0]",
+    bgAction: "bg-[#0284C7]",
+    previewColor: "linear-gradient(135deg, #F4F7FB 0%, #0284C7 100%)",
   },
 
-  showroom_candy: {
-    label: "Showroom - Cotton Candy",
+  // 4. Showroom SaaS (Vibe: Dark Mode de Aplicativos, Agências de Marketing)
+  showroom_saas: {
+    label: "Showroom - SaaS",
     layout: "showroom",
-    bgPage: "bg-[#f5f3ff]", // Fundo Lavanda
-    textColor: "text-[#4c1d95]", // Texto Roxo Escuro
-    cardBg: "bg-white",
-    border: "border-[#ddd6fe]",
-    primary: "text-[#f43f5e]", // Rosa Cereja
-    bgSecondary: "bg-[#fff1f2]",
-    bgAction: "bg-[#f43f5e] text-white",
-    previewColor: "linear-gradient(135deg, #f5f3ff 0%, #f43f5e 100%)",
+    bgPage: "bg-[#09090B]", // Fundo quase preto (Zinc)
+    cardBg: "bg-[#18181B]", // Cards um tom acima
+    textColor: "text-[#FAFAFA]", // Branco Gelo
+    subTextColor: "text-[#A1A1AA]",
+    border: "border-[#27272A]", // Borda chumbo
+    primary: "text-[#3B82F6]", // Azul vibrante brilhando no escuro
+    bgSecondary: "bg-[#27272A]",
+    bgAction: "bg-[#3B82F6]",
+    previewColor: "linear-gradient(135deg, #09090B 0%, #3B82F6 100%)",
   },
 
-  showroom_electric: {
-    label: "Showroom - Electric Mono",
+  // 5. Showroom Obsidian (Vibe: Estúdios Premium, Fotografia, Tech Luxo)
+  showroom_obsidian: {
+    label: "Showroom - Obsidian",
     layout: "showroom",
-    bgPage: "bg-[#111827]", // Cinza quase preto
-    textColor: "text-white",
-    cardBg: "bg-[#111827]", // O card é da mesma cor do fundo (Efeito Seamless)
-    border: "border-[#374151]", // A borda é o que define o card
-    primary: "text-[#fde047]", // Amarelo Elétrico
-    bgSecondary: "bg-[#374151]",
-    bgAction: "bg-[#fde047] text-black", // Botão que "explode" na tela
-    previewColor: "linear-gradient(135deg, #111827 0%, #fde047 100%)",
-  },
-
-  showroom_nude: {
-    label: "Showroom - Nude Luxe",
-    layout: "showroom",
-    bgPage: "bg-[#f2e9e4]", // Nude Areia Suave (Fundo)
-    textColor: "text-[#4a3728]", // Marrom Café Escuro (Aparece em TUDO)
-    cardBg: "bg-[#fdfaf9]", // Nude Creme (Card - faz a letra "pular" pra fora)
-    border: "border-[#c9ada7]", // Borda Nude Rosé para detalhe
-    primary: "text-[#9a8c98]", // Lavanda Acinzentado (Toque exótico)
-    bgSecondary: "bg-[#f2e9e4]", // Fundo de ícones igual ao fundo da página
-    bgAction: "bg-[#4a3728] text-white", // Botão Café com texto branco (Destaque total)
-    previewColor: "linear-gradient(135deg, #f2e9e4 0%, #4a3728 100%)",
+    bgPage: "bg-[#000000]", // Fundo Preto Absoluto
+    cardBg: "bg-[#0A0A0A]", // Cards quase invisíveis
+    textColor: "text-[#E4E4E7]", // Cinza muito claro
+    subTextColor: "text-[#71717A]",
+    border: "border-[#27272A]", // Borda suave
+    primary: "text-[#FFFFFF]", // Branco puro pros ícones
+    bgSecondary: "bg-[#18181B]",
+    bgAction: "bg-[#FFFFFF]",
+    previewColor: "linear-gradient(135deg, #000000 0%, #27272A 100%)",
   },
 };

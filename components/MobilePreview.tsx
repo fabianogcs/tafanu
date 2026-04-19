@@ -29,9 +29,14 @@ function MobilePreview({
   showroom_collection,
   layoutLabel,
 }: MobilePreviewProps) {
-  // Garantia de um tema padrão caso o themeKey venha vazio ou errado
-  const theme = businessThemes[themeKey] || businessThemes["comercial_neutral"];
-  const layout = theme.layout;
+  // 🚀 REDE DE SEGURANÇA BLINDADA: Tenta o tema atual, comercial, ou o primeiro que existir
+  const theme =
+    businessThemes[themeKey] ||
+    businessThemes["comercial_neutral"] ||
+    Object.values(businessThemes)[0];
+
+  // Se mesmo assim o tema não tiver a palavra 'layout', ele assume "luxe" por padrão.
+  const layout = theme?.layout || "luxe";
 
   // O Showroom usa o showroom_collection, se não tiver, tenta usar o luxe_quote
   const specialText = showroom_collection || luxe_quote;

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-
 import { motion, AnimatePresence, useInView } from "framer-motion";
-
 import {
   Instagram,
   Facebook,
@@ -26,35 +24,24 @@ import {
   Store,
   Video,
 } from "lucide-react";
-
 import * as Actions from "@/app/actions";
-
 import { toast } from "sonner";
-
 import ReportModal from "@/components/ReportModal";
-
 import { businessThemes } from "@/lib/themes";
-
 import { useBusiness } from "@/lib/useBusiness";
-
 import FavoriteButton from "@/components/FavoriteButton";
-
 import CommentsSection from "../CommentsSection";
 
 // --- HELPERS ---
-
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
   </svg>
 );
 
-// Ícones Oficiais Customizados
-
 const MeliIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
-
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
   </svg>
 );
@@ -76,10 +63,55 @@ const SheinIcon = ({ className }: { className?: string }) => (
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
-// --- MOTOR DE VÍDEOS EMBED (ESTILO URBAN) ---
-const VideoEmbed = ({ url, radius }: { url: string; radius: string }) => {
+
+// --- COMPONENTE DE MAPA INTERATIVO PREMIUM ---
+const MapEmbed = ({
+  destination,
+  radius,
+  glassBorder,
+}: {
+  destination: string;
+  radius: string;
+  glassBorder: string;
+}) => {
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(destination)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+  return (
+    <div
+      className={`w-full h-[350px] md:h-[450px] relative overflow-hidden ${radius} border ${glassBorder} shadow-2xl group`}
+    >
+      <iframe
+        width="100%"
+        height="100%"
+        frameBorder="0"
+        scrolling="no"
+        marginHeight={0}
+        marginWidth={0}
+        src={mapUrl}
+        className="grayscale-[0.5] contrast-[1.1] opacity-80 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700"
+      />
+      <div className="absolute inset-0 pointer-events-none border-[12px] border-transparent shadow-[inset_0_0_60px_rgba(0,0,0,0.2)]" />
+    </div>
+  );
+};
+
+// --- MOTOR DE VÍDEOS EMBED (URBAN REC // SYS) ---
+const VideoEmbed = ({
+  url,
+  radius,
+  glassBg,
+  glassBorder,
+  primaryColorClass,
+}: {
+  url: string;
+  radius: string;
+  glassBg: string;
+  glassBorder: string;
+  primaryColorClass: string;
+}) => {
   let embedUrl = "";
   let isVertical = false;
+  let isInstagram = false;
 
   try {
     if (url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -96,6 +128,7 @@ const VideoEmbed = ({ url, radius }: { url: string; radius: string }) => {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
       embedUrl = `${cleanUrl}/embed`;
       isVertical = true;
+      isInstagram = true; // 🚀 Marcamos que é Insta para o corte!
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
@@ -109,34 +142,55 @@ const VideoEmbed = ({ url, radius }: { url: string; radius: string }) => {
 
   return (
     <div
-      className={`w-full overflow-hidden bg-white/5 border border-white/10 shadow-2xl ${radius} ${isVertical ? "aspect-[9/16] max-w-[350px] mx-auto" : "aspect-video"}`}
+      className={`relative group w-full mb-8 break-inside-avoid ${isVertical ? "max-w-[350px] mx-auto" : ""}`}
     >
-      <iframe
-        src={embedUrl}
-        className="w-full h-full border-0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
+      <div
+        className={`relative flex flex-col overflow-hidden ${glassBg} border ${glassBorder} shadow-2xl ${radius} backdrop-blur-md transition-all duration-500 hover:border-current group-hover:shadow-[0_0_30px_currentColor] ${primaryColorClass}`}
+      >
+        {/* Cabeçalho REC // SYS */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-current/20 bg-black/10 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[10px] uppercase tracking-[0.3em] font-black opacity-70">
+              REC // SYS
+            </span>
+          </div>
+          <div className="flex gap-1.5 opacity-40">
+            <div className="w-1.5 h-3.5 border-l-2 border-current skew-x-12" />
+            <div className="w-1.5 h-3.5 border-l-2 border-current skew-x-12" />
+            <div className="w-1.5 h-3.5 border-l-2 border-current skew-x-12" />
+          </div>
+        </div>
+
+        {/* 🚀 O CORTE MÁGICO: overflow-hidden na caixa e h-[calc(100%+95px)] no iframe do Instagram */}
+        <div
+          className={`w-full relative overflow-hidden bg-black/50 ${isVertical ? "aspect-[9/16]" : "aspect-video"}`}
+        >
+          <iframe
+            src={embedUrl}
+            className={`absolute top-0 left-0 w-full border-0 pointer-events-auto ${isInstagram ? "h-[calc(100%+95px)]" : "h-full"}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            scrolling="no"
+          />
+        </div>
+      </div>
     </div>
   );
 };
+
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
-
   if (navigator.share) {
     try {
       await navigator.share({
         title: businessName,
-
         text: `Confira ${businessName}:`,
-
         url,
       });
-
       return;
     } catch (err) {}
   }
-
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(url);
     toast.success("Link copiado!");
@@ -145,75 +199,47 @@ const handleShare = async (businessName: string) => {
 
 const formatPhoneNumber = (phone: string) => {
   const cleaned = (phone || "").replace(/\D/g, "");
-
   const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-
   if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-
   const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-
   if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-
   return phone;
 };
 
 const formatExternalLink = (url: string) => {
   if (!url) return "";
-
   const clean = url.trim();
-
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
 };
 
 export default function UrbanLayout({
   business: rawBusiness,
-
   theme: propTheme,
-
   realHours: rawHours,
-
   fullAddress,
-
   isLoggedIn,
-
   isFavorited,
-
   emailVerified,
-
   currentUserId,
-
   isAdmin,
 }: any) {
   const {
     business,
-
     realHours,
-
     hasWhatsapp,
-
     hasPhone,
-
     hasFaqs,
-
     hasFeatures,
-
     hasHours,
-
     hasAddress,
-
     hasGallery,
-
     hasDescription,
-
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
   const footerTriggerRef = useRef(null);
-
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
   });
@@ -223,11 +249,15 @@ export default function UrbanLayout({
     businessThemes[business?.theme] ||
     businessThemes["urban_cyber"];
 
+  const isLight =
+    theme.bgPage.includes("f8fafc") || theme.bgPage.includes("ffffff");
+  const glassBg = theme.cardBg || (isLight ? "bg-white/90" : "bg-white/5");
+  const glassBorder = isLight ? "border-slate-200" : "border-white/10";
+  const glassDivider = isLight ? "border-slate-200" : "border-white/5";
+  const mutedText = isLight ? "text-slate-600" : "text-white/70";
+
   const radius = theme.radius || "rounded-xl";
-
   const shadow = theme.shadow || "shadow-2xl";
-
-  const glassEffect = "bg-white/5 md:backdrop-blur-md";
 
   const addressBase = business?.address || "";
   const hasNumberInAddress =
@@ -241,7 +271,7 @@ export default function UrbanLayout({
     ? business.gallery.filter(Boolean)
     : [];
 
-  const videos = Array.isArray(business.videos) // 🚀 PUXANDO OS VÍDEOS
+  const videos = Array.isArray(business.videos)
     ? business.videos.filter(Boolean)
     : [];
 
@@ -252,60 +282,41 @@ export default function UrbanLayout({
   const salesChannels = [
     {
       key: "mercadoLivre",
-
       name: "Mercado Livre",
-
-      icon: <MeliIcon className="w-4 h-4" />,
-
+      icon: <MeliIcon className="w-4 h-4 md:w-5 md:h-5" />,
       url: business.mercadoLivre,
-
       colorClass: "text-[#FFE600] group-hover:text-[#FFE600]",
     },
-
     {
       key: "shopee",
-
       name: "Shopee",
-
-      icon: <ShopeeIcon className="w-4 h-4" />,
-
+      icon: <ShopeeIcon className="w-4 h-4 md:w-5 md:h-5" />,
       url: business.shopee,
-
       colorClass: "text-[#EE4D2D] group-hover:text-[#EE4D2D]",
     },
-
     {
       key: "ifood",
-
       name: "iFood",
-
-      icon: <IfoodIcon className="w-4 h-4" />,
-
+      icon: <IfoodIcon className="w-4 h-4 md:w-5 md:h-5" />,
       url: business.ifood,
-
       colorClass: "text-[#EA1D2C] group-hover:text-[#EA1D2C]",
     },
-
     {
       key: "shein",
-
       name: "Shein",
-
-      icon: <SheinIcon className="w-4 h-4" />,
-
+      icon: <SheinIcon className="w-4 h-4 md:w-5 md:h-5" />,
       url: business.shein,
-
-      colorClass: "text-white group-hover:text-white",
+      colorClass: isLight
+        ? "text-slate-900 group-hover:text-slate-900"
+        : "text-white group-hover:text-white",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
   const safeSetIndex = useCallback(
     (next: number) => {
       if (gallery.length === 0) return;
-
       setSelectedIndex((next + gallery.length) % gallery.length);
     },
-
     [gallery.length],
   );
 
@@ -313,9 +324,7 @@ export default function UrbanLayout({
     async (type: "whatsapp" | "phone") => {
       const rawNumber =
         type === "whatsapp" ? business.whatsapp : business.phone;
-
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
-
       if (!cleanNumber) return;
 
       const numberWithDDI = cleanNumber.startsWith("55")
@@ -329,14 +338,11 @@ export default function UrbanLayout({
           : `tel:${cleanNumber}`;
 
       try {
-        // 🚀 O NOVO ESPIÃO ENTRA AQUI!
-
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         window.location.href = targetUrl;
       }
     },
-
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
@@ -344,18 +350,14 @@ export default function UrbanLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
-  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
   const addressPartsForMap = [
     business.address,
     business.number,
     business.neighborhood,
     business.city,
     business.state,
-    business.cep,
   ].filter(Boolean);
-
   const completeAddressForMap = addressPartsForMap.join(", ");
-
   const mapDestination =
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
@@ -371,13 +373,14 @@ export default function UrbanLayout({
     >
       <div className="hidden md:block fixed inset-0 pointer-events-none z-[10] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      {/* --- HEADER URBANO: CONCEITO "STREET MURAL" --- */}
-      <header className="relative w-full pt-32 pb-20 md:pt-40 md:pb-32 px-4 md:px-8 flex flex-col items-center justify-center min-h-[50vh] overflow-hidden">
-        {/* Background Noise & Grid Estourado (Sem caixas) */}
+      {/* --- HEADER URBANO --- */}
+      <header className="relative w-full pt-32 pb-24 md:pt-48 md:pb-40 px-4 md:px-8 flex flex-col items-center justify-center min-h-[60vh] overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
           <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+            className={`absolute inset-0 bg-gradient-to-b from-transparent ${isLight ? "to-white/60" : "to-black/40"}`}
+          />
+          <div
+            className={`absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay ${isLight ? "invert" : ""}`}
             style={{
               backgroundImage:
                 "radial-gradient(circle, white 2px, transparent 2.5px)",
@@ -386,16 +389,19 @@ export default function UrbanLayout({
           />
         </div>
 
-        {/* Pílula de Ações (Flutuante, solta no layout) */}
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
-          <div className="flex items-center gap-1 bg-black/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+        <div className="absolute top-6 right-6 md:top-10 md:right-10 z-30">
+          <div
+            className={`flex items-center gap-1 ${isLight ? "bg-white/80 border-slate-200" : "bg-black/40 border-white/10"} backdrop-blur-xl p-2 rounded-full border shadow-xl`}
+          >
             <button
               onClick={() => handleShare(business.name)}
-              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-all text-white"
+              className={`w-12 h-12 flex items-center justify-center rounded-full transition-all ${isLight ? "hover:bg-slate-100 text-slate-700" : "hover:bg-white/10 text-white"}`}
             >
-              <Share2 className="w-[18px] h-[18px]" />
+              <Share2 className="w-[20px] h-[20px]" />
             </button>
-            <div className="w-[1px] h-4 bg-white/20 mx-1" />
+            <div
+              className={`w-[1px] h-6 ${isLight ? "bg-slate-300" : "bg-white/20"} mx-2`}
+            />
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -405,27 +411,26 @@ export default function UrbanLayout({
           </div>
         </div>
 
-        {/* --- CONTEÚDO FLUIDO --- */}
-        <div className="relative z-20 w-full max-w-6xl mx-auto flex flex-col items-center text-center">
-          {/* Logo (Aparece como um "Sticker" colado) */}
+        <div className="relative z-20 w-full max-w-7xl mx-auto flex flex-col items-center text-center">
           {business.imageUrl && (
             <motion.div
               initial={{ scale: 0, rotate: -15 }}
               animate={{ scale: 1, rotate: -3 }}
               transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="mb-8 md:mb-12 relative z-30"
+              className="mb-10 md:mb-16 relative z-30"
             >
-              <div className="w-24 h-24 md:w-36 md:h-36 rounded-2xl bg-black border-4 border-white/10 shadow-2xl overflow-hidden p-1">
+              <div
+                className={`w-32 h-32 md:w-48 md:h-48 rounded-3xl ${glassBg} border-4 md:border-8 ${glassBorder} shadow-2xl overflow-hidden p-1.5`}
+              >
                 <img
                   src={business.imageUrl}
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-cover rounded-2xl"
                   alt="Logo"
                 />
               </div>
             </motion.div>
           )}
 
-          {/* NOME DA EMPRESA (Estética Brutalista / Letreiro Quebrado) */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -433,61 +438,59 @@ export default function UrbanLayout({
             className="relative z-20 w-full"
           >
             <h1
-              className={`font-black uppercase italic tracking-tighter ${theme.textColor} break-words text-[clamp(3.5rem,12vw,8rem)] leading-[0.8] drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2`}
+              className={`font-black uppercase italic tracking-tighter ${theme.textColor} break-words text-[clamp(4rem,14vw,10rem)] leading-[0.8] drop-shadow-2xl px-2`}
             >
               {business.name}
             </h1>
           </motion.div>
 
-          {/* TAG URBANA (Fita Isolante) */}
           {business.urban_tag && (
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.6, delay: 0.6, ease: "circOut" }}
-              className="relative z-30 mt-10 md:mt-16 origin-left inline-block"
+              className="relative z-30 mt-12 md:mt-20 origin-center inline-flex justify-center w-full px-4"
             >
               <div
-                className={`px-6 py-2 md:px-10 md:py-3 ${theme.bgAction} font-black uppercase tracking-[0.4em] text-xs md:text-lg -skew-x-[12deg] shadow-[5px_5px_0px_rgba(0,0,0,1)] border-y border-white/20 text-black whitespace-nowrap`}
+                className={`px-8 py-4 md:px-16 md:py-5 ${theme.bgAction} font-black uppercase tracking-widest md:tracking-[0.5em] text-xs md:text-xl -skew-x-[12deg] shadow-[8px_8px_0px_rgba(0,0,0,0.3)] border-y ${glassBorder} whitespace-normal break-words text-center max-w-full`}
               >
-                {business.urban_tag}
+                <span className="block skew-x-[12deg]">
+                  {business.urban_tag}
+                </span>
               </div>
             </motion.div>
           )}
         </div>
 
-        {/* Linha de Fechamento (Conecta com a seção debaixo) */}
-        <div className="absolute bottom-0 w-px h-16 md:h-24 bg-gradient-to-t from-white/30 to-transparent z-10" />
+        <div
+          className={`absolute bottom-0 w-px h-24 md:h-32 bg-gradient-to-t ${isLight ? "from-slate-300" : "from-white/30"} to-transparent z-10`}
+        />
       </header>
 
-      <main className="container mx-auto px-4 md:px-6 relative z-30 space-y-20 md:space-y-32 pb-24 mt-10 md:mt-20">
-        <div className="flex flex-col gap-4">
-          {/* REDES SOCIAIS (Carregam suavemente) */}
-
+      {/* 🚀 O GRANDE UPGRADE DE ESPAÇAMENTO ACONTECE AQUI NO MAIN */}
+      <main className="container mx-auto px-4 md:px-8 relative z-30 flex flex-col gap-24 md:gap-40 pb-32 mt-16 md:mt-24">
+        {/* REDES & LOJAS */}
+        <div className="flex flex-col gap-8 md:gap-12">
           {availableSocials.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="flex gap-4 flex-wrap justify-center"
+              className="flex gap-4 md:gap-6 flex-wrap justify-center"
             >
               {availableSocials.map((s) => {
                 const username = business[s];
                 if (!username) return null;
-
-                const isUrl =
-                  username.startsWith("http") || username.startsWith("www");
-                const finalUrl = isUrl
-                  ? username.startsWith("http")
-                    ? username
-                    : `https://${username}`
-                  : s === "instagram"
-                    ? `https://instagram.com/${username.replace("@", "")}`
-                    : s === "facebook"
-                      ? `https://facebook.com/${username.replace("@", "")}`
-                      : s === "tiktok"
-                        ? `https://tiktok.com/@${username.replace("@", "")}`
-                        : formatExternalLink(username);
+                const finalUrl =
+                  username.startsWith("http") || username.startsWith("www")
+                    ? formatExternalLink(username)
+                    : s === "instagram"
+                      ? `https://instagram.com/${username.replace("@", "")}`
+                      : s === "facebook"
+                        ? `https://facebook.com/${username.replace("@", "")}`
+                        : s === "tiktok"
+                          ? `https://tiktok.com/@${username.replace("@", "")}`
+                          : formatExternalLink(username);
 
                 return (
                   <a
@@ -497,17 +500,17 @@ export default function UrbanLayout({
                     rel="noopener noreferrer"
                     onClick={() =>
                       Actions.registerClickEvent(business.id, s.toUpperCase())
-                    } // 🚀 ESPIÃO AQUI
-                    className={`w-12 h-12 md:w-14 md:h-14 ${glassEffect} border flex items-center justify-center transition-all ${radius} hover:scale-110 ${theme.primary} border-white/20`}
+                    }
+                    className={`w-14 h-14 md:w-20 md:h-20 ${glassBg} border flex items-center justify-center transition-all duration-300 ${radius} hover:scale-110 hover:-translate-y-2 hover:shadow-xl ${theme.primary} ${glassBorder} md:backdrop-blur-md`}
                   >
                     {s === "instagram" ? (
-                      <Instagram size={24} />
+                      <Instagram className="w-6 h-6 md:w-8 md:h-8" />
                     ) : s === "facebook" ? (
-                      <Facebook size={24} />
+                      <Facebook className="w-6 h-6 md:w-8 md:h-8" />
                     ) : s === "tiktok" ? (
-                      <TikTokIcon className="w-6 h-6" />
+                      <TikTokIcon className="w-6 h-6 md:w-8 md:h-8" />
                     ) : (
-                      <Globe size={24} />
+                      <Globe className="w-6 h-6 md:w-8 md:h-8" />
                     )}
                   </a>
                 );
@@ -515,14 +518,12 @@ export default function UrbanLayout({
             </motion.div>
           )}
 
-          {/* LOJAS (Pílulas Discretas) */}
-
           {salesChannels.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap justify-center gap-3 mt-4 w-full max-w-xl mx-auto"
+              className="flex flex-wrap justify-center gap-4 md:gap-6 mt-4 w-full max-w-3xl mx-auto"
             >
               {salesChannels.map((channel) => (
                 <a
@@ -533,19 +534,17 @@ export default function UrbanLayout({
                   onClick={() =>
                     Actions.registerClickEvent(
                       business.id,
-
                       channel.key.toUpperCase(),
                     )
-                  } // 🚀 ESPIÃO AQUI
-                  className={`flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full ${glassEffect} border border-white/10 hover:bg-white/10 hover:scale-105 hover:border-white/30 transition-all duration-300 group shadow-lg`}
+                  }
+                  className={`flex items-center gap-3 px-5 py-3 md:px-8 md:py-4 rounded-full ${glassBg} md:backdrop-blur-md border ${glassBorder} hover:scale-105 hover:-translate-y-1 transition-all duration-300 group shadow-lg hover:shadow-2xl`}
                 >
                   <div
                     className={`transition-transform duration-300 group-hover:scale-110 ${channel.colorClass} opacity-80 group-hover:opacity-100`}
                   >
                     {channel.icon}
                   </div>
-
-                  <span className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase opacity-60 group-hover:opacity-100 transition-opacity">
+                  <span className="text-xs md:text-sm font-bold tracking-[0.2em] uppercase opacity-70 group-hover:opacity-100 transition-opacity">
                     {channel.name}
                   </span>
                 </a>
@@ -553,41 +552,39 @@ export default function UrbanLayout({
             </motion.div>
           )}
         </div>
-        {hasDescription && (
-          <section className="relative w-full max-w-5xl mx-auto">
-            <div
-              className={`${glassEffect} border border-white/10 p-8 md:p-16 ${radius} ${shadow}`}
-            >
-              <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-8 border-b-2 border-white/10 pb-4 opacity-50 flex items-center gap-4">
-                <Terminal size={32} /> Sobre
-              </h2>
 
-              <p className="text-xl md:text-3xl font-light leading-snug whitespace-pre-line break-words">
+        {/* SOBRE */}
+        {hasDescription && (
+          <section className="relative w-full max-w-6xl mx-auto">
+            <div
+              className={`${glassBg} md:backdrop-blur-md border ${glassBorder} p-10 md:p-20 lg:p-24 ${radius} ${shadow}`}
+            >
+              <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-12 md:mb-16 border-b-2 border-current pb-6 opacity-30 flex items-center gap-5">
+                <Terminal className="w-8 h-8 md:w-10 md:h-10" /> Sobre
+              </h2>
+              <p className="text-xl md:text-3xl lg:text-4xl font-light leading-relaxed whitespace-pre-line break-words">
                 {business.description}
               </p>
             </div>
           </section>
         )}
 
+        {/* DESTAQUES */}
         {hasFeatures && (
-          <section className="w-full max-w-5xl mx-auto space-y-6 md:space-y-8">
-            {/* 1. O Título que faltava */}
-            <h3 className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter opacity-50 flex items-center gap-3 border-b-2 border-white/10 pb-4">
-              <Terminal size={24} /> DESTAQUES_
+          <section className="w-full max-w-7xl mx-auto">
+            <h3 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter opacity-30 flex items-center gap-4 border-b-2 border-current pb-6 mb-12 md:mb-16">
+              <Terminal className="w-8 h-8 md:w-10 md:h-10" /> DESTAQUES_
             </h3>
-
-            {/* 2. O Grid que força o padrão (1 coluna no celular, 2 a 3 no PC) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {business.features.filter(Boolean).map((f: string, i: number) => (
                 <div
                   key={i}
-                  /* 3. Ajuste do card: w-full obriga a preencher a grade, paddings menores */
-                  className={`w-full p-5 ${glassEffect} border border-white/10 ${radius} flex items-center gap-4 group hover:border-white/40 transition-all shadow-sm`}
+                  className={`w-full p-6 md:p-10 ${glassBg} md:backdrop-blur-md border ${glassBorder} ${radius} flex items-center gap-6 group hover:-translate-y-2 hover:shadow-2xl transition-all duration-500`}
                 >
                   <div
-                    className={`w-1.5 h-1.5 shrink-0 rounded-full ${theme.bgAction} shadow-[0_0_10px_currentColor]`}
+                    className={`w-2.5 h-2.5 md:w-3 md:h-3 shrink-0 rounded-full ${theme.bgAction} shadow-lg`}
                   />
-                  <span className="font-bold text-xs md:text-sm uppercase tracking-widest leading-tight opacity-90">
+                  <span className="font-bold text-sm md:text-base uppercase tracking-widest leading-tight opacity-90">
                     {f}
                   </span>
                 </div>
@@ -596,19 +593,19 @@ export default function UrbanLayout({
           </section>
         )}
 
+        {/* GALERIA */}
         {hasGallery && (
-          <section className="space-y-10">
-            <h3 className="text-4xl font-black uppercase italic tracking-tighter flex items-center gap-4">
-              <Camera size={32} /> VISUAL_FEED_
+          <section className="w-full max-w-7xl mx-auto">
+            <h3 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter flex items-center gap-5 opacity-80 mb-12 md:mb-16">
+              <Camera className="w-10 h-10 md:w-12 md:h-12" /> VISUAL_FEED_
             </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
               {gallery.map((img: string, i: number) => (
                 <motion.div
                   key={i}
                   onClick={() => setSelectedIndex(i)}
-                  whileHover={{ scale: 1.02 }}
-                  className={`aspect-square ${glassEffect} overflow-hidden cursor-pointer group relative border border-white/10 ${radius} ${shadow}`}
+                  whileHover={{ scale: 1.03, y: -5 }}
+                  className={`aspect-square ${glassBg} md:backdrop-blur-md overflow-hidden cursor-pointer group relative border ${glassBorder} ${radius} shadow-xl hover:shadow-2xl transition-all duration-500`}
                 >
                   <img
                     src={img}
@@ -617,11 +614,10 @@ export default function UrbanLayout({
                     className="w-full h-full object-cover"
                     alt="Gallery"
                   />
-
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Plus
-                      size={40}
-                      className="text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+                      size={48}
+                      className="text-white drop-shadow-[0_0_15px_rgba(0,0,0,0.6)]"
                     />
                   </div>
                 </motion.div>
@@ -630,53 +626,92 @@ export default function UrbanLayout({
           </section>
         )}
 
-        {/* 🚀 SEÇÃO DE VÍDEOS EMBED (URBAN) */}
-        {videos.length > 0 && (
-          <section className="space-y-10">
-            <h3 className="text-4xl font-black uppercase italic tracking-tighter flex items-center gap-4">
-              <Video size={32} /> MOTION_FEED_
-            </h3>
+        {/* VÍDEOS (Agora com separação inteligente) */}
+        {videos.length > 0 &&
+          (() => {
+            // O Robô que separa os formatos
+            const horizontalVideos = videos.filter(
+              (vid: string) =>
+                (vid.includes("youtube.com") || vid.includes("youtu.be")) &&
+                !vid.includes("shorts"),
+            );
+            const verticalVideos = videos.filter(
+              (vid: string) =>
+                vid.includes("shorts") ||
+                vid.includes("instagram.com") ||
+                vid.includes("tiktok.com"),
+            );
 
-            <div
-              className={`grid gap-6 ${videos.some((v: string) => v.includes("shorts") || v.includes("instagram") || v.includes("tiktok")) ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}
-            >
-              {videos.map((vid: string, i: number) => (
-                <VideoEmbed key={i} url={vid} radius={radius} />
-              ))}
-            </div>
-          </section>
-        )}
+            return (
+              <section className="w-full max-w-7xl mx-auto">
+                <h3 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter flex items-center gap-5 opacity-80 mb-12 md:mb-16">
+                  <Video className="w-10 h-10 md:w-12 md:h-12" /> MOTION_FEED_
+                </h3>
 
+                {/* YouTube (Sempre no topo, telas largas) */}
+                {horizontalVideos.length > 0 && (
+                  <div className="mb-12 md:mb-16">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                      {horizontalVideos.map((vid: string, i: number) => (
+                        <VideoEmbed
+                          key={`h-${i}`}
+                          url={vid}
+                          radius={radius}
+                          glassBg={glassBg}
+                          glassBorder={glassBorder}
+                          primaryColorClass={theme.primary}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Instagram / TikTok (Sempre embaixo, formato espelho) */}
+                {verticalVideos.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+                    {verticalVideos.map((vid: string, i: number) => (
+                      <VideoEmbed
+                        key={`v-${i}`}
+                        url={vid}
+                        radius={radius}
+                        glassBg={glassBg}
+                        glassBorder={glassBorder}
+                        primaryColorClass={theme.primary}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })()}
+
+        {/* FAQS */}
         {hasFaqs && (
-          <section className="space-y-6 md:space-y-8">
-            {/* Título menor e com a linha divisória padronizada */}
-            <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter opacity-50 flex items-center gap-3 border-b-2 border-white/10 pb-4">
-              <MessageCircle size={24} /> DÚVIDAS FREQUENTES
+          <section className="w-full max-w-7xl mx-auto">
+            <h3 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter opacity-30 flex items-center gap-4 border-b-2 border-current pb-6 mb-12 md:mb-16">
+              <MessageCircle className="w-8 h-8 md:w-10 md:h-10" /> DÚVIDAS
+              FREQUENTES
             </h3>
-
-            {/* O SEGREDO DEFINITIVO: Duas colunas reais e separadas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-              {/* COLUNA ESQUERDA (Pega a pergunta 1, 3, 5...) */}
-              <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-start">
+              <div className="flex flex-col gap-6 md:gap-8">
                 {faqs.map((f: any, i: number) => {
-                  if (i % 2 !== 0) return null; // Pula as perguntas ímpares (que vão pra direita)
+                  if (i % 2 !== 0) return null;
                   return (
                     <div
                       key={i}
-                      className={`${glassEffect} border border-white/10 ${radius} overflow-hidden`}
+                      className={`${glassBg} md:backdrop-blur-md border ${glassBorder} ${radius} overflow-hidden shadow-lg`}
                     >
                       <button
                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
+                        className="w-full flex items-center justify-between p-6 md:p-8 text-left group"
                       >
-                        <span className="text-base md:text-lg font-bold uppercase italic tracking-wide opacity-90">
+                        <span className="text-lg md:text-xl font-bold uppercase italic tracking-wide opacity-90 pr-4">
                           {f.q || f.question}
                         </span>
                         <ChevronDown
-                          className={`transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
+                          className={`w-6 h-6 md:w-8 md:h-8 shrink-0 transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
                         />
                       </button>
-
                       <AnimatePresence>
                         {openFaq === i && (
                           <motion.div
@@ -684,7 +719,9 @@ export default function UrbanLayout({
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                           >
-                            <div className="px-5 md:px-6 pb-6 pt-2 text-white/70 border-t border-white/5 font-medium leading-relaxed text-sm md:text-base">
+                            <div
+                              className={`px-6 md:px-8 pb-8 pt-4 ${mutedText} border-t ${glassDivider} font-medium leading-relaxed text-base md:text-lg`}
+                            >
                               {f.a || f.answer}
                             </div>
                           </motion.div>
@@ -694,28 +731,25 @@ export default function UrbanLayout({
                   );
                 })}
               </div>
-
-              {/* COLUNA DIREITA (Pega a pergunta 2, 4, 6...) */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-6 md:gap-8">
                 {faqs.map((f: any, i: number) => {
-                  if (i % 2 === 0) return null; // Pula as perguntas pares (que ficaram na esquerda)
+                  if (i % 2 === 0) return null;
                   return (
                     <div
                       key={i}
-                      className={`${glassEffect} border border-white/10 ${radius} overflow-hidden`}
+                      className={`${glassBg} md:backdrop-blur-md border ${glassBorder} ${radius} overflow-hidden shadow-lg`}
                     >
                       <button
                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
+                        className="w-full flex items-center justify-between p-6 md:p-8 text-left group"
                       >
-                        <span className="text-base md:text-lg font-bold uppercase italic tracking-wide opacity-90">
+                        <span className="text-lg md:text-xl font-bold uppercase italic tracking-wide opacity-90 pr-4">
                           {f.q || f.question}
                         </span>
                         <ChevronDown
-                          className={`transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
+                          className={`w-6 h-6 md:w-8 md:h-8 shrink-0 transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
                         />
                       </button>
-
                       <AnimatePresence>
                         {openFaq === i && (
                           <motion.div
@@ -723,7 +757,9 @@ export default function UrbanLayout({
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                           >
-                            <div className="px-5 md:px-6 pb-6 pt-2 text-white/70 border-t border-white/5 font-medium leading-relaxed text-sm md:text-base">
+                            <div
+                              className={`px-6 md:px-8 pb-8 pt-4 ${mutedText} border-t ${glassDivider} font-medium leading-relaxed text-base md:text-lg`}
+                            >
                               {f.a || f.answer}
                             </div>
                           </motion.div>
@@ -737,26 +773,24 @@ export default function UrbanLayout({
           </section>
         )}
 
-        {/* --- CONTATO (DOBRADINHA: CARD + BOTÃO) --- */}
-
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 space-y-4">
+        {/* CONTATO & HORÁRIOS */}
+        <section className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-16">
+          <div className="lg:col-span-7 space-y-6 md:space-y-8">
             {hasPhone && (
               <button
                 onClick={() => handleTrackLead("phone")}
-                className={`w-full ${glassEffect} border border-white/10 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-white/40 transition-all`}
+                className={`w-full ${glassBg} md:backdrop-blur-md border ${glassBorder} p-8 md:p-12 ${radius} ${shadow} flex items-center gap-6 md:gap-8 group hover:-translate-y-1 hover:border-current transition-all duration-500`}
               >
                 <div
-                  className={`w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${theme.primary} group-hover:shadow-[0_0_20px_currentColor] transition-all`}
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl ${isLight ? "bg-slate-100" : "bg-white/5"} border ${glassBorder} flex items-center justify-center ${theme.primary} transition-all`}
                 >
-                  <Phone size={24} />
+                  <Phone className="w-8 h-8 md:w-10 md:h-10" />
                 </div>
-
                 <div className="text-left">
-                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
+                  <p className="text-xs md:text-sm font-black opacity-40 tracking-[0.2em] uppercase mb-2">
                     Voice Line
                   </p>
-                  <p className="text-lg md:text-xl font-bold italic uppercase tracking-wide">
+                  <p className="text-xl md:text-3xl font-bold italic uppercase tracking-wide">
                     {formatPhoneNumber(business.phone)}
                   </p>
                 </div>
@@ -766,19 +800,21 @@ export default function UrbanLayout({
             {hasWhatsapp && (
               <button
                 onClick={() => handleTrackLead("whatsapp")}
-                className={`w-full ${glassEffect} border border-[#25D366]/30 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-[#25D366] transition-all`}
+                className={`w-full ${glassBg} md:backdrop-blur-md border border-[#25D366]/30 p-8 md:p-12 ${radius} ${shadow} flex items-center gap-6 md:gap-8 group hover:-translate-y-1 hover:border-[#25D366] transition-all duration-500`}
               >
                 <div
-                  className={`w-12 h-12 rounded-xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-[#25D366] group-hover:shadow-[0_0_20px_#25D366] transition-all`}
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-[#25D366] transition-all`}
                 >
-                  <MessageCircle size={24} fill="currentColor" />
+                  <MessageCircle
+                    className="w-8 h-8 md:w-10 md:h-10"
+                    fill="currentColor"
+                  />
                 </div>
-
                 <div className="text-left">
-                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
+                  <p className="text-xs md:text-sm font-black opacity-40 tracking-[0.2em] uppercase mb-2">
                     Direct Chat
                   </p>
-                  <p className="text-lg md:text-xl font-bold italic uppercase tracking-wide">
+                  <p className="text-xl md:text-3xl font-bold italic uppercase tracking-wide">
                     Chamar no Whats
                   </p>
                 </div>
@@ -786,62 +822,80 @@ export default function UrbanLayout({
             )}
 
             {hasAddress && (
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => Actions.registerClickEvent(business.id, "MAP")}
-                className={`w-full ${glassEffect} border border-white/10 p-6 md:p-8 ${radius} ${shadow} flex items-center gap-5 group hover:border-white/40 transition-all`}
-              >
-                <div
-                  className={`w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${theme.primary}`}
+              <div className="space-y-6 md:space-y-8">
+                <MapEmbed
+                  destination={mapDestination}
+                  radius={radius}
+                  glassBorder={glassBorder}
+                />
+
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => Actions.registerClickEvent(business.id, "MAP")}
+                  className={`relative w-full overflow-hidden ${glassBg} md:backdrop-blur-md border ${glassBorder} p-8 md:p-12 ${radius} ${shadow} flex items-center gap-6 md:gap-8 group hover:border-current hover:-translate-y-1 transition-all duration-500`}
                 >
-                  <MapPin size={24} />
-                </div>
+                  <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.06] transition-opacity bg-[url('https://www.transparenttextures.com/patterns/blueprint.png')]" />
 
-                <div className="text-left">
-                  <p className="text-[10px] font-black opacity-40 tracking-widest uppercase mb-1">
-                    Location
-                  </p>
-                  <p className="text-base md:text-lg font-bold italic uppercase tracking-wide leading-tight">
-                    {business.address || "Endereço não cadastrado"}
-                    {business.number &&
-                      !business.address?.includes(business.number) &&
-                      `, ${business.number}`}
+                  <div
+                    className={`relative z-10 w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-2xl ${isLight ? "bg-slate-100" : "bg-white/5"} border ${glassBorder} flex items-center justify-center ${theme.primary} group-hover:scale-110 group-hover:shadow-[0_0_30px_currentColor] transition-all duration-500`}
+                  >
+                    <MapPin className="w-8 h-8 md:w-10 md:h-10" />
+                  </div>
 
-                    {business.complement && (
-                      <span className="block text-xs md:text-sm opacity-70 not-italic font-medium mt-1">
-                        {business.complement}
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-[10px] md:text-xs opacity-40 uppercase tracking-widest mt-1">
-                    {business.neighborhood} • {business.city} — {business.state}
-                    {business.cep && ` • CEP: ${business.cep}`}
-                  </p>
-                </div>
-              </a>
+                  <div className="relative z-10 text-left flex-1">
+                    <p className="text-xs md:text-sm font-black opacity-50 tracking-[0.2em] uppercase mb-2 flex items-center gap-3">
+                      <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                      GPS Navigation
+                    </p>
+                    <p className="text-xl md:text-3xl font-black italic uppercase tracking-wide leading-tight">
+                      {business.address || "Endereço não cadastrado"}
+                      {business.number &&
+                        !business.address?.includes(business.number) &&
+                        `, ${business.number}`}
+                    </p>
+                    <p className="text-sm md:text-base opacity-60 uppercase tracking-widest mt-3 font-medium">
+                      {business.neighborhood} • {business.city}
+                      {business.complement && (
+                        <span className="block normal-case mt-2 italic opacity-80">
+                          "{business.complement}"
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div
+                    className={`relative z-10 w-12 h-12 md:w-14 md:h-14 rounded-full shrink-0 flex items-center justify-center border ${glassBorder} ${isLight ? "bg-white" : "bg-white/10"} group-hover:bg-current group-hover:text-black transition-all duration-300 shadow-xl`}
+                  >
+                    <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
+                  </div>
+                </a>
+              </div>
             )}
           </div>
+
           {hasHours && (
             <div
-              className={`lg:col-span-5 ${glassEffect} p-8 border border-white/10 ${radius} ${shadow}`}
+              className={`lg:col-span-5 ${glassBg} md:backdrop-blur-md p-10 md:p-14 border ${glassBorder} ${radius} ${shadow}`}
             >
-              <h3 className="text-2xl font-black uppercase italic mb-8 border-b-2 border-white/10 pb-2 flex items-center gap-3">
-                <Clock size={24} /> HORÁRIOS
+              <h3 className="text-3xl md:text-4xl font-black uppercase italic mb-12 border-b-2 border-current pb-4 flex items-center gap-4 opacity-80">
+                <Clock className="w-8 h-8 md:w-10 md:h-10" /> HORÁRIOS
               </h3>
-
-              <div className="space-y-4">
+              <div className="space-y-6 md:space-y-8">
                 {realHours.map((h: any, i: number) => (
                   <div
                     key={i}
-                    className="flex justify-between border-b border-white/5 font-black uppercase italic py-2 text-xs"
+                    className={`flex justify-between border-b ${glassDivider} font-black uppercase italic py-3 md:py-4 text-sm md:text-base`}
                   >
                     <span className="opacity-40">{h.day}</span>
-
                     <span
                       className={
-                        h.isClosed ? "text-red-500 line-through" : "text-white"
+                        h.isClosed
+                          ? "text-red-500 line-through"
+                          : isLight
+                            ? "text-slate-900"
+                            : "text-white"
                       }
                     >
                       {h.time}
@@ -853,13 +907,13 @@ export default function UrbanLayout({
           )}
         </section>
 
-        {/* DENUNCIAR: Tirei o py-6 (que dava espaço enorme) e deixei só pb-2 para colar no comentário */}
-        <div className="w-full flex justify-center pb-2 opacity-30 hover:opacity-100 transition-opacity">
+        {/* FIM DA EXPANSÃO */}
+
+        <div className="w-full flex justify-center py-10 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
 
-        {/* COMENTÁRIOS: Tirei o pt-4 (padding top) para ele subir e grudar mais no Denunciar */}
-        <div className="w-full max-w-5xl mx-auto pb-12">
+        <div className="w-full max-w-6xl mx-auto pb-12">
           <CommentsSection
             businessId={rawBusiness.id}
             businessOwnerId={rawBusiness.userId}
@@ -874,21 +928,18 @@ export default function UrbanLayout({
         <div ref={footerTriggerRef} className="h-10 w-full" />
       </main>
 
-      {/* BOTÃO FLUTUANTE (A Dobradinha Parte 2 - Ajuste z-30 para não cobrir Nav) */}
-
       {hasWhatsapp && (
         <motion.button
           animate={isFooterVisible ? { scale: 0 } : { scale: 1 }}
           whileHover={{ scale: 1.1, rotate: 5 }}
           onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-8 right-8 z-30 w-20 h-20 bg-emerald-500 text-white flex items-center justify-center border-4 border-black ${radius} md:shadow-[0_0_30px_rgba(16,185,129,0.5)]`}
+          className={`fixed bottom-8 right-8 z-30 w-20 h-20 md:w-24 md:h-24 bg-[#25D366] text-white flex items-center justify-center border-4 ${isLight ? "border-white" : "border-black"} ${radius} shadow-2xl md:shadow-[0_0_40px_rgba(37,211,102,0.6)]`}
         >
-          <MessageCircle size={36} fill="currentColor" />
+          <MessageCircle size={40} fill="currentColor" />
         </motion.button>
       )}
 
-      {/* LIGHTBOX PRO (z-200 para ficar sobre tudo) */}
-
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
@@ -899,32 +950,27 @@ export default function UrbanLayout({
             onClick={() => setSelectedIndex(null)}
           >
             <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all">
-              <X size={40} />
+              <X size={48} />
             </button>
-
             <div className="flex-grow flex items-center justify-center relative w-full px-4">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-
                   safeSetIndex(selectedIndex - 1);
                 }}
-                className="hidden md:flex absolute left-8 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
+                className="hidden md:flex absolute left-12 w-20 h-20 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
               >
-                <ChevronLeft size={40} />
+                <ChevronLeft size={48} />
               </button>
-
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-
                   safeSetIndex(selectedIndex + 1);
                 }}
-                className="hidden md:flex absolute right-8 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
+                className="hidden md:flex absolute right-12 w-20 h-20 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
               >
-                <ChevronRight size={40} />
+                <ChevronRight size={48} />
               </button>
-
               {gallery[selectedIndex] && (
                 <motion.img
                   key={selectedIndex}
@@ -941,21 +987,20 @@ export default function UrbanLayout({
                     else if (info.offset.x < -80)
                       safeSetIndex(selectedIndex + 1);
                   }}
-                  className={`max-w-full max-h-[70vh] object-contain border-4 ${theme.border} shadow-2xl ${radius}`}
+                  className={`max-w-full max-h-[75vh] object-contain border-4 ${theme.border} shadow-2xl ${radius}`}
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
             </div>
-
             <div
-              className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-10 pb-10 overflow-x-auto no-scrollbar snap-x"
+              className="h-40 w-full flex items-center justify-start md:justify-center gap-4 px-10 pb-10 overflow-x-auto no-scrollbar snap-x"
               onClick={(e) => e.stopPropagation()}
             >
               {gallery.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all snap-center ${selectedIndex === idx ? "border-white scale-110 shadow-lg" : "border-transparent opacity-30"}`}
+                  className={`relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border-2 transition-all snap-center ${selectedIndex === idx ? "border-white scale-110 shadow-xl" : "border-transparent opacity-30"}`}
                 >
                   <img
                     src={img}
@@ -972,11 +1017,9 @@ export default function UrbanLayout({
       </AnimatePresence>
 
       <style jsx global>{`
-        /* Remove a barra de rolagem visual, mas mantém a função de scroll */
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
-
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
