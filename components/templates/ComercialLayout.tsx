@@ -1,34 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
-  MapPin,
-  Clock,
-  CheckCircle2,
-  Layout,
-  ChevronRight,
-  ChevronLeft,
-  Quote,
   Heart,
   Share2,
-  Loader2,
   X,
-  Plus,
-  ShieldCheck,
-  HelpCircle,
   Instagram,
   Facebook,
   Globe,
   PhoneCall,
-  Maximize2,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
   Camera,
-  Video,
-  Play,
   MessageCircle,
+  Clock,
+  CheckCircle2,
+  HelpCircle,
+  Plus,
+  Video,
+  Layout,
+  ShieldCheck,
+  Quote,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
+import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
@@ -36,8 +33,14 @@ import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
 
 // --- HELPERS E ÍCONES ---
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+const TikTokIcon = ({
+  className,
+  color,
+}: {
+  className?: string;
+  color?: string;
+}) => (
+  <svg className={className} viewBox="0 0 24 24" fill={color || "currentColor"}>
     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
   </svg>
 );
@@ -66,10 +69,11 @@ const SheinIcon = ({ className }: { className?: string }) => (
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
-// --- MOTOR DE VÍDEOS EMBED (YOUTUBE, INSTAGRAM, TIKTOK) ---
+
+// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD COMERCIAL) ---
 const VideoEmbed = ({ url }: { url: string }) => {
   let embedUrl = "";
-  let isVertical = false;
+  let isInstagram = false;
 
   try {
     if (url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -79,18 +83,16 @@ const VideoEmbed = ({ url }: { url: string }) => {
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        isVertical = url.includes("shorts/");
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
       embedUrl = `${cleanUrl}/embed`;
-      isVertical = true;
+      isInstagram = true;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
         embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-        isVertical = true;
       }
     }
   } catch (e) {}
@@ -98,24 +100,99 @@ const VideoEmbed = ({ url }: { url: string }) => {
   if (!embedUrl) return null;
 
   return (
-    <div
-      className={`w-full overflow-hidden rounded-[2rem] bg-black/5 border border-black/5 shadow-md ${isVertical ? "aspect-[9/16] max-w-[350px] mx-auto" : "aspect-video"}`}
-    >
+    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2rem]">
       <iframe
         src={embedUrl}
-        className="w-full h-full border-0 pointer-events-auto"
+        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
-        scrolling="no" /* 🚀 MATA O SCROLL DO INSTAGRAM DEFINITIVAMENTE */
+        scrolling="no"
       />
     </div>
   );
 };
+
+// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Design Comercial: rounded-[2rem])
+const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current)
+      scrollRef.current.scrollBy({
+        left: dir === "left" ? -350 : 350,
+        behavior: "smooth",
+      });
+  };
+  const arrowClass = `hidden lg:flex absolute top-[50%] -translate-y-1/2 z-20 w-12 h-12 items-center justify-center bg-white border border-black/10 rounded-full shadow-xl opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 text-slate-800`;
+
+  return (
+    <div className="relative group/runway w-full">
+      <button
+        onClick={() => scroll("left")}
+        className={`${arrowClass} -left-6`}
+      >
+        <ChevronLeft size={28} />
+      </button>
+
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-4 md:gap-6 overflow-x-auto snap-x no-scrollbar pb-8 pt-2 scroll-smooth px-1"
+      >
+        {feed.map((item: any, i: number) => {
+          // 🚀 PADRÃO COMERCIAL: rounded-[2rem]
+          const cardBaseClasses = `shrink-0 snap-center w-[200px] sm:w-[240px] md:w-[280px] lg:w-[320px] aspect-[4/5] rounded-[2rem] overflow-hidden relative border border-black/5 bg-white shadow-md transition-all duration-500 hover:-translate-y-2 hover:shadow-xl group`;
+
+          if (item.type === "image") {
+            return (
+              <motion.div
+                key={`img-${i}`}
+                onClick={() => setSelectedIndex(item.lightboxIndex)}
+                whileHover={{ scale: 0.98 }}
+                className={`${cardBaseClasses} cursor-pointer`}
+              >
+                <img
+                  src={item.url}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  alt="Vitrine"
+                />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Plus size={32} className="text-white" />
+                </div>
+              </motion.div>
+            );
+          }
+
+          if (
+            item.type === "video" ||
+            item.type === "video_v" ||
+            item.type === "video_h"
+          ) {
+            return (
+              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
+                <VideoEmbed url={item.url} />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+
+      <button
+        onClick={() => scroll("right")}
+        className={`${arrowClass} -right-6`}
+      >
+        <ChevronRight size={28} />
+      </button>
+    </div>
+  );
+};
+
 // --- LÓGICA DE COMPARTILHAMENTO NATIVO + BLINDAGEM ---
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
 
-  // 1. Tenta o Compartilhamento Nativo (Mobile)
   if (navigator.share) {
     try {
       await navigator.share({
@@ -123,13 +200,12 @@ const handleShare = async (businessName: string) => {
         text: `Confira o perfil de ${businessName} no Tafanu:`,
         url: url,
       });
-      return; // Sucesso no compartilhamento nativo
+      return;
     } catch (err) {
       console.warn("Compartilhamento nativo cancelado ou falhou.");
     }
   }
 
-  // 2. Fallback: Lógica Blindada de Cópia (PC ou Navegadores Internos)
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
       await navigator.clipboard.writeText(url);
@@ -138,7 +214,6 @@ const handleShare = async (businessName: string) => {
     } catch (err) {}
   }
 
-  // 3. Fallback do Fallback: Textarea (Extrema Segurança)
   const textArea = document.createElement("textarea");
   textArea.value = url;
   textArea.style.position = "fixed";
@@ -236,13 +311,15 @@ export default function ComercialLayout({
     hasFeatures,
     hasHours,
     hasAddress,
-    hasGallery,
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
 
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
+    "all",
+  );
 
   const footerTriggerRef = useRef<HTMLDivElement | null>(null);
   const isFooterVisible = useInView(footerTriggerRef, {
@@ -256,17 +333,48 @@ export default function ComercialLayout({
 
   const address = fullAddress || business.address || "";
 
-  const gallery = Array.isArray(business.gallery)
-    ? business.gallery.filter(Boolean)
-    : [];
-
-  const videos = Array.isArray(business.videos) // 🚀 PUXANDO OS VÍDEOS
-    ? business.videos.filter(Boolean)
-    : [];
-
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
+
+  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED PARA O COMERCIAL
+  const rawFeed = useMemo(() => {
+    if (business.mediaFeed && business.mediaFeed.length > 0) {
+      return business.mediaFeed;
+    }
+    const oldGallery = (business.gallery || []).map((url: string) => ({
+      type: "image",
+      url,
+    }));
+    const oldVideos = (business.videos || []).map((url: string) => ({
+      type: "video",
+      url,
+    }));
+    return [...oldGallery, ...oldVideos];
+  }, [business.mediaFeed, business.gallery, business.videos]);
+
+  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
+  const cleanFeed = useMemo(() => {
+    let imgIndexCounter = 0;
+    return rawFeed
+      .filter(
+        (item: any) =>
+          item && typeof item.url === "string" && item.url.trim() !== "",
+      )
+      .map((item: any) => {
+        if (item.type === "image") {
+          return { ...item, lightboxIndex: imgIndexCounter++ };
+        }
+        return item;
+      });
+  }, [rawFeed]);
+
+  // Lista pura de imagens pro Lightbox (Modal tela cheia)
+  const lightboxImages = useMemo(() => {
+    return cleanFeed
+      .filter((item: any) => item.type === "image")
+      .map((item: any) => item.url);
+  }, [cleanFeed]);
 
   // LISTA INTELIGENTE DE LOJAS
   const salesChannels = [
@@ -305,11 +413,11 @@ export default function ComercialLayout({
 
   const safeSetIndex = useCallback(
     (next: number) => {
-      if (gallery.length === 0) return;
-      const index = (next + gallery.length) % gallery.length;
+      if (lightboxImages.length === 0) return;
+      const index = (next + lightboxImages.length) % lightboxImages.length;
       setSelectedIndex(index);
     },
-    [gallery.length],
+    [lightboxImages.length],
   );
 
   const handleTrackLead = useCallback(
@@ -330,7 +438,6 @@ export default function ComercialLayout({
           ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
       try {
-        // 🚀 NOVO ESPIÃO AQUI!
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } catch (e) {
       } finally {
@@ -361,7 +468,6 @@ export default function ComercialLayout({
       ? `${business.latitude},${business.longitude}`
       : completeAddressForMap;
 
-  // URL Oficial de Rotas com Origem Inteligente via GPS do usuário
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
   // ------------------------------------------
 
@@ -375,7 +481,6 @@ export default function ComercialLayout({
       <header
         className={`relative pt-10 pb-8 w-full ${theme.bgPage} border-b ${theme.border}`}
       >
-        {/* Pílula de Ações */}
         <div className="absolute top-3 right-3 md:top-4 md:right-4 z-20">
           <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-md">
             <button
@@ -428,13 +533,11 @@ export default function ComercialLayout({
 
       {/* --- MENU TABS --- */}
       <div className="sticky top-4 z-30 px-4 my-8 md:my-12 flex justify-center">
-        {/* Adicionei gap-1 para separar os botões e deixei o fundo um pouco mais "visível" */}
         <div className="bg-slate-900/95 backdrop-blur-xl p-1.5 md:p-2 rounded-full border border-black/10 shadow-2xl flex gap-1">
           {["perfil", "infos"].map((t: any) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              /* O segredo: active:scale-95 (efeito clique) e hover:bg-white/10 (ilumina ao tocar) */
               className={`relative px-8 md:px-14 py-3 md:py-3.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === t
                   ? "text-white shadow-md"
@@ -490,16 +593,15 @@ export default function ComercialLayout({
                   </p>
                 </section>
               )}
+
               {hasFeatures && (
                 <section className="space-y-6">
-                  {/* 1. O Título Padronizado */}
                   <div>
                     <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
                       Destaques
                     </h3>
                   </div>
 
-                  {/* 2. O Grid que trava o tamanho dos cards */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     {business.features
                       .filter(Boolean)
@@ -521,83 +623,71 @@ export default function ComercialLayout({
                 </section>
               )}
 
-              {gallery.length > 0 && (
-                <section className="space-y-8">
-                  <div className="flex items-center justify-between px-2 mb-2">
-                    <h3 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
-                      Vitrine
-                    </h3>
-                    <Camera size={20} className="opacity-40" />
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                    {gallery.map((img: string, i: number) => (
-                      <motion.div
-                        key={i}
-                        onClick={() => setSelectedIndex(i)}
-                        whileHover={{ scale: 1.02 }}
-                        className="aspect-square rounded-[2rem] overflow-hidden cursor-pointer shadow-md group border border-black/5"
-                      >
-                        <img
-                          src={img}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          alt="Galeria"
-                        />
-                      </motion.div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* 🚀 SEÇÃO DE VÍDEOS EMBED (SEPARADA EM DEITADOS E EM PÉ) */}
-              {videos.length > 0 &&
+              {/* 🚀 THE MASTER RUNWAY (Mídia Unificada COMERCIAL) */}
+              {cleanFeed.length > 0 &&
                 (() => {
-                  // Filtra vídeos horizontais (YouTube padrão)
-                  const horizontalVideos = videos.filter(
-                    (vid: string) =>
-                      (vid.includes("youtube.com") ||
-                        vid.includes("youtu.be")) &&
-                      !vid.includes("shorts"),
-                  );
-                  // Filtra vídeos verticaIS (Shorts, Instagram, TikTok)
-                  const verticalVideos = videos.filter(
-                    (vid: string) =>
-                      vid.includes("shorts") ||
-                      vid.includes("instagram.com") ||
-                      vid.includes("tiktok.com"),
-                  );
+                  const filteredFeed = cleanFeed.filter((item: any) => {
+                    if (mediaFilter === "all") return true;
+                    if (mediaFilter === "photos") return item.type === "image";
+                    if (mediaFilter === "motion")
+                      return (
+                        item.type === "video" ||
+                        item.type === "video_v" ||
+                        item.type === "video_h"
+                      );
+                    return true;
+                  });
+
+                  if (filteredFeed.length === 0) return null;
 
                   return (
-                    <section className="space-y-8">
-                      <div className="flex items-center justify-between px-2 mb-2">
-                        <h3 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
-                          Vídeos
-                        </h3>
-                        <Video size={20} className="opacity-40" />
+                    <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-10 h-10 rounded-xl ${theme.bgSecondary} flex items-center justify-center ${theme.primary}`}
+                          >
+                            <Camera size={20} />
+                          </div>
+                          <h3 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
+                            Catálogo Visual
+                          </h3>
+                        </div>
+
+                        {/* Capsula Switch (Comercial Style) */}
+                        <div
+                          className={`flex items-center p-1 bg-white border border-black/5 rounded-full shadow-sm`}
+                        >
+                          <button
+                            onClick={() => setMediaFilter("all")}
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? `${theme.bgAction} text-white` : "opacity-50 hover:opacity-100"}`}
+                          >
+                            All
+                          </button>
+                          <button
+                            onClick={() => setMediaFilter("photos")}
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? `${theme.bgAction} text-white` : "opacity-50 hover:opacity-100"}`}
+                          >
+                            Photos
+                          </button>
+                          <button
+                            onClick={() => setMediaFilter("motion")}
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? `${theme.bgAction} text-white` : "opacity-50 hover:opacity-100"}`}
+                          >
+                            Motion
+                          </button>
+                        </div>
                       </div>
 
-                      {/* VÍDEOS HORIZONTAIS (YOUTUBE COMUM) */}
-                      {horizontalVideos.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {horizontalVideos.map((vid: string, i: number) => (
-                            <VideoEmbed key={`h-${i}`} url={vid} />
-                          ))}
-                        </div>
-                      )}
-
-                      {/* VÍDEOS VERTICAIS (REELS, TIKTOK, SHORTS) */}
-                      {verticalVideos.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-                          {verticalVideos.map((vid: string, i: number) => (
-                            <VideoEmbed key={`v-${i}`} url={vid} />
-                          ))}
-                        </div>
-                      )}
+                      <MasterRunway
+                        key={mediaFilter}
+                        feed={filteredFeed}
+                        setSelectedIndex={setSelectedIndex}
+                        theme={theme}
+                      />
                     </section>
                   );
                 })()}
-              {/* FIM DA SEÇÃO DE VÍDEOS */}
             </motion.div>
           )}
 
@@ -611,7 +701,6 @@ export default function ComercialLayout({
             >
               {faqs.length > 0 && (
                 <section className="w-full">
-                  {/* Título ajustado para o novo padrão legível */}
                   <div className="flex items-center gap-3 mb-6">
                     <HelpCircle size={20} className={theme.primary} />
                     <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
@@ -619,12 +708,10 @@ export default function ComercialLayout({
                     </h3>
                   </div>
 
-                  {/* O SEGREDO: Duas colunas independentes */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
-                    {/* COLUNA ESQUERDA (Pega a pergunta 1, 3, 5...) */}
                     <div className="flex flex-col">
                       {faqs.map((f: any, i: number) => {
-                        if (i % 2 !== 0) return null; // Pula as ímpares
+                        if (i % 2 !== 0) return null;
                         return (
                           <AccordionItem
                             key={i}
@@ -635,11 +722,9 @@ export default function ComercialLayout({
                         );
                       })}
                     </div>
-
-                    {/* COLUNA DIREITA (Pega a pergunta 2, 4, 6...) */}
                     <div className="flex flex-col">
                       {faqs.map((f: any, i: number) => {
-                        if (i % 2 === 0) return null; // Pula as pares
+                        if (i % 2 === 0) return null;
                         return (
                           <AccordionItem
                             key={i}
@@ -685,7 +770,6 @@ export default function ComercialLayout({
                 <div
                   className={`flex flex-col gap-6 ${!hasHours ? "md:col-span-2 max-w-2xl mx-auto w-full" : ""}`}
                 >
-                  {/* BLOCO DE CONTATOS (LIGAÇÃO, WHATSAPP, REDES E LOJAS) */}
                   {(hasWhatsapp ||
                     hasPhone ||
                     availableSocials.length > 0 ||
@@ -924,10 +1008,8 @@ export default function ComercialLayout({
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          // 🚀 MUDANÇA: Tamanho mobile (w-16 h-16), margens desktop (md:bottom-10 md:right-10), sombra 2xl e efeito de clique (active:scale-95)
           className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/20 hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all"
         >
-          {/* 🚀 MUDANÇA: Ícone ajustado para w-8 h-8 no mobile */}
           <MessageCircle
             className="w-8 h-8 md:w-10 md:h-10"
             fill="currentColor"
@@ -935,7 +1017,7 @@ export default function ComercialLayout({
         </motion.button>
       )}
 
-      {/* --- LIGHTBOX (THUMBS E SWIPE) --- */}
+      {/* --- LIGHTBOX (THUMBS E SWIPE APENAS PARA FOTOS) --- */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
@@ -968,10 +1050,10 @@ export default function ComercialLayout({
                 <ChevronRight size={32} />
               </button>
 
-              {gallery[selectedIndex] && (
+              {lightboxImages[selectedIndex] && (
                 <motion.img
                   key={selectedIndex}
-                  src={gallery[selectedIndex]}
+                  src={lightboxImages[selectedIndex]}
                   loading="eager"
                   decoding="async"
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -995,7 +1077,7 @@ export default function ComercialLayout({
               className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-6 pb-6 overflow-x-auto no-scrollbar pointer-events-auto snap-x"
               onClick={(e) => e.stopPropagation()}
             >
-              {gallery.map((img: string, idx: number) => (
+              {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedIndex(idx)}

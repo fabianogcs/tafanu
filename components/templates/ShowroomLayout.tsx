@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Heart,
@@ -66,16 +66,11 @@ const SheinIcon = ({ className }: { className?: string }) => (
     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
   </svg>
 );
-// --- MOTOR DE VÍDEOS EMBED (ESTILO SHOWROOM) ---
-const VideoEmbed = ({
-  url,
-  themeBorder,
-}: {
-  url: string;
-  themeBorder: string;
-}) => {
+
+// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO SHOWROOM) ---
+const VideoEmbed = ({ url }: { url: string }) => {
   let embedUrl = "";
-  let isVertical = false;
+  let isInstagram = false;
 
   try {
     if (url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -85,18 +80,16 @@ const VideoEmbed = ({
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        isVertical = url.includes("shorts/");
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
       embedUrl = `${cleanUrl}/embed`;
-      isVertical = true;
+      isInstagram = true;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
         embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-        isVertical = true;
       }
     }
   } catch (e) {}
@@ -104,19 +97,95 @@ const VideoEmbed = ({
   if (!embedUrl) return null;
 
   return (
-    <div
-      className={`w-full overflow-hidden rounded-2xl bg-black/5 border ${themeBorder} transition-all hover:border-black/20 ${isVertical ? "aspect-[9/16] max-w-[320px] mx-auto" : "aspect-video"}`}
-    >
+    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-3xl">
       <iframe
         src={embedUrl}
-        className="w-full h-full border-0 pointer-events-auto"
+        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
-        scrolling="no" /* 🚀 MATA O SCROLL DO INSTAGRAM DEFINITIVAMENTE */
+        scrolling="no"
       />
     </div>
   );
 };
+
+// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Design Showroom: Minimalista, rounded-3xl)
+const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current)
+      scrollRef.current.scrollBy({
+        left: dir === "left" ? -350 : 350,
+        behavior: "smooth",
+      });
+  };
+  const arrowClass = `hidden lg:flex absolute top-[50%] -translate-y-1/2 z-20 w-12 h-12 items-center justify-center bg-white border border-black/10 rounded-full shadow-xl opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 text-slate-800`;
+
+  return (
+    <div className="relative group/runway w-full">
+      <button
+        onClick={() => scroll("left")}
+        className={`${arrowClass} -left-6`}
+      >
+        <ChevronLeft size={28} />
+      </button>
+
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-4 md:gap-6 overflow-x-auto snap-x no-scrollbar pb-8 pt-2 scroll-smooth px-1"
+      >
+        {feed.map((item: any, i: number) => {
+          // 🚀 PADRÃO SHOWROOM: rounded-3xl e shadow super clean
+          const cardBaseClasses = `shrink-0 snap-center w-[220px] sm:w-[280px] md:w-[320px] aspect-[4/5] rounded-3xl overflow-hidden relative border ${theme.border} bg-black/5 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg group`;
+
+          if (item.type === "image") {
+            return (
+              <motion.div
+                key={`img-${i}`}
+                onClick={() => setSelectedIndex(item.lightboxIndex)}
+                whileHover={{ scale: 0.98 }}
+                className={`${cardBaseClasses} cursor-pointer`}
+              >
+                <img
+                  src={item.url}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  alt="Vitrine"
+                />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Plus size={32} className="text-white" />
+                </div>
+              </motion.div>
+            );
+          }
+
+          if (
+            item.type === "video" ||
+            item.type === "video_v" ||
+            item.type === "video_h"
+          ) {
+            return (
+              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
+                <VideoEmbed url={item.url} />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+
+      <button
+        onClick={() => scroll("right")}
+        className={`${arrowClass} -right-6`}
+      >
+        <ChevronRight size={28} />
+      </button>
+    </div>
+  );
+};
+
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
   if (navigator.share) {
@@ -157,15 +226,15 @@ const AccordionItem = ({ q, a, theme }: any) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-4 flex justify-between items-center text-left gap-4 outline-none bg-transparent"
+        className="w-full py-5 flex justify-between items-center text-left gap-4 outline-none bg-transparent"
       >
         <span
-          className={`text-sm font-semibold ${isOpen ? "opacity-100" : "opacity-70"}`}
+          className={`text-sm md:text-base font-semibold ${isOpen ? "opacity-100" : "opacity-70"}`}
         >
           {q}
         </span>
         <Plus
-          size={16}
+          size={18}
           className={`shrink-0 transition-transform duration-300 opacity-50 ${isOpen ? "rotate-45" : ""}`}
         />
       </button>
@@ -178,7 +247,9 @@ const AccordionItem = ({ q, a, theme }: any) => {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             style={{ overflow: "hidden" }}
           >
-            <div className="pb-5 text-sm leading-relaxed opacity-60">{a}</div>
+            <div className="pb-6 text-sm md:text-base leading-relaxed opacity-60">
+              {a}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -206,25 +277,19 @@ export default function ShowroomLayout({
     hasFeatures,
     hasHours,
     hasAddress,
-    hasGallery,
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
+    "all",
+  );
 
   const theme =
     propTheme ||
     businessThemes[business.theme] ||
     businessThemes["showroom_clean"];
-
-  const gallery = Array.isArray(business.gallery)
-    ? business.gallery.filter(Boolean)
-    : [];
-
-  const videos = Array.isArray(business.videos) // 🚀 PUXANDO OS VÍDEOS
-    ? business.videos.filter(Boolean)
-    : [];
 
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
@@ -266,12 +331,51 @@ export default function ShowroomLayout({
     margin: "0px 0px 50px 0px",
   });
 
+  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED PARA O SHOWROOM
+  const rawFeed = useMemo(() => {
+    if (business.mediaFeed && business.mediaFeed.length > 0) {
+      return business.mediaFeed;
+    }
+    const oldGallery = (business.gallery || []).map((url: string) => ({
+      type: "image",
+      url,
+    }));
+    const oldVideos = (business.videos || []).map((url: string) => ({
+      type: "video",
+      url,
+    }));
+    return [...oldGallery, ...oldVideos];
+  }, [business.mediaFeed, business.gallery, business.videos]);
+
+  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
+  const cleanFeed = useMemo(() => {
+    let imgIndexCounter = 0;
+    return rawFeed
+      .filter(
+        (item: any) =>
+          item && typeof item.url === "string" && item.url.trim() !== "",
+      )
+      .map((item: any) => {
+        if (item.type === "image") {
+          return { ...item, lightboxIndex: imgIndexCounter++ };
+        }
+        return item;
+      });
+  }, [rawFeed]);
+
+  // Lista pura de imagens pro Lightbox (Modal tela cheia)
+  const lightboxImages = useMemo(() => {
+    return cleanFeed
+      .filter((item: any) => item.type === "image")
+      .map((item: any) => item.url);
+  }, [cleanFeed]);
+
   const safeSetIndex = useCallback(
     (next: number) => {
-      if (gallery.length === 0) return;
-      setSelectedIndex((next + gallery.length) % gallery.length);
+      if (lightboxImages.length === 0) return;
+      setSelectedIndex((next + lightboxImages.length) % lightboxImages.length);
     },
-    [gallery.length],
+    [lightboxImages.length],
   );
 
   const handleTrackLead = useCallback(
@@ -302,7 +406,6 @@ export default function ShowroomLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
-  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
   const addressPartsForMap = [
     business.address,
     business.number,
@@ -320,7 +423,6 @@ export default function ShowroomLayout({
       : completeAddressForMap;
 
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
-  // ------------------------------------------
 
   if (!theme) return null;
 
@@ -328,12 +430,12 @@ export default function ShowroomLayout({
     <div
       className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
     >
-      {/* --- HEADER CORPORATIVO (Sem botões flutuando) --- */}
+      {/* --- HEADER CORPORATIVO (Ultrawide) --- */}
       <header className={`pt-12 md:pt-20 pb-10 border-b ${theme.border}`}>
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center md:items-start gap-8">
+        <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12 xl:px-20 flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
           {business.imageUrl && (
             <div
-              className={`w-28 h-28 md:w-36 md:h-36 rounded-2xl border ${theme.border} shadow-sm overflow-hidden bg-white shrink-0`}
+              className={`w-28 h-28 md:w-40 md:h-40 rounded-3xl border ${theme.border} shadow-sm overflow-hidden bg-white shrink-0`}
             >
               <img
                 src={business.imageUrl}
@@ -345,29 +447,26 @@ export default function ShowroomLayout({
             </div>
           )}
 
-          <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-2">
-            {/* NOME DA EMPRESA */}
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-none mb-1">
+          <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-3">
+            <h1 className="text-3xl md:text-6xl font-extrabold tracking-tight leading-none mb-1">
               {business.name}
             </h1>
 
-            {/* MARCAÇÃO ÚNICA (A frase que vem do editor, elegante e com borda) */}
             {business.comercial_badge && (
-              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-60 border border-black/10 px-3 py-1 rounded-md inline-block mb-2">
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-60 border border-black/10 px-4 py-1.5 rounded-md inline-block mb-2">
                 {business.comercial_badge}
               </span>
             )}
 
-            {/* Ações Alinhadas e Elegantes */}
-            <div className="flex items-center gap-3 pt-4">
+            <div className="flex items-center gap-3 pt-5">
               <button
                 onClick={() => handleShare(business.name)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full border ${theme.border} hover:bg-black/5 transition-colors text-xs font-bold uppercase tracking-wider`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full border ${theme.border} hover:bg-black/5 transition-colors text-xs font-bold uppercase tracking-wider`}
               >
-                <Share2 size={14} /> Compartilhar
+                <Share2 size={16} /> Compartilhar
               </button>
               <div
-                className={`w-10 h-10 flex items-center justify-center rounded-full border ${theme.border} hover:bg-black/5 transition-colors`}
+                className={`w-12 h-12 flex items-center justify-center rounded-full border ${theme.border} hover:bg-black/5 transition-colors`}
               >
                 <FavoriteButton
                   businessId={business.id}
@@ -381,350 +480,328 @@ export default function ShowroomLayout({
         </div>
       </header>
 
-      {/* --- ESTRUTURA DE COLUNAS (Layout de Painel SaaS) --- */}
-      <main className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
-        {/* COLUNA ESQUERDA (Principal) - Ocupa 8 colunas no PC */}
-        <div className="md:col-span-8 space-y-16">
-          {/* Descrição e Destaques */}
-          {(hasDescription || hasFeatures) && (
-            <section className="space-y-8">
-              {hasDescription && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
-                    Sobre a Empresa
-                  </h3>
-                  <p className="text-base md:text-lg font-normal leading-relaxed opacity-90 whitespace-pre-line break-words">
-                    {business.description}
-                  </p>
-                </div>
-              )}
+      {/* --- ESTRUTURA DE COLUNAS REFEITA (Tudo Integrado no Fluxo de 8/4) --- */}
+      <main className="w-full max-w-[1600px] mx-auto px-6 md:px-12 xl:px-20 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20 items-start">
+          {/* COLUNA ESQUERDA (Principal: Info -> Fotos -> Vídeos -> FAQ) */}
+          <div className="lg:col-span-8 flex flex-col gap-16 md:gap-24 w-full min-w-0">
+            {/* Descrição e Destaques */}
+            {(hasDescription || hasFeatures) && (
+              <section className="space-y-8">
+                {hasDescription && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
+                      Sobre a Empresa
+                    </h3>
+                    <p className="text-base md:text-xl font-normal leading-relaxed opacity-90 whitespace-pre-line break-words max-w-4xl">
+                      {business.description}
+                    </p>
+                  </div>
+                )}
 
-              {hasFeatures && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                  {business.features
-                    .filter(Boolean)
-                    .map((f: string, i: number) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <CheckCircle2
-                          size={16}
-                          className={`shrink-0 ${theme.primary} opacity-60`}
-                        />
-                        <span className="text-sm font-semibold opacity-90">
-                          {f}
+                {hasFeatures && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+                    {business.features
+                      .filter(Boolean)
+                      .map((f: string, i: number) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <CheckCircle2
+                            size={18}
+                            className={`shrink-0 ${theme.primary} opacity-60`}
+                          />
+                          <span className="text-sm md:text-base font-semibold opacity-90">
+                            {f}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* 🚀 THE MASTER RUNWAY (Mídia Unificada SHOWROOM) */}
+            {cleanFeed.length > 0 &&
+              (() => {
+                const filteredFeed = cleanFeed.filter((item: any) => {
+                  if (mediaFilter === "all") return true;
+                  if (mediaFilter === "photos") return item.type === "image";
+                  if (mediaFilter === "motion")
+                    return (
+                      item.type === "video" ||
+                      item.type === "video_v" ||
+                      item.type === "video_h"
+                    );
+                  return true;
+                });
+
+                if (filteredFeed.length === 0) return null;
+
+                return (
+                  <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
+                      <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 flex items-center gap-2">
+                        <Camera size={14} /> Catálogo Visual
+                      </h3>
+
+                      {/* Capsula Switch (Showroom Style Minimalista) */}
+                      <div
+                        className={`flex items-center p-1 bg-white/50 backdrop-blur-md border ${theme.border} rounded-full shadow-sm`}
+                      >
+                        <button
+                          onClick={() => setMediaFilter("all")}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? "bg-black/10 opacity-100" : "opacity-50 hover:opacity-100"}`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => setMediaFilter("photos")}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? "bg-black/10 opacity-100" : "opacity-50 hover:opacity-100"}`}
+                        >
+                          Photos
+                        </button>
+                        <button
+                          onClick={() => setMediaFilter("motion")}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? "bg-black/10 opacity-100" : "opacity-50 hover:opacity-100"}`}
+                        >
+                          Motion
+                        </button>
+                      </div>
+                    </div>
+
+                    <MasterRunway
+                      key={mediaFilter}
+                      feed={filteredFeed}
+                      setSelectedIndex={setSelectedIndex}
+                      theme={theme}
+                    />
+                  </section>
+                );
+              })()}
+
+            {/* FAQ Minimalista Integrado */}
+            {hasFaqs && (
+              <section className="w-full">
+                <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
+                  <HelpCircle size={14} /> Dúvidas Frequentes
+                </h3>
+                <div className="flex flex-col max-w-4xl">
+                  {faqs.map((f: any, i: number) => (
+                    <AccordionItem
+                      key={i}
+                      q={f.q || f.question}
+                      a={f.a || f.answer}
+                      theme={theme}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* COLUNA DIREITA (Sidebar Comercial Clean) */}
+          <div className="lg:col-span-4 space-y-8 sticky top-10">
+            {/* 🚀 ATENDIMENTO & LOJAS UNIFICADOS */}
+            {(hasWhatsapp || hasPhone || availableSocials.length > 0) && (
+              <div
+                className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm space-y-8`}
+              >
+                <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
+                  Atendimento Rápido
+                </h3>
+
+                <div className="space-y-4">
+                  {hasWhatsapp && (
+                    <button
+                      onClick={() => handleTrackLead("whatsapp")}
+                      className="w-full flex items-center justify-between p-5 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors group border border-emerald-100"
+                    >
+                      <div className="flex items-center gap-4">
+                        <MessageCircle size={22} />
+                        <span className="text-sm font-bold">
+                          Chamar no WhatsApp
                         </span>
                       </div>
-                    ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Galeria Limpa */}
-          {hasGallery && (
-            <section>
-              <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
-                <Camera size={14} /> Catálogo Visual
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {gallery.map((img: string, i: number) => (
-                  <motion.div
-                    key={i}
-                    onClick={() => setSelectedIndex(i)}
-                    whileHover={{ scale: 0.98 }}
-                    className={`aspect-square rounded-2xl overflow-hidden cursor-pointer bg-black/5 border ${theme.border}`}
-                  >
-                    <img
-                      src={img}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-                      alt="Vitrine"
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* 🚀 SEÇÃO DE VÍDEOS EMBED (SEPARADA EM DEITADOS E EM PÉ) */}
-          {videos.length > 0 &&
-            (() => {
-              // Filtra vídeos horizontais (YouTube padrão)
-              const horizontalVideos = videos.filter(
-                (vid: string) =>
-                  (vid.includes("youtube.com") || vid.includes("youtu.be")) &&
-                  !vid.includes("shorts"),
-              );
-              // Filtra vídeos verticaIS (Shorts, Instagram, TikTok)
-              const verticalVideos = videos.filter(
-                (vid: string) =>
-                  vid.includes("shorts") ||
-                  vid.includes("instagram.com") ||
-                  vid.includes("tiktok.com"),
-              );
-
-              return (
-                <section className="space-y-8">
-                  <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
-                    <Video size={14} /> Mídia & Vídeos
-                  </h3>
-
-                  {/* VÍDEOS HORIZONTAIS (YOUTUBE COMUM) */}
-                  {horizontalVideos.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {horizontalVideos.map((vid: string, i: number) => (
-                        <VideoEmbed
-                          key={`h-${i}`}
-                          url={vid}
-                          themeBorder={theme.border}
-                        />
-                      ))}
-                    </div>
+                      <ChevronRight
+                        size={18}
+                        className="opacity-40 group-hover:translate-x-1 transition-transform"
+                      />
+                    </button>
                   )}
 
-                  {/* VÍDEOS VERTICAIS (REELS, TIKTOK, SHORTS) */}
-                  {verticalVideos.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-                      {verticalVideos.map((vid: string, i: number) => (
-                        <VideoEmbed
-                          key={`v-${i}`}
-                          url={vid}
-                          themeBorder={theme.border}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              );
-            })()}
-
-          {/* FAQ Minimalista */}
-          {hasFaqs && (
-            <section>
-              <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
-                <HelpCircle size={14} /> Dúvidas Frequentes
-              </h3>
-              <div className="flex flex-col">
-                {faqs.map((f: any, i: number) => (
-                  <AccordionItem
-                    key={i}
-                    q={f.q || f.question}
-                    a={f.a || f.answer}
-                    theme={theme}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* COLUNA DIREITA (Sidebar Comercial) - Ocupa 4 colunas no PC */}
-        <div className="md:col-span-4 space-y-8">
-          {/* Card de Atendimento Direto */}
-          {(hasWhatsapp || hasPhone || availableSocials.length > 0) && (
-            <div
-              className={`p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm space-y-6`}
-            >
-              <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
-                Atendimento Rápido
-              </h3>
-
-              <div className="space-y-3">
-                {hasWhatsapp && (
-                  <button
-                    onClick={() => handleTrackLead("whatsapp")}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors group border border-emerald-100"
-                  >
-                    <div className="flex items-center gap-3">
-                      <MessageCircle size={20} />
-                      <span className="text-sm font-bold">
-                        Chamar no WhatsApp
-                      </span>
-                    </div>
-                    <ChevronRight
-                      size={16}
-                      className="opacity-40 group-hover:translate-x-1 transition-transform"
-                    />
-                  </button>
-                )}
-
-                {hasPhone && (
-                  <button
-                    onClick={() => handleTrackLead("phone")}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl border ${theme.border} hover:bg-black/5 transition-colors group`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <PhoneCall size={20} className="opacity-60" />
-                      <span className="text-sm font-bold opacity-90">
-                        {formatPhoneNumber(business.phone)}
-                      </span>
-                    </div>
-                  </button>
-                )}
-              </div>
-
-              {availableSocials.length > 0 && (
-                <div className="pt-4 border-t border-black/5 flex justify-center gap-4">
-                  {availableSocials.map((s) => {
-                    const username = business[s];
-                    if (!username) return null;
-
-                    const isUrl =
-                      username.startsWith("http") || username.startsWith("www");
-
-                    const finalUrl = isUrl
-                      ? username.startsWith("http")
-                        ? username
-                        : `https://${username}`
-                      : s === "instagram"
-                        ? `https://instagram.com/${username.replace("@", "")}`
-                        : s === "facebook"
-                          ? `https://facebook.com/${username}`
-                          : s === "tiktok"
-                            ? `https://tiktok.com/@${username.replace("@", "")}`
-                            : formatExternalLink(username);
-
-                    return (
-                      <a
-                        key={s}
-                        href={finalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          Actions.registerClickEvent(
-                            business.id,
-                            s.toUpperCase(),
-                          )
-                        }
-                        className={`w-10 h-10 rounded-full border ${theme.border} flex items-center justify-center hover:bg-black/5 transition-colors opacity-70 hover:opacity-100`}
-                      >
-                        {s === "instagram" ? (
-                          <Instagram size={18} />
-                        ) : s === "facebook" ? (
-                          <Facebook size={18} />
-                        ) : s === "tiktok" ? (
-                          <TikTokIcon className="w-4 h-4" />
-                        ) : (
-                          <Globe size={18} />
-                        )}
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Endereço Seguro e Oficial */}
-          {hasAddress && (
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => Actions.registerClickEvent(business.id, "MAP")}
-              className={`block p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm hover:border-black/20 transition-colors group`}
-            >
-              <div className="flex items-center gap-3 mb-4 opacity-40">
-                <MapPin size={16} />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest">
-                  Localização
-                </h3>
-              </div>
-
-              {/* PARTE DE CIMA: Rua e Número */}
-              <p className="text-sm font-bold leading-relaxed mb-1 opacity-90 break-words">
-                {business.address || "Endereço não cadastrado"}
-                {business.number &&
-                  !business.address?.includes(business.number) &&
-                  `, ${business.number}`}
-              </p>
-
-              {/* COMPLEMENTO (Se houver) */}
-              {business.complement && (
-                <p className="text-[11px] font-medium opacity-70 mb-1">
-                  {business.complement}
-                </p>
-              )}
-
-              {/* PARTE DE BAIXO: Bairro, Cidade, Estado e CEP */}
-              <p className="text-[10px] uppercase tracking-widest opacity-50 mt-2">
-                {business.neighborhood && `${business.neighborhood} • `}
-                {business.city} {business.state ? `— ${business.state}` : ""}
-                {business.cep && ` • CEP: ${business.cep}`}
-              </p>
-            </a>
-          )}
-
-          {/* Horários */}
-          {hasHours && (
-            <div
-              className={`p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm`}
-            >
-              <div className="flex items-center gap-3 mb-4 opacity-40">
-                <Clock size={16} />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest">
-                  Horários
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {safeHours.map((h: any, i: number) => (
-                  <div
-                    key={i}
-                    className="flex justify-between items-center text-xs pb-2 border-b border-black/5 last:border-0"
-                  >
-                    <span className="font-semibold opacity-60 uppercase">
-                      {h.day}
-                    </span>
-                    <span
-                      className={`font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
+                  {hasPhone && (
+                    <button
+                      onClick={() => handleTrackLead("phone")}
+                      className={`w-full flex items-center justify-between p-5 rounded-2xl border ${theme.border} hover:bg-black/5 transition-colors group`}
                     >
-                      {h.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                      <div className="flex items-center gap-4">
+                        <PhoneCall size={22} className="opacity-60" />
+                        <span className="text-sm font-bold opacity-90">
+                          {formatPhoneNumber(business.phone)}
+                        </span>
+                      </div>
+                    </button>
+                  )}
+                </div>
 
-          {/* Canais de Vendas Oficiais */}
-          {salesChannels.length > 0 && (
-            <div
-              className={`p-6 rounded-3xl border ${theme.border} ${theme.cardBg} shadow-sm`}
-            >
-              <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4 text-center">
-                Lojas Oficiais
-              </h3>
-              <div className="flex flex-col gap-2">
-                {salesChannels.map((channel) => (
-                  <a
-                    key={channel.key}
-                    href={formatExternalLink(channel.url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      Actions.registerClickEvent(
-                        business.id,
-                        channel.key.toUpperCase(),
-                      )
-                    }
-                    className={`flex items-center gap-3 p-3 rounded-xl border ${theme.border} transition-all font-sans group opacity-80 hover:opacity-100 ${channel.colorClass}`}
-                  >
-                    <div className="transition-transform duration-300 group-hover:scale-110">
-                      {channel.icon}
-                    </div>
-                    <span className="text-[11px] font-bold tracking-widest uppercase">
-                      {channel.name}
-                    </span>
-                  </a>
-                ))}
+                {availableSocials.length > 0 && (
+                  <div className="pt-6 border-t border-black/5 flex justify-center gap-5">
+                    {availableSocials.map((s) => {
+                      const username = business[s];
+                      if (!username) return null;
+
+                      const isUrl =
+                        username.startsWith("http") ||
+                        username.startsWith("www");
+
+                      const finalUrl = isUrl
+                        ? username.startsWith("http")
+                          ? username
+                          : `https://${username}`
+                        : s === "instagram"
+                          ? `https://instagram.com/${username.replace("@", "")}`
+                          : s === "facebook"
+                            ? `https://facebook.com/${username}`
+                            : s === "tiktok"
+                              ? `https://tiktok.com/@${username.replace("@", "")}`
+                              : formatExternalLink(username);
+
+                      return (
+                        <a
+                          key={s}
+                          href={finalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() =>
+                            Actions.registerClickEvent(
+                              business.id,
+                              s.toUpperCase(),
+                            )
+                          }
+                          className={`w-12 h-12 rounded-full border ${theme.border} flex items-center justify-center hover:bg-black/5 transition-colors opacity-70 hover:opacity-100`}
+                        >
+                          {s === "instagram" ? (
+                            <Instagram size={20} />
+                          ) : s === "facebook" ? (
+                            <Facebook size={20} />
+                          ) : s === "tiktok" ? (
+                            <TikTokIcon className="w-5 h-5" />
+                          ) : (
+                            <Globe size={20} />
+                          )}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
+            {/* Canais de Vendas Oficiais */}
+            {salesChannels.length > 0 && (
+              <div
+                className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm`}
+              >
+                <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-6 text-center">
+                  Lojas Oficiais
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {salesChannels.map((channel) => (
+                    <a
+                      key={channel.key}
+                      href={formatExternalLink(channel.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        Actions.registerClickEvent(
+                          business.id,
+                          channel.key.toUpperCase(),
+                        )
+                      }
+                      className={`flex items-center gap-4 p-4 rounded-xl border ${theme.border} transition-all font-sans group opacity-80 hover:opacity-100 hover:shadow-md ${channel.colorClass}`}
+                    >
+                      <div className="transition-transform duration-300 group-hover:scale-110">
+                        {channel.icon}
+                      </div>
+                      <span className="text-xs font-bold tracking-widest uppercase">
+                        {channel.name}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Endereço Seguro e Oficial */}
+            {hasAddress && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => Actions.registerClickEvent(business.id, "MAP")}
+                className={`block p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm hover:border-black/20 transition-colors group`}
+              >
+                <div className="flex items-center gap-3 mb-6 opacity-40">
+                  <MapPin size={18} />
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest">
+                    Localização
+                  </h3>
+                </div>
+
+                <p className="text-base font-bold leading-relaxed mb-1 opacity-90 break-words">
+                  {business.address || "Endereço não cadastrado"}
+                  {business.number &&
+                    !business.address?.includes(business.number) &&
+                    `, ${business.number}`}
+                </p>
+
+                {business.complement && (
+                  <p className="text-xs font-medium opacity-70 mb-2">
+                    {business.complement}
+                  </p>
+                )}
+
+                <p className="text-[11px] uppercase tracking-widest opacity-50 mt-4">
+                  {business.neighborhood && `${business.neighborhood} • `}
+                  {business.city} {business.state ? `— ${business.state}` : ""}
+                  {business.cep && ` • CEP: ${business.cep}`}
+                </p>
+              </a>
+            )}
+
+            {/* Horários */}
+            {hasHours && (
+              <div
+                className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm`}
+              >
+                <div className="flex items-center gap-3 mb-6 opacity-40">
+                  <Clock size={18} />
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest">
+                    Horários
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {safeHours.map((h: any, i: number) => (
+                    <div
+                      key={i}
+                      className="flex justify-between items-center text-sm pb-3 border-b border-black/5 last:border-0 last:pb-0"
+                    >
+                      <span className="font-semibold opacity-60 uppercase text-[11px] tracking-wider">
+                        {h.day}
+                      </span>
+                      <span
+                        className={`font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
+                      >
+                        {h.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
       {/* --- SEÇÃO FINAL (Avaliações e Report) --- */}
-      <div className="max-w-4xl mx-auto w-full px-6 pb-20">
+      <div className="max-w-5xl mx-auto w-full px-6 md:px-12 pb-20 mt-10">
         <div className="w-full flex justify-center py-10 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
@@ -750,10 +827,8 @@ export default function ShowroomLayout({
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          // 🚀 MUDANÇA: Tamanho mobile (w-16 h-16) e desktop (md:w-20 md:h-20)
           className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-30 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/50 hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all"
         >
-          {/* 🚀 MUDANÇA: Ícone aumentou para 32 (mobile) e 40 (desktop) usando classes do Tailwind */}
           <MessageCircle
             className="w-8 h-8 md:w-10 md:h-10"
             fill="currentColor"
@@ -761,7 +836,7 @@ export default function ShowroomLayout({
         </motion.button>
       )}
 
-      {/* LIGHTBOX DE ALTA PERFORMANCE */}
+      {/* LIGHTBOX DE ALTA PERFORMANCE (APENAS PARA FOTOS) */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
@@ -793,30 +868,34 @@ export default function ShowroomLayout({
               >
                 <ChevronRight size={28} />
               </button>
-              <motion.img
-                key={selectedIndex}
-                src={gallery[selectedIndex] || ""}
-                loading="eager"
-                decoding="async"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(e, info) => {
-                  if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                  else if (info.offset.x < -80) safeSetIndex(selectedIndex + 1);
-                }}
-                className="max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              />
+              {lightboxImages[selectedIndex] && (
+                <motion.img
+                  key={selectedIndex}
+                  src={lightboxImages[selectedIndex]}
+                  loading="eager"
+                  decoding="async"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, info) => {
+                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
+                    else if (info.offset.x < -80)
+                      safeSetIndex(selectedIndex + 1);
+                  }}
+                  className="max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </div>
             <div
               className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-6 pb-6 overflow-x-auto no-scrollbar snap-x"
               onClick={(e) => e.stopPropagation()}
             >
-              {gallery.map((img: string, idx: number) => (
+              {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedIndex(idx)}

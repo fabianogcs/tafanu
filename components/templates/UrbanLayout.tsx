@@ -1,18 +1,14 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Instagram,
   Facebook,
   Globe,
   X,
-  Terminal,
   MessageCircle,
   Share2,
-  Heart,
-  Plus,
-  Loader2,
   Phone,
   MapPin,
   Clock,
@@ -20,9 +16,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Camera,
-  ShoppingBag,
-  Store,
   Video,
+  Sparkles,
+  Plus,
+  HelpCircle,
+  Store,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
 import { toast } from "sonner";
@@ -32,7 +30,7 @@ import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
 
-// --- HELPERS ---
+// --- HELPERS E ÍCONES ---
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
@@ -64,53 +62,9 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- COMPONENTE DE MAPA INTERATIVO PREMIUM ---
-const MapEmbed = ({
-  destination,
-  radius,
-  glassBorder,
-}: {
-  destination: string;
-  radius: string;
-  glassBorder: string;
-}) => {
-  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(destination)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
-  return (
-    <div
-      className={`w-full h-[350px] md:h-[450px] relative overflow-hidden ${radius} border ${glassBorder} shadow-2xl group`}
-    >
-      <iframe
-        width="100%"
-        height="100%"
-        frameBorder="0"
-        scrolling="no"
-        marginHeight={0}
-        marginWidth={0}
-        src={mapUrl}
-        className="grayscale-[0.5] contrast-[1.1] opacity-80 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700"
-      />
-      <div className="absolute inset-0 pointer-events-none border-[12px] border-transparent shadow-[inset_0_0_60px_rgba(0,0,0,0.2)]" />
-    </div>
-  );
-};
-
-// --- MOTOR DE VÍDEOS EMBED (URBAN REC // SYS) ---
-const VideoEmbed = ({
-  url,
-  radius,
-  glassBg,
-  glassBorder,
-  primaryColorClass,
-}: {
-  url: string;
-  radius: string;
-  glassBg: string;
-  glassBorder: string;
-  primaryColorClass: string;
-}) => {
+// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO) ---
+const VideoEmbed = ({ url }: { url: string }) => {
   let embedUrl = "";
-  let isVertical = false;
   let isInstagram = false;
 
   try {
@@ -121,19 +75,16 @@ const VideoEmbed = ({
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        isVertical = url.includes("shorts/");
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
       embedUrl = `${cleanUrl}/embed`;
-      isVertical = true;
-      isInstagram = true; // 🚀 Marcamos que é Insta para o corte!
+      isInstagram = true;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
         embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-        isVertical = true;
       }
     }
   } catch (e) {}
@@ -141,69 +92,122 @@ const VideoEmbed = ({
   if (!embedUrl) return null;
 
   return (
-    <div
-      className={`relative group w-full mb-8 break-inside-avoid ${isVertical ? "max-w-[350px] mx-auto" : ""}`}
-    >
-      <div
-        className={`relative flex flex-col overflow-hidden ${glassBg} border ${glassBorder} shadow-2xl ${radius} backdrop-blur-md transition-all duration-500 hover:border-current group-hover:shadow-[0_0_30px_currentColor] ${primaryColorClass}`}
-      >
-        {/* Cabeçalho REC // SYS */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-current/20 bg-black/10 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] uppercase tracking-[0.3em] font-black opacity-70">
-              REC // SYS
-            </span>
-          </div>
-          <div className="flex gap-1.5 opacity-40">
-            <div className="w-1.5 h-3.5 border-l-2 border-current skew-x-12" />
-            <div className="w-1.5 h-3.5 border-l-2 border-current skew-x-12" />
-            <div className="w-1.5 h-3.5 border-l-2 border-current skew-x-12" />
-          </div>
-        </div>
-
-        {/* 🚀 O CORTE MÁGICO: overflow-hidden na caixa e h-[calc(100%+95px)] no iframe do Instagram */}
-        <div
-          className={`w-full relative overflow-hidden bg-black/50 ${isVertical ? "aspect-[9/16]" : "aspect-video"}`}
-        >
-          <iframe
-            src={embedUrl}
-            className={`absolute top-0 left-0 w-full border-0 pointer-events-auto ${isInstagram ? "h-[calc(100%+95px)]" : "h-full"}`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            scrolling="no"
-          />
-        </div>
-      </div>
+    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem]">
+      <iframe
+        src={embedUrl}
+        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        scrolling="no"
+      />
     </div>
   );
 };
 
-const handleShare = async (businessName: string) => {
+// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Mosaico Misto com Cartões Padronizados Urban)
+const MasterRunway = ({
+  feed,
+  setSelectedIndex,
+  cardBg,
+  border,
+  shadow,
+}: any) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current)
+      scrollRef.current.scrollBy({
+        left: dir === "left" ? -300 : 300,
+        behavior: "smooth",
+      });
+  };
+  const arrowClass = `hidden md:flex absolute top-[50%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full shadow-md opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-105 bg-white text-slate-800 border border-slate-200`;
+
+  return (
+    <div className="relative group/runway w-full">
+      <button
+        onClick={() => scroll("left")}
+        className={`${arrowClass} -left-4 lg:-left-6`}
+      >
+        <ChevronLeft size={20} />
+      </button>
+
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-4 overflow-x-auto snap-x no-scrollbar pb-6 pt-2 scroll-smooth px-1"
+      >
+        {feed.map((item: any, i: number) => {
+          // 🚀 PADRÃO DE TAMANHO ABSOLUTO URBAN (4:5)
+          const cardBaseClasses = `shrink-0 snap-center w-[180px] sm:w-[220px] md:w-[240px] lg:w-[260px] xl:w-[280px] aspect-[4/5] ${cardBg} overflow-hidden relative border ${border} rounded-[1.5rem] ${shadow} hover:shadow-md transition-all duration-300 cursor-pointer group`;
+
+          if (item.type === "image") {
+            return (
+              <motion.div
+                key={`img-${i}`}
+                onClick={() => setSelectedIndex(item.lightboxIndex)}
+                whileHover={{ scale: 1.02 }}
+                className={`${cardBaseClasses}`}
+              >
+                <img
+                  src={item.url}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  alt="Showcase"
+                />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Plus size={32} className="text-white" />
+                </div>
+              </motion.div>
+            );
+          }
+
+          if (
+            item.type === "video" ||
+            item.type === "video_v" ||
+            item.type === "video_h"
+          ) {
+            return (
+              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
+                <VideoEmbed url={item.url} />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+
+      <button
+        onClick={() => scroll("right")}
+        className={`${arrowClass} -right-4 lg:-right-6`}
+      >
+        <ChevronRight size={20} />
+      </button>
+    </div>
+  );
+};
+
+const handleShare = async (name: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: businessName,
-        text: `Confira ${businessName}:`,
-        url,
-      });
+      await navigator.share({ title: name, text: `Confira ${name}:`, url });
       return;
     } catch (err) {}
   }
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(url);
-    toast.success("Link copiado!");
+    toast.success("Link copiado com sucesso!");
   }
 };
 
-const formatPhoneNumber = (phone: string) => {
+const formatPhoneNumber = (phone?: string | null) => {
   const cleaned = (phone || "").replace(/\D/g, "");
   const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
   if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
   const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
   if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-  return phone;
+  return phone || "";
 };
 
 const formatExternalLink = (url: string) => {
@@ -232,13 +236,16 @@ export default function UrbanLayout({
     hasFeatures,
     hasHours,
     hasAddress,
-    hasGallery,
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
+    "all",
+  );
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   const footerTriggerRef = useRef(null);
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
@@ -247,33 +254,25 @@ export default function UrbanLayout({
   const theme =
     propTheme ||
     businessThemes[business?.theme] ||
-    businessThemes["urban_cyber"];
-
+    businessThemes["urban_gold"];
   const isLight =
     theme.bgPage.includes("f8fafc") || theme.bgPage.includes("ffffff");
-  const glassBg = theme.cardBg || (isLight ? "bg-white/90" : "bg-white/5");
-  const glassBorder = isLight ? "border-slate-200" : "border-white/10";
-  const glassDivider = isLight ? "border-slate-200" : "border-white/5";
-  const mutedText = isLight ? "text-slate-600" : "text-white/70";
 
-  const radius = theme.radius || "rounded-xl";
-  const shadow = theme.shadow || "shadow-2xl";
+  const bgHero = theme.bgHero || "bg-gradient-to-r from-purple-500 to-pink-500";
+  const cardBg = theme.cardBg || "bg-white";
+  const border = theme.border || "border-slate-100";
+  const shadow = theme.shadow || "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)]";
+  const primary = theme.primary || "text-current";
+  const bgAction = theme.bgAction || "bg-current text-white";
 
   const addressBase = business?.address || "";
   const hasNumberInAddress =
     business?.number && addressBase.includes(business.number);
-
-  const safeAddress =
-    fullAddress ||
-    `${addressBase}${!hasNumberInAddress && business?.number ? `, ${business.number}` : ""} ${business?.complement || ""}`;
-
-  const gallery = Array.isArray(business.gallery)
-    ? business.gallery.filter(Boolean)
-    : [];
-
-  const videos = Array.isArray(business.videos)
-    ? business.videos.filter(Boolean)
-    : [];
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    business.latitude && business.longitude
+      ? `${business.latitude},${business.longitude}`
+      : `${business.address || ""}, ${business.city || ""}, ${business.state || ""}`.trim(),
+  )}`;
 
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
@@ -283,41 +282,78 @@ export default function UrbanLayout({
     {
       key: "mercadoLivre",
       name: "Mercado Livre",
-      icon: <MeliIcon className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <MeliIcon className="w-5 h-5" />,
       url: business.mercadoLivre,
-      colorClass: "text-[#FFE600] group-hover:text-[#FFE600]",
+      colorClass: "bg-[#FFE600] text-[#2D3277]",
     },
     {
       key: "shopee",
       name: "Shopee",
-      icon: <ShopeeIcon className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <ShopeeIcon className="w-5 h-5" />,
       url: business.shopee,
-      colorClass: "text-[#EE4D2D] group-hover:text-[#EE4D2D]",
+      colorClass: "bg-[#EE4D2D] text-white",
     },
     {
       key: "ifood",
       name: "iFood",
-      icon: <IfoodIcon className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <IfoodIcon className="w-5 h-5" />,
       url: business.ifood,
-      colorClass: "text-[#EA1D2C] group-hover:text-[#EA1D2C]",
+      colorClass: "bg-[#EA1D2C] text-white",
     },
     {
       key: "shein",
       name: "Shein",
-      icon: <SheinIcon className="w-4 h-4 md:w-5 md:h-5" />,
+      icon: <SheinIcon className="w-5 h-5" />,
       url: business.shein,
-      colorClass: isLight
-        ? "text-slate-900 group-hover:text-slate-900"
-        : "text-white group-hover:text-white",
+      colorClass: "bg-slate-900 text-white",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
+  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED PARA O URBAN
+  const rawFeed = useMemo(() => {
+    if (business.mediaFeed && business.mediaFeed.length > 0) {
+      return business.mediaFeed;
+    }
+    const oldGallery = (business.gallery || []).map((url: string) => ({
+      type: "image",
+      url,
+    }));
+    const oldVideos = (business.videos || []).map((url: string) => ({
+      type: "video",
+      url,
+    }));
+    return [...oldGallery, ...oldVideos];
+  }, [business.mediaFeed, business.gallery, business.videos]);
+
+  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
+  const cleanFeed = useMemo(() => {
+    let imgIndexCounter = 0;
+    return rawFeed
+      .filter(
+        (item: any) =>
+          item && typeof item.url === "string" && item.url.trim() !== "",
+      )
+      .map((item: any) => {
+        if (item.type === "image") {
+          return { ...item, lightboxIndex: imgIndexCounter++ };
+        }
+        return item;
+      });
+  }, [rawFeed]);
+
+  // Lista pura de imagens pro Lightbox (Modal tela cheia)
+  const lightboxImages = useMemo(() => {
+    return cleanFeed
+      .filter((item: any) => item.type === "image")
+      .map((item: any) => item.url);
+  }, [cleanFeed]);
+
   const safeSetIndex = useCallback(
     (next: number) => {
-      if (gallery.length === 0) return;
-      setSelectedIndex((next + gallery.length) % gallery.length);
+      if (lightboxImages.length === 0) return;
+      setSelectedIndex((next + lightboxImages.length) % lightboxImages.length);
     },
-    [gallery.length],
+    [lightboxImages.length],
   );
 
   const handleTrackLead = useCallback(
@@ -326,17 +362,14 @@ export default function UrbanLayout({
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
       if (!cleanNumber) return;
-
       const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
-      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu e gostaria de mais informações.`;
-
+      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
-
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
@@ -350,58 +383,30 @@ export default function UrbanLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
-  const addressPartsForMap = [
-    business.address,
-    business.number,
-    business.neighborhood,
-    business.city,
-    business.state,
-  ].filter(Boolean);
-  const completeAddressForMap = addressPartsForMap.join(", ");
-  const mapDestination =
-    business.latitude && business.longitude
-      ? `${business.latitude},${business.longitude}`
-      : completeAddressForMap;
-
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
-
   if (!theme) return null;
 
   return (
     <div
-      className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-white/20 selection:text-white`}
+      className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-current selection:text-white`}
     >
-      <div className="hidden md:block fixed inset-0 pointer-events-none z-[10] opacity-[0.05] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-
-      {/* --- HEADER URBANO --- */}
-      <header className="relative w-full pt-32 pb-24 md:pt-48 md:pb-40 px-4 md:px-8 flex flex-col items-center justify-center min-h-[60vh] overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div
-            className={`absolute inset-0 bg-gradient-to-b from-transparent ${isLight ? "to-white/60" : "to-black/40"}`}
-          />
-          <div
-            className={`absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay ${isLight ? "invert" : ""}`}
-            style={{
-              backgroundImage:
-                "radial-gradient(circle, white 2px, transparent 2.5px)",
-              backgroundSize: "32px 32px",
-            }}
-          />
+      {/* --- HEADER LANDING PAGE (NOVA ORDEM MOBILE & DESKTOP) --- */}
+      <header
+        className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20`}
+      >
+        <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] pointer-events-none">
+          <div className="absolute -top-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-white/20 blur-[80px] mix-blend-overlay" />
+          <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-black/10 blur-[80px] mix-blend-overlay" />
         </div>
 
-        <div className="absolute top-6 right-6 md:top-10 md:right-10 z-30">
-          <div
-            className={`flex items-center gap-1 ${isLight ? "bg-white/80 border-slate-200" : "bg-black/40 border-white/10"} backdrop-blur-xl p-2 rounded-full border shadow-xl`}
-          >
+        <div className="w-full max-w-7xl mx-auto flex justify-end relative z-30 mb-8 md:mb-16">
+          <div className="flex items-center gap-2 bg-white/20 p-1.5 rounded-full backdrop-blur-md border border-white/30 text-white">
             <button
               onClick={() => handleShare(business.name)}
-              className={`w-12 h-12 flex items-center justify-center rounded-full transition-all ${isLight ? "hover:bg-slate-100 text-slate-700" : "hover:bg-white/10 text-white"}`}
+              className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:bg-white/20"
             >
-              <Share2 className="w-[20px] h-[20px]" />
+              <Share2 className="w-4 h-4" strokeWidth={2} />
             </button>
-            <div
-              className={`w-[1px] h-6 ${isLight ? "bg-slate-300" : "bg-white/20"} mx-2`}
-            />
+            <div className="w-[1px] h-5 bg-white/30" />
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -411,574 +416,521 @@ export default function UrbanLayout({
           </div>
         </div>
 
-        <div className="relative z-20 w-full max-w-7xl mx-auto flex flex-col items-center text-center">
+        <div className="relative z-20 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-16">
+          {business.urban_tag && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden flex justify-center w-full order-1"
+            >
+              <span className="px-5 py-2 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm text-center">
+                {business.urban_tag}
+              </span>
+            </motion.div>
+          )}
+
           {business.imageUrl && (
             <motion.div
-              initial={{ scale: 0, rotate: -15 }}
-              animate={{ scale: 1, rotate: -3 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="mb-10 md:mb-16 relative z-30"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex justify-center md:justify-end relative order-2 md:order-2"
             >
-              <div
-                className={`w-32 h-32 md:w-48 md:h-48 rounded-3xl ${glassBg} border-4 md:border-8 ${glassBorder} shadow-2xl overflow-hidden p-1.5`}
-              >
+              <div className="relative w-56 h-56 md:w-80 md:h-80 lg:w-96 lg:h-96">
+                <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/30 rotate-6 scale-105 transition-transform" />
+                <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/20 -rotate-6 scale-105 transition-transform" />
                 <img
                   src={business.imageUrl}
-                  className="w-full h-full object-cover rounded-2xl"
+                  className="w-full h-full object-cover rounded-[2.5rem] md:rounded-[3rem] shadow-2xl relative z-10 bg-white"
                   alt="Logo"
                 />
               </div>
             </motion.div>
           )}
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            className="relative z-20 w-full"
-          >
-            <h1
-              className={`font-black uppercase italic tracking-tighter ${theme.textColor} break-words text-[clamp(4rem,14vw,10rem)] leading-[0.8] drop-shadow-2xl px-2`}
-            >
-              {business.name}
-            </h1>
-          </motion.div>
-
-          {business.urban_tag && (
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.6, delay: 0.6, ease: "circOut" }}
-              className="relative z-30 mt-12 md:mt-20 origin-center inline-flex justify-center w-full px-4"
-            >
-              <div
-                className={`px-8 py-4 md:px-16 md:py-5 ${theme.bgAction} font-black uppercase tracking-widest md:tracking-[0.5em] text-xs md:text-xl -skew-x-[12deg] shadow-[8px_8px_0px_rgba(0,0,0,0.3)] border-y ${glassBorder} whitespace-normal break-words text-center max-w-full`}
+          <div className="flex flex-col items-center md:items-start text-center md:text-left order-3 md:order-1">
+            {business.urban_tag && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="hidden md:block mb-6"
               >
-                <span className="block skew-x-[12deg]">
+                <span className="px-5 py-2 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm">
                   {business.urban_tag}
                 </span>
-              </div>
-            </motion.div>
-          )}
-        </div>
+              </motion.div>
+            )}
 
-        <div
-          className={`absolute bottom-0 w-px h-24 md:h-32 bg-gradient-to-t ${isLight ? "from-slate-300" : "from-white/30"} to-transparent z-10`}
-        />
-      </header>
-
-      {/* 🚀 O GRANDE UPGRADE DE ESPAÇAMENTO ACONTECE AQUI NO MAIN */}
-      <main className="container mx-auto px-4 md:px-8 relative z-30 flex flex-col gap-24 md:gap-40 pb-32 mt-16 md:mt-24">
-        {/* REDES & LOJAS */}
-        <div className="flex flex-col gap-8 md:gap-12">
-          {availableSocials.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex gap-4 md:gap-6 flex-wrap justify-center"
-            >
-              {availableSocials.map((s) => {
-                const username = business[s];
-                if (!username) return null;
-                const finalUrl =
-                  username.startsWith("http") || username.startsWith("www")
-                    ? formatExternalLink(username)
-                    : s === "instagram"
-                      ? `https://instagram.com/${username.replace("@", "")}`
-                      : s === "facebook"
-                        ? `https://facebook.com/${username.replace("@", "")}`
-                        : s === "tiktok"
-                          ? `https://tiktok.com/@${username.replace("@", "")}`
-                          : formatExternalLink(username);
-
-                return (
-                  <a
-                    key={s}
-                    href={finalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      Actions.registerClickEvent(business.id, s.toUpperCase())
-                    }
-                    className={`w-14 h-14 md:w-20 md:h-20 ${glassBg} border flex items-center justify-center transition-all duration-300 ${radius} hover:scale-110 hover:-translate-y-2 hover:shadow-xl ${theme.primary} ${glassBorder} md:backdrop-blur-md`}
-                  >
-                    {s === "instagram" ? (
-                      <Instagram className="w-6 h-6 md:w-8 md:h-8" />
-                    ) : s === "facebook" ? (
-                      <Facebook className="w-6 h-6 md:w-8 md:h-8" />
-                    ) : s === "tiktok" ? (
-                      <TikTokIcon className="w-6 h-6 md:w-8 md:h-8" />
-                    ) : (
-                      <Globe className="w-6 h-6 md:w-8 md:h-8" />
-                    )}
-                  </a>
-                );
-              })}
-            </motion.div>
-          )}
-
-          {salesChannels.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="flex flex-wrap justify-center gap-4 md:gap-6 mt-4 w-full max-w-3xl mx-auto"
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white drop-shadow-md leading-[1.1] mb-4 md:mb-6"
             >
-              {salesChannels.map((channel) => (
-                <a
-                  key={channel.key}
-                  href={formatExternalLink(channel.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    Actions.registerClickEvent(
-                      business.id,
-                      channel.key.toUpperCase(),
-                    )
-                  }
-                  className={`flex items-center gap-3 px-5 py-3 md:px-8 md:py-4 rounded-full ${glassBg} md:backdrop-blur-md border ${glassBorder} hover:scale-105 hover:-translate-y-1 transition-all duration-300 group shadow-lg hover:shadow-2xl`}
-                >
-                  <div
-                    className={`transition-transform duration-300 group-hover:scale-110 ${channel.colorClass} opacity-80 group-hover:opacity-100`}
-                  >
-                    {channel.icon}
-                  </div>
-                  <span className="text-xs md:text-sm font-bold tracking-[0.2em] uppercase opacity-70 group-hover:opacity-100 transition-opacity">
-                    {channel.name}
-                  </span>
-                </a>
-              ))}
-            </motion.div>
-          )}
-        </div>
+              {business.name}
+            </motion.h1>
 
-        {/* SOBRE */}
-        {hasDescription && (
-          <section className="relative w-full max-w-6xl mx-auto">
-            <div
-              className={`${glassBg} md:backdrop-blur-md border ${glassBorder} p-10 md:p-20 lg:p-24 ${radius} ${shadow}`}
-            >
-              <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-12 md:mb-16 border-b-2 border-current pb-6 opacity-30 flex items-center gap-5">
-                <Terminal className="w-8 h-8 md:w-10 md:h-10" /> Sobre
-              </h2>
-              <p className="text-xl md:text-3xl lg:text-4xl font-light leading-relaxed whitespace-pre-line break-words">
-                {business.description}
-              </p>
-            </div>
-          </section>
-        )}
-
-        {/* DESTAQUES */}
-        {hasFeatures && (
-          <section className="w-full max-w-7xl mx-auto">
-            <h3 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter opacity-30 flex items-center gap-4 border-b-2 border-current pb-6 mb-12 md:mb-16">
-              <Terminal className="w-8 h-8 md:w-10 md:h-10" /> DESTAQUES_
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {business.features.filter(Boolean).map((f: string, i: number) => (
-                <div
-                  key={i}
-                  className={`w-full p-6 md:p-10 ${glassBg} md:backdrop-blur-md border ${glassBorder} ${radius} flex items-center gap-6 group hover:-translate-y-2 hover:shadow-2xl transition-all duration-500`}
-                >
-                  <div
-                    className={`w-2.5 h-2.5 md:w-3 md:h-3 shrink-0 rounded-full ${theme.bgAction} shadow-lg`}
-                  />
-                  <span className="font-bold text-sm md:text-base uppercase tracking-widest leading-tight opacity-90">
-                    {f}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* GALERIA */}
-        {hasGallery && (
-          <section className="w-full max-w-7xl mx-auto">
-            <h3 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter flex items-center gap-5 opacity-80 mb-12 md:mb-16">
-              <Camera className="w-10 h-10 md:w-12 md:h-12" /> VISUAL_FEED_
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-              {gallery.map((img: string, i: number) => (
-                <motion.div
-                  key={i}
-                  onClick={() => setSelectedIndex(i)}
-                  whileHover={{ scale: 1.03, y: -5 }}
-                  className={`aspect-square ${glassBg} md:backdrop-blur-md overflow-hidden cursor-pointer group relative border ${glassBorder} ${radius} shadow-xl hover:shadow-2xl transition-all duration-500`}
-                >
-                  <img
-                    src={img}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                    alt="Gallery"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Plus
-                      size={48}
-                      className="text-white drop-shadow-[0_0_15px_rgba(0,0,0,0.6)]"
-                    />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* VÍDEOS (Agora com separação inteligente) */}
-        {videos.length > 0 &&
-          (() => {
-            // O Robô que separa os formatos
-            const horizontalVideos = videos.filter(
-              (vid: string) =>
-                (vid.includes("youtube.com") || vid.includes("youtu.be")) &&
-                !vid.includes("shorts"),
-            );
-            const verticalVideos = videos.filter(
-              (vid: string) =>
-                vid.includes("shorts") ||
-                vid.includes("instagram.com") ||
-                vid.includes("tiktok.com"),
-            );
-
-            return (
-              <section className="w-full max-w-7xl mx-auto">
-                <h3 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter flex items-center gap-5 opacity-80 mb-12 md:mb-16">
-                  <Video className="w-10 h-10 md:w-12 md:h-12" /> MOTION_FEED_
-                </h3>
-
-                {/* YouTube (Sempre no topo, telas largas) */}
-                {horizontalVideos.length > 0 && (
-                  <div className="mb-12 md:mb-16">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                      {horizontalVideos.map((vid: string, i: number) => (
-                        <VideoEmbed
-                          key={`h-${i}`}
-                          url={vid}
-                          radius={radius}
-                          glassBg={glassBg}
-                          glassBorder={glassBorder}
-                          primaryColorClass={theme.primary}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Instagram / TikTok (Sempre embaixo, formato espelho) */}
-                {verticalVideos.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-                    {verticalVideos.map((vid: string, i: number) => (
-                      <VideoEmbed
-                        key={`v-${i}`}
-                        url={vid}
-                        radius={radius}
-                        glassBg={glassBg}
-                        glassBorder={glassBorder}
-                        primaryColorClass={theme.primary}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })()}
-
-        {/* FAQS */}
-        {hasFaqs && (
-          <section className="w-full max-w-7xl mx-auto">
-            <h3 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter opacity-30 flex items-center gap-4 border-b-2 border-current pb-6 mb-12 md:mb-16">
-              <MessageCircle className="w-8 h-8 md:w-10 md:h-10" /> DÚVIDAS
-              FREQUENTES
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-start">
-              <div className="flex flex-col gap-6 md:gap-8">
-                {faqs.map((f: any, i: number) => {
-                  if (i % 2 !== 0) return null;
-                  return (
-                    <div
-                      key={i}
-                      className={`${glassBg} md:backdrop-blur-md border ${glassBorder} ${radius} overflow-hidden shadow-lg`}
-                    >
-                      <button
-                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full flex items-center justify-between p-6 md:p-8 text-left group"
-                      >
-                        <span className="text-lg md:text-xl font-bold uppercase italic tracking-wide opacity-90 pr-4">
-                          {f.q || f.question}
-                        </span>
-                        <ChevronDown
-                          className={`w-6 h-6 md:w-8 md:h-8 shrink-0 transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                      <AnimatePresence>
-                        {openFaq === i && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                          >
-                            <div
-                              className={`px-6 md:px-8 pb-8 pt-4 ${mutedText} border-t ${glassDivider} font-medium leading-relaxed text-base md:text-lg`}
-                            >
-                              {f.a || f.answer}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex flex-col gap-6 md:gap-8">
-                {faqs.map((f: any, i: number) => {
-                  if (i % 2 === 0) return null;
-                  return (
-                    <div
-                      key={i}
-                      className={`${glassBg} md:backdrop-blur-md border ${glassBorder} ${radius} overflow-hidden shadow-lg`}
-                    >
-                      <button
-                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full flex items-center justify-between p-6 md:p-8 text-left group"
-                      >
-                        <span className="text-lg md:text-xl font-bold uppercase italic tracking-wide opacity-90 pr-4">
-                          {f.q || f.question}
-                        </span>
-                        <ChevronDown
-                          className={`w-6 h-6 md:w-8 md:h-8 shrink-0 transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                      <AnimatePresence>
-                        {openFaq === i && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                          >
-                            <div
-                              className={`px-6 md:px-8 pb-8 pt-4 ${mutedText} border-t ${glassDivider} font-medium leading-relaxed text-base md:text-lg`}
-                            >
-                              {f.a || f.answer}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* CONTATO & HORÁRIOS */}
-        <section className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-16">
-          <div className="lg:col-span-7 space-y-6 md:space-y-8">
-            {hasPhone && (
-              <button
-                onClick={() => handleTrackLead("phone")}
-                className={`w-full ${glassBg} md:backdrop-blur-md border ${glassBorder} p-8 md:p-12 ${radius} ${shadow} flex items-center gap-6 md:gap-8 group hover:-translate-y-1 hover:border-current transition-all duration-500`}
+            {hasDescription && (
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-base md:text-xl text-white/90 font-medium leading-relaxed mb-8 max-w-xl"
               >
-                <div
-                  className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl ${isLight ? "bg-slate-100" : "bg-white/5"} border ${glassBorder} flex items-center justify-center ${theme.primary} transition-all`}
-                >
-                  <Phone className="w-8 h-8 md:w-10 md:h-10" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs md:text-sm font-black opacity-40 tracking-[0.2em] uppercase mb-2">
-                    Voice Line
-                  </p>
-                  <p className="text-xl md:text-3xl font-bold italic uppercase tracking-wide">
-                    {formatPhoneNumber(business.phone)}
-                  </p>
-                </div>
-              </button>
+                {business.description}
+              </motion.p>
             )}
 
             {hasWhatsapp && (
-              <button
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
                 onClick={() => handleTrackLead("whatsapp")}
-                className={`w-full ${glassBg} md:backdrop-blur-md border border-[#25D366]/30 p-8 md:p-12 ${radius} ${shadow} flex items-center gap-6 md:gap-8 group hover:-translate-y-1 hover:border-[#25D366] transition-all duration-500`}
+                className={`px-8 py-4 bg-white ${theme.primary} rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:scale-105 hover:shadow-2xl transition-all flex items-center gap-3`}
               >
-                <div
-                  className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-[#25D366] transition-all`}
-                >
-                  <MessageCircle
-                    className="w-8 h-8 md:w-10 md:h-10"
-                    fill="currentColor"
-                  />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs md:text-sm font-black opacity-40 tracking-[0.2em] uppercase mb-2">
-                    Direct Chat
-                  </p>
-                  <p className="text-xl md:text-3xl font-bold italic uppercase tracking-wide">
-                    Chamar no Whats
-                  </p>
-                </div>
-              </button>
+                FALE CONOSCO <ChevronRight size={20} strokeWidth={2.5} />
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* --- CORPO PRINCIPAL COM ARQUITETURA OTIMIZADA --- */}
+      <main className="w-full max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16 flex flex-col gap-12 pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+          {/* COLUNA ESQUERDA (Destaques, Galeria, FAQ) */}
+          <div className="lg:col-span-8 flex flex-col gap-10 md:gap-14 w-full min-w-0">
+            {/* Redes Sociais */}
+            {availableSocials.length > 0 && (
+              <div className="flex gap-3 md:gap-4 flex-wrap justify-center md:justify-start">
+                {availableSocials.map((s) => {
+                  const username = business[s];
+                  if (!username) return null;
+                  const finalUrl =
+                    username.startsWith("http") || username.startsWith("www")
+                      ? formatExternalLink(username)
+                      : s === "instagram"
+                        ? `https://instagram.com/${username.replace("@", "")}`
+                        : s === "facebook"
+                          ? `https://facebook.com/${username.replace("@", "")}`
+                          : s === "tiktok"
+                            ? `https://tiktok.com/@${username.replace("@", "")}`
+                            : formatExternalLink(username);
+                  return (
+                    <a
+                      key={s}
+                      href={finalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        Actions.registerClickEvent(business.id, s.toUpperCase())
+                      }
+                      className={`w-12 h-12 md:w-14 md:h-14 rounded-full ${cardBg} border ${border} ${shadow} flex items-center justify-center transition-all duration-300 hover:scale-110 ${theme.primary}`}
+                    >
+                      {s === "instagram" ? (
+                        <Instagram
+                          className="w-5 h-5 md:w-6 md:h-6"
+                          strokeWidth={1.5}
+                        />
+                      ) : s === "facebook" ? (
+                        <Facebook
+                          className="w-5 h-5 md:w-6 md:h-6"
+                          strokeWidth={1.5}
+                        />
+                      ) : s === "tiktok" ? (
+                        <TikTokIcon className="w-5 h-5 md:w-6 md:h-6" />
+                      ) : (
+                        <Globe
+                          className="w-5 h-5 md:w-6 md:h-6"
+                          strokeWidth={1.5}
+                        />
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
             )}
 
-            {hasAddress && (
-              <div className="space-y-6 md:space-y-8">
-                <MapEmbed
-                  destination={mapDestination}
-                  radius={radius}
-                  glassBorder={glassBorder}
-                />
-
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => Actions.registerClickEvent(business.id, "MAP")}
-                  className={`relative w-full overflow-hidden ${glassBg} md:backdrop-blur-md border ${glassBorder} p-8 md:p-12 ${radius} ${shadow} flex items-center gap-6 md:gap-8 group hover:border-current hover:-translate-y-1 transition-all duration-500`}
-                >
-                  <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.06] transition-opacity bg-[url('https://www.transparenttextures.com/patterns/blueprint.png')]" />
-
-                  <div
-                    className={`relative z-10 w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-2xl ${isLight ? "bg-slate-100" : "bg-white/5"} border ${glassBorder} flex items-center justify-center ${theme.primary} group-hover:scale-110 group-hover:shadow-[0_0_30px_currentColor] transition-all duration-500`}
-                  >
-                    <MapPin className="w-8 h-8 md:w-10 md:h-10" />
-                  </div>
-
-                  <div className="relative z-10 text-left flex-1">
-                    <p className="text-xs md:text-sm font-black opacity-50 tracking-[0.2em] uppercase mb-2 flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                      GPS Navigation
-                    </p>
-                    <p className="text-xl md:text-3xl font-black italic uppercase tracking-wide leading-tight">
-                      {business.address || "Endereço não cadastrado"}
-                      {business.number &&
-                        !business.address?.includes(business.number) &&
-                        `, ${business.number}`}
-                    </p>
-                    <p className="text-sm md:text-base opacity-60 uppercase tracking-widest mt-3 font-medium">
-                      {business.neighborhood} • {business.city}
-                      {business.complement && (
-                        <span className="block normal-case mt-2 italic opacity-80">
-                          "{business.complement}"
+            {/* Destaques */}
+            {hasFeatures && (
+              <section className="space-y-6">
+                <h3 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
+                  <Sparkles
+                    className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
+                    strokeWidth={2}
+                  />{" "}
+                  Nossos Diferenciais
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {business.features
+                    .filter(Boolean)
+                    .map((f: string, i: number) => (
+                      <div
+                        key={i}
+                        className={`w-full p-4 md:p-5 ${cardBg} border ${border} ${shadow} rounded-2xl flex items-center gap-4 transition-all duration-300 hover:-translate-y-1`}
+                      >
+                        <div
+                          className={`w-2 h-2 md:w-2.5 md:h-2.5 shrink-0 rounded-full ${theme.bgAction}`}
+                        />
+                        <span className="font-semibold text-sm md:text-base leading-snug opacity-80">
+                          {f}
                         </span>
-                      )}
-                    </p>
-                  </div>
+                      </div>
+                    ))}
+                </div>
+              </section>
+            )}
 
-                  <div
-                    className={`relative z-10 w-12 h-12 md:w-14 md:h-14 rounded-full shrink-0 flex items-center justify-center border ${glassBorder} ${isLight ? "bg-white" : "bg-white/10"} group-hover:bg-current group-hover:text-black transition-all duration-300 shadow-xl`}
-                  >
-                    <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
-                  </div>
-                </a>
-              </div>
+            {/* 🚀 THE MASTER RUNWAY (Mídia Unificada URBAN) */}
+            {cleanFeed.length > 0 &&
+              (() => {
+                const filteredFeed = cleanFeed.filter((item: any) => {
+                  if (mediaFilter === "all") return true;
+                  if (mediaFilter === "photos") return item.type === "image";
+                  if (mediaFilter === "motion")
+                    return (
+                      item.type === "video" ||
+                      item.type === "video_v" ||
+                      item.type === "video_h"
+                    );
+                  return true;
+                });
+
+                if (filteredFeed.length === 0) return null;
+
+                return (
+                  <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
+                      <h3 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center gap-3">
+                        <Camera
+                          className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
+                          strokeWidth={2}
+                        />
+                        Catálogo Visual
+                      </h3>
+
+                      {/* Capsula Switch (Urban Style) */}
+                      <div
+                        className={`flex items-center p-1 ${cardBg} border ${border} rounded-full ${shadow}`}
+                      >
+                        <button
+                          onClick={() => setMediaFilter("all")}
+                          className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => setMediaFilter("photos")}
+                          className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                        >
+                          Photos
+                        </button>
+                        <button
+                          onClick={() => setMediaFilter("motion")}
+                          className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                        >
+                          Motion
+                        </button>
+                      </div>
+                    </div>
+
+                    <MasterRunway
+                      key={mediaFilter}
+                      feed={filteredFeed}
+                      setSelectedIndex={setSelectedIndex}
+                      cardBg={cardBg}
+                      border={border}
+                      shadow={shadow}
+                    />
+                  </section>
+                );
+              })()}
+
+            {/* FAQ */}
+            {hasFaqs && (
+              <section className="space-y-6 pt-6">
+                <h3 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
+                  <HelpCircle
+                    className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
+                    strokeWidth={2}
+                  />{" "}
+                  Suporte e Dúvidas
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {faqs.map((f: any, i: number) => (
+                    <div
+                      key={i}
+                      className={`${cardBg} border ${border} ${shadow} rounded-2xl overflow-hidden transition-all duration-300`}
+                    >
+                      <button
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
+                      >
+                        <span className="text-sm md:text-base font-bold opacity-90 pr-4">
+                          {f.q || f.question}
+                        </span>
+                        <ChevronDown
+                          className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
+                          strokeWidth={2}
+                        />
+                      </button>
+                      <AnimatePresence>
+                        {openFaq === i && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                          >
+                            <div
+                              className={`px-5 md:px-6 pb-5 pt-2 font-medium opacity-70 text-sm leading-relaxed border-t ${border}`}
+                            >
+                              {f.a || f.answer}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
-          {hasHours && (
-            <div
-              className={`lg:col-span-5 ${glassBg} md:backdrop-blur-md p-10 md:p-14 border ${glassBorder} ${radius} ${shadow}`}
-            >
-              <h3 className="text-3xl md:text-4xl font-black uppercase italic mb-12 border-b-2 border-current pb-4 flex items-center gap-4 opacity-80">
-                <Clock className="w-8 h-8 md:w-10 md:h-10" /> HORÁRIOS
-              </h3>
-              <div className="space-y-6 md:space-y-8">
-                {realHours.map((h: any, i: number) => (
+          {/* COLUNA DIREITA (Sidebar Comercial Clean) */}
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-10">
+            {/* 🚀 ATENDIMENTO & LOJAS UNIFICADOS */}
+            {(hasWhatsapp || hasPhone || salesChannels.length > 0) && (
+              <div
+                className={`p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow} space-y-5`}
+              >
+                {/* Contatos Pessoais */}
+                {(hasWhatsapp || hasPhone) && (
+                  <>
+                    <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-2">
+                      Atendimento
+                    </h3>
+                    <div className="space-y-3">
+                      {hasWhatsapp && (
+                        <button
+                          onClick={() => handleTrackLead("whatsapp")}
+                          className="w-full flex items-center justify-between p-4 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all duration-300 border border-emerald-100 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <MessageCircle size={20} strokeWidth={2} />
+                            <span className="text-xs md:text-sm font-bold">
+                              WhatsApp
+                            </span>
+                          </div>
+                          <ChevronRight
+                            size={18}
+                            strokeWidth={2}
+                            className="opacity-50 group-hover:translate-x-1 transition-transform"
+                          />
+                        </button>
+                      )}
+                      {hasPhone && (
+                        <button
+                          onClick={() => handleTrackLead("phone")}
+                          className={`w-full flex items-center justify-between p-4 rounded-xl border ${border} hover:bg-slate-50 transition-colors group`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Phone
+                              size={20}
+                              strokeWidth={2}
+                              className="opacity-50"
+                            />
+                            <span className="text-xs md:text-sm font-bold opacity-80 tracking-widest">
+                              {formatPhoneNumber(business.phone)}
+                            </span>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Lojas Oficiais embutidas */}
+                {salesChannels.length > 0 && (
                   <div
-                    key={i}
-                    className={`flex justify-between border-b ${glassDivider} font-black uppercase italic py-3 md:py-4 text-sm md:text-base`}
+                    className={`pt-5 ${hasWhatsapp || hasPhone ? `border-t ${border}` : ""} flex flex-col gap-3`}
                   >
-                    <span className="opacity-40">{h.day}</span>
-                    <span
-                      className={
-                        h.isClosed
-                          ? "text-red-500 line-through"
-                          : isLight
-                            ? "text-slate-900"
-                            : "text-white"
-                      }
-                    >
-                      {h.time}
-                    </span>
+                    <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-1">
+                      Nossas Lojas
+                    </h3>
+                    {salesChannels.map((channel) => (
+                      <a
+                        key={channel.key}
+                        href={formatExternalLink(channel.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          Actions.registerClickEvent(
+                            business.id,
+                            channel.key.toUpperCase(),
+                          )
+                        }
+                        className={`flex items-center gap-3 p-3 md:p-4 rounded-xl ${channel.colorClass} hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-sm`}
+                      >
+                        <div className={`transition-transform duration-300`}>
+                          {channel.icon}
+                        </div>
+                        <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase">
+                          {channel.name}
+                        </span>
+                      </a>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          )}
-        </section>
+            )}
 
-        {/* FIM DA EXPANSÃO */}
+            {/* Endereço Clean */}
+            {hasAddress && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => Actions.registerClickEvent(business.id, "MAP")}
+                className={`block p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow} hover:-translate-y-1 transition-all duration-300 group`}
+              >
+                <div className="flex items-center gap-3 mb-5 opacity-40">
+                  <MapPin size={18} strokeWidth={2} />
+                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                    Localização
+                  </h3>
+                </div>
+                <p className="text-sm md:text-base font-bold leading-relaxed mb-1 opacity-90 break-words">
+                  {business.address || "Endereço não cadastrado"}
+                  {business.number &&
+                    !business.address?.includes(business.number) &&
+                    `, ${business.number}`}
+                </p>
+                {business.complement && (
+                  <p className="text-xs md:text-sm font-medium opacity-60 mb-4">
+                    {business.complement}
+                  </p>
+                )}
+                <p className="text-[10px] uppercase tracking-widest opacity-40 font-bold pt-4 border-t border-slate-100">
+                  {business.neighborhood && `${business.neighborhood} • `}{" "}
+                  {business.city} {business.state ? `• ${business.state}` : ""}
+                </p>
+              </a>
+            )}
 
+            {/* Horários */}
+            {hasHours && (
+              <div
+                className={`p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
+              >
+                <div className="flex items-center gap-3 mb-5 opacity-40">
+                  <Clock size={18} strokeWidth={2} />
+                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                    Horários
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {realHours.map((h: any, i: number) => (
+                    <div
+                      key={i}
+                      className={`flex justify-between font-bold text-[10px] md:text-xs pb-3 border-b border-slate-50 last:border-0 last:pb-0`}
+                    >
+                      <span className="opacity-50 uppercase tracking-widest">
+                        {h.day}
+                      </span>
+                      <span
+                        className={h.isClosed ? "text-red-500" : "opacity-90"}
+                      >
+                        {h.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* --- SEÇÃO FINAL (Avaliações e Report) --- */}
+      <div className="max-w-4xl mx-auto w-full px-6 md:px-12 pb-20">
         <div className="w-full flex justify-center py-10 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
+        <CommentsSection
+          businessId={rawBusiness.id}
+          businessOwnerId={rawBusiness.userId}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          emailVerified={emailVerified}
+          themeColor={theme.primary}
+          comments={rawBusiness.comments || []}
+        />
+      </div>
 
-        <div className="w-full max-w-6xl mx-auto pb-12">
-          <CommentsSection
-            businessId={rawBusiness.id}
-            businessOwnerId={rawBusiness.userId}
-            currentUserId={currentUserId}
-            isAdmin={isAdmin}
-            emailVerified={emailVerified}
-            themeColor={theme.primary}
-            comments={rawBusiness.comments || []}
-          />
-        </div>
+      <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
 
-        <div ref={footerTriggerRef} className="h-10 w-full" />
-      </main>
-
+      {/* WHATSAPP FLUTUANTE */}
       {hasWhatsapp && (
         <motion.button
-          animate={isFooterVisible ? { scale: 0 } : { scale: 1 }}
-          whileHover={{ scale: 1.1, rotate: 5 }}
+          animate={
+            isFooterVisible
+              ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
+              : { opacity: 1, scale: 1, pointerEvents: "auto" }
+          }
           onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-8 right-8 z-30 w-20 h-20 md:w-24 md:h-24 bg-[#25D366] text-white flex items-center justify-center border-4 ${isLight ? "border-white" : "border-black"} ${radius} shadow-2xl md:shadow-[0_0_40px_rgba(37,211,102,0.6)]`}
+          className={`fixed bottom-6 right-6 md:bottom-10 md:right-10 z-30 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all`}
         >
-          <MessageCircle size={40} fill="currentColor" />
+          <MessageCircle
+            className="w-8 h-8 md:w-10 md:h-10"
+            fill="currentColor"
+          />
         </motion.button>
       )}
 
-      {/* LIGHTBOX */}
+      {/* LIGHTBOX DE ALTA PERFORMANCE (APENAS PARA FOTOS) */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center"
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all">
-              <X size={48} />
+            <button className="absolute top-8 right-8 text-white/50 hover:text-white hover:scale-110 transition-all z-[230]">
+              <X size={40} strokeWidth={2} />
             </button>
-            <div className="flex-grow flex items-center justify-center relative w-full px-4">
+            <div className="flex-grow flex items-center justify-center relative w-full px-4 pt-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
                 }}
-                className="hidden md:flex absolute left-12 w-20 h-20 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
+                className="hidden md:flex absolute left-12 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md"
               >
-                <ChevronLeft size={48} />
+                <ChevronLeft size={32} strokeWidth={2} />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
                 }}
-                className="hidden md:flex absolute right-12 w-20 h-20 items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md border border-white/10 shadow-2xl"
+                className="hidden md:flex absolute right-12 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md"
               >
-                <ChevronRight size={48} />
+                <ChevronRight size={32} strokeWidth={2} />
               </button>
-              {gallery[selectedIndex] && (
+              {lightboxImages[selectedIndex] && (
                 <motion.img
                   key={selectedIndex}
-                  src={gallery[selectedIndex]}
+                  src={lightboxImages[selectedIndex]}
                   loading="eager"
                   decoding="async"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
                   dragElastic={0.2}
@@ -987,20 +939,20 @@ export default function UrbanLayout({
                     else if (info.offset.x < -80)
                       safeSetIndex(selectedIndex + 1);
                   }}
-                  className={`max-w-full max-h-[75vh] object-contain border-4 ${theme.border} shadow-2xl ${radius}`}
+                  className={`max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl cursor-grab active:cursor-grabbing z-[210]`}
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
             </div>
             <div
-              className="h-40 w-full flex items-center justify-start md:justify-center gap-4 px-10 pb-10 overflow-x-auto no-scrollbar snap-x"
+              className="h-32 w-full flex items-center justify-start md:justify-center gap-4 px-10 pb-8 overflow-x-auto no-scrollbar snap-x"
               onClick={(e) => e.stopPropagation()}
             >
-              {gallery.map((img: string, idx: number) => (
+              {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border-2 transition-all snap-center ${selectedIndex === idx ? "border-white scale-110 shadow-xl" : "border-transparent opacity-30"}`}
+                  className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-110 opacity-100 shadow-xl" : "opacity-30 hover:opacity-100"}`}
                 >
                   <img
                     src={img}

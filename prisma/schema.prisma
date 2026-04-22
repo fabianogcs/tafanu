@@ -106,6 +106,7 @@ model Business {
   imageUrl            String?        @db.Text 
   gallery             String[]       @default([])
   videos              String[]       @default([]) // 🚀 NOVO: Gaveta para os links de vídeos (YouTube/Insta/TikTok)
+  mediaFeed           Json[]         @default([])
 
   // Tags e Conteúdo Extra
   urban_tag           String?

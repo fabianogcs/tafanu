@@ -65,6 +65,18 @@ export const businessSchema = z.object({
     .array(z.string().url())
     .max(12, "O limite é de 12 fotos na galeria") // 🚀 AUMENTADO PARA 12
     .default([]),
+  mediaFeed: z
+    .preprocess((val) => {
+      if (typeof val === "string") {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return [];
+        }
+      }
+      return val || [];
+    }, z.array(z.any()))
+    .default([]),
 
   // --- Listas e Arrays ---
   videos: z.array(z.string()).default([]), // 🚀 NOVO CAMPO: Lista de links de vídeos

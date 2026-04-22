@@ -42,7 +42,6 @@ import {
   normalizeText,
 } from "@/lib/normalize";
 
-// Função ultra-rápida para comparar arrays e objetos sem usar JSON.stringify
 const isDeepEqual = (obj1: any, obj2: any): boolean => {
   if (obj1 === obj2) return true;
   if (
@@ -61,7 +60,7 @@ const isDeepEqual = (obj1: any, obj2: any): boolean => {
   }
   return true;
 };
-// --- COMPONENTE PRINCIPAL ---
+
 export default function BusinessEditor({
   business,
   isNew = false,
@@ -75,14 +74,12 @@ export default function BusinessEditor({
   const nameRef = useRef<HTMLInputElement>(null);
   const [nameError, setNameError] = useState(false);
 
-  // Memoizações
   const safeBusiness = useMemo(() => normalizeBusiness(business), [business]);
   const categoryKeys = useMemo(() => Object.keys(TAFANU_CATEGORIES).sort(), []);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // 👇 COLOQUE ESTE BLOCO AQUI (O MOTOR DO CROPPER E UPLOAD)
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,37 +101,47 @@ export default function BusinessEditor({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 🚀 AJUSTADO PARA 6MB:
     if (file.size > 6 * 1024 * 1024) {
       toast.error("A imagem é muito pesada! O limite agora é 6MB.");
       return;
     }
-    // Cria um link temporário da foto para mostrar no Modal de Recorte
     const objectUrl = URL.createObjectURL(file);
     setRawImageSrc(objectUrl);
-    e.target.value = ""; // Limpa a memória do input
+    e.target.value = "";
   };
 
   const handleCropComplete = async (croppedFile: File) => {
-    if (rawImageSrc) URL.revokeObjectURL(rawImageSrc); // Limpa a memória
-    setRawImageSrc(null); // Fecha o modal
-    // 🚀 OTIMIZAÇÃO: Comprime a foto recortada antes de enviar
+    if (rawImageSrc) URL.revokeObjectURL(rawImageSrc);
+    setRawImageSrc(null);
     const compressedFile = await compressImage(croppedFile);
     await startUpload([compressedFile]);
   };
 
-  // Estados
   const [name, setName] = useState(safeBusiness.name);
   const [slug, setSlug] = useState(safeBusiness.slug);
   const [isPublished, setIsPublished] = useState(
     isNew ? false : safeBusiness.published,
   );
-  const [gallery, setGallery] = useState<string[]>(safeBusiness.gallery);
-  const [videos, setVideos] = useState<string[]>(safeBusiness.videos || []); // 🚀 NOVO ESTADO DOS VÍDEOS
+
+  // 🚀 O ESTADO UNIFICADO DA MÍDIA
+  const [mediaFeed, setMediaFeed] = useState<any[]>(() => {
+    if (safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0) {
+      return safeBusiness.mediaFeed;
+    }
+    const oldGallery = (safeBusiness.gallery || []).map((url: string) => ({
+      type: "image",
+      url,
+    }));
+    const oldVideos = (safeBusiness.videos || []).map((url: string) => ({
+      type: "video",
+      url,
+    }));
+    return [...oldGallery, ...oldVideos];
+  });
+
   const [profileImage, setProfileImage] = useState<string>(
     safeBusiness.imageUrl,
   );
-
   const [categoria, setCategoria] = useState(safeBusiness.category);
   const [selectedSubs, setSelectedSubs] = useState<string[]>(
     safeBusiness.subcategory,
@@ -150,7 +157,6 @@ export default function BusinessEditor({
 
   const [selectedTheme, setSelectedTheme] = useState(safeBusiness.theme);
 
-  // 🚀 APLICANDO MÁSCARA NA LARGADA PARA NÃO CONFUNDIR O RADAR
   const [whatsapp, setWhatsapp] = useState(
     formatPhoneNumber(safeBusiness.whatsapp || ""),
   );
@@ -165,7 +171,7 @@ export default function BusinessEditor({
       safeBusiness.luxe_quote ||
       safeBusiness.showroom_collection ||
       safeBusiness.comercial_badge ||
-      "", // 🚀 GARANTINDO QUE NÃO SEJA UNDEFINED
+      "",
   );
 
   const [features, setFeatures] = useState<string[]>(safeBusiness.features);
@@ -183,7 +189,7 @@ export default function BusinessEditor({
     city: safeBusiness.city || "",
     state: safeBusiness.state || "",
     number: safeBusiness.number || "",
-    complement: safeBusiness.complement || "", // 🚀 Adicionado aqui!
+    complement: safeBusiness.complement || "",
   });
 
   const [socials, setSocials] = useState({
@@ -196,7 +202,7 @@ export default function BusinessEditor({
     shein: safeBusiness.shein || "",
     ifood: safeBusiness.ifood || "",
   });
-  // 🚀 RADAR DE ALTERAÇÕES (Verifica se algo mudou para ativar o botão Salvar)
+
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -228,8 +234,7 @@ export default function BusinessEditor({
       phone !== formatPhoneNumber(safeBusiness.phone);
 
     const isArraysDifferent =
-      !isDeepEqual(gallery, safeBusiness.gallery) ||
-      !isDeepEqual(videos, safeBusiness.videos || []) || // 🚀 RADAR VIGIANDO VÍDEOS
+      !isDeepEqual(mediaFeed, safeBusiness.mediaFeed || []) || // 🚀 RADAR NOVO
       !isDeepEqual(selectedSubs, safeBusiness.subcategory) ||
       !isDeepEqual(keywords, safeBusiness.keywords) ||
       !isDeepEqual(features, safeBusiness.features) ||
@@ -249,7 +254,6 @@ export default function BusinessEditor({
       socials.shein !== (safeBusiness.shein || "") ||
       socials.website !== (safeBusiness.website || "");
 
-    // 🛡️ Agora o radar vigia o endereço COMPLETO vindo do CEP
     const isAddressDifferent =
       (addressData.cep || "") !== (safeBusiness.cep || "") ||
       (addressData.address || "") !== (safeBusiness.address || "") ||
@@ -277,8 +281,7 @@ export default function BusinessEditor({
     layoutText,
     whatsapp,
     phone,
-    gallery,
-    videos, // 🚀 VÍDEOS NA DEPENDÊNCIA DO RADAR
+    mediaFeed, // 🚀 Vigiando a passarela mista
     selectedSubs,
     keywords,
     features,
@@ -295,18 +298,13 @@ export default function BusinessEditor({
     );
   }, [selectedLayout]);
 
-  const validGallery = useMemo(
-    () => gallery.filter((g) => typeof g === "string" && g.startsWith("http")),
-    [gallery],
-  );
-
   useEffect(() => {
     setIsMounted(true);
     setTimeout(() => {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }, 50);
   }, []);
-  // 🛡️ Vigia de Memória
+
   useEffect(() => {
     return () => {
       if (rawImageSrc) {
@@ -327,19 +325,28 @@ export default function BusinessEditor({
     }
   }, [selectedLayout]);
 
-  // 1. Criamos a trava (ela começa como 'false')
   const hasInitialized = useRef(false);
 
   useEffect(() => {
-    // 2. SÓ ENTRA AQUI SE: Não for novo, tiver dados E a trava for 'false' (!hasInitialized.current)
     if (!isNew && safeBusiness && !hasInitialized.current) {
       setName(safeBusiness.name);
       setSlug(safeBusiness.slug);
-      setGallery(safeBusiness.gallery);
-      setVideos(safeBusiness.videos || []); // 🚀 CARREGA OS VÍDEOS SALVOS
+      setMediaFeed(
+        safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0
+          ? safeBusiness.mediaFeed
+          : [
+              ...(safeBusiness.gallery || []).map((url: string) => ({
+                type: "image",
+                url,
+              })),
+              ...(safeBusiness.videos || []).map((url: string) => ({
+                type: "video",
+                url,
+              })),
+            ],
+      );
       setProfileImage(safeBusiness.imageUrl);
       setIsPublished(safeBusiness.published);
-
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
 
@@ -350,18 +357,15 @@ export default function BusinessEditor({
         city: safeBusiness.city || "",
         state: safeBusiness.state || "",
         number: safeBusiness.number || "",
-        complement: safeBusiness.complement || "", // 🚀 Adicionado aqui!
+        complement: safeBusiness.complement || "",
       });
 
-      // 3. AQUI ESTÁ O SEGREDO: Agora a gente muda a trava para 'true'
-      // Uma vez que isso acontece, esse bloco NUNCA MAIS roda, protegendo sua logo nova.
       hasInitialized.current = true;
     }
-  }, [safeBusiness, isNew]); // Deixe as dependências assim mesmo
+  }, [safeBusiness, isNew]);
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
-  // 🚀 A NOVA FUNÇÃO DE EXCLUSÃO REAL E INTELIGENTE
   const handleDeleteAction = async () => {
     const confirmDelete = window.confirm(
       "⚠️ ATENÇÃO: Tem certeza que deseja excluir esta vitrine?\n\n(Se você for um assinante e esta for sua única loja, ela será apenas resetada para proteger sua assinatura).",
@@ -375,7 +379,7 @@ export default function BusinessEditor({
       if (res.success) {
         toast.success(res.message);
         router.push("/dashboard");
-        router.refresh(); // Força o dashboard a ler do banco de novo
+        router.refresh();
       } else {
         toast.error(res.error || "Erro ao excluir.");
       }
@@ -397,14 +401,12 @@ export default function BusinessEditor({
       setTimeout(() => setNameError(false), 4000);
       return;
     }
-    // Verifica se ele alterou o link
+
     if (!isNew && slug !== safeBusiness.slug) {
-      // 🚀 O RADAR: Verifica a "Impressão Digital" do link antigo. Ele era uma loja automática?
       const isGhostOriginal =
         /^vitrine-[a-z0-9]{5}-\d{13}$/i.test(safeBusiness.slug) ||
         /^loja-[a-z0-9]{8}-\d{4}$/i.test(safeBusiness.slug);
 
-      // Só exibe o alerta aterrorizante se o link anterior era de fato um link oficial (não fantasma)
       if (!isGhostOriginal) {
         const confirmChange = window.confirm(
           "⚠️ PERIGO: Você alterou o LINK do seu negócio.\n\n" +
@@ -428,10 +430,9 @@ export default function BusinessEditor({
         description,
         category: categoria,
         subcategory: selectedSubs,
-        keywords: keywords.map((k) => normalizeText(k)), // Limpa as palavras-chave
+        keywords: keywords.map((k) => normalizeText(k)),
         theme: selectedTheme,
         layout: layoutInfo[selectedLayout] ? selectedLayout : "urban",
-        // 🚀 O pulo do gato: Se o botão enviou um novo status, usa ele. Se não, usa o que tá na tela.
         published:
           overridePublished !== undefined ? overridePublished : isPublished,
         urban_tag: layoutText,
@@ -439,13 +440,13 @@ export default function BusinessEditor({
         showroom_collection: layoutText,
         comercial_badge: layoutText,
         features: features.filter((f) => f.trim() !== ""),
-        address: addressData.address, // APENAS a rua
-        cep: addressData.cep, // APENAS o cep
+        address: addressData.address,
+        cep: addressData.cep,
         city: addressData.city,
         state: addressData.state,
         neighborhood: addressData.neighborhood,
-        number: addressData.number, // Enviando para a coluna separada
-        complement: addressData.complement, // Enviando para a coluna separada
+        number: addressData.number,
+        complement: addressData.complement,
         whatsapp: onlyNumbers(whatsapp),
         phone: onlyNumbers(phone),
         instagram: socials.instagram
@@ -482,8 +483,10 @@ export default function BusinessEditor({
             ? socials.website
             : `https://${socials.website}`
           : "",
-        gallery: validGallery,
-        videos: videos.filter((v) => v.trim() !== ""), // 🚀 SALVA APENAS LINKS NÃO VAZIOS
+        // 🚀 ENVIA O FEED EXATO DA PASSARELA (O backend separa automático)
+        mediaFeed: mediaFeed.filter(
+          (m: any) => typeof m.url === "string" && m.url.trim() !== "",
+        ),
         imageUrl: profileImage,
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
@@ -512,13 +515,11 @@ export default function BusinessEditor({
           (f) => f.q.trim() !== "" && f.a.trim() !== "",
         );
 
-        // ✅ COLE ESTE TRECHO NO LUGAR:
         const updateResult = await updateFullBusiness(business.slug, payload);
 
         if (!updateResult.success) {
-          setIsLoading(false); // Destrava o botão de salvar
+          setIsLoading(false);
 
-          // 🎨 Alerta Profissional (Sonner)
           toast.error("Não foi possível salvar", {
             description:
               updateResult.error || "Verifique os dados e tente novamente.",
@@ -527,7 +528,6 @@ export default function BusinessEditor({
 
           const errorMessage = updateResult.error?.toLowerCase() || "";
 
-          // 📍 SE FOR ERRO DE MAPA/ENDEREÇO: Faz scroll até a seção de endereço
           if (
             errorMessage.includes("endereço") ||
             errorMessage.includes("mapa")
@@ -538,7 +538,6 @@ export default function BusinessEditor({
             });
           }
 
-          // 🔗 SE FOR ERRO DE SLUG/LINK: Foca no campo de Link
           if (errorMessage.includes("link") || errorMessage.includes("slug")) {
             setSlugError(true);
             slugRef.current?.scrollIntoView({
@@ -549,7 +548,7 @@ export default function BusinessEditor({
             setTimeout(() => setSlugError(false), 4000);
           }
 
-          return; // Para a execução aqui
+          return;
         }
 
         await updateBusinessHours(business.slug, businessHours);
@@ -572,7 +571,7 @@ export default function BusinessEditor({
         fireConfetti();
         toast.success("Seu negócio foi criado com sucesso!");
         router.push("/dashboard");
-        router.refresh(); // Força o dashboard a ler do banco de novo
+        router.refresh();
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
@@ -592,20 +591,17 @@ export default function BusinessEditor({
   };
 
   const handleSlugChange = (val: string) => {
-    // 1. Troca qualquer espaço digitado por hífen IMEDIATAMENTE
     let newSlug = val.replace(/\s+/g, "-");
-
-    // 2. Força tudo para minúsculo
     newSlug = newSlug.toLowerCase();
-
-    // 3. Remove acentos (ex: á vira a, ç vira c)
     newSlug = newSlug.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-    // 4. Arranca fora qualquer caractere especial que quebre o link (deixa só letra, número e hífen)
     newSlug = newSlug.replace(/[^a-z0-9\-]/g, "");
-
     setSlug(newSlug);
   };
+
+  // Aqui pegamos só as imagens do mediaFeed pra mandar pro preview mobile não quebrar
+  const mockGallery = useMemo(() => {
+    return mediaFeed.filter((m) => m.type === "image").map((m) => m.url);
+  }, [mediaFeed]);
 
   if (!isMounted) return null;
   return (
@@ -651,8 +647,8 @@ export default function BusinessEditor({
                 <button
                   onClick={() => {
                     const newStatus = !isPublished;
-                    setIsPublished(newStatus); // Atualiza a cor do botão na hora
-                    handleUpdate(newStatus); // 🚀 Salva no banco instantaneamente com o valor correto!
+                    setIsPublished(newStatus);
+                    handleUpdate(newStatus);
                   }}
                   disabled={isLoading}
                   className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm ${isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100" : "bg-rose-100 text-rose-600 border-rose-200 hover:bg-rose-200"}`}
@@ -667,7 +663,7 @@ export default function BusinessEditor({
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    handleDeleteAction(); // 🚀 AGORA ELE REALMENTE DELETA!
+                    handleDeleteAction();
                   }}
                   title="Excluir Vitrine"
                   className="p-3 text-rose-300 hover:text-rose-500 transition-all shadow-sm bg-white rounded-xl border border-rose-100 hover:bg-rose-50"
@@ -677,7 +673,7 @@ export default function BusinessEditor({
               </>
             )}
             <button
-              onClick={() => handleUpdate()} // 🚀 Agora ele só chama a função limpa!
+              onClick={() => handleUpdate()}
               disabled={isLoading || !hasChanges}
               className={`hidden md:flex items-center gap-3 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-sm ${
                 !hasChanges && !isNew && !isLoading
@@ -693,9 +689,6 @@ export default function BusinessEditor({
       </div>
 
       <main className="max-w-4xl mx-auto px-4 py-12 space-y-12">
-        {/* =========================================================
-            SEÇÃO 1: DESIGN & IDENTIDADE (Fatiado!)
-            ========================================================= */}
         <div className="space-y-8">
           <IdentitySection
             name={name}
@@ -722,14 +715,13 @@ export default function BusinessEditor({
             filteredThemeKeys={filteredThemeKeys}
           />
 
-          {/* PREVIEW MOBILE (Mantemos aqui para você ver as mudanças em tempo real) */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 mt-8">
             <MobilePreview
               themeKey={selectedTheme}
               name={name}
               description={description}
               profileImage={profileImage}
-              gallery={gallery}
+              gallery={mockGallery}
               layoutLabel={currentLayoutData.label}
               comercial_badge={layoutText}
               luxe_quote={layoutText}
@@ -738,7 +730,6 @@ export default function BusinessEditor({
             />
           </div>
 
-          {/* SEÇÃO DE SEGMENTAÇÃO (Nichos e Tags) */}
           <SegmentationSection
             categoria={categoria}
             setCategoria={setCategoria}
@@ -751,12 +742,10 @@ export default function BusinessEditor({
             categoryKeys={categoryKeys}
           />
 
-          {/* SEÇÃO DE CONTEÚDO (Galeria, Vídeos, Sobre, Diferenciais e FAQ) */}
+          {/* AQUI NÓS CHAMAMOS A CONTENT SECTION PASSANDO A MÍDIA */}
           <ContentSection
-            validGallery={validGallery}
-            setGallery={setGallery}
-            videos={videos} // 🚀 PASSA OS VÍDEOS
-            setVideos={setVideos} // 🚀 PASSA A FUNÇÃO DE EDITAR VÍDEOS
+            mediaFeed={mediaFeed}
+            setMediaFeed={setMediaFeed}
             description={description}
             setDescription={setDescription}
             features={features}
@@ -765,9 +754,7 @@ export default function BusinessEditor({
             setFaqs={setFaqs}
           />
         </div>
-        {/* =========================================================
-    SEÇÃO 3: CONEXÕES, VENDAS E LOCALIZAÇÃO
-    ========================================================= */}
+
         <div className="space-y-8">
           <div className="flex items-center gap-4 py-4">
             <div className="h-px bg-slate-200 flex-1"></div>
@@ -777,7 +764,6 @@ export default function BusinessEditor({
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
 
-          {/* CONTATOS PRINCIPAIS */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 relative overflow-hidden">
             <ConnectionsSection
               socials={socials}
@@ -789,7 +775,6 @@ export default function BusinessEditor({
             />
           </div>
 
-          {/* LOCALIZAÇÃO */}
           <div id="address-section">
             <AddressSection
               addressData={addressData}
@@ -797,7 +782,6 @@ export default function BusinessEditor({
             />
           </div>
 
-          {/* HORÁRIOS */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
               <Clock size={18} className="text-emerald-500" /> Horários de
@@ -812,16 +796,15 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        {/* BOTÃO FLUTUANTE DE SALVAR */}
         <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-[60] gap-3 pointer-events-none">
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
             <AnimatePresence>
               {!isPublished && !isLoading && (
                 <motion.button
                   onClick={(e) => {
-                    e.preventDefault(); // Evita qualquer comportamento padrão
-                    setIsPublished(true); // Muda o estado visualmente na hora
-                    handleUpdate(true); // 🚀 Manda pro banco de dados salvar como Online!
+                    e.preventDefault();
+                    setIsPublished(true);
+                    handleUpdate(true);
                   }}
                   initial={{ y: 5, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -841,7 +824,7 @@ export default function BusinessEditor({
               )}
             </AnimatePresence>
             <button
-              onClick={() => handleUpdate()} // 🚀 O mesmo ajuste aqui!
+              onClick={() => handleUpdate()}
               disabled={isLoading || !hasChanges}
               className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic ${
                 isLoading || (!hasChanges && !isNew)

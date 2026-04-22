@@ -562,8 +562,13 @@ export async function createBusiness(payload: any) {
           latitude: coords.lat,
           longitude: coords.lng,
           imageUrl: payload.imageUrl || "",
-          gallery: payload.gallery || [],
-          videos: payload.videos || [],
+          mediaFeed: payload.mediaFeed || [],
+          gallery: (payload.mediaFeed || [])
+            .filter((m: any) => m.type === "image")
+            .map((m: any) => m.url),
+          videos: (payload.mediaFeed || [])
+            .filter((m: any) => m.type === "video")
+            .map((m: any) => m.url),
           features: payload.features || [],
           keywords: Array.from(
             new Set([
@@ -688,8 +693,11 @@ export async function updateFullBusiness(slug: string, payload: any) {
 
     // Se fotos da galeria antiga não estão na nova, vão para o lixo
     const galeriaAntiga = (old.gallery as string[]) || [];
+    const novaGaleriaUrls = (payload.mediaFeed || [])
+      .filter((m: any) => m.type === "image")
+      .map((m: any) => m.url);
     galeriaAntiga.forEach((url) => {
-      if (!payload.gallery?.includes(url)) {
+      if (!novaGaleriaUrls.includes(url)) {
         linksParaDeletar.push(url);
       }
     });
@@ -751,8 +759,13 @@ export async function updateFullBusiness(slug: string, payload: any) {
         mercadoLivre: validatedData.mercadoLivre?.trim() || "",
         shein: validatedData.shein?.trim() || "",
         ifood: validatedData.ifood?.trim() || "",
-        gallery: payload.gallery || [],
-        videos: payload.videos || [],
+        mediaFeed: payload.mediaFeed || [],
+        gallery: (payload.mediaFeed || [])
+          .filter((m: any) => m.type === "image")
+          .map((m: any) => m.url),
+        videos: (payload.mediaFeed || [])
+          .filter((m: any) => m.type === "video")
+          .map((m: any) => m.url),
         faqs: payload.faqs || [],
       },
     });

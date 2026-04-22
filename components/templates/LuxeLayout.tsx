@@ -1,30 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { toast } from "sonner";
 import {
-  Share2,
-  X,
   Instagram,
   Facebook,
   Globe,
-  PhoneCall,
+  X,
+  Share2,
+  Phone,
+  Clock,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
   Plus,
   Minus,
-  Maximize2,
-  Quote,
-  Video,
-  MessageCircle,
-  MapPin,
-  Clock,
+  Sparkles,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
+import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
-import { useBusiness } from "@/lib/useBusiness";
 import { businessThemes } from "@/lib/themes";
+import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
 
@@ -35,7 +32,6 @@ const TikTokIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Ícones Oficiais Customizados
 const MeliIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
@@ -61,10 +57,10 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- MOTOR DE VÍDEOS EMBED (ESTILO LUXE - PURO & MINIMALISTA) ---
+// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO) ---
 const VideoEmbed = ({ url }: { url: string }) => {
   let embedUrl = "";
-  let isVertical = false;
+  let isInstagram = false;
 
   try {
     if (url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -74,18 +70,16 @@ const VideoEmbed = ({ url }: { url: string }) => {
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        isVertical = url.includes("shorts/");
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
       embedUrl = `${cleanUrl}/embed`;
-      isVertical = true;
+      isInstagram = true;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
         embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-        isVertical = true;
       }
     }
   } catch (e) {}
@@ -93,45 +87,126 @@ const VideoEmbed = ({ url }: { url: string }) => {
   if (!embedUrl) return null;
 
   return (
-    <div
-      className={`overflow-hidden bg-black/5 rounded-sm border border-black/5 shadow-md ${isVertical ? "aspect-[9/16] w-full" : "aspect-video w-full"}`}
-    >
+    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto">
       <iframe
         src={embedUrl}
-        className="w-full h-full border-0 pointer-events-auto"
+        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
-        scrolling="no" /* 🚀 MATA O SCROLL DO INSTAGRAM */
+        scrolling="no"
       />
     </div>
   );
 };
 
-const handleShare = async (businessName: string) => {
+// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Tamanho Refinado e Margens Ajustadas)
+const MasterRunway = ({
+  feed,
+  setSelectedIndex,
+  themeBorder,
+  isLight,
+}: any) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current)
+      scrollRef.current.scrollBy({
+        left: dir === "left" ? -320 : 320,
+        behavior: "smooth",
+      });
+  };
+  const arrowClass = `hidden md:flex absolute top-[50%] -translate-y-1/2 z-20 w-14 h-14 items-center justify-center rounded-full opacity-0 group-hover/runway:opacity-100 transition-all duration-500 hover:scale-105 bg-current/5 border ${themeBorder} text-current backdrop-blur-md shadow-2xl hover:bg-current/10`;
+
+  return (
+    <div className="relative group/runway w-full">
+      {/* Setas jogadas para fora no desktop para não cobrir o card */}
+      <button
+        onClick={() => scroll("left")}
+        className={`${arrowClass} -left-4 lg:-left-8`}
+      >
+        <ChevronLeft size={28} strokeWidth={1.5} />
+      </button>
+
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-4 md:gap-6 overflow-x-auto snap-x no-scrollbar pb-10 md:pb-16 pt-4 scroll-smooth px-6 md:px-2 lg:px-0"
+      >
+        {feed.map((item: any, i: number) => {
+          // 🚀 PADRÃO DE TAMANHO REDUZIDO E ELEGANTE (Instagram se adapta automaticamente)
+          const cardBaseClasses = `shrink-0 snap-center w-[200px] sm:w-[240px] md:w-[280px] lg:w-[320px] aspect-[4/5] relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] shadow-[0_15px_35px_-15px_rgba(0,0,0,0.3)] border-[0.5px] ${themeBorder} transition-all duration-700 hover:-translate-y-2 group bg-black/5`;
+
+          if (item.type === "image") {
+            return (
+              <motion.div
+                key={`img-${i}`}
+                onClick={() => setSelectedIndex(item.lightboxIndex)}
+                className={`${cardBaseClasses} cursor-pointer`}
+              >
+                <img
+                  src={item.url}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                  alt="Showcase"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                  <Plus
+                    size={48}
+                    className="text-white drop-shadow-2xl scale-50 group-hover:scale-100 transition-transform duration-500"
+                    strokeWidth={1}
+                  />
+                </div>
+              </motion.div>
+            );
+          }
+
+          // Se for VÍDEO (Youtube, Reels, Tiktok), usa a exata mesma caixa e proporção
+          if (
+            item.type === "video" ||
+            item.type === "video_v" ||
+            item.type === "video_h"
+          ) {
+            return (
+              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
+                <VideoEmbed url={item.url} />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+
+      <button
+        onClick={() => scroll("right")}
+        className={`${arrowClass} -right-4 lg:-right-8`}
+      >
+        <ChevronRight size={28} strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+};
+
+const handleShare = async (name: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: businessName,
-        text: `Conheça ${businessName}:`,
-        url,
-      });
+      await navigator.share({ title: name, text: `Experience ${name}:`, url });
       return;
     } catch (err) {}
   }
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(url);
-    toast.success("Link copiado!");
+    toast.success("Link copied to clipboard.");
   }
 };
 
-const formatPhoneNumber = (phone: string) => {
+const formatPhoneNumber = (phone?: string | null) => {
   const cleaned = (phone || "").replace(/\D/g, "");
   const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
   if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
   const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
   if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-  return phone;
+  return phone || "";
 };
 
 const formatExternalLink = (url: string) => {
@@ -140,42 +215,43 @@ const formatExternalLink = (url: string) => {
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
 };
 
-const LuxeAccordion = ({ q, a, theme }: any) => {
+// --- ACORDEÃO LUXO ---
+const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className={`border-b ${theme.border} last:border-0`}>
+    <div className={`border-b ${themeBorder} transition-all duration-500 py-3`}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-6 flex justify-between items-center text-left gap-4 group bg-transparent border-none outline-none"
+        className="w-full py-5 flex justify-between items-center text-left gap-6 outline-none bg-transparent group"
       >
         <span
-          className={`text-xl md:text-3xl font-serif italic ${isOpen ? theme.primary : theme.textColor}`}
+          className={`text-lg md:text-2xl font-serif italic ${isOpen ? primary : "opacity-90"} group-hover:opacity-100 transition-colors`}
         >
           {q}
         </span>
-        <span
-          className={`shrink-0 transition-transform duration-500 ${isOpen ? "rotate-180" : ""}`}
+        <div
+          className={`w-8 h-8 rounded-full border border-current/10 flex items-center justify-center transition-all duration-500 group-hover:border-current/30 ${isOpen ? primary : ""}`}
         >
           {isOpen ? (
-            <Minus size={24} className={theme.primary} />
+            <Minus size={16} strokeWidth={1.5} />
           ) : (
-            <Plus size={24} className="opacity-40" />
+            <Plus size={16} strokeWidth={1.5} />
           )}
-        </span>
+        </div>
       </button>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: "hidden" }}
           >
-            <p
-              className={`pb-10 text-base md:text-lg font-light opacity-80 leading-relaxed font-sans max-w-3xl ${theme.subTextColor} whitespace-pre-line break-words`}
-            >
+            <div className="pb-8 pt-2 text-sm md:text-base font-light leading-loose opacity-70 tracking-wide max-w-3xl whitespace-pre-line break-words pl-2">
               {a}
-            </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -207,65 +283,132 @@ export default function LuxeLayout({
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const theme =
-    propTheme || businessThemes[business.theme] || businessThemes["editorial"];
-  const safeAddress = fullAddress || business.address;
-  const gallery = Array.isArray(business.gallery)
-    ? business.gallery.filter(Boolean)
-    : [];
-
-  const videos = Array.isArray(business.videos)
-    ? business.videos.filter(Boolean)
-    : [];
-  const faqs = (business.faqs || []).filter(
-    (f: any) => (f.q || f.question) && (f.a || f.answer),
+  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
+    "all",
   );
-
-  // LISTA INTELIGENTE DE LOJAS
-  const salesChannels = [
-    {
-      key: "mercadoLivre",
-      name: "Mercado Livre",
-      icon: <MeliIcon className="w-3 h-3 md:w-4 md:h-4" />,
-      url: business.mercadoLivre,
-      hoverClass: "hover:border-[#FFE600] hover:text-[#FFE600]",
-    },
-    {
-      key: "shopee",
-      name: "Shopee",
-      icon: <ShopeeIcon className="w-3 h-3 md:w-4 md:h-4" />,
-      url: business.shopee,
-      hoverClass: "hover:border-[#EE4D2D] hover:text-[#EE4D2D]",
-    },
-    {
-      key: "ifood",
-      name: "iFood",
-      icon: <IfoodIcon className="w-3 h-3 md:w-4 md:h-4" />,
-      url: business.ifood,
-      hoverClass: "hover:border-[#EA1D2C] hover:text-[#EA1D2C]",
-    },
-    {
-      key: "shein",
-      name: "Shein",
-      icon: <SheinIcon className="w-3 h-3 md:w-4 md:h-4" />,
-      url: business.shein,
-      hoverClass: `hover:border-current hover:${theme.primary}`,
-    },
-  ].filter((c) => c.url && c.url.trim() !== "");
 
   const footerTriggerRef = useRef(null);
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
   });
 
+  const theme =
+    propTheme || businessThemes[business?.theme] || businessThemes["luxe_rose"];
+
+  const isLight = ![
+    "#0b090a",
+    "#000000",
+    "#111111",
+    "#0a0a0a",
+    "#0f0a0c",
+    "#020617",
+    "#022c22",
+    "#170505",
+  ].some((c) => theme.bgPage.toLowerCase().includes(c));
+
+  const border = "border-current/10";
+  const primary = theme.primary || "text-current";
+  const bgAction = theme.bgAction || "bg-current text-white";
+  const bgHero = theme.bgHero || theme.bgPage;
+
+  // MATERIAIS DE VIDRO
+  const glassBg = isLight ? "bg-white/60" : "bg-black/30";
+  const glassBorder = isLight ? "border-black/5" : "border-white/10";
+  const cardShadow = isLight
+    ? "shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]"
+    : "shadow-[0_15px_40px_-15px_rgba(0,0,0,0.4)]";
+
+  const addressBase = business?.address || "";
+  const hasNumberInAddress =
+    business?.number && addressBase.includes(business.number);
+  const safeAddress =
+    fullAddress ||
+    `${addressBase}${!hasNumberInAddress && business?.number ? `, ${business.number}` : ""} ${business?.complement || ""}`;
+
+  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED (Puxa direto do banco a ordem do cliente!)
+  const rawFeed = useMemo(() => {
+    // Se ele usou o novo painel, pega a ordem que ele fez lá
+    if (business.mediaFeed && business.mediaFeed.length > 0) {
+      return business.mediaFeed;
+    }
+    // Se ele é um usuário velho que não atualizou o perfil ainda, junta as fotos e vídeos avulsos
+    const oldGallery = (business.gallery || []).map((url: string) => ({
+      type: "image",
+      url,
+    }));
+    const oldVideos = (business.videos || []).map((url: string) => ({
+      type: "video",
+      url,
+    }));
+    return [...oldGallery, ...oldVideos];
+  }, [business.mediaFeed, business.gallery, business.videos]);
+
+  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
+  const cleanFeed = useMemo(() => {
+    let imgIndexCounter = 0;
+    return rawFeed
+      .filter(
+        (item: any) =>
+          item && typeof item.url === "string" && item.url.trim() !== "",
+      )
+      .map((item: any) => {
+        if (item.type === "image") {
+          return { ...item, lightboxIndex: imgIndexCounter++ };
+        }
+        return item;
+      });
+  }, [rawFeed]);
+
+  // Lista pura de imagens pro Lightbox (Modal tela cheia)
+  const lightboxImages = useMemo(() => {
+    return cleanFeed
+      .filter((item: any) => item.type === "image")
+      .map((item: any) => item.url);
+  }, [cleanFeed]);
+
   const safeSetIndex = useCallback(
     (next: number) => {
-      if (gallery.length === 0) return;
-      setSelectedIndex((next + gallery.length) % gallery.length);
+      if (lightboxImages.length === 0) return;
+      setSelectedIndex((next + lightboxImages.length) % lightboxImages.length);
     },
-    [gallery.length],
+    [lightboxImages.length],
   );
+  const faqs = (business.faqs || []).filter(
+    (f: any) => (f.q || f.question) && (f.a || f.answer),
+  );
+
+  const salesChannels = [
+    {
+      key: "mercadoLivre",
+      name: "Mercado Livre",
+      icon: <MeliIcon className="w-5 h-5" />,
+      url: business.mercadoLivre,
+      hover: "hover:text-[#FFE600]",
+    },
+    {
+      key: "shopee",
+      name: "Shopee",
+      icon: <ShopeeIcon className="w-5 h-5" />,
+      url: business.shopee,
+      hover: "hover:text-[#EE4D2D]",
+    },
+    {
+      key: "ifood",
+      name: "iFood",
+      icon: <IfoodIcon className="w-5 h-5" />,
+      url: business.ifood,
+      hover: "hover:text-[#EA1D2C]",
+    },
+    {
+      key: "shein",
+      name: "Shein",
+      icon: <SheinIcon className="w-5 h-5" />,
+      url: business.shein,
+      hover: "hover:opacity-100",
+    },
+  ].filter((c) => c.url && c.url.trim() !== "");
 
   const handleTrackLead = useCallback(
     async (type: "whatsapp" | "phone") => {
@@ -273,11 +416,10 @@ export default function LuxeLayout({
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
       if (!cleanNumber) return;
-
       const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
-      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+      const message = `Olá. Gostaria de atendimento via Tafanu para a marca ${business?.name || ""}.`;
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
@@ -295,58 +437,47 @@ export default function LuxeLayout({
     document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
   }, [selectedIndex]);
 
-  // --- PREPARAÇÃO DO ENDEREÇO PARA O MAPA ---
-  const addressPartsForMap = [
-    business.address,
-    business.number,
-    business.neighborhood,
-    business.city,
-    business.state,
-    business.cep,
-  ].filter(Boolean);
-
-  const completeAddressForMap = addressPartsForMap.join(", ");
-
   const mapDestination =
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
-      : completeAddressForMap;
-
+      : `${business.address || ""}, ${business.city || ""}, ${business.state || ""}`.trim();
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
 
   return (
     <div
-      className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-serif pb-0 overflow-x-hidden transition-colors duration-1000`}
+      className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-current selection:text-${isLight ? "white" : "black"} transition-colors duration-1000`}
     >
-      {/* --- HEADER LUXE: THE EXHIBITION --- */}
+      <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] pointer-events-none z-[0] opacity-[0.06] blur-[120px] rounded-full mix-blend-screen"
+        style={{
+          backgroundColor:
+            theme.primary.replace("text-[", "").replace("]", "") ||
+            "currentColor",
+        }}
+      />
+
       <header
-        className={`relative w-full min-h-[65vh] md:min-h-[75vh] flex flex-col items-center justify-center overflow-hidden ${theme.bgPage} border-b ${theme.border}`}
+        className={`relative w-full pt-16 pb-10 md:pt-32 md:pb-24 px-4 md:px-8 flex flex-col items-center justify-center ${bgHero} shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)] overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] z-30 min-h-[50vh] md:min-h-[70vh]`}
       >
-        <div className="absolute inset-0 pointer-events-none flex justify-center">
-          <div className="w-[1px] h-full bg-gradient-to-b from-transparent via-black/10 to-transparent" />
-          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-y-1/2" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50 mix-blend-overlay">
+          <div className="absolute -top-[50%] -left-[20%] w-[100%] h-[100%] rounded-full bg-white/20 blur-[120px]" />
+          <div className="absolute -bottom-[50%] -right-[20%] w-[100%] h-[100%] rounded-full bg-black/40 blur-[120px]" />
         </div>
 
-        {business.name && (
+        <div className="absolute top-6 md:top-8 right-4 md:right-8 z-40">
           <div
-            className="absolute top-0 left-[-5%] text-[60vh] md:text-[80vh] leading-none font-serif italic select-none pointer-events-none opacity-[0.02] -z-0"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+            className={`flex items-center gap-3 bg-current/5 px-4 py-2 md:px-5 md:py-2.5 rounded-full border border-current/10 backdrop-blur-xl shadow-lg text-current/80 hover:text-current transition-colors`}
           >
-            {business.name.charAt(0).toUpperCase()}
-          </div>
-        )}
-
-        <div className="absolute top-6 right-6 z-30">
-          <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl px-4 py-2 rounded-full border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all hover:bg-white/90">
             <button
               onClick={() => handleShare(business.name)}
-              className="w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-full transition-colors text-slate-900"
+              className="transition-all hover:scale-110"
             >
-              <Share2 size={16} strokeWidth={1.5} />
+              <Share2 className="w-4 h-4 md:w-5 md:h-5" strokeWidth={1.5} />
             </button>
-            <div className="w-[1px] h-4 bg-black/10" />
+            <div className="w-[1px] h-4 bg-current/20" />
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -356,642 +487,514 @@ export default function LuxeLayout({
           </div>
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col items-center justify-center mt-16 md:mt-24">
-          {business.city && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="flex items-center gap-6 mb-8 md:mb-10"
+        <div className="relative z-20 w-full max-w-5xl mx-auto flex flex-col items-center text-center mt-5 md:mt-0">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="mb-5 md:mb-8 w-full px-2 flex justify-center"
+          >
+            <span
+              className={`inline-block max-w-[95%] text-[9px] md:text-xs font-sans font-bold tracking-[0.2em] md:tracking-[0.4em] uppercase text-current/90 drop-shadow-sm bg-current/5 px-5 py-3 rounded-2xl md:rounded-full border border-current/10 leading-relaxed text-balance`}
             >
-              <div className="w-12 md:w-24 h-[1px] bg-black/20" />
-              <span className="text-[9px] md:text-[11px] uppercase tracking-[0.4em] font-bold opacity-60">
-                {business.city}
-              </span>
-              <div className="w-12 md:w-24 h-[1px] bg-black/20" />
-            </motion.div>
-          )}
-
-          {business.imageUrl && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 1.2,
-                delay: 0.1,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="relative z-20 flex flex-col items-center group mb-8 md:mb-12"
-            >
-              <div className="absolute -inset-6 md:-inset-10 border border-black/10 rounded-full scale-100 group-hover:scale-110 transition-transform duration-1000 ease-out" />
-              <div className="absolute -inset-2 md:-inset-4 border border-black/5 rounded-full scale-100 group-hover:scale-[1.15] transition-transform duration-700 ease-out delay-75" />
-
-              <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 md:border-8 border-white bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden relative">
-                <img
-                  src={business.imageUrl}
-                  loading="eager"
-                  decoding="async"
-                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-[1.5s]"
-                  alt={`Logo de ${business.name}`}
-                />
-              </div>
-            </motion.div>
-          )}
+              {business.urban_tag || business.city || "Boutique"}
+            </span>
+          </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              fontFamily: "'Playfair Display', 'Didot', 'Bodoni MT', serif",
-            }}
-            className={`text-[clamp(3rem,8vw,8rem)] font-normal uppercase tracking-[0.05em] md:tracking-[0.1em] leading-[0.9] text-center ${theme.textColor} relative z-30 drop-shadow-sm px-4`}
+            transition={{ duration: 1.2, delay: 0.1, ease: "easeOut" }}
+            className="text-5xl md:text-7xl lg:text-[7rem] font-serif italic tracking-tight text-current leading-[1.05] mb-4 md:mb-8 font-medium px-4 drop-shadow-sm"
           >
             {business.name}
           </motion.h1>
 
-          <div className="w-[1px] h-16 md:h-24 bg-gradient-to-b from-black/20 to-transparent mt-12 md:mt-16" />
+          {hasDescription && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+              className="text-sm md:text-lg font-light text-current/80 max-w-3xl leading-relaxed mb-6 md:mb-10 px-4 text-balance"
+            >
+              {business.description}
+            </motion.p>
+          )}
+
+          {business.imageUrl && (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
+              className="relative z-30"
+            >
+              <div
+                className={`w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border border-current/10 p-1.5 shadow-xl bg-current/5 backdrop-blur-xl`}
+              >
+                <img
+                  src={business.imageUrl}
+                  className="w-full h-full object-cover rounded-full"
+                  alt="Logo"
+                />
+              </div>
+            </motion.div>
+          )}
         </div>
       </header>
 
-      <main className="relative z-10 px-4 container mx-auto max-w-7xl pb-20 pt-16">
-        {/* STORY & QUOTE */}
-        {(hasDescription || business.luxe_quote) && (
-          <section className="pt-8 pb-12 md:pt-10 md:pb-16 border-b border-black/5 px-4 md:px-0 overflow-hidden">
-            <div
-              className={`w-full max-w-7xl mx-auto ${
-                business.luxe_quote && hasDescription
-                  ? "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center"
-                  : "flex flex-col items-center text-center max-w-5xl mx-auto"
-              }`}
-            >
-              {hasDescription && (
-                <div
-                  className={`flex flex-col ${business.luxe_quote ? "md:col-span-7 text-left md:border-r border-black/10 md:pr-12" : "items-center text-center"}`}
-                >
-                  <span
-                    className={`text-xs md:text-sm uppercase tracking-[0.4em] font-bold block mb-4 md:mb-6 opacity-80 ${theme.primary}`}
-                  >
-                    Editorial
-                  </span>
-
-                  <div
-                    className={`w-12 h-[1px] ${theme.bgAction} mb-6 md:mb-8 opacity-50 ${!business.luxe_quote ? "mx-auto" : ""}`}
-                  />
-
-                  <p className="text-lg md:text-xl font-light leading-relaxed opacity-90 whitespace-pre-wrap break-words">
-                    {business.description}
-                  </p>
-                </div>
-              )}
-
-              {business.luxe_quote && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  className={`relative z-0 ${!hasDescription ? "text-center" : "md:col-span-5 text-center mt-12 md:mt-0 px-0"}`}
-                >
-                  <Quote
-                    className={`absolute -top-6 left-1/2 -translate-x-1/2 md:-top-10 md:right-[-20px] md:left-auto md:translate-x-0 w-20 h-20 md:w-32 md:h-32 opacity-5 ${theme.primary} -z-10`}
-                  />
-
-                  <h2
-                    className={`text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-serif italic leading-[1.2] opacity-95 ${theme.primary} w-full inline-block px-0`}
-                  >
-                    "{business.luxe_quote}"
-                  </h2>
-                </motion.div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* DESTAQUES */}
-        {hasFeatures && (
-          <section className="py-16 md:py-20 border-b border-current/5 px-4 md:px-0">
-            <div className="max-w-6xl mx-auto flex flex-col items-center">
-              <div className="text-center mb-12 md:mb-16">
-                <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-3 opacity-50">
-                  A Assinatura
-                </span>
-                <h3
-                  className={`text-4xl md:text-5xl font-serif italic mb-5 opacity-90 ${theme.primary}`}
-                >
-                  Nossos Destaques
-                </h3>
-                <div
-                  className={`w-10 h-[1.5px] ${theme.bgAction} mx-auto opacity-40`}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full">
-                {rawBusiness.features
-                  .filter((f: string) => f.trim() !== "")
-                  .map((f: string, i: number) => (
-                    <div
-                      key={i}
-                      className={`relative group flex flex-col items-center justify-center text-center p-8 md:p-10 ${theme.bgSecondary} border border-current/10 hover:border-current/30 transition-all duration-500 shadow-xl hover:-translate-y-1 overflow-hidden rounded-xl`}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                      <div className="absolute inset-2 border border-current/5 group-hover:border-current/10 transition-colors duration-500 pointer-events-none rounded-lg" />
-                      <div className="relative z-10 w-2 h-2 mb-5">
-                        <div
-                          className={`absolute inset-0 rotate-45 ${theme.bgAction} shadow-[0_0_10px_currentColor]`}
-                        />
-                      </div>
-                      <span className="relative z-10 font-serif text-sm md:text-base uppercase tracking-[0.1em] font-medium opacity-90 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed text-balance">
-                        {f}
-                      </span>
-                      <div
-                        className={`absolute bottom-0 left-0 h-[3px] ${theme.bgAction} w-0 group-hover:w-full transition-all duration-700`}
-                      />
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* GALERIA */}
-        {hasGallery && (
-          <section className="py-24 border-b border-black/5">
-            <div className="text-center mb-16">
-              <h3
-                className={`text-4xl md:text-7xl font-serif italic mb-4 ${theme.primary}`}
-              >
-                Curadoria Visual
-              </h3>
-              <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30">
-                Portfolio
-              </span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-              {gallery.map((img: string, i: number) => (
-                <motion.div
-                  key={i}
-                  onClick={() => setSelectedIndex(i)}
-                  whileHover={{ y: -10 }}
-                  className="relative aspect-[3/4] cursor-pointer overflow-hidden rounded-sm bg-neutral-100 shadow-md"
-                >
-                  <img
-                    src={img}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-[1.5s] hover:scale-110"
-                    alt="Galeria"
-                  />
-                  <div className="absolute inset-0 bg-black/5 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Maximize2 className="text-white" size={24} />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* VÍDEOS */}
-        {videos.length > 0 &&
+      {/* ==========================================
+          🚀 THE MASTER RUNWAY (Vitrine Unificada Padronizada)
+          ========================================== */}
+      <section className="w-full max-w-7xl mx-auto px-0 md:px-12 pt-20 md:pt-32 relative z-20">
+        {cleanFeed.length > 0 &&
           (() => {
-            const horizontalVideos = videos.filter(
-              (vid: string) =>
-                (vid.includes("youtube.com") || vid.includes("youtu.be")) &&
-                !vid.includes("shorts"),
-            );
-            const verticalVideos = videos.filter(
-              (vid: string) =>
-                vid.includes("shorts") ||
-                vid.includes("instagram.com") ||
-                vid.includes("tiktok.com"),
-            );
+            // A Lógica do Filtro atuando no Feed
+            const filteredFeed = cleanFeed.filter((item: any) => {
+              if (mediaFilter === "all") return true;
+              if (mediaFilter === "photos") return item.type === "image";
+              if (mediaFilter === "motion")
+                return (
+                  item.type === "video" ||
+                  item.type === "video_v" ||
+                  item.type === "video_h"
+                );
+              return true;
+            });
+
+            if (filteredFeed.length === 0) return null;
 
             return (
-              <section className="py-24 border-b border-black/5 max-w-7xl mx-auto px-4 md:px-0">
-                <div className="text-center mb-16 md:mb-24">
-                  <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
-                    Motion
-                  </span>
-                  <h3
-                    className={`text-4xl md:text-7xl font-serif italic mb-6 opacity-95 ${theme.primary}`}
-                  >
-                    Experiência Cinema
+              <div className="w-full mb-12 md:mb-24">
+                <div className="flex flex-col items-center text-center mb-8 px-4">
+                  <h3 className="text-3xl md:text-5xl font-serif italic tracking-tight opacity-90 flex items-center gap-4 mb-8">
+                    <Sparkles
+                      className={`w-6 h-6 md:w-8 md:h-8 ${primary}`}
+                      strokeWidth={1.5}
+                    />
+                    The Collection
                   </h3>
-                  <div
-                    className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
-                  />
+
+                  <div className="flex items-center p-1 bg-current/5 border border-current/10 rounded-full backdrop-blur-md">
+                    <button
+                      onClick={() => setMediaFilter("all")}
+                      className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? bgAction : "text-current/50 hover:text-current"}`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setMediaFilter("photos")}
+                      className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? bgAction : "text-current/50 hover:text-current"}`}
+                    >
+                      Photos
+                    </button>
+                    <button
+                      onClick={() => setMediaFilter("motion")}
+                      className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? bgAction : "text-current/50 hover:text-current"}`}
+                    >
+                      Motion
+                    </button>
+                  </div>
                 </div>
 
-                {horizontalVideos.length > 0 && (
-                  <div className="mb-24 last:mb-0">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-16 max-w-6xl mx-auto">
-                      {horizontalVideos.map((vid: string, i: number) => (
-                        <div
-                          key={`h-${i}`}
-                          className="p-3 md:p-4 bg-white/40 backdrop-blur-md rounded-2xl border border-black/5 shadow-2xl hover:-translate-y-2 transition-transform duration-700"
-                        >
-                          <VideoEmbed url={vid} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {verticalVideos.length > 0 && (
-                  <div className="flex justify-center w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-16 w-full max-w-6xl">
-                      {verticalVideos.map((vid: string, i: number) => (
-                        <div
-                          key={`v-${i}`}
-                          className="p-3 md:p-4 bg-white/40 backdrop-blur-md rounded-2xl border border-black/5 shadow-2xl w-full max-w-[380px] mx-auto hover:-translate-y-2 transition-transform duration-700"
-                        >
-                          <VideoEmbed url={vid} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </section>
+                <div className="w-full">
+                  <MasterRunway
+                    key={mediaFilter}
+                    feed={filteredFeed}
+                    setSelectedIndex={setSelectedIndex}
+                    themeBorder={border}
+                    isLight={isLight}
+                  />
+                </div>
+              </div>
             );
           })()}
+      </section>
 
-        {/* FAQ */}
-        {hasFaqs && (
-          <section className="pt-10 pb-24 md:pt-16 md:pb-32 border-b border-black/5 max-w-5xl mx-auto px-4 md:px-0">
-            <div className="text-center mb-10 md:mb-16">
-              <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] font-bold block mb-4 opacity-90">
-                Informações
-              </span>
-              <h3
-                className={`text-4xl md:text-6xl font-serif italic mb-6 opacity-95 ${theme.primary}`}
+      <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-10 md:py-20 flex flex-col gap-24 md:gap-32 relative z-10 border-t border-current/10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
+          <div className="lg:col-span-7 flex flex-col gap-20 md:gap-32 w-full min-w-0">
+            {hasFeatures && (
+              <motion.section
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+                className="space-y-10"
               >
-                Perguntas
-              </h3>
-              <div
-                className={`w-12 h-[1px] ${theme.bgAction} mx-auto opacity-30`}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 items-start">
-              {faqs.map((f: any, i: number) => (
-                <LuxeAccordion
-                  key={i}
-                  q={f.q || f.question}
-                  a={f.a || f.answer}
-                  theme={theme}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                <h3 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10">
+                  Signatures
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                  {business.features
+                    .filter(Boolean)
+                    .map((f: string, i: number) => (
+                      <div key={i} className="flex items-start gap-4 group">
+                        <Sparkles
+                          size={18}
+                          className={`shrink-0 mt-0.5 opacity-40 ${primary} group-hover:opacity-100 transition-opacity`}
+                          strokeWidth={1.5}
+                        />
+                        <span className="font-light text-base md:text-lg leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                          {f}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </motion.section>
+            )}
 
-        {/* CONTATO & PRESENÇA (Ajustado com Rótulos de Luxo) */}
-        <section className="pt-24 pb-12">
-          <div
-            className={`p-8 md:p-16 ${theme.bgSecondary} border ${theme.border} rounded-[3rem] shadow-2xl`}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 items-start">
-              {/* BLOCO 1: CONEXÃO (Adaptável Claro/Escuro) */}
-              <div className="space-y-10 md:border-r border-current/10 md:pr-8">
-                {(hasWhatsapp || hasPhone) && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                      Concierge
-                    </span>
-                    <div className="space-y-6">
-                      {hasWhatsapp && (
-                        <button
-                          onClick={() => handleTrackLead("whatsapp")}
-                          className="flex items-center gap-4 group"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                            <MessageCircle size={18} fill="currentColor" />
-                          </div>
-                          <span className="text-sm font-bold uppercase tracking-widest text-[#25D366]">
-                            WhatsApp Direct
+            {hasFaqs && (
+              <motion.section
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="space-y-8"
+              >
+                <div className="flex flex-col items-start">
+                  <h3 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full">
+                    Inquiries
+                  </h3>
+                </div>
+                <div className="flex flex-col">
+                  {faqs.map((f: any, i: number) => (
+                    <LuxeAccordion
+                      key={i}
+                      q={f.q || f.question}
+                      a={f.a || f.answer}
+                      primary={primary}
+                      themeBorder={border}
+                    />
+                  ))}
+                </div>
+              </motion.section>
+            )}
+          </div>
+
+          <div className="lg:col-span-5 lg:sticky lg:top-10">
+            <div
+              className={`p-8 md:p-10 rounded-[2rem] ${glassBg} border ${glassBorder} backdrop-blur-xl ${cardShadow} flex flex-col`}
+            >
+              {(hasWhatsapp || hasPhone) && (
+                <div className="flex flex-col pb-8">
+                  <h3 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                    The Concierge
+                  </h3>
+                  <div className="space-y-4">
+                    {hasWhatsapp && (
+                      <button
+                        onClick={() => handleTrackLead("whatsapp")}
+                        className={`w-full flex items-center justify-between p-5 rounded-xl ${bgAction} transition-all duration-500 hover:scale-[1.02] shadow-lg group`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <MessageCircle size={18} strokeWidth={1.5} />
+                          <span className="text-xs md:text-sm font-bold tracking-widest uppercase">
+                            Book via WhatsApp
                           </span>
-                        </button>
-                      )}
-                      {hasPhone && (
-                        <button
-                          onClick={() => handleTrackLead("phone")}
-                          className="flex items-center gap-4 group"
-                        >
-                          <div
-                            className={`w-10 h-10 rounded-full border border-current/20 flex items-center justify-center transition-transform group-hover:scale-110`}
-                          >
-                            <PhoneCall size={18} className="opacity-70" />
-                          </div>
-                          <span className="text-sm font-bold uppercase tracking-widest opacity-70">
+                        </div>
+                        <ChevronRight
+                          size={18}
+                          strokeWidth={1.5}
+                          className="opacity-60 group-hover:translate-x-1 transition-transform"
+                        />
+                      </button>
+                    )}
+                    {hasPhone && (
+                      <button
+                        onClick={() => handleTrackLead("phone")}
+                        className={`w-full flex items-center justify-between p-5 rounded-xl border border-current/20 hover:bg-current/5 transition-all duration-300 group`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Phone
+                            size={18}
+                            strokeWidth={1.5}
+                            className={`opacity-60 ${primary}`}
+                          />
+                          <span className="text-xs md:text-sm font-bold opacity-80 tracking-widest">
                             {formatPhoneNumber(business.phone)}
                           </span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {availableSocials.length > 0 && (
-                  <div className="pt-6">
-                    <span className="text-[9px] uppercase tracking-[0.3em] font-bold opacity-30 block mb-4">
-                      Social Media
-                    </span>
-                    <div className="flex gap-4 flex-wrap">
-                      {availableSocials.map((s) => {
-                        const username = business[s];
-                        if (!username) return null;
-
-                        const isUrl =
-                          username.startsWith("http") ||
-                          username.startsWith("www");
-                        const finalUrl = isUrl
-                          ? username.startsWith("http")
-                            ? username
-                            : `https://${username}`
-                          : s === "instagram"
-                            ? `https://instagram.com/${username.replace("@", "")}`
-                            : s === "facebook"
-                              ? `https://facebook.com/${username}`
-                              : s === "tiktok"
-                                ? `https://tiktok.com/@${username.replace("@", "")}`
-                                : formatExternalLink(username);
-
-                        const colors: any = {
-                          instagram:
-                            "text-[#E4405F] border-[#E4405F]/20 bg-[#E4405F]/5",
-                          facebook:
-                            "text-[#1877F2] border-[#1877F2]/20 bg-[#1877F2]/5",
-                          tiktok: "text-current border-current/20 bg-current/5", // 🚀 Adaptável!
-                          website:
-                            "text-blue-500 border-blue-500/20 bg-blue-500/5",
-                        };
-
-                        return (
-                          <a
-                            key={s}
-                            href={finalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() =>
-                              Actions.registerClickEvent(
-                                business.id,
-                                s.toUpperCase(),
-                              )
-                            }
-                            className={`w-11 h-11 flex items-center justify-center rounded-full border transition-all hover:scale-110 ${colors[s] || "border-current/10"}`}
-                          >
-                            {s === "instagram" ? (
-                              <Instagram size={20} />
-                            ) : s === "facebook" ? (
-                              <Facebook size={20} />
-                            ) : s === "tiktok" ? (
-                              <TikTokIcon className="w-5 h-5" />
-                            ) : (
-                              <Globe size={20} />
-                            )}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* BLOCO 2: LOJAS (Adaptável Claro/Escuro) */}
-              {salesChannels.length > 0 && (
-                <div className="space-y-8 md:border-r border-current/10 md:px-8">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6">
-                      Boutique Online
-                    </span>
-                    <div className="flex flex-col gap-3">
-                      {salesChannels.map((channel) => {
-                        const storeColors: any = {
-                          mercadoLivre:
-                            "border-[#FFE600] bg-[#FFE600]/10 text-current", // 🚀 Texto adapta à cor principal!
-                          shopee:
-                            "border-[#EE4D2D] bg-[#EE4D2D]/5 text-[#EE4D2D]",
-                          ifood:
-                            "border-[#EA1D2C] bg-[#EA1D2C]/5 text-[#EA1D2C]",
-                          shein: "border-current bg-current/5 text-current", // 🚀 Adaptável!
-                        };
-                        return (
-                          <a
-                            key={channel.key}
-                            href={formatExternalLink(channel.url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() =>
-                              Actions.registerClickEvent(
-                                business.id,
-                                channel.key.toUpperCase(),
-                              )
-                            }
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 hover:shadow-md ${storeColors[channel.key] || "border-current/10"}`}
-                          >
-                            <div className="scale-110">{channel.icon}</div>
-                            <span className="text-[10px] font-bold tracking-[0.1em] uppercase opacity-90">
-                              {channel.name}
-                            </span>
-                          </a>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
-              {/* 🚀 BLOCO 3: PRESENÇA (Estilo Editorial Livre e Respirando) */}
-              <div className="space-y-12 md:pl-8">
-                {/* ENDEREÇO LIVRE E CLICÁVEL */}
-                {hasAddress && (
-                  <div className="relative group">
-                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6 flex items-center gap-2">
-                      <MapPin size={12} /> Localização
-                    </span>
 
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() =>
-                        Actions.registerClickEvent(business.id, "MAP")
-                      }
-                      className="block relative group"
+              {hasAddress && (
+                <div
+                  className={`flex flex-col py-8 ${hasWhatsapp || hasPhone ? "border-t border-current/10" : ""}`}
+                >
+                  <h3 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                    Location
+                  </h3>
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      Actions.registerClickEvent(business.id, "MAP")
+                    }
+                    className="block group"
+                  >
+                    <p className="text-base md:text-lg font-light leading-relaxed mb-2 opacity-90 transition-opacity group-hover:opacity-100">
+                      {business.address || "Address not provided"}
+                      {business.number &&
+                        !business.address?.includes(business.number) &&
+                        `, ${business.number}`}
+                    </p>
+                    {business.complement && (
+                      <p className="text-sm font-serif italic opacity-60 mb-4">
+                        {business.complement}
+                      </p>
+                    )}
+                    <p className="text-[10px] font-sans uppercase tracking-[0.2em] opacity-40 font-bold mt-2">
+                      {business.neighborhood && `${business.neighborhood} • `}{" "}
+                      {business.city}{" "}
+                      {business.state ? `• ${business.state}` : ""}
+                    </p>
+                    <div
+                      className={`mt-5 flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold ${primary} opacity-60 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0`}
                     >
-                      <div className="relative z-10 transition-transform duration-500 group-hover:translate-x-1">
-                        <p
-                          className={`text-xl md:text-2xl font-serif italic leading-tight mb-2 opacity-90 transition-opacity group-hover:opacity-100 ${theme.primary}`}
+                      Get Directions <ChevronRight size={14} strokeWidth={2} />
+                    </div>
+                  </a>
+                </div>
+              )}
+
+              {hasHours && (
+                <div
+                  className={`flex flex-col py-8 ${hasWhatsapp || hasPhone || hasAddress ? "border-t border-current/10" : ""}`}
+                >
+                  <h3 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                    Opening Hours
+                  </h3>
+                  <div className="space-y-4">
+                    {realHours.map((h: any, i: number) => (
+                      <div
+                        key={i}
+                        className="flex justify-between items-end font-light text-xs md:text-sm pb-2"
+                      >
+                        <span className="opacity-50 uppercase tracking-widest text-[10px] font-bold">
+                          {h.day}
+                        </span>
+                        <div className="flex-grow mx-3 border-b border-dotted border-current/20 mb-1" />
+                        <span
+                          className={
+                            h.isClosed
+                              ? "opacity-40 italic"
+                              : "opacity-90 font-medium"
+                          }
                         >
-                          {business.address || "Endereço não cadastrado"}
-                          {business.number &&
-                            !business.address?.includes(business.number) &&
-                            `, ${business.number}`}
-                        </p>
-
-                        {business.complement && (
-                          <p className="text-xs font-sans opacity-60 mb-3 italic">
-                            "{business.complement}"
-                          </p>
-                        )}
-
-                        <p className="text-[9px] opacity-50 uppercase tracking-[0.2em] leading-relaxed mb-6">
-                          {business.neighborhood &&
-                            `${business.neighborhood} • `}
-                          {business.city}{" "}
-                          {business.state ? `— ${business.state}` : ""}
-                          {business.cep && ` • CEP: ${business.cep}`}
-                        </p>
-
-                        {/* Botão Integrado Minimalista */}
-                        <div className="flex items-center gap-3 pt-4 border-t border-current/10 w-max">
-                          <span
-                            className={`text-[9px] uppercase tracking-[0.3em] font-black opacity-50 group-hover:opacity-100 transition-opacity ${theme.primary}`}
-                          >
-                            Traçar Rota
-                          </span>
-                          <ChevronRight
-                            size={14}
-                            className="opacity-40 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300"
-                          />
-                        </div>
+                          {h.time}
+                        </span>
                       </div>
-                    </a>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* HORÁRIOS LIVRES COM LINHA PONTILHADA */}
-                {hasHours && (
-                  <div className="relative pt-2">
-                    <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-40 block mb-6 flex items-center gap-2">
-                      <Clock size={12} /> Agenda Semanal
-                    </span>
-
+              {(salesChannels.length > 0 || availableSocials.length > 0) && (
+                <div
+                  className={`flex flex-col pt-8 ${hasWhatsapp || hasPhone || hasAddress || hasHours ? "border-t border-current/10" : ""}`}
+                >
+                  {salesChannels.length > 0 && (
                     <div className="space-y-4">
-                      {realHours.map((h: any, i: number) => (
-                        <div
-                          key={i}
-                          className="flex items-end justify-between group py-1"
+                      <h3 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                        Directories
+                      </h3>
+                      {salesChannels.map((channel) => (
+                        <a
+                          key={channel.key}
+                          href={formatExternalLink(channel.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() =>
+                            Actions.registerClickEvent(
+                              business.id,
+                              channel.key.toUpperCase(),
+                            )
+                          }
+                          className={`flex items-center justify-between py-3 group border-b border-current/5 last:border-0`}
                         >
-                          <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-60 shrink-0">
-                            {h.day}
-                          </span>
-
-                          {/* A Linha Pontilhada Clássica */}
-                          <div className="flex-grow mx-4 mb-1.5 border-b border-dotted border-current/20 group-hover:border-current/50 transition-colors" />
-
-                          <span
-                            className={`text-sm md:text-base font-serif italic shrink-0 ${h.isClosed ? "text-rose-500 font-bold" : "opacity-90 font-medium"}`}
-                          >
-                            {h.time}
-                          </span>
-                        </div>
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`opacity-50 group-hover:opacity-100 transition-opacity ${channel.hover} scale-110`}
+                            >
+                              {channel.icon}
+                            </div>
+                            <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-80 group-hover:opacity-100 transition-opacity">
+                              {channel.name}
+                            </span>
+                          </div>
+                          <ChevronRight
+                            size={16}
+                            className="opacity-0 group-hover:opacity-50 transition-opacity"
+                          />
+                        </a>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  {availableSocials.length > 0 && (
+                    <div
+                      className={`pt-8 ${salesChannels.length > 0 ? "border-t border-current/10 mt-6" : ""}`}
+                    >
+                      <div className="flex gap-6 justify-center">
+                        {availableSocials.map((s) => {
+                          const username = business[s];
+                          if (!username) return null;
+                          const finalUrl =
+                            username.startsWith("http") ||
+                            username.startsWith("www")
+                              ? formatExternalLink(username)
+                              : s === "instagram"
+                                ? `https://instagram.com/${username.replace("@", "")}`
+                                : s === "facebook"
+                                  ? `https://facebook.com/${username.replace("@", "")}`
+                                  : s === "tiktok"
+                                    ? `https://tiktok.com/@${username.replace("@", "")}`
+                                    : formatExternalLink(username);
+                          return (
+                            <a
+                              key={s}
+                              href={finalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() =>
+                                Actions.registerClickEvent(
+                                  business.id,
+                                  s.toUpperCase(),
+                                )
+                              }
+                              className="opacity-40 hover:opacity-100 hover:-translate-y-1 transition-all"
+                            >
+                              {s === "instagram" ? (
+                                <Instagram
+                                  className="w-6 h-6"
+                                  strokeWidth={1.5}
+                                />
+                              ) : s === "facebook" ? (
+                                <Facebook
+                                  className="w-6 h-6"
+                                  strokeWidth={1.5}
+                                />
+                              ) : s === "tiktok" ? (
+                                <TikTokIcon className="w-6 h-6" />
+                              ) : (
+                                <Globe className="w-6 h-6" strokeWidth={1.5} />
+                              )}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        </section>
-
-        {/* --- REPORTAR (DISCRETO) --- */}
-        <div className="w-full flex justify-center py-12 opacity-30 hover:opacity-100 transition-opacity">
-          <ReportModal businessSlug={business.slug} />
         </div>
-
-        {/* --- SEÇÃO DE AVALIAÇÕES (FINAL DA PÁGINA) --- */}
-        <div className="max-w-4xl mx-auto w-full pb-20">
-          <CommentsSection
-            businessId={rawBusiness.id}
-            businessOwnerId={rawBusiness.userId}
-            currentUserId={currentUserId}
-            isAdmin={isAdmin}
-            emailVerified={emailVerified}
-            themeColor={theme.primary}
-            comments={rawBusiness.comments || []}
-          />
-        </div>
-
-        <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
       </main>
 
-      {/* WHATSAPP FLUTUANTE */}
+      <div className="max-w-4xl mx-auto w-full px-6 md:px-12 pb-32">
+        <div className="w-full flex justify-center py-16 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10">
+          <ReportModal businessSlug={business.slug} />
+        </div>
+        <CommentsSection
+          businessId={rawBusiness.id}
+          businessOwnerId={rawBusiness.userId}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          emailVerified={emailVerified}
+          themeColor={theme.primary}
+          comments={rawBusiness.comments || []}
+        />
+      </div>
+
+      <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
+
       {hasWhatsapp && (
         <motion.button
           animate={
             isFooterVisible
-              ? { opacity: 0, scale: 0.8 }
-              : { opacity: 1, scale: 1 }
+              ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
+              : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
-          transition={{ duration: 0.2 }}
           onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-8 right-8 w-16 h-16 md:w-24 md:h-24 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl z-30 ring-4 ring-white/20`}
+          className={`fixed bottom-8 right-8 z-30 w-14 h-14 md:w-16 md:h-16 rounded-full ${bgAction} flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all`}
         >
-          <MessageCircle size={32} strokeWidth={1.5} fill="currentColor" />
+          <MessageCircle
+            className="w-6 h-6 md:w-7 md:h-7"
+            fill="currentColor"
+            strokeWidth={1.5}
+          />
         </motion.button>
       )}
 
-      {/* LIGHTBOX */}
+      {/* LIGHTBOX (Apenas Imagens) */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col bg-black/98 md:backdrop-blur-xl"
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-8 right-8 text-white z-[210] hover:scale-110 transition-transform">
+            <button className="absolute top-8 right-8 text-white/40 hover:text-white transition-all z-[230]">
               <X size={40} strokeWidth={1} />
             </button>
-            <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4">
+            <div className="flex-grow flex items-center justify-center relative w-full px-4 pt-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
                 }}
-                className="hidden md:flex absolute left-8 w-16 h-16 items-center justify-center bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white z-[220]"
+                className="hidden md:flex absolute left-12 w-16 h-16 items-center justify-center bg-transparent rounded-full text-white/30 hover:text-white border border-white/10 hover:border-white/30 transition-all z-[220]"
               >
-                <ChevronLeft size={40} />
+                <ChevronLeft size={40} strokeWidth={1} />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
                 }}
-                className="hidden md:flex absolute right-8 w-16 h-16 items-center justify-center bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white z-[220]"
+                className="hidden md:flex absolute right-12 w-16 h-16 items-center justify-center bg-transparent rounded-full text-white/30 hover:text-white border border-white/10 hover:border-white/30 transition-all z-[220]"
               >
-                <ChevronRight size={40} />
+                <ChevronRight size={40} strokeWidth={1} />
               </button>
-              {gallery[selectedIndex] && (
+              {lightboxImages[selectedIndex] && (
                 <motion.img
                   key={selectedIndex}
-                  src={gallery[selectedIndex]}
+                  src={lightboxImages[selectedIndex]}
                   loading="eager"
                   decoding="async"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.2}
+                  dragElastic={0.1}
                   onDragEnd={(e, info) => {
                     if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
                     else if (info.offset.x < -80)
                       safeSetIndex(selectedIndex + 1);
                   }}
-                  className="max-w-full max-h-[75vh] object-contain shadow-2xl rounded-sm cursor-grab active:cursor-grabbing"
+                  className={`max-w-full max-h-[80vh] object-contain shadow-2xl cursor-grab active:cursor-grabbing rounded-lg z-[210]`}
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
             </div>
             <div
-              className="h-40 w-full flex items-center justify-start md:justify-center gap-4 px-10 pb-10 overflow-x-auto no-scrollbar snap-x"
+              className="h-32 w-full flex items-center justify-start md:justify-center gap-6 px-10 pb-8 overflow-x-auto no-scrollbar snap-x"
               onClick={(e) => e.stopPropagation()}
             >
-              {gallery.map((img: string, idx: number) => (
+              {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-20 h-28 rounded-sm overflow-hidden border transition-all snap-center ${selectedIndex === idx ? "border-white scale-110 opacity-100" : "border-transparent opacity-30"}`}
+                  className={`relative flex-shrink-0 w-16 h-20 overflow-hidden transition-all snap-center rounded-lg ${selectedIndex === idx ? "opacity-100 ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-30 hover:opacity-100"}`}
                 >
                   <img
                     src={img}
