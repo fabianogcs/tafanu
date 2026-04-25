@@ -33,7 +33,6 @@ function calculateDistance(
 
 // 🚀 DICIONÁRIO DE SINÔNIMOS (Bidirecional Automático e Completo)
 const SINONIMOS_BASE: Record<string, string[]> = {
-  // Alimentação
   pao: ["padaria", "panificadora", "confeitaria", "baguete"],
   lanche: [
     "hamburguer",
@@ -50,8 +49,6 @@ const SINONIMOS_BASE: Record<string, string[]> = {
   japones: ["sushi", "temaki", "japonesa", "oriental", "sashimi"],
   sorvete: ["sorveteria", "acai", "gelato", "picole"],
   cerveja: ["chopp", "adega", "bar", "bebidas", "distribuidora"],
-
-  // Automotivo
   carro: [
     "mecanica",
     "mecanico",
@@ -64,8 +61,6 @@ const SINONIMOS_BASE: Record<string, string[]> = {
   pneu: ["borracharia", "borracheiro", "alinhamento", "balanceamento"],
   lavagem: ["lavar", "lava jato", "estetica automotiva", "polimento"],
   lataria: ["batida", "funilaria", "martelinho", "pintura automotiva"],
-
-  // Beleza e Estética
   unha: ["manicure", "pedicure", "esmalteria", "salao"],
   cabelo: [
     "salao",
@@ -77,15 +72,11 @@ const SINONIMOS_BASE: Record<string, string[]> = {
   ],
   pelo: ["depilacao", "cera", "laser"],
   rosto: ["sobrancelha", "cilios", "maquiagem", "limpeza de pele", "estetica"],
-
-  // Comércio e Varejo
   remedio: ["farmacia", "drogaria", "medicamento"],
   roupa: ["vestuario", "loja", "moda", "boutique", "calcados", "sapato"],
   celular: ["smartphone", "capinha", "assistencia", "eletronicos", "conserto"],
   presente: ["lembrancinha", "floricultura", "papelaria", "variedades"],
   mercado: ["supermercado", "mercearia", "hortifruti", "sacolao"],
-
-  // Pets
   pet: [
     "animal",
     "cachorro",
@@ -96,8 +87,6 @@ const SINONIMOS_BASE: Record<string, string[]> = {
   ],
   tosa: ["banho", "estetica animal", "cuidado pet"],
   racao: ["petisco", "agropecuaria", "comida pet"],
-
-  // Serviços e Profissionais
   vazamento: ["cano", "encanador", "hidraulico", "desentupidora"],
   energia: ["luz", "tomada", "eletricista", "eletrica", "fiacao"],
   limpeza: ["diarista", "faxina", "faxineira"],
@@ -111,18 +100,15 @@ const SINONIMOS_BASE: Record<string, string[]> = {
 
 function expandSynonyms(map: Record<string, string[]>) {
   const expanded: Record<string, Set<string>> = {};
-
   Object.entries(map).forEach(([key, values]) => {
-    const group = [key, ...values].map((v) => normalizeText(v)); // Junta a chave com os valores
-
+    const group = [key, ...values].map((v) => normalizeText(v));
     group.forEach((word1) => {
       if (!expanded[word1]) expanded[word1] = new Set();
       group.forEach((word2) => {
-        if (word1 !== word2) expanded[word1].add(word2); // Todo mundo se conecta
+        if (word1 !== word2) expanded[word1].add(word2);
       });
     });
   });
-
   return Object.fromEntries(
     Object.entries(expanded).map(([k, v]) => [k, Array.from(v)]),
   );
@@ -137,20 +123,16 @@ function getSmartTerms(query: string) {
     .filter((t) => t.length > 2 && !STOPWORDS.includes(t));
 
   const result = new Set<string>();
-
   terms.forEach((term) => {
     const normalizedTerm = normalizeText(term);
     result.add(normalizedTerm);
-
     if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3) {
       result.add(normalizedTerm.slice(0, -1));
     }
-
     if (SYNONYMS_MAP[normalizedTerm]) {
       SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
     }
   });
-
   return Array.from(result);
 }
 
@@ -167,6 +149,7 @@ interface BuscaProps {
     city?: string;
     state?: string;
     neighborhood?: string;
+    modo?: string; // 🚀 NOVO PARÂMETRO DA NOSSA ESTRATÉGIA
   }>;
 }
 
@@ -178,7 +161,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const rawQuery = (params.q || "").trim();
   let query = normalizeText(rawQuery);
 
-  // 🚀 INTENÇÃO: Detecta se o usuário quer algo aberto agora
+  // 🚀 MODO ONLINE (O SEGREDO DA NOVA ESTRATÉGIA)
+  const isOnlineMode = params.modo === "online";
+
   let isIntentOpen = false;
   const openKeywords = [
     "aberto",
@@ -190,13 +175,16 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     "hoje",
   ];
 
-  openKeywords.forEach((word) => {
-    const regex = new RegExp(`\\b${word}\\b`, "g");
-    if (regex.test(query)) {
-      isIntentOpen = true;
-      query = query.replace(regex, "").trim(); // Remove a palavra para não bugar a busca
-    }
-  });
+  if (!isOnlineMode) {
+    // Só busca abertos se NÃO for online
+    openKeywords.forEach((word) => {
+      const regex = new RegExp(`\\b${word}\\b`, "g");
+      if (regex.test(query)) {
+        isIntentOpen = true;
+        query = query.replace(regex, "").trim();
+      }
+    });
+  }
 
   const page = Number(params.page) || 1;
   const skip = (page - 1) * PAGE_SIZE;
@@ -205,10 +193,11 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const subcategoryParam = params.subcategory || "";
   const rawCityFilter = params.city || "";
 
-  // 🚀 ATIVAÇÃO: Liga o filtro de Abertos automaticamente
   const statusFilter = isIntentOpen ? "open" : params.status || "all";
   const subcategoryArray = subcategoryParam ? subcategoryParam.split(",") : [];
-  const cityFilter = normalizeText(rawCityFilter);
+
+  // Se for modo online, a gente ignora a cidade para buscar no Brasil todo
+  const cityFilter = isOnlineMode ? "" : normalizeText(rawCityFilter);
   const sort = params.sort || "relevance";
 
   const userLat = params.lat ? parseFloat(String(params.lat)) : null;
@@ -217,11 +206,23 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const smartTerms = getSmartTerms(query);
   const searchTerms = smartTerms;
 
-  // --- 1. CONSTRUÇÃO DO FILTRO BASE (O que o usuário digitou + Onde ele está) ---
+  // --- 1. CONSTRUÇÃO DO FILTRO BASE ---
   const baseWhereClause: Prisma.BusinessWhereInput = {
-    // 🚀 AJUSTE: O banco agora confia 100% no status 'isActive'
     isActive: true,
     published: true,
+
+    // 🚀 A MÁGICA: Se for online, só traz quem tem link de venda
+    ...(isOnlineMode
+      ? {
+          OR: [
+            { shopee: { not: "" } },
+            { mercadoLivre: { not: "" } },
+            { shein: { not: "" } },
+            { ifood: { not: "" } },
+          ],
+        }
+      : {}),
+
     AND: [
       ...(cityFilter
         ? [
@@ -243,7 +244,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             },
           ]
         : []),
-      // 🚀 PRISMA BLINDADO: Limita a 3 termos e usa o truque do termCap
       ...(searchTerms.length > 0
         ? [
             {
@@ -270,11 +270,14 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       where: baseWhereClause,
       select: { category: true, subcategory: true },
     }),
-    db.business.findMany({
-      where: { isActive: true, published: true },
-      select: { state: true, city: true, neighborhood: true },
-      distinct: ["state", "city", "neighborhood"],
-    }),
+    // Locais só importam se não for modo online
+    isOnlineMode
+      ? Promise.resolve([])
+      : db.business.findMany({
+          where: { isActive: true, published: true },
+          select: { state: true, city: true, neighborhood: true },
+          distinct: ["state", "city", "neighborhood"],
+        }),
   ]);
 
   const filterMap: Record<string, Set<string>> = {};
@@ -290,20 +293,16 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       orderedFilterMap[key] = Array.from(filterMap[key]).sort();
     });
 
-  // 🚀 Monta a Árvore de Localização em Cascata
   const locationData: LocationTree = {};
   locationRaw.forEach((b) => {
     if (!b.state || !b.city || !b.neighborhood) return;
-
     if (!locationData[b.state]) locationData[b.state] = {};
     if (!locationData[b.state][b.city]) locationData[b.state][b.city] = [];
-
     if (!locationData[b.state][b.city].includes(b.neighborhood)) {
       locationData[b.state][b.city].push(b.neighborhood);
     }
   });
 
-  // 🚀 O FILTRO DO BANCO: Sem a subcategoria para não engessar
   const finalWhereClause: Prisma.BusinessWhereInput = {
     ...baseWhereClause,
     category: category
@@ -311,10 +310,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       : undefined,
   };
 
-  // --- 3. VALIDAÇÃO DE INTENÇÃO DE BUSCA ---
-  // Só buscamos se houver texto, categoria ou subcategoria.
-  // Caso contrário, evitamos o processamento pesado e retornamos vazio.
-  const hasSearchTarget = !!(rawQuery || category || subcategoryParam);
+  // A busca online agora também é um alvo válido, mesmo sem digitar nada!
+  const hasSearchTarget = !!(
+    rawQuery ||
+    category ||
+    subcategoryParam ||
+    isOnlineMode
+  );
 
   const [businessesData, totalCount] = hasSearchTarget
     ? await Promise.all([
@@ -329,19 +331,17 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         }),
         db.business.count({ where: finalWhereClause }),
       ])
-    : [[], 0]; // Retorna array vazio e contagem zero sem tocar no banco
+    : [[], 0];
 
-  // --- 4. RANKING E SCORE (Mantemos o restante igual, mas agora businessesData pode ser vazio) ---
+  // --- 4. RANKING E SCORE ---
   const serverTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Sao_Paulo",
   });
-  // ... restante do seu código ...
   const now = new Date(serverTime);
   const currentDay = now.getDay();
   const currentTime = now.getHours() * 100 + now.getMinutes();
 
   let businesses = businessesData.map((b) => {
-    // 🚀 FILTRO JS: Valida subcategorias do Modal com precisão
     const matchesSubcategoryFilter =
       subcategoryArray.length === 0 ||
       b.subcategory.some((sub) =>
@@ -351,7 +351,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       );
 
     let distanceValue: number | null = null;
-    if (userLat && userLng && b.latitude && b.longitude) {
+    if (!isOnlineMode && userLat && userLng && b.latitude && b.longitude) {
       distanceValue = calculateDistance(
         userLat,
         userLng,
@@ -381,7 +381,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       const nSubsString = nSubs.join(" ");
       const nKeys = b.keywords.map((k) => normalizeText(k)).join(" ");
 
-      // 🚀 BOOSTS DE INTENÇÃO REAL
       if (nName === query) score += 120;
       else if (nName.startsWith(query)) score += 90;
       else if (nName.includes(query)) score += 60;
@@ -397,20 +396,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
       score += Math.min(termScore, 200);
 
-      // 🚀 DISTÂNCIA NO SCORE
-      if (distanceValue !== null) {
-        score += Math.max(0, 50 - distanceValue);
-      }
-
-      // Penalidade leve
+      if (distanceValue !== null) score += Math.max(0, 50 - distanceValue);
       if (b.keywords.length === 0) score -= 10;
     } else {
       score = 1;
     }
 
-    if (subcategoryArray.length > 0 && matchesSubcategoryFilter) {
-      score += 200;
-    }
+    if (subcategoryArray.length > 0 && matchesSubcategoryFilter) score += 200;
 
     return {
       ...b,
@@ -423,16 +415,19 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     };
   });
 
-  // --- 5. CORTES E ORDENAÇÃO ---
   if (subcategoryArray.length > 0) {
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
   }
 
-  if (statusFilter === "open") {
+  if (statusFilter === "open" && !isOnlineMode) {
     businesses = businesses.filter((b) => b.isOpen);
   }
 
-  if (sort === "distance" && userLat && userLng) {
+  // 🚀 O ALGORITMO REI DA COLINA PARA O MODO ONLINE
+  if (isOnlineMode) {
+    // No modo online, o que importa são as views, a menos que haja uma busca forte de texto
+    businesses.sort((a, b) => b.views - a.views);
+  } else if (sort === "distance" && userLat && userLng) {
     businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
   } else if (sort === "popular") {
     businesses.sort((a, b) => b.views - a.views);
@@ -453,11 +448,23 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter">
-                {rawQuery ? `"${rawQuery}"` : "Explorar"}
+              {/* 🚀 Feedback visual elegante se estiver no modo online */}
+              <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
+                {isOnlineMode ? (
+                  <>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-action to-emerald-400">
+                      Marketplace
+                    </span>
+                    {rawQuery ? `• "${rawQuery}"` : ""}
+                  </>
+                ) : rawQuery ? (
+                  `"${rawQuery}"`
+                ) : (
+                  "Explorar"
+                )}
               </h1>
               <p className="text-gray-400 font-medium text-sm">
-                {statusFilter === "open" ? (
+                {statusFilter === "open" && !isOnlineMode ? (
                   <>
                     Exibindo{" "}
                     <strong className="text-white">{businesses.length}</strong>{" "}
@@ -467,7 +474,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                   <>
                     Encontramos{" "}
                     <strong className="text-white">{totalCount}</strong>{" "}
-                    resultados
+                    resultados {isOnlineMode && "online"}
                   </>
                 )}
               </p>
@@ -476,7 +483,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               availableCategories={orderedFilterMap}
               locationData={locationData}
               currentSort={sort}
-              isDisabled={totalCount === 0} // 🚀 AVISA SE ESTÁ VAZIO!
+              isDisabled={totalCount === 0 && !isOnlineMode}
             />
           </div>
           <div className="w-full">
@@ -495,7 +502,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
               {paginatedResults.length === 0 ? (
                 <div className="col-span-full py-20 text-center opacity-50 font-bold text-gray-400">
-                  Nenhum resultado encontrado.
+                  {isOnlineMode
+                    ? "Nenhuma loja online encontrada para esta categoria."
+                    : "Nenhum resultado encontrado."}
                 </div>
               ) : (
                 paginatedResults.map((item) => (
@@ -503,7 +512,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     key={item.id}
                     business={item}
                     isLoggedIn={!!userId}
-                    showDistance={sort === "distance"}
+                    showDistance={sort === "distance" && !isOnlineMode}
                   />
                 ))
               )}

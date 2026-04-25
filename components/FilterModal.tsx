@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -17,10 +17,10 @@ import {
   RotateCcw,
   MapPin,
   CalendarDays,
+  Globe, // 🚀 Ícone novo
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// 🚀 Tipagem Forte para a Árvore de Localização
 export type LocationTree = Record<string, Record<string, string[]>>;
 
 interface FilterModalProps {
@@ -44,11 +44,12 @@ export default function FilterModal({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const isOnlineMode = searchParams.get("modo") === "online"; // 🚀 LÊ SE ESTAMOS NO MODO ONLINE
+
   const [draftCategory, setDraftCategory] = useState("");
   const [draftSubs, setDraftSubs] = useState<string[]>([]);
   const [draftStatus, setDraftStatus] = useState("all");
   const [draftSort, setDraftSort] = useState("popular");
-
   const [draftState, setDraftState] = useState("");
   const [draftCity, setDraftCity] = useState("");
   const [draftNeighborhood, setDraftNeighborhood] = useState("");
@@ -73,7 +74,6 @@ export default function FilterModal({
       setDraftSubs(subsParam ? subsParam.split(",") : []);
       setDraftStatus(searchParams.get("status") || "all");
       setDraftSort(currentSort || searchParams.get("sort") || "popular");
-
       setDraftState(searchParams.get("state") || "");
       setDraftCity(searchParams.get("city") || "");
       setDraftNeighborhood(searchParams.get("neighborhood") || "");
@@ -109,13 +109,14 @@ export default function FilterModal({
     if (draftSubs.length > 0) params.set("subcategory", draftSubs.join(","));
     else params.delete("subcategory");
 
-    if (draftState) params.set("state", draftState);
+    if (draftState && !isOnlineMode) params.set("state", draftState);
     else params.delete("state");
 
-    if (draftCity) params.set("city", draftCity);
+    if (draftCity && !isOnlineMode) params.set("city", draftCity);
     else params.delete("city");
 
-    if (draftNeighborhood) params.set("neighborhood", draftNeighborhood);
+    if (draftNeighborhood && !isOnlineMode)
+      params.set("neighborhood", draftNeighborhood);
     else params.delete("neighborhood");
 
     params.set("status", draftStatus);
@@ -134,8 +135,11 @@ export default function FilterModal({
     setDraftCity("");
     setDraftNeighborhood("");
     setCatStep("main");
+
     const query = searchParams.get("q");
     setIsOpen(false);
+
+    // 🚀 O BOTÃO LIMPAR TAMBÉM DESLIGA O MODO ONLINE, VOLTANDO AO NORMAL
     if (query) router.push(`/busca?q=${query}&page=1`);
     else router.push(`/busca`);
   };
@@ -171,13 +175,12 @@ export default function FilterModal({
           size={18}
           className={isDisabled ? "text-slate-400" : "text-tafanu-blue"}
         />
-        Filtros Avançados
+        {isOnlineMode ? "Filtros Online" : "Filtros Avançados"}
         {isFilterActive && !isDisabled && (
           <span className="w-2.5 h-2.5 bg-tafanu-blue rounded-full animate-bounce" />
         )}
       </button>
 
-      {/* 🚀 O SEGREDO ESTÁ AQUI: Checagem segura do document.body */}
       {isOpen && mounted && typeof document !== "undefined" && document.body
         ? createPortal(
             <div
@@ -195,7 +198,7 @@ export default function FilterModal({
                 <div className="bg-[#0f172a] text-white flex justify-between items-center px-8 py-7 shrink-0">
                   <div className="flex flex-col">
                     <span className="font-black uppercase tracking-[0.2em] text-[10px] text-tafanu-action mb-1">
-                      Busca Inteligente
+                      {isOnlineMode ? "Modo Shopping" : "Busca Inteligente"}
                     </span>
                     <span
                       id="filter-modal-title"
@@ -213,63 +216,78 @@ export default function FilterModal({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-10 pb-36 no-scrollbar">
-                  <section className="space-y-4">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                      <MapPin size={14} className="text-rose-500" />
-                      Onde você procura?
-                    </label>
-
-                    <div className="space-y-3">
-                      <select
-                        value={draftState}
-                        onChange={(e) => handleStateChange(e.target.value)}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer"
-                      >
-                        <option value="">Todos os Estados</option>
-                        {availableStates.map((state) => (
-                          <option key={state} value={state}>
-                            {state}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={draftCity}
-                        onChange={(e) => handleCityChange(e.target.value)}
-                        disabled={!draftState}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="">
-                          {draftState
-                            ? "Todas as Cidades"
-                            : "Selecione um Estado primeiro"}
-                        </option>
-                        {availableCitiesForState.map((city) => (
-                          <option key={city} value={city}>
-                            {city}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={draftNeighborhood}
-                        onChange={(e) => setDraftNeighborhood(e.target.value)}
-                        disabled={!draftCity}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="">
-                          {draftCity
-                            ? "Todos os Bairros"
-                            : "Selecione uma Cidade primeiro"}
-                        </option>
-                        {availableNeighborhoodsForCity.map((neighborhood) => (
-                          <option key={neighborhood} value={neighborhood}>
-                            {neighborhood}
-                          </option>
-                        ))}
-                      </select>
+                  {/* 🚀 O SEGREDO DE UX: Se for online, a gente não exibe o filtro de Localização, exibe uma mensagem legal! */}
+                  {isOnlineMode ? (
+                    <div className="bg-tafanu-action/10 border border-tafanu-action/20 p-5 rounded-2xl flex items-start gap-4">
+                      <Globe size={24} className="text-tafanu-blue shrink-0" />
+                      <div>
+                        <h4 className="text-[11px] font-black uppercase tracking-widest text-tafanu-blue mb-1">
+                          Busca Nacional
+                        </h4>
+                        <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                          Você está pesquisando em lojas que entregam em todo o
+                          Brasil. Filtros de distância estão desativados.
+                        </p>
+                      </div>
                     </div>
-                  </section>
+                  ) : (
+                    <section className="space-y-4">
+                      <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                        <MapPin size={14} className="text-rose-500" />
+                        Onde você procura?
+                      </label>
+                      <div className="space-y-3">
+                        <select
+                          value={draftState}
+                          onChange={(e) => handleStateChange(e.target.value)}
+                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer"
+                        >
+                          <option value="">Todos os Estados</option>
+                          {availableStates.map((state) => (
+                            <option key={state} value={state}>
+                              {state}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={draftCity}
+                          onChange={(e) => handleCityChange(e.target.value)}
+                          disabled={!draftState}
+                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="">
+                            {draftState
+                              ? "Todas as Cidades"
+                              : "Selecione um Estado primeiro"}
+                          </option>
+                          {availableCitiesForState.map((city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={draftNeighborhood}
+                          onChange={(e) => setDraftNeighborhood(e.target.value)}
+                          disabled={!draftCity}
+                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="">
+                            {draftCity
+                              ? "Todos os Bairros"
+                              : "Selecione uma Cidade primeiro"}
+                          </option>
+                          {availableNeighborhoodsForCity.map((neighborhood) => (
+                            <option key={neighborhood} value={neighborhood}>
+                              {neighborhood}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </section>
+                  )}
 
                   <section className="space-y-4">
                     <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
@@ -285,10 +303,10 @@ export default function FilterModal({
                           <Zap size={18} />
                           <div className="text-left">
                             <p className="font-black text-[11px] uppercase">
-                              Mais Populares
+                              Mais Vistos (Ouro)
                             </p>
                             <p className="text-[9px] font-bold italic opacity-70">
-                              Mais favoritados
+                              Lojas com mais acessos
                             </p>
                           </div>
                         </div>
@@ -315,26 +333,29 @@ export default function FilterModal({
                     </div>
                   </section>
 
-                  <section className="space-y-4">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                      <Clock size={14} className="text-emerald-500" />
-                      Disponibilidade
-                    </label>
-                    <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-                      <button
-                        onClick={() => setDraftStatus("all")}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-400"}`}
-                      >
-                        Todos
-                      </button>
-                      <button
-                        onClick={() => setDraftStatus("open")}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "open" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400"}`}
-                      >
-                        Abertos
-                      </button>
-                    </div>
-                  </section>
+                  {/* 🚀 Oculta a disponibilidade física se estiver buscando online */}
+                  {!isOnlineMode && (
+                    <section className="space-y-4">
+                      <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                        <Clock size={14} className="text-emerald-500" />
+                        Disponibilidade
+                      </label>
+                      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
+                        <button
+                          onClick={() => setDraftStatus("all")}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-400"}`}
+                        >
+                          Todos
+                        </button>
+                        <button
+                          onClick={() => setDraftStatus("open")}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "open" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400"}`}
+                        >
+                          Abertos
+                        </button>
+                      </div>
+                    </section>
+                  )}
 
                   <section className="space-y-4">
                     <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
@@ -417,7 +438,7 @@ export default function FilterModal({
                 </div>
               </div>
             </div>,
-            document.body, // 🚀 O segundo argumento do createPortal!
+            document.body,
           )
         : null}
     </>

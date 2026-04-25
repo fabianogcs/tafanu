@@ -2584,3 +2584,50 @@ export async function updateUserNameInline(newName: string) {
     return { error: "Erro ao salvar o nome." };
   }
 }
+// ==============================================================================
+// 🛍️ SHOPPING VIRTUAL (Marketplaces)
+// ==============================================================================
+export async function getOnlineMarketplaceMetadata() {
+  try {
+    // 1. Busca APENAS os negócios que têm link oficial de marketplace
+    const data = await db.business.findMany({
+      where: {
+        isActive: true,
+        published: true,
+        OR: [
+          { shopee: { not: "" } },
+          { mercadoLivre: { not: "" } },
+          { shein: { not: "" } },
+          { ifood: { not: "" } },
+        ], // 🚀 Removido o 'website'
+      },
+      select: {
+        category: true,
+        subcategory: true,
+      },
+    });
+
+    const map: Record<string, Set<string>> = {};
+
+    data.forEach((item) => {
+      if (!map[item.category]) {
+        map[item.category] = new Set();
+      }
+      item.subcategory?.forEach((sub) => {
+        map[item.category].add(sub);
+      });
+    });
+
+    const result = Object.keys(map)
+      .sort()
+      .map((cat) => ({
+        category: cat,
+        subcategories: Array.from(map[cat]).sort(),
+      }));
+
+    return result;
+  } catch (error) {
+    console.error("Erro ao buscar metadados do marketplace:", error);
+    return [];
+  }
+}

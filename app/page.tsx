@@ -1,7 +1,11 @@
 import { auth } from "@/auth";
-import { getActiveCategories } from "@/app/actions";
+import {
+  getActiveCategories,
+  getOnlineMarketplaceMetadata,
+} from "@/app/actions";
 import Hero from "@/components/Hero";
 import Categories from "@/components/Categories";
+import VitrineDigital from "@/components/VitrineDigital"; // 🚀 Importação do novo Shopping!
 import Link from "next/link";
 import { Metadata } from "next";
 
@@ -16,14 +20,14 @@ export const metadata: Metadata = {
   },
 };
 
-// 🚀 O cache agressivo do Next.js voltou! A Home agora carrega na velocidade da luz.
-// Removemos o export const dynamic = "force-dynamic";
-
 export default async function Home() {
   const session = await auth();
 
-  // Busca categorias (em cache, super rápido)
-  const activeCategories = await getActiveCategories();
+  // 🚀 Busca Tudo Paralelamente (Mais Rápido)
+  const [activeCategories, onlineMarketplaceData] = await Promise.all([
+    getActiveCategories(),
+    getOnlineMarketplaceMetadata(),
+  ]);
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] pb-24">
@@ -31,17 +35,11 @@ export default async function Home() {
 
       <Categories activeCats={activeCategories} />
 
-      {/* 🏗️ TERRENO LIMPO PARA A NOVA ESTRATÉGIA!
-        Aqui vai entrar o nosso Hall da Fama, Cases de Sucesso ou Interatividade.
-      */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 py-20 min-h-[300px] flex items-center justify-center">
-        <p className="text-slate-300 font-black uppercase tracking-widest text-xs">
-          Nova Estratégia de Conversão em Construção...
-        </p>
-      </section>
+      {/* 🛍️ A NOSSA MÁQUINA DE E-COMMERCE ENTRANDO AQUI */}
+      <VitrineDigital data={onlineMarketplaceData} />
 
       {/* CTA Final (Call to Action) */}
-      <section className="px-4 mt-12">
+      <section className="px-4 mt-20">
         <div className="max-w-6xl mx-auto bg-[#0f172a] rounded-[3rem] p-8 md:p-16 text-center md:text-left flex flex-col md:flex-row items-center justify-between shadow-2xl shadow-tafanu-blue/20 relative overflow-hidden border border-white/5 group">
           <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-tafanu-action opacity-10 rounded-full blur-[120px] -mr-40 -mt-40 group-hover:opacity-20 transition-opacity duration-1000"></div>
           <div className="absolute left-0 bottom-0 w-80 h-80 bg-blue-600 opacity-20 rounded-full blur-[100px] -ml-20 -mb-20"></div>
