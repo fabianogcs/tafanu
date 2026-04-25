@@ -152,7 +152,7 @@ export default function BusinessCard({ business, showDistance }: any) {
           {/* Subcategorias */}
           <div className="h-4 mb-1.5 w-full flex justify-center items-center">
             {currentSub && (
-              <span className="text-center text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate w-full">
+              <span className="text-center text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate w-full">
                 {currentSub}
               </span>
             )}
@@ -164,7 +164,7 @@ export default function BusinessCard({ business, showDistance }: any) {
           </h3>
 
           {/* Endereço */}
-          <div className="mt-auto pt-1 w-full flex items-center justify-center gap-1.5 text-slate-400">
+          <div className="mt-auto pt-1 w-full flex items-center justify-center gap-1.5 text-slate-500">
             {locationText ? (
               <>
                 <MapPin size={12} className="text-slate-300 shrink-0" />

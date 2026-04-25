@@ -1527,66 +1527,6 @@ export async function resetPassword(token: string | null, formData: FormData) {
 
   return { success: true };
 }
-export async function getHomeBusinesses(userId?: string) {
-  try {
-    // 1. BUSCA O STATUS DE VERIFICAÇÃO DO USUÁRIO LOGADO
-    let isVerified = false;
-    if (userId) {
-      const u = await db.user.findUnique({
-        where: { id: userId },
-        select: { emailVerified: true },
-      });
-      isVerified = !!u?.emailVerified;
-    }
-
-    // 2. CONTA QUANTOS NEGÓCIOS VÁLIDOS EXISTEM
-    // 🚀 AJUSTE: O banco agora confia 100% no status 'isActive'
-    const totalBusinesses = await db.business.count({
-      where: {
-        isActive: true,
-        published: true,
-      },
-    });
-
-    if (totalBusinesses === 0) return [];
-
-    // 3. MATEMÁTICA DO PULO ALEATÓRIO (OFFSET O(1))
-    const skipAmount = Math.max(
-      0,
-      Math.floor(Math.random() * (totalBusinesses - 12)),
-    );
-
-    // 4. BUSCA APENAS 12 NEGÓCIOS, DIRETO DO BANCO!
-    const randomBusinesses = await db.business.findMany({
-      where: {
-        isActive: true,
-        published: true,
-      },
-      take: 12,
-      skip: skipAmount,
-      include: {
-        hours: true,
-        favorites: userId ? { where: { userId } } : false,
-        _count: {
-          select: { favorites: true },
-        },
-      },
-    });
-
-    // 5. FORMATA PARA O FRONTEND
-    return randomBusinesses
-      .map((b) => ({
-        ...b,
-        isFavorited: userId ? b.favorites.length > 0 : false,
-        favoritesCount: b._count.favorites,
-        userLoggedInVerified: isVerified,
-      }))
-      .sort(() => Math.random() - 0.5);
-  } catch (error) {
-    console.error("Erro ao buscar aleatórios:", error);
-    return [];
-  }
-}
 
 export async function runGarbageCollector() {
   // 1. Verifica se é ADMIN
