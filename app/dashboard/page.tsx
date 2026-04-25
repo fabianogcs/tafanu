@@ -36,7 +36,14 @@ export default async function DashboardPage() {
           _count: {
             select: { favorites: true },
           },
-          analytics: true,
+          // ✅ Traz apenas os cliques recentes para o gráfico não quebrar e não travar o servidor
+          analytics: {
+            where: {
+              createdAt: {
+                gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+              },
+            },
+          },
         },
       },
     },
@@ -134,35 +141,27 @@ export default async function DashboardPage() {
                 {" "}
                 {/* Espaçamento gigante entre negócios diferentes */}
                 {user.businesses.map((business) => {
+                  // Cálculos individuais para este negócio
                   const analytics = business.analytics || [];
 
-                  // Cálculos individuais para este negócio
-                  // 1. VISITAS: Agora ele pega o número real e direto da coluna da loja!
+                  // 1. VISITAS E CLIQUES TOTAIS (Leitura super rápida do banco)
                   const views = business.views || 0;
-
-                  const whats = analytics.filter(
-                    (e) => e.eventType === "WHATSAPP",
-                  ).length;
-                  const phone = analytics.filter(
-                    (e) => e.eventType === "PHONE",
-                  ).length;
-                  const map = analytics.filter(
-                    (e) => e.eventType === "MAP",
-                  ).length;
+                  const whats = business.whatsapp_clicks || 0;
+                  const phone = business.phone_clicks || 0;
+                  const map = business.map_clicks || 0;
                   const favs = business._count?.favorites || 0;
 
-                  // 2. SOCIAL: Trocamos "LINK" por "WEBSITE" para bater com o banco de dados!
-                  const socials = analytics.filter((e) =>
-                    ["INSTAGRAM", "FACEBOOK", "TIKTOK", "WEBSITE"].includes(
-                      e.eventType,
-                    ),
-                  ).length;
-                  const stores = analytics.filter((e) =>
-                    ["MERCADOLIVRE", "SHOPEE", "IFOOD", "SHEIN"].includes(
-                      e.eventType,
-                    ),
-                  ).length;
-
+                  // 2. SOCIAL E LOJAS (Somando os contadores diretos)
+                  const socials =
+                    (business.instagram_clicks || 0) +
+                    (business.facebook_clicks || 0) +
+                    (business.tiktok_clicks || 0) +
+                    (business.website_clicks || 0);
+                  const stores =
+                    (business.mercadolivre_clicks || 0) +
+                    (business.shopee_clicks || 0) +
+                    (business.ifood_clicks || 0) +
+                    (business.shein_clicks || 0);
                   return (
                     <div
                       key={business.id}

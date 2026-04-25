@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   MapPin,
   MessageCircle,
@@ -80,10 +81,13 @@ export default function BusinessCard({ business, showDistance }: any) {
       >
         {/* --- HEADER VISUAL (IMAGEM E BADGES) --- */}
         <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden shrink-0">
-          <img
+          {/* ✅ TAG IMAGE OTIMIZADA */}
+          <Image
             src={business.imageUrl || "/og-default.png"}
             alt={business.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-black/20" />
 

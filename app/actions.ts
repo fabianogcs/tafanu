@@ -694,7 +694,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
     // Se fotos da galeria antiga não estão na nova, vão para o lixo
     const galeriaAntiga = (old.gallery as string[]) || [];
     const novaGaleriaUrls = (payload.mediaFeed || [])
-      .filter((m: any) => m.type === "image")
+      .filter((m: any) => m && m.type === "image" && m.url)
       .map((m: any) => m.url);
     galeriaAntiga.forEach((url) => {
       if (!novaGaleriaUrls.includes(url)) {
@@ -761,10 +761,10 @@ export async function updateFullBusiness(slug: string, payload: any) {
         ifood: validatedData.ifood?.trim() || "",
         mediaFeed: payload.mediaFeed || [],
         gallery: (payload.mediaFeed || [])
-          .filter((m: any) => m.type === "image")
+          .filter((m: any) => m && m.type === "image" && m.url)
           .map((m: any) => m.url),
         videos: (payload.mediaFeed || [])
-          .filter((m: any) => m.type === "video")
+          .filter((m: any) => m && m.type === "video" && m.url)
           .map((m: any) => m.url),
         faqs: payload.faqs || [],
       },
@@ -933,6 +933,7 @@ export async function deleteBusiness(slug: string) {
             imageUrl: "",
             gallery: [],
             videos: [],
+            mediaFeed: [], // 🚀 Zera a mídia nova também no reset
             features: [],
             faqs: [],
             keywords: [],
@@ -1599,6 +1600,7 @@ export async function runGarbageCollector() {
       select: {
         imageUrl: true,
         gallery: true,
+        mediaFeed: true, // 🚀 PROTEGE AS IMAGENS DA PASSARELA NOVA
       },
     });
 
@@ -1612,8 +1614,19 @@ export async function runGarbageCollector() {
       };
 
       add(b.imageUrl);
+
+      // Procura na galeria antiga
       if (b.gallery && Array.isArray(b.gallery)) {
         b.gallery.forEach((img) => add(img));
+      }
+
+      // Procura fotos no mediaFeed novo para não deletar sem querer
+      if (b.mediaFeed && Array.isArray(b.mediaFeed)) {
+        b.mediaFeed.forEach((item: any) => {
+          if (item && item.type === "image" && item.url) {
+            add(item.url);
+          }
+        });
       }
     });
 

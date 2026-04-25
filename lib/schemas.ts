@@ -66,16 +66,25 @@ export const businessSchema = z.object({
     .max(12, "O limite é de 12 fotos na galeria") // 🚀 AUMENTADO PARA 12
     .default([]),
   mediaFeed: z
-    .preprocess((val) => {
-      if (typeof val === "string") {
-        try {
-          return JSON.parse(val);
-        } catch {
-          return [];
+    .preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          try {
+            return JSON.parse(val);
+          } catch {
+            return [];
+          }
         }
-      }
-      return val || [];
-    }, z.array(z.any()))
+        return val || [];
+      },
+      z.array(
+        // 🚀 BLINDAGEM: Trava o formato exato que o banco pode receber
+        z.object({
+          type: z.string(),
+          url: z.string().optional().or(z.literal("")),
+        }),
+      ),
+    )
     .default([]),
 
   // --- Listas e Arrays ---

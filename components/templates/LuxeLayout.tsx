@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Instagram,
@@ -141,12 +142,13 @@ const MasterRunway = ({
                 onClick={() => setSelectedIndex(item.lightboxIndex)}
                 className={`${cardBaseClasses} cursor-pointer`}
               >
-                <img
+                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
+                <Image
                   src={item.url}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                   alt="Showcase"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
                   <Plus
@@ -531,11 +533,17 @@ export default function LuxeLayout({
               <div
                 className={`w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border border-current/10 p-1.5 shadow-xl bg-current/5 backdrop-blur-xl`}
               >
-                <img
-                  src={business.imageUrl}
-                  className="w-full h-full object-cover rounded-full"
-                  alt="Logo"
-                />
+                <div className="relative w-full h-full rounded-full overflow-hidden">
+                  {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
+                  <Image
+                    src={business.imageUrl}
+                    alt="Logo"
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 120px, 150px"
+                    className="object-cover"
+                  />
+                </div>
               </div>
             </motion.div>
           )}
@@ -996,12 +1004,13 @@ export default function LuxeLayout({
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-20 overflow-hidden transition-all snap-center rounded-lg ${selectedIndex === idx ? "opacity-100 ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-30 hover:opacity-100"}`}
                 >
-                  <img
+                  {/* ✅ MINIATURAS OTIMIZADAS */}
+                  <Image
                     src={img}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
                     alt="Thumb"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                   />
                 </button>
               ))}

@@ -1,6 +1,9 @@
 "use client";
 
+"use client";
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Heart,
@@ -146,12 +149,13 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
                 whileHover={{ scale: 0.98 }}
                 className={`${cardBaseClasses} cursor-pointer`}
               >
-                <img
+                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
+                <Image
                   src={item.url}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   alt="Vitrine"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Plus size={32} className="text-white" />
@@ -437,13 +441,17 @@ export default function ShowroomLayout({
             <div
               className={`w-28 h-28 md:w-40 md:h-40 rounded-3xl border ${theme.border} shadow-sm overflow-hidden bg-white shrink-0`}
             >
-              <img
-                src={business.imageUrl}
-                loading="eager"
-                decoding="async"
-                className="w-full h-full object-cover"
-                alt="Logo"
-              />
+              {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
+              <div className="relative w-full h-full">
+                <Image
+                  src={business.imageUrl}
+                  alt="Logo"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 150px, 200px"
+                  className="object-cover"
+                />
+              </div>
             </div>
           )}
 
@@ -901,12 +909,13 @@ export default function ShowroomLayout({
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-300 snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-105 opacity-100" : "opacity-40 hover:opacity-100"}`}
                 >
-                  <img
+                  {/* ✅ MINIATURAS OTIMIZADAS */}
+                  <Image
                     src={img}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
                     alt="Thumbnail"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                   />
                 </button>
               ))}

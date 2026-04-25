@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Heart,
@@ -149,12 +150,13 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
                 whileHover={{ scale: 0.98 }}
                 className={`${cardBaseClasses} cursor-pointer`}
               >
-                <img
-                  src={item.url}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
+                <Image
+                  src={item.url || "/og-default.png"}
                   alt="Vitrine"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Plus size={32} className="text-white" />
@@ -505,13 +507,14 @@ export default function ComercialLayout({
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left">
             {business.imageUrl && (
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.2rem] border-4 border-white shadow-xl overflow-hidden bg-white shrink-0 flex items-center justify-center">
-                <img
-                  src={business.imageUrl}
-                  loading="eager"
-                  decoding="async"
-                  className="w-full h-full object-cover"
+              <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-[2.2rem] border-4 border-white shadow-xl overflow-hidden bg-white shrink-0 flex items-center justify-center">
+                <Image
+                  src={business.imageUrl || "/og-default.png"}
                   alt="Logo"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 128px, 128px"
+                  className="object-cover"
                 />
               </div>
             )}
@@ -1083,12 +1086,12 @@ export default function ComercialLayout({
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 snap-center ${selectedIndex === idx ? "border-white scale-110 shadow-lg" : "border-transparent opacity-40"}`}
                 >
-                  <img
-                    src={img}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
+                  <Image
+                    src={img || "/og-default.png"}
                     alt="Thumbnail"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                   />
                 </button>
               ))}

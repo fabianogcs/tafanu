@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Instagram,
@@ -147,12 +148,13 @@ const MasterRunway = ({
                 whileHover={{ scale: 1.02 }}
                 className={`${cardBaseClasses}`}
               >
-                <img
+                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
+                <Image
                   src={item.url}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   alt="Showcase"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Plus size={32} className="text-white" />
@@ -439,10 +441,14 @@ export default function UrbanLayout({
               <div className="relative w-56 h-56 md:w-80 md:h-80 lg:w-96 lg:h-96">
                 <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/30 rotate-6 scale-105 transition-transform" />
                 <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/20 -rotate-6 scale-105 transition-transform" />
-                <img
+                {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
+                <Image
                   src={business.imageUrl}
-                  className="w-full h-full object-cover rounded-[2.5rem] md:rounded-[3rem] shadow-2xl relative z-10 bg-white"
                   alt="Logo"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover rounded-[2.5rem] md:rounded-[3rem] shadow-2xl relative z-10 bg-white"
                 />
               </div>
             </motion.div>
@@ -954,12 +960,13 @@ export default function UrbanLayout({
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-110 opacity-100 shadow-xl" : "opacity-30 hover:opacity-100"}`}
                 >
-                  <img
+                  {/* ✅ MINIATURAS OTIMIZADAS */}
+                  <Image
                     src={img}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
                     alt="Thumb"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                   />
                 </button>
               ))}

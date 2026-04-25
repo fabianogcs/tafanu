@@ -191,14 +191,24 @@ export function ContentSection({
                 <UTButton<OurFileRouter, "imageUploader">
                   endpoint="imageUploader"
                   onBeforeUploadBegin={async (files) => {
-                    toast.loading("Otimizando as imagens...", {
+                    toast.loading("Preparando e otimizando imagens...", {
                       id: "compress",
                     });
-                    const compressed = await Promise.all(
-                      files.map(async (file) => await compressImage(file)),
-                    );
-                    toast.success("Imagens prontas!", { id: "compress" });
-                    return compressed;
+                    try {
+                      const compressed = await Promise.all(
+                        files.map(async (file) => await compressImage(file)),
+                      );
+                      // Não mostramos mensagem de sucesso aqui, porque o upload acabou de COMEÇAR.
+                      // Só dispensamos o loading.
+                      toast.dismiss("compress");
+                      return compressed;
+                    } catch (e) {
+                      toast.dismiss("compress");
+                      toast.error(
+                        "Erro ao preparar as imagens. Tente fotos menores.",
+                      );
+                      throw e; // Interrompe o fluxo para o UploadThing não subir arquivo quebrado
+                    }
                   }}
                   onClientUploadComplete={(res) => {
                     if (res && res.length > 0) {
@@ -206,7 +216,6 @@ export function ContentSection({
                         type: "image",
                         url: r.url,
                       }));
-                      // A mágica: Impede de passar de 12 imagens mesmo se o cara selecionar 20 de uma vez!
                       setMediaFeed((prev: any) => {
                         const currentImagesCount = prev.filter(
                           (m: any) => m.type === "image",
@@ -215,12 +224,16 @@ export function ContentSection({
                         const imagesToAdd = newImages.slice(0, allowedCount);
                         return [...prev, ...imagesToAdd];
                       });
-                      toast.success("Mídias adicionadas à vitrine!");
+                      toast.success("Fotos adicionadas à vitrine!");
                     }
                   }}
                   onUploadError={(error) => {
-                    // 🛡️ Aquele Erro de Tipo Corrigido Novamente
-                    toast.error(`Erro: ${error.message}`);
+                    toast.dismiss("compress"); // Garante que limpa o loading
+                    console.error("UploadThing Error:", error);
+                    // 🚀 Mensagem amigável para o cliente, em vez do erro cru do servidor
+                    toast.error(
+                      "Falha no upload. O arquivo pode ser muito grande ou a rede falhou.",
+                    );
                   }}
                 />
               </div>

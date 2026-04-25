@@ -10,7 +10,7 @@ export const proxy = auth((req) => {
 
   // 🛡️ A MÁGICA AQUI: Se o token do Edge falhar, ele puxa o cookie de backup!
   const user = req.auth?.user as { role?: string } | undefined;
-  const userRole = user?.role || req.cookies.get("userRole")?.value;
+  const userRole = user?.role;
   const pathname = nextUrl.pathname;
 
   const isDashboardRoute = pathname.startsWith("/dashboard");

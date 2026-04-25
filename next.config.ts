@@ -1,9 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 🚀 REMOVEMOS o serverExternalPackages que estava travando o React
-  // E usamos transpilePackages se necessário (geralmente o Next 14/15 nem precisa mais)
   transpilePackages: ["@uploadthing/react", "uploadthing"],
+
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "utfs.io" }, // Padrão antigo do UploadThing (mantemos por segurança)
+      { protocol: "https", hostname: "*.ufs.sh" }, // ⬅️ NOVO: Padrão atualizado e exclusivo do UploadThing!
+      { protocol: "https", hostname: "tafanu.com.br" }, // Seu domínio
+    ],
+  },
 
   webpack: (config) => {
     config.module.rules.push({
