@@ -41,10 +41,11 @@ export const proxy = auth((req) => {
     pathname === "/" ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
+    pathname.startsWith("/manutencao") || // 🚀 O FIM DO LOOP INFINITO: Manutenção agora é pública!
     pathname.startsWith("/login") ||
-    pathname.startsWith("/esqueci-senha") || // 🚀 VIP LIBERADA
-    pathname.startsWith("/nova-senha") || // 🚀 VIP LIBERADA
-    pathname.startsWith("/verificar-email") || // 🚀 VIP LIBERADA
+    pathname.startsWith("/esqueci-senha") ||
+    pathname.startsWith("/nova-senha") ||
+    pathname.startsWith("/verificar-email") ||
     pathname.startsWith("/sobre") ||
     pathname.startsWith("/termos") ||
     pathname.startsWith("/busca") ||
