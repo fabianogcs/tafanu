@@ -21,7 +21,9 @@ export const proxy = auth((req) => {
     !pathname.startsWith("/manutencao") &&
     !pathname.startsWith("/api") &&
     !pathname.startsWith("/_next") &&
-    pathname !== "/favicon.ico"
+    pathname !== "/favicon.ico" &&
+    pathname !== "/sw.js" && // 🚀 DEIXA O SERVICE WORKER PASSAR
+    pathname !== "/manifest.json" // 🚀 DEIXA O MANIFESTO PASSAR
   ) {
     return NextResponse.redirect(new URL("/manutencao", nextUrl));
   }
