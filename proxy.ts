@@ -20,6 +20,8 @@ export const proxy = auth((req) => {
   // ✅ ROTAS PÚBLICAS (AQUI ENTROU A LIBERAÇÃO DO MANIFESTO E PWA E O WEBHOOK DO MERCADO PAGO)
   const isPublicRoute =
     pathname === "/" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/esqueci-senha") || // 🚀 VIP LIBERADA
     pathname.startsWith("/nova-senha") || // 🚀 VIP LIBERADA
@@ -117,6 +119,6 @@ export const proxy = auth((req) => {
 // 🔸 EXCLUSÃO DIRETA NO MATCHER PARA GARANTIR QUE O NEXT.JS IGNORE ARQUIVOS DE SISTEMA E PWA
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*|.*\\.(?:png|jpg|jpeg|svg|gif|ico|webp|avif)).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|sitemap.xml|workbox-.*|.*\\.(?:png|jpg|jpeg|svg|gif|ico|webp|avif)).*)",
   ],
 };
