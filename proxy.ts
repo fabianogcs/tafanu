@@ -7,11 +7,28 @@ const { auth } = NextAuth(authConfig);
 export const proxy = auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
+  const pathname = nextUrl.pathname;
+
+  // =====================================================================
+  // 🚧 TRAVA GERAL DE MANUTENÇÃO (A PRIMEIRA COISA A SER CHECADA)
+  // =====================================================================
+  const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
+  // Se a manutenção estiver LIGADA, e a pessoa NÃO estiver na página de manutenção,
+  // e NÃO for uma rota do sistema (api, arquivos do next), redireciona ela!
+  if (
+    isMaintenanceMode &&
+    !pathname.startsWith("/manutencao") &&
+    !pathname.startsWith("/api") &&
+    !pathname.startsWith("/_next") &&
+    pathname !== "/favicon.ico"
+  ) {
+    return NextResponse.redirect(new URL("/manutencao", nextUrl));
+  }
 
   // 🛡️ A MÁGICA AQUI: Se o token do Edge falhar, ele puxa o cookie de backup!
   const user = req.auth?.user as { role?: string } | undefined;
   const userRole = user?.role;
-  const pathname = nextUrl.pathname;
 
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isAdminRoute = pathname.startsWith("/admin");
