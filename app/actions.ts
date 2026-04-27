@@ -1694,7 +1694,20 @@ export async function promoteToAffiliate(userId: string, code: string) {
     return { error: "Erro interno ao processar a promoção." };
   }
 }
+// ==========================================
+// SEGURANÇA DE COOKIE PARA AFILIADOS
+// ==========================================
+export async function setAffiliateCookie(refCode: string) {
+  const cookieStore = await cookies();
 
+  // 🛡️ Grava de forma segura, com HttpOnly e duração de 7 dias
+  cookieStore.set("tafanu_ref", refCode, {
+    maxAge: 7 * 24 * 60 * 60, // 7 Dias em segundos
+    httpOnly: true, // 🔒 Proíbe scripts maliciosos de lerem a comissão
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+}
 export async function generateCommission(
   userId: string,
   orderAmount: number,

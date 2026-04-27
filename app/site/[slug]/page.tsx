@@ -4,11 +4,8 @@ import { auth } from "@/auth";
 import { businessThemes } from "@/lib/themes";
 import { Metadata, Viewport } from "next";
 
-// IMPORTAÇÃO DOS TEMPLATES
-import LuxeLayout from "@/components/templates/LuxeLayout";
-import UrbanLayout from "@/components/templates/UrbanLayout";
-import ComercialLayout from "@/components/templates/ComercialLayout";
-import ShowroomLayout from "@/components/templates/ShowroomLayout";
+// IMPORTAÇÃO DO MAESTRO DE TEMPLATES
+import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
 
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
@@ -278,7 +275,6 @@ export default async function BusinessPage({
         dangerouslySetInnerHTML={{
           __html: `
             if (window.location.search.indexOf('utm_source=pwa') === -1) {
-               // Se não for PWA, tenta limpar workers antigos para liberar instalação
                if ('serviceWorker' in navigator) {
                   navigator.serviceWorker.getRegistrations().then(function(regs) {
                     for(let reg of regs) reg.unregister();
@@ -317,10 +313,18 @@ export default async function BusinessPage({
           }),
         }}
       />
-      {currentLayout === "editorial" && <LuxeLayout {...layoutProps} />}
-      {currentLayout === "urban" && <UrbanLayout {...layoutProps} />}
-      {currentLayout === "businessList" && <ComercialLayout {...layoutProps} />}
-      {currentLayout === "showroom" && <ShowroomLayout {...layoutProps} />}
+
+      <MainLayoutSwitcher
+        business={business}
+        theme={theme}
+        realHours={realHours}
+        fullAddress={fullAddress}
+        isLoggedIn={!!userId}
+        isFavorited={business.favorites && business.favorites.length > 0}
+        emailVerified={loggedUser ? !!loggedUser.emailVerified : false}
+        currentUserId={userId || ""}
+        isAdmin={isVisitorAdmin}
+      />
     </div>
   );
 }

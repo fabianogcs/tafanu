@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { setAffiliateCookie } from "@/app/actions"; // ⬅️ Vamos criar isso no próximo passo
 
 export default function AffiliateTracker() {
   const searchParams = useSearchParams();
@@ -8,15 +9,9 @@ export default function AffiliateTracker() {
 
   useEffect(() => {
     if (ref) {
-      // 🚀 Salvando com o nome exato que seu actions.ts procura: "tafanu_ref"
-      const expires = new Date();
-      expires.setDate(expires.getDate() + 7);
-      document.cookie = `tafanu_ref=${ref}; expires=${expires.toUTCString()}; path=/`;
-
-      // Mantemos o localStorage por compatibilidade se precisar
-      localStorage.setItem("tafanu_affiliate_ref", ref);
-
-      console.log("💎 Afiliado rastreado e salvo no Cookie (tafanu_ref):", ref);
+      // 🚀 Chama o servidor para gravar o Cookie de forma segura
+      setAffiliateCookie(ref);
+      console.log("💎 Afiliado rastreado de forma segura:", ref);
     }
   }, [ref]);
 

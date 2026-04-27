@@ -455,9 +455,7 @@ export default function LuxeLayout({
       <div
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] pointer-events-none z-[0] opacity-[0.06] blur-[120px] rounded-full mix-blend-screen"
         style={{
-          backgroundColor:
-            theme.primary.replace("text-[", "").replace("]", "") ||
-            "currentColor",
+          backgroundColor: theme.previewColor || "currentColor",
         }}
       />
 
