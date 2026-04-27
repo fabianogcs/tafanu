@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
+import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Heart,
@@ -71,8 +71,9 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD COMERCIAL) ---
+// --- 🚀 MOTOR DE VÍDEOS (OTIMIZADO COM LAZY LOAD E ACESSIBILIDADE) ---
 const VideoEmbed = ({ url }: { url: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
   let isInstagram = false;
 
@@ -84,7 +85,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
@@ -100,10 +101,31 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
+  // A FACHADA: Mostra apenas um botão de play falso antes do clique
+  if (!isLoaded) {
+    return (
+      <button
+        aria-label="Carregar e reproduzir vídeo"
+        onClick={() => setIsLoaded(true)}
+        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2rem] cursor-pointer group border border-white/10"
+      >
+        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
+          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        </div>
+        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
+          Toque para carregar
+        </span>
+      </button>
+    );
+  }
+
+  // O VÍDEO REAL: Só carrega depois que clicou
   return (
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2rem]">
       <iframe
         src={embedUrl}
+        title="Vídeo de demonstração do negócio"
+        aria-label="Reprodutor de vídeo"
         className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -128,6 +150,7 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
   return (
     <div className="relative group/runway w-full">
       <button
+        aria-label="Rolar galeria para a esquerda"
         onClick={() => scroll("left")}
         className={`${arrowClass} -left-6`}
       >
@@ -149,13 +172,16 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
                 onClick={() => setSelectedIndex(item.lightboxIndex)}
                 whileHover={{ scale: 0.98 }}
                 className={`${cardBaseClasses} cursor-pointer`}
+                role="button"
+                tabIndex={0}
+                aria-label="Abrir imagem em tela cheia"
               >
                 {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
                 <Image
                   src={item.url || "/og-default.png"}
-                  alt="Vitrine"
+                  alt="Foto da vitrine do negócio"
                   fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
+                  sizes="(max-width: 768px) 300px, 400px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -182,6 +208,7 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
       </div>
 
       <button
+        aria-label="Rolar galeria para a direita"
         onClick={() => scroll("right")}
         className={`${arrowClass} -right-6`}
       >
@@ -256,6 +283,8 @@ const AccordionItem = ({ q, a, theme }: any) => {
     >
       <button
         type="button"
+        aria-expanded={isOpen}
+        aria-label="Alternar visualização da resposta"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full p-5 flex justify-between items-center text-left gap-4 outline-none bg-transparent border-none"
       >
@@ -486,6 +515,7 @@ export default function ComercialLayout({
         <div className="absolute top-3 right-3 md:top-4 md:right-4 z-20">
           <div className="flex items-center gap-0.5 md:gap-1 bg-white/90 backdrop-blur-md p-1 md:p-1.5 rounded-full border border-black/10 shadow-md">
             <button
+              aria-label="Compartilhar perfil no WhatsApp ou copiar link"
               onClick={() => handleShare(business.name)}
               className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all text-slate-700"
             >
@@ -510,7 +540,7 @@ export default function ComercialLayout({
               <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-[2.2rem] border-4 border-white shadow-xl overflow-hidden bg-white shrink-0 flex items-center justify-center">
                 <Image
                   src={business.imageUrl || "/og-default.png"}
-                  alt="Logo"
+                  alt={`Logotipo da empresa ${business.name}`}
                   fill
                   priority
                   sizes="(max-width: 768px) 128px, 128px"
@@ -542,6 +572,7 @@ export default function ComercialLayout({
           {["perfil", "infos"].map((t: any) => (
             <button
               key={t}
+              aria-label={`Mudar para a aba ${t}`}
               onClick={() => setActiveTab(t)}
               className={`relative px-8 md:px-14 py-3 md:py-3.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === t
@@ -862,6 +893,7 @@ export default function ComercialLayout({
                                 href={finalUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                aria-label={`Visitar perfil no ${s}`}
                                 onClick={async () => {
                                   try {
                                     await Actions.registerClickEvent(
@@ -900,6 +932,7 @@ export default function ComercialLayout({
                                 key={channel.key}
                                 href={formatExternalLink(channel.url)}
                                 target="_blank"
+                                aria-label={`Comprar na loja ${channel.name}`}
                                 rel="noopener noreferrer"
                                 onClick={() =>
                                   Actions.registerClickEvent(
@@ -928,6 +961,7 @@ export default function ComercialLayout({
                       href={mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label="Abrir localização no Google Maps"
                       onClick={() =>
                         Actions.registerClickEvent(business.id, "MAP")
                       }
@@ -1007,6 +1041,7 @@ export default function ComercialLayout({
       {/* WHATSAPP FLUTUANTE (AJUSTE DESKTOP) */}
       {hasWhatsapp && (
         <motion.button
+          aria-label="Abrir WhatsApp Flutuante"
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
@@ -1032,11 +1067,15 @@ export default function ComercialLayout({
             className="fixed inset-0 z-[200] flex flex-col bg-black/95 backdrop-blur-md"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center text-white z-[210] hover:bg-white/10 rounded-full transition-colors">
+            <button
+              aria-label="Fechar galeria"
+              className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center text-white z-[210] hover:bg-white/10 rounded-full transition-colors"
+            >
               <X size={32} />
             </button>
             <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4 pt-10">
               <button
+                aria-label="Imagem anterior"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
@@ -1046,6 +1085,7 @@ export default function ComercialLayout({
                 <ChevronLeft size={32} />
               </button>
               <button
+                aria-label="Próxima imagem"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
@@ -1085,6 +1125,7 @@ export default function ComercialLayout({
               {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
+                  aria-label={`Ver miniatura ${idx + 1}`}
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 snap-center ${selectedIndex === idx ? "border-white scale-110 shadow-lg" : "border-transparent opacity-40"}`}
                 >
