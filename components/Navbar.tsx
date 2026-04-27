@@ -205,6 +205,7 @@ export default function Navbar({
                     </Link>
                   )}
                   <button
+                    aria-label="Sair da conta"
                     onClick={handleFullLogout}
                     className="p-3 text-white/20 hover:text-red-400 transition-all rounded-xl hover:bg-red-500/10 active:scale-95 group"
                   >
@@ -220,6 +221,10 @@ export default function Navbar({
 
           <div className="md:hidden flex items-center gap-4">
             <button
+              aria-label={
+                isOpen ? "Fechar menu principal" : "Abrir menu principal"
+              }
+              aria-expanded={isOpen}
               onClick={() => setIsOpen(!isOpen)}
               className={`p-3 rounded-2xl border transition-all duration-300 ${isOpen ? "bg-red-500/20 border-red-500/40 text-red-400" : "bg-white/10 border-white/20 text-white"} relative z-[60] shadow-lg`}
             >

@@ -70,6 +70,7 @@ export default function FavoriteButton({
       />
 
       <motion.button
+        aria-label={liked ? "Remover dos favoritos" : "Adicionar aos favoritos"}
         whileTap={{ scale: 0.8 }}
         onClick={(e) => {
           e.preventDefault();

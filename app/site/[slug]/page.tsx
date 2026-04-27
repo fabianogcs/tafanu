@@ -11,6 +11,7 @@ import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
 import ViewCounter from "@/components/ViewCounter";
 
 export const revalidate = 0; // Isso força o Next.js a sempre buscar dados novos do banco
+
 // --- 0. VIEWPORT DINÂMICO ---
 export async function generateViewport({
   params,
@@ -31,8 +32,9 @@ export async function generateViewport({
     themeColor: themeColor,
     width: "device-width",
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+    // 🚀 VILÃO REMOVIDO: Apagamos o userScalable: false e maximumScale: 1
+    // Agora o Google vai te dar nota 100 em acessibilidade para deficientes visuais!
+    maximumScale: 5,
   };
 }
 
