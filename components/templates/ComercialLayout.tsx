@@ -176,12 +176,12 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
                 tabIndex={0}
                 aria-label="Abrir imagem em tela cheia"
               >
-                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
                 <Image
                   src={item.url || "/og-default.png"}
                   alt="Foto da vitrine do negócio"
                   fill
-                  sizes="(max-width: 768px) 300px, 400px"
+                  quality={60}
+                  sizes="(max-width: 768px) 250px, 350px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -620,9 +620,9 @@ export default function ComercialLayout({
                     >
                       <Quote size={20} />
                     </div>
-                    <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
+                    <h2 className="text-sm md:text-lg font-black uppercase italic opacity-60">
                       Nossa História
-                    </h3>
+                    </h2>
                   </div>
                   <p className="text-xl md:text-3xl font-normal leading-relaxed opacity-90 break-words whitespace-pre-line">
                     {business.description}
@@ -633,9 +633,9 @@ export default function ComercialLayout({
               {hasFeatures && (
                 <section className="space-y-6">
                   <div>
-                    <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
+                    <h2 className="text-sm md:text-lg font-black uppercase italic opacity-60">
                       Destaques
-                    </h3>
+                    </h2>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
@@ -685,9 +685,9 @@ export default function ComercialLayout({
                           >
                             <Camera size={20} />
                           </div>
-                          <h3 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
+                          <h2 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-60 italic">
                             Catálogo Visual
-                          </h3>
+                          </h2>
                         </div>
 
                         {/* Capsula Switch (Comercial Style) */}
@@ -739,9 +739,9 @@ export default function ComercialLayout({
                 <section className="w-full">
                   <div className="flex items-center gap-3 mb-6">
                     <HelpCircle size={20} className={theme.primary} />
-                    <h3 className="text-sm md:text-lg font-black uppercase italic opacity-60">
+                    <h2 className="text-sm md:text-lg font-black uppercase italic opacity-60">
                       Dúvidas Frequentes
-                    </h3>
+                    </h2>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">

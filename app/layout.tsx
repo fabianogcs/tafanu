@@ -1,5 +1,5 @@
 import { Toaster } from "sonner";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next"; // ✅ Adicionado Viewport aqui
 import "@/app/globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,14 +10,14 @@ import CookieBanner from "@/components/CookieBanner";
 import PwaListener from "@/components/PwaListener";
 import AffiliateTracker from "@/components/AffiliateTracker";
 import { Suspense } from "react";
-import { Analytics } from "@vercel/analytics/react"; // 🚀 Importado com sucesso
+import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "TAFANU | O que você precisa, perto de você",
   description:
     "Encontre os melhores serviços e comércios. Explore vitrines exclusivas e conecte-se diretamente pelo WhatsApp.",
-  manifest: "/manifest.json", // 🚀 Mantivemos o seu PWA intacto!
+  manifest: "/manifest.json",
   keywords: [
     "guia comercial",
     "negócios locais",
@@ -51,6 +51,15 @@ export const metadata: Metadata = {
       `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br"}/og-default.png`,
     ],
   },
+};
+
+// 🚀 A MÁGICA DA ACESSIBILIDADE DE ZOOM ESTÁ AQUI
+export const viewport: Viewport = {
+  themeColor: "#0f172a", // Cor da barra de status no celular
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5, // Isso permite que pessoas com visão reduzida deem zoom
+  userScalable: true, // Isso resolve a nota vermelha no Lighthouse
 };
 
 export default async function RootLayout({

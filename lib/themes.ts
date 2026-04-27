@@ -11,9 +11,9 @@ export const businessThemes: Record<string, any> = {
     textColor: "text-[#2d2421]", // Marrom café para leitura suave
     cardBg: "bg-white", // Card branco puro para destacar
     border: "border-[#e5e1da]", // Borda sutil perolada
-    primary: "text-[#c5a059]", // Dourado Champagne (Elegância)
+    primary: "text-[#a38040]", // Dourado Champagne (Elegância)
     bgSecondary: "bg-[#f4f1ea]", // Fundo de ícones em tom areia
-    bgAction: "bg-[#c5a059]", // Botão Dourado
+    bgAction: "bg-[#c5a059] text-slate-900", // Botão Dourado
     previewColor: "linear-gradient(135deg, #fdfcfb 0%, #c5a059 100%)",
   },
 
@@ -27,7 +27,7 @@ export const businessThemes: Record<string, any> = {
     border: "border-[#e0e7ff]", // Borda azulada clara
     primary: "text-[#6366f1]", // Violeta/Índigo vibrante
     bgSecondary: "bg-[#eef2ff]",
-    bgAction: "bg-[#6366f1]",
+    bgAction: "bg-[#4f46e5] text-white",
     previewColor: "linear-gradient(135deg, #f8f9ff 0%, #6366f1 100%)",
   },
 
