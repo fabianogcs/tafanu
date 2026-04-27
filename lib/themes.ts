@@ -82,19 +82,19 @@ export const businessThemes: Record<string, any> = {
   // =========================================================
 
   // 1. GOLDEN PEARL (Substituiu o Creme - Quente, Iluminado e Rico)
-  // Identidade: Alta Costura, Cosméticos Premium, Estética Avançada
   luxe_ivory: {
     label: "Luxe - Golden Pearl",
     layout: "editorial",
-    bgPage: "bg-[#FCFBF9]", // Off-white super quente e confortável
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FDF0E6] to-[#EACBA6]", // Degradê de Pérola para Ouro/Cobre
-    textColor: "text-[#2A231E]", // Café profundo, quase preto
+    bgPage: "bg-[#FCFBF9]",
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FDF0E6] to-[#EACBA6]",
+    textColor: "text-[#2A231E]",
     subTextColor: "text-[#2A231E]/70",
     cardBg: "bg-white",
     border: "border-[#B67645]/20",
-    primary: "text-[#B67645]", // Cobre / Ouro Acobreado super vivo
+    primary: "text-[#B67645]",
     bgSecondary: "bg-[#F3EDE6]",
-    bgAction: "bg-[#B67645] text-white", // Botão de impacto Cobre
+    // 🚀 AJUSTE AQUI: Trocamos o text-white pelo marrom café profundo para blindar a acessibilidade
+    bgAction: "bg-[#B67645] text-[#2A231E]",
     previewColor: "linear-gradient(135deg, #FDF0E6 0%, #EACBA6 100%)",
   },
 
@@ -299,14 +299,14 @@ export const businessThemes: Record<string, any> = {
   showroom_clean: {
     label: "Showroom - Clean",
     layout: "showroom",
-    bgPage: "bg-[#FFFFFF]", // Branco puro no fundo
-    cardBg: "bg-[#F9FAFB]", // Cinza quase imperceptível nos cards
-    textColor: "text-[#111827]", // Quase preto
+    bgPage: "bg-[#FFFFFF]",
+    cardBg: "bg-[#F9FAFB]",
+    textColor: "text-[#111827]",
     subTextColor: "text-[#6B7280]",
-    border: "border-[#E5E7EB]", // Borda cinza super leve
+    border: "border-[#E5E7EB]",
     primary: "text-[#000000]",
     bgSecondary: "bg-[#F3F4F6]",
-    bgAction: "bg-[#000000]",
+    bgAction: "bg-[#000000] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
     previewColor: "linear-gradient(135deg, #FFFFFF 0%, #E5E7EB 100%)",
   },
 
@@ -314,14 +314,14 @@ export const businessThemes: Record<string, any> = {
   showroom_latte: {
     label: "Showroom - Latte",
     layout: "showroom",
-    bgPage: "bg-[#FDFBF7]", // Fundo creme ultra suave
-    cardBg: "bg-[#FFFFFF]", // Cards brancos saltando do fundo creme
-    textColor: "text-[#433831]", // Marrom acinzentado escuro
+    bgPage: "bg-[#FDFBF7]",
+    cardBg: "bg-[#FFFFFF]",
+    textColor: "text-[#433831]",
     subTextColor: "text-[#8A7E76]",
-    border: "border-[#E8E2D9]", // Borda areia
-    primary: "text-[#B48E6D]", // Destaques em caramelo
+    border: "border-[#E8E2D9]",
+    primary: "text-[#B48E6D]",
     bgSecondary: "bg-[#F4EFE6]",
-    bgAction: "bg-[#B48E6D]",
+    bgAction: "bg-[#B48E6D] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
     previewColor: "linear-gradient(135deg, #FDFBF7 0%, #B48E6D 100%)",
   },
 
@@ -329,14 +329,14 @@ export const businessThemes: Record<string, any> = {
   showroom_cloud: {
     label: "Showroom - Cloud",
     layout: "showroom",
-    bgPage: "bg-[#F4F7FB]", // Fundo azul/gelo bem claro
-    cardBg: "bg-[#FFFFFF]", // Cards brancos
-    textColor: "text-[#0F172A]", // Azul marinho profundo
+    bgPage: "bg-[#F4F7FB]",
+    cardBg: "bg-[#FFFFFF]",
+    textColor: "text-[#0F172A]",
     subTextColor: "text-[#64748B]",
-    border: "border-[#CBD5E1]", // Borda azulada
-    primary: "text-[#0284C7]", // Cyan/Azul Tech
+    border: "border-[#CBD5E1]",
+    primary: "text-[#0284C7]",
     bgSecondary: "bg-[#E2E8F0]",
-    bgAction: "bg-[#0284C7]",
+    bgAction: "bg-[#0284C7] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
     previewColor: "linear-gradient(135deg, #F4F7FB 0%, #0284C7 100%)",
   },
 
@@ -344,14 +344,14 @@ export const businessThemes: Record<string, any> = {
   showroom_saas: {
     label: "Showroom - SaaS",
     layout: "showroom",
-    bgPage: "bg-[#09090B]", // Fundo quase preto (Zinc)
-    cardBg: "bg-[#18181B]", // Cards um tom acima
-    textColor: "text-[#FAFAFA]", // Branco Gelo
+    bgPage: "bg-[#09090B]",
+    cardBg: "bg-[#18181B]",
+    textColor: "text-[#FAFAFA]",
     subTextColor: "text-[#A1A1AA]",
-    border: "border-[#27272A]", // Borda chumbo
-    primary: "text-[#3B82F6]", // Azul vibrante brilhando no escuro
+    border: "border-[#27272A]",
+    primary: "text-[#3B82F6]",
     bgSecondary: "bg-[#27272A]",
-    bgAction: "bg-[#3B82F6]",
+    bgAction: "bg-[#3B82F6] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
     previewColor: "linear-gradient(135deg, #09090B 0%, #3B82F6 100%)",
   },
 
@@ -359,14 +359,14 @@ export const businessThemes: Record<string, any> = {
   showroom_obsidian: {
     label: "Showroom - Obsidian",
     layout: "showroom",
-    bgPage: "bg-[#000000]", // Fundo Preto Absoluto
-    cardBg: "bg-[#0A0A0A]", // Cards quase invisíveis
-    textColor: "text-[#E4E4E7]", // Cinza muito claro
+    bgPage: "bg-[#000000]",
+    cardBg: "bg-[#0A0A0A]",
+    textColor: "text-[#E4E4E7]",
     subTextColor: "text-[#71717A]",
-    border: "border-[#27272A]", // Borda suave
-    primary: "text-[#FFFFFF]", // Branco puro pros ícones
+    border: "border-[#27272A]",
+    primary: "text-[#FFFFFF]",
     bgSecondary: "bg-[#18181B]",
-    bgAction: "bg-[#FFFFFF]",
+    bgAction: "bg-[#FFFFFF] text-slate-900", // 🚀 AJUSTE DE CONTRASTE AQUI
     previewColor: "linear-gradient(135deg, #000000 0%, #27272A 100%)",
   },
 };

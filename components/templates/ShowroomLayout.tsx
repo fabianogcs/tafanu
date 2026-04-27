@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
 import { motion, AnimatePresence, useInView } from "framer-motion";
@@ -72,6 +70,7 @@ const SheinIcon = ({ className }: { className?: string }) => (
 
 // --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO SHOWROOM) ---
 const VideoEmbed = ({ url }: { url: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
   let isInstagram = false;
 
@@ -83,7 +82,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
@@ -99,10 +98,29 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
+  if (!isLoaded) {
+    return (
+      <button
+        aria-label="Carregar e reproduzir vídeo"
+        onClick={() => setIsLoaded(true)}
+        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-3xl cursor-pointer group border border-white/10"
+      >
+        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
+          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        </div>
+        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
+          Toque para carregar
+        </span>
+      </button>
+    );
+  }
+
   return (
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-3xl">
       <iframe
         src={embedUrl}
+        title="Vídeo de demonstração do negócio"
+        aria-label="Reprodutor de vídeo"
         className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -127,6 +145,7 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
   return (
     <div className="relative group/runway w-full">
       <button
+        aria-label="Rolar galeria para a esquerda"
         onClick={() => scroll("left")}
         className={`${arrowClass} -left-6`}
       >
@@ -148,13 +167,17 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
                 onClick={() => setSelectedIndex(item.lightboxIndex)}
                 whileHover={{ scale: 0.98 }}
                 className={`${cardBaseClasses} cursor-pointer`}
+                role="button"
+                tabIndex={0}
+                aria-label="Abrir imagem em tela cheia"
               >
                 {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
                 <Image
                   src={item.url}
                   alt="Vitrine"
                   fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
+                  quality={60}
+                  sizes="(max-width: 768px) 250px, 350px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -181,6 +204,7 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
       </div>
 
       <button
+        aria-label="Rolar galeria para a direita"
         onClick={() => scroll("right")}
         className={`${arrowClass} -right-6`}
       >
@@ -229,6 +253,8 @@ const AccordionItem = ({ q, a, theme }: any) => {
     <div className={`border-b ${theme.border} transition-all duration-300`}>
       <button
         type="button"
+        aria-expanded={isOpen}
+        aria-label="Alternar visualização da resposta"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full py-5 flex justify-between items-center text-left gap-4 outline-none bg-transparent"
       >
@@ -445,7 +471,7 @@ export default function ShowroomLayout({
               <div className="relative w-full h-full">
                 <Image
                   src={business.imageUrl}
-                  alt="Logo"
+                  alt={`Logotipo de ${business.name}`}
                   fill
                   priority
                   sizes="(max-width: 768px) 150px, 200px"
@@ -468,6 +494,7 @@ export default function ShowroomLayout({
 
             <div className="flex items-center gap-3 pt-5">
               <button
+                aria-label="Compartilhar perfil ou copiar link"
                 onClick={() => handleShare(business.name)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-full border ${theme.border} hover:bg-black/5 transition-colors text-xs font-bold uppercase tracking-wider`}
               >
@@ -498,9 +525,9 @@ export default function ShowroomLayout({
               <section className="space-y-8">
                 {hasDescription && (
                   <div>
-                    <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
+                    <h2 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
                       Sobre a Empresa
-                    </h3>
+                    </h2>
                     <p className="text-base md:text-xl font-normal leading-relaxed opacity-90 whitespace-pre-line break-words max-w-4xl">
                       {business.description}
                     </p>
@@ -547,9 +574,9 @@ export default function ShowroomLayout({
                 return (
                   <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
-                      <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 flex items-center gap-2">
+                      <h2 className="text-xs font-bold uppercase tracking-widest opacity-40 flex items-center gap-2">
                         <Camera size={14} /> Catálogo Visual
-                      </h3>
+                      </h2>
 
                       {/* Capsula Switch (Showroom Style Minimalista) */}
                       <div
@@ -589,9 +616,9 @@ export default function ShowroomLayout({
             {/* FAQ Minimalista Integrado */}
             {hasFaqs && (
               <section className="w-full">
-                <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
                   <HelpCircle size={14} /> Dúvidas Frequentes
-                </h3>
+                </h2>
                 <div className="flex flex-col max-w-4xl">
                   {faqs.map((f: any, i: number) => (
                     <AccordionItem
@@ -613,13 +640,14 @@ export default function ShowroomLayout({
               <div
                 className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm space-y-8`}
               >
-                <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
+                <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
                   Atendimento Rápido
-                </h3>
+                </h2>
 
                 <div className="space-y-4">
                   {hasWhatsapp && (
                     <button
+                      aria-label="Atendimento via WhatsApp"
                       onClick={() => handleTrackLead("whatsapp")}
                       className="w-full flex items-center justify-between p-5 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors group border border-emerald-100"
                     >
@@ -638,6 +666,7 @@ export default function ShowroomLayout({
 
                   {hasPhone && (
                     <button
+                      aria-label="Ligar para a empresa"
                       onClick={() => handleTrackLead("phone")}
                       className={`w-full flex items-center justify-between p-5 rounded-2xl border ${theme.border} hover:bg-black/5 transition-colors group`}
                     >
@@ -679,6 +708,7 @@ export default function ShowroomLayout({
                           href={finalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          aria-label={`Visitar perfil no ${s}`}
                           onClick={() =>
                             Actions.registerClickEvent(
                               business.id,
@@ -708,9 +738,9 @@ export default function ShowroomLayout({
               <div
                 className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm`}
               >
-                <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-6 text-center">
+                <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-6 text-center">
                   Lojas Oficiais
-                </h3>
+                </h2>
                 <div className="flex flex-col gap-3">
                   {salesChannels.map((channel) => (
                     <a
@@ -718,6 +748,7 @@ export default function ShowroomLayout({
                       href={formatExternalLink(channel.url)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Comprar na loja ${channel.name}`}
                       onClick={() =>
                         Actions.registerClickEvent(
                           business.id,
@@ -743,14 +774,15 @@ export default function ShowroomLayout({
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Abrir localização no Google Maps"
                 onClick={() => Actions.registerClickEvent(business.id, "MAP")}
                 className={`block p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm hover:border-black/20 transition-colors group`}
               >
                 <div className="flex items-center gap-3 mb-6 opacity-40">
                   <MapPin size={18} />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest">
+                  <h2 className="text-[10px] font-bold uppercase tracking-widest">
                     Localização
-                  </h3>
+                  </h2>
                 </div>
 
                 <p className="text-base font-bold leading-relaxed mb-1 opacity-90 break-words">
@@ -781,15 +813,15 @@ export default function ShowroomLayout({
               >
                 <div className="flex items-center gap-3 mb-6 opacity-40">
                   <Clock size={18} />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest">
+                  <h2 className="text-[10px] font-bold uppercase tracking-widest">
                     Horários
-                  </h3>
+                  </h2>
                 </div>
                 <div className="space-y-3">
                   {safeHours.map((h: any, i: number) => (
                     <div
                       key={i}
-                      className="flex justify-between items-center text-sm pb-3 border-b border-black/5 last:border-0 last:pb-0"
+                      className={`flex justify-between items-center text-sm pb-3 border-b border-black/5 last:border-0 last:pb-0`}
                     >
                       <span className="font-semibold opacity-60 uppercase text-[11px] tracking-wider">
                         {h.day}
@@ -829,6 +861,7 @@ export default function ShowroomLayout({
       {/* WHATSAPP FLUTUANTE (Discreto no canto) */}
       {hasWhatsapp && (
         <motion.button
+          aria-label="Abrir WhatsApp Flutuante"
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
@@ -851,14 +884,18 @@ export default function ShowroomLayout({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col bg-black/95 backdrop-blur-sm"
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[210]">
+            <button
+              aria-label="Fechar galeria"
+              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[210]"
+            >
               <X size={32} />
             </button>
             <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4 pt-10">
               <button
+                aria-label="Imagem anterior"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
@@ -868,6 +905,7 @@ export default function ShowroomLayout({
                 <ChevronLeft size={28} />
               </button>
               <button
+                aria-label="Próxima imagem"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
@@ -894,7 +932,7 @@ export default function ShowroomLayout({
                     else if (info.offset.x < -80)
                       safeSetIndex(selectedIndex + 1);
                   }}
-                  className="max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl"
+                  className={`max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl`}
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
@@ -906,12 +944,13 @@ export default function ShowroomLayout({
               {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
+                  aria-label={`Ver miniatura ${idx + 1}`}
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-300 snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-105 opacity-100" : "opacity-40 hover:opacity-100"}`}
                 >
                   {/* ✅ MINIATURAS OTIMIZADAS */}
                   <Image
-                    src={img}
+                    src={img || "/og-default.png"}
                     alt="Thumbnail"
                     fill
                     sizes="64px"

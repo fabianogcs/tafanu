@@ -58,8 +58,9 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO) ---
+// --- 🚀 MOTOR DE VÍDEOS (OTIMIZADO COM LAZY LOAD E ACESSIBILIDADE) ---
 const VideoEmbed = ({ url }: { url: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
   let isInstagram = false;
 
@@ -71,7 +72,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
@@ -87,10 +88,31 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
+  // A FACHADA: Mostra apenas um botão de play falso antes do clique
+  if (!isLoaded) {
+    return (
+      <button
+        aria-label="Carregar e reproduzir vídeo"
+        onClick={() => setIsLoaded(true)}
+        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group border border-white/10"
+      >
+        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
+          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        </div>
+        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
+          Toque para carregar
+        </span>
+      </button>
+    );
+  }
+
+  // O VÍDEO REAL: Só carrega depois que clicou
   return (
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto">
       <iframe
         src={embedUrl}
+        title="Vídeo de demonstração do negócio"
+        aria-label="Reprodutor de vídeo"
         className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -121,6 +143,7 @@ const MasterRunway = ({
     <div className="relative group/runway w-full">
       {/* Setas jogadas para fora no desktop para não cobrir o card */}
       <button
+        aria-label="Rolar galeria para a esquerda"
         onClick={() => scroll("left")}
         className={`${arrowClass} -left-4 lg:-left-8`}
       >
@@ -141,13 +164,17 @@ const MasterRunway = ({
                 key={`img-${i}`}
                 onClick={() => setSelectedIndex(item.lightboxIndex)}
                 className={`${cardBaseClasses} cursor-pointer`}
+                role="button"
+                tabIndex={0}
+                aria-label="Abrir imagem em tela cheia"
               >
                 {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
                 <Image
-                  src={item.url}
+                  src={item.url || "/og-default.png"}
                   alt="Showcase"
                   fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
+                  quality={60}
+                  sizes="(max-width: 768px) 250px, 350px"
                   className="object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
@@ -179,6 +206,7 @@ const MasterRunway = ({
       </div>
 
       <button
+        aria-label="Rolar galeria para a direita"
         onClick={() => scroll("right")}
         className={`${arrowClass} -right-4 lg:-right-8`}
       >
@@ -224,6 +252,8 @@ const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
     <div className={`border-b ${themeBorder} transition-all duration-500 py-3`}>
       <button
         type="button"
+        aria-expanded={isOpen}
+        aria-label="Alternar visualização da resposta"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full py-5 flex justify-between items-center text-left gap-6 outline-none bg-transparent group"
       >
@@ -472,6 +502,7 @@ export default function LuxeLayout({
             className={`flex items-center gap-3 bg-current/5 px-4 py-2 md:px-5 md:py-2.5 rounded-full border border-current/10 backdrop-blur-xl shadow-lg text-current/80 hover:text-current transition-colors`}
           >
             <button
+              aria-label="Compartilhar perfil no WhatsApp ou copiar link"
               onClick={() => handleShare(business.name)}
               className="transition-all hover:scale-110"
             >
@@ -535,7 +566,7 @@ export default function LuxeLayout({
                   {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
                   <Image
                     src={business.imageUrl}
-                    alt="Logo"
+                    alt={`Logotipo da empresa ${business.name}`}
                     fill
                     priority
                     sizes="(max-width: 768px) 120px, 150px"
@@ -572,13 +603,13 @@ export default function LuxeLayout({
             return (
               <div className="w-full mb-12 md:mb-24">
                 <div className="flex flex-col items-center text-center mb-8 px-4">
-                  <h3 className="text-3xl md:text-5xl font-serif italic tracking-tight opacity-90 flex items-center gap-4 mb-8">
+                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight opacity-90 flex items-center gap-4 mb-8">
                     <Sparkles
                       className={`w-6 h-6 md:w-8 md:h-8 ${primary}`}
                       strokeWidth={1.5}
                     />
                     The Collection
-                  </h3>
+                  </h2>
 
                   <div className="flex items-center p-1 bg-current/5 border border-current/10 rounded-full backdrop-blur-md">
                     <button
@@ -627,9 +658,9 @@ export default function LuxeLayout({
                 viewport={{ once: true }}
                 className="space-y-10"
               >
-                <h3 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10">
+                <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10">
                   Signatures
-                </h3>
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                   {business.features
                     .filter(Boolean)
@@ -658,9 +689,9 @@ export default function LuxeLayout({
                 className="space-y-8"
               >
                 <div className="flex flex-col items-start">
-                  <h3 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full">
+                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full">
                     Inquiries
-                  </h3>
+                  </h2>
                 </div>
                 <div className="flex flex-col">
                   {faqs.map((f: any, i: number) => (
@@ -683,9 +714,9 @@ export default function LuxeLayout({
             >
               {(hasWhatsapp || hasPhone) && (
                 <div className="flex flex-col pb-8">
-                  <h3 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                  <h2 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
                     The Concierge
-                  </h3>
+                  </h2>
                   <div className="space-y-4">
                     {hasWhatsapp && (
                       <button
@@ -730,13 +761,14 @@ export default function LuxeLayout({
                 <div
                   className={`flex flex-col py-8 ${hasWhatsapp || hasPhone ? "border-t border-current/10" : ""}`}
                 >
-                  <h3 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                  <h2 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
                     Location
-                  </h3>
+                  </h2>
                   <a
                     href={mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Abrir localização no Google Maps"
                     onClick={() =>
                       Actions.registerClickEvent(business.id, "MAP")
                     }
@@ -771,9 +803,9 @@ export default function LuxeLayout({
                 <div
                   className={`flex flex-col py-8 ${hasWhatsapp || hasPhone || hasAddress ? "border-t border-current/10" : ""}`}
                 >
-                  <h3 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                  <h2 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
                     Opening Hours
-                  </h3>
+                  </h2>
                   <div className="space-y-4">
                     {realHours.map((h: any, i: number) => (
                       <div
@@ -805,15 +837,16 @@ export default function LuxeLayout({
                 >
                   {salesChannels.length > 0 && (
                     <div className="space-y-4">
-                      <h3 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
+                      <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
                         Directories
-                      </h3>
+                      </h2>
                       {salesChannels.map((channel) => (
                         <a
                           key={channel.key}
                           href={formatExternalLink(channel.url)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          aria-label={`Comprar na loja ${channel.name}`}
                           onClick={() =>
                             Actions.registerClickEvent(
                               business.id,
@@ -866,6 +899,7 @@ export default function LuxeLayout({
                               href={finalUrl}
                               target="_blank"
                               rel="noopener noreferrer"
+                              aria-label={`Visitar perfil no ${s}`}
                               onClick={() =>
                                 Actions.registerClickEvent(
                                   business.id,
@@ -921,6 +955,7 @@ export default function LuxeLayout({
 
       {hasWhatsapp && (
         <motion.button
+          aria-label="Abrir WhatsApp Flutuante"
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
@@ -947,11 +982,15 @@ export default function LuxeLayout({
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-8 right-8 text-white/40 hover:text-white transition-all z-[230]">
+            <button
+              aria-label="Fechar galeria"
+              className="absolute top-8 right-8 text-white/40 hover:text-white transition-all z-[230]"
+            >
               <X size={40} strokeWidth={1} />
             </button>
             <div className="flex-grow flex items-center justify-center relative w-full px-4 pt-10">
               <button
+                aria-label="Imagem anterior"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
@@ -961,6 +1000,7 @@ export default function LuxeLayout({
                 <ChevronLeft size={40} strokeWidth={1} />
               </button>
               <button
+                aria-label="Próxima imagem"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
@@ -999,6 +1039,7 @@ export default function LuxeLayout({
               {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
+                  aria-label={`Ver miniatura ${idx + 1}`}
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-20 overflow-hidden transition-all snap-center rounded-lg ${selectedIndex === idx ? "opacity-100 ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-30 hover:opacity-100"}`}
                 >

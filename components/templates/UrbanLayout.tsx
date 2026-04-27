@@ -63,8 +63,9 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO) ---
+// --- 🚀 MOTOR DE VÍDEOS (OTIMIZADO COM LAZY LOAD E ACESSIBILIDADE) ---
 const VideoEmbed = ({ url }: { url: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
   let isInstagram = false;
 
@@ -76,7 +77,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
       if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
       }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
@@ -92,10 +93,31 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
+  // A FACHADA: Mostra apenas um botão de play falso antes do clique
+  if (!isLoaded) {
+    return (
+      <button
+        aria-label="Carregar e reproduzir vídeo"
+        onClick={() => setIsLoaded(true)}
+        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10"
+      >
+        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
+          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        </div>
+        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
+          Toque para carregar
+        </span>
+      </button>
+    );
+  }
+
+  // O VÍDEO REAL: Só carrega depois que clicou
   return (
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem]">
       <iframe
         src={embedUrl}
+        title="Vídeo de demonstração do negócio"
+        aria-label="Reprodutor de vídeo"
         className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -126,6 +148,7 @@ const MasterRunway = ({
   return (
     <div className="relative group/runway w-full">
       <button
+        aria-label="Rolar galeria para a esquerda"
         onClick={() => scroll("left")}
         className={`${arrowClass} -left-4 lg:-left-6`}
       >
@@ -147,13 +170,17 @@ const MasterRunway = ({
                 onClick={() => setSelectedIndex(item.lightboxIndex)}
                 whileHover={{ scale: 1.02 }}
                 className={`${cardBaseClasses}`}
+                role="button"
+                tabIndex={0}
+                aria-label="Abrir imagem em tela cheia"
               >
                 {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
                 <Image
-                  src={item.url}
-                  alt="Showcase"
+                  src={item.url || "/og-default.png"}
+                  alt="Foto da vitrine do negócio"
                   fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
+                  quality={60}
+                  sizes="(max-width: 768px) 250px, 350px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -180,6 +207,7 @@ const MasterRunway = ({
       </div>
 
       <button
+        aria-label="Rolar galeria para a direita"
         onClick={() => scroll("right")}
         className={`${arrowClass} -right-4 lg:-right-6`}
       >
@@ -403,6 +431,7 @@ export default function UrbanLayout({
         <div className="w-full max-w-7xl mx-auto flex justify-end relative z-30 mb-8 md:mb-16">
           <div className="flex items-center gap-2 bg-white/20 p-1.5 rounded-full backdrop-blur-md border border-white/30 text-white">
             <button
+              aria-label="Compartilhar perfil no WhatsApp ou copiar link"
               onClick={() => handleShare(business.name)}
               className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:bg-white/20"
             >
@@ -444,7 +473,7 @@ export default function UrbanLayout({
                 {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
                 <Image
                   src={business.imageUrl}
-                  alt="Logo"
+                  alt={`Logotipo da empresa ${business.name}`}
                   fill
                   priority
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -489,6 +518,7 @@ export default function UrbanLayout({
 
             {hasWhatsapp && (
               <motion.button
+                aria-label="Entrar em contato via WhatsApp"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
@@ -529,6 +559,7 @@ export default function UrbanLayout({
                       href={finalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Visitar perfil no ${s}`}
                       onClick={() =>
                         Actions.registerClickEvent(business.id, s.toUpperCase())
                       }
@@ -561,13 +592,13 @@ export default function UrbanLayout({
             {/* Destaques */}
             {hasFeatures && (
               <section className="space-y-6">
-                <h3 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
+                <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
                   <Sparkles
                     className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
                     strokeWidth={2}
                   />{" "}
                   Nossos Diferenciais
-                </h3>
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {business.features
                     .filter(Boolean)
@@ -608,13 +639,13 @@ export default function UrbanLayout({
                 return (
                   <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
-                      <h3 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center gap-3">
+                      <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center gap-3">
                         <Camera
                           className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
                           strokeWidth={2}
                         />
                         Catálogo Visual
-                      </h3>
+                      </h2>
 
                       {/* Capsula Switch (Urban Style) */}
                       <div
@@ -656,13 +687,13 @@ export default function UrbanLayout({
             {/* FAQ */}
             {hasFaqs && (
               <section className="space-y-6 pt-6">
-                <h3 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
+                <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
                   <HelpCircle
                     className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
                     strokeWidth={2}
                   />{" "}
                   Suporte e Dúvidas
-                </h3>
+                </h2>
                 <div className="flex flex-col gap-3">
                   {faqs.map((f: any, i: number) => (
                     <div
@@ -670,6 +701,8 @@ export default function UrbanLayout({
                       className={`${cardBg} border ${border} ${shadow} rounded-2xl overflow-hidden transition-all duration-300`}
                     >
                       <button
+                        aria-expanded={openFaq === i}
+                        aria-label="Alternar visualização da resposta"
                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
                         className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
                       >
@@ -714,9 +747,9 @@ export default function UrbanLayout({
                 {/* Contatos Pessoais */}
                 {(hasWhatsapp || hasPhone) && (
                   <>
-                    <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-2">
+                    <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-2">
                       Atendimento
-                    </h3>
+                    </h2>
                     <div className="space-y-3">
                       {hasWhatsapp && (
                         <button
@@ -745,7 +778,7 @@ export default function UrbanLayout({
                             <Phone
                               size={20}
                               strokeWidth={2}
-                              className="opacity-50"
+                              className={`opacity-50 ${primary}`}
                             />
                             <span className="text-xs md:text-sm font-bold opacity-80 tracking-widest">
                               {formatPhoneNumber(business.phone)}
@@ -762,15 +795,16 @@ export default function UrbanLayout({
                   <div
                     className={`pt-5 ${hasWhatsapp || hasPhone ? `border-t ${border}` : ""} flex flex-col gap-3`}
                   >
-                    <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-1">
+                    <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-1">
                       Nossas Lojas
-                    </h3>
+                    </h2>
                     {salesChannels.map((channel) => (
                       <a
                         key={channel.key}
                         href={formatExternalLink(channel.url)}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label={`Comprar na loja ${channel.name}`}
                         onClick={() =>
                           Actions.registerClickEvent(
                             business.id,
@@ -798,14 +832,15 @@ export default function UrbanLayout({
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Abrir localização no Google Maps"
                 onClick={() => Actions.registerClickEvent(business.id, "MAP")}
                 className={`block p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow} hover:-translate-y-1 transition-all duration-300 group`}
               >
                 <div className="flex items-center gap-3 mb-5 opacity-40">
                   <MapPin size={18} strokeWidth={2} />
-                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                  <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
                     Localização
-                  </h3>
+                  </h2>
                 </div>
                 <p className="text-sm md:text-base font-bold leading-relaxed mb-1 opacity-90 break-words">
                   {business.address || "Endereço não cadastrado"}
@@ -832,9 +867,9 @@ export default function UrbanLayout({
               >
                 <div className="flex items-center gap-3 mb-5 opacity-40">
                   <Clock size={18} strokeWidth={2} />
-                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                  <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
                     Horários
-                  </h3>
+                  </h2>
                 </div>
                 <div className="space-y-3">
                   {realHours.map((h: any, i: number) => (
@@ -880,6 +915,7 @@ export default function UrbanLayout({
       {/* WHATSAPP FLUTUANTE */}
       {hasWhatsapp && (
         <motion.button
+          aria-label="Abrir WhatsApp Flutuante"
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
@@ -905,11 +941,15 @@ export default function UrbanLayout({
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
-            <button className="absolute top-8 right-8 text-white/50 hover:text-white hover:scale-110 transition-all z-[230]">
+            <button
+              aria-label="Fechar galeria"
+              className="absolute top-8 right-8 text-white/50 hover:text-white hover:scale-110 transition-all z-[230]"
+            >
               <X size={40} strokeWidth={2} />
             </button>
             <div className="flex-grow flex items-center justify-center relative w-full px-4 pt-10">
               <button
+                aria-label="Imagem anterior"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
@@ -919,6 +959,7 @@ export default function UrbanLayout({
                 <ChevronLeft size={32} strokeWidth={2} />
               </button>
               <button
+                aria-label="Próxima imagem"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
@@ -957,12 +998,13 @@ export default function UrbanLayout({
               {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
+                  aria-label={`Ver miniatura ${idx + 1}`}
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-110 opacity-100 shadow-xl" : "opacity-30 hover:opacity-100"}`}
                 >
                   {/* ✅ MINIATURAS OTIMIZADAS */}
                   <Image
-                    src={img}
+                    src={img || "/og-default.png"}
                     alt="Thumb"
                     fill
                     sizes="64px"
