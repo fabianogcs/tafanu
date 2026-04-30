@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -15,8 +15,14 @@ export default function Hero() {
     router.push(`/busca?${params.toString()}`);
   };
 
+  // ✅ CORREÇÃO 1: Reduzimos de 0.95 para 0.85.
+  // Agora a tela desce de forma mais controlada, sem passar direto do ponto ideal.
+  const handleScrollDown = () => {
+    window.scrollBy({ top: window.innerHeight * 0.85, behavior: "smooth" });
+  };
+
   return (
-    <section className="relative bg-[#0A0F1E] overflow-hidden pt-12 pb-24 md:pt-28 md:pb-40 lg:pt-36 lg:pb-48 border-b border-white/5">
+    <section className="relative bg-[#0A0F1E] overflow-hidden pt-12 pb-32 md:pt-28 md:pb-48 lg:pt-36 lg:pb-56">
       {/* Fundo Premium com Brilho Sutil e Profundidade */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none"
@@ -27,19 +33,20 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 text-center">
-        {/* Tipografia de Alto Impacto com Tracking Negativo */}
+        {/* Tipografia de Alto Impacto */}
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-[-0.05em] leading-[0.95] mb-6 relative z-20 uppercase italic">
           Tudo o que você busca, <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-action via-emerald-400 to-teal-300 pr-2">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-action via-emerald-400 to-teal-300 pr-1 md:pr-2 box-decoration-clone">
             em um só lugar.
           </span>
         </h1>
 
-        <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-12 font-medium leading-relaxed relative z-20 opacity-90">
+        <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-8 font-medium leading-relaxed relative z-20 opacity-90">
           A vitrine mais exclusiva da sua região. Conectamos você aos melhores
           serviços e comércios de confiança.
         </p>
 
+        {/* Barra de Pesquisa */}
         <form
           onSubmit={handleSearch}
           role="search"
@@ -75,6 +82,22 @@ export default function Hero() {
             Pesquisar
           </button>
         </form>
+      </div>
+
+      {/* 
+        ✅ CORREÇÕES 2 E 3 (Z-index e Posicionamento Desktop):
+        - Trocamos z-40 por z-20. Agora a seta passa elegantemente por trás do Navbar.
+        - Trocamos md:bottom-16 por md:bottom-32. Isso afasta o botão da área branca sobreposta pelo Guia de Negócios.
+      */}
+      <div className="absolute bottom-16 md:bottom-32 left-1/2 -translate-x-1/2 z-20">
+        <button
+          onClick={handleScrollDown}
+          type="button"
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:border-tafanu-action hover:bg-tafanu-action/10 transition-colors shadow-lg cursor-pointer"
+          aria-label="Rolar página para baixo"
+        >
+          <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-tafanu-action" />
+        </button>
       </div>
     </section>
   );

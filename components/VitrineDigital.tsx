@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Globe, ArrowRight, ShoppingBag, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatDisplayName } from "@/lib/dictionary"; // ✅ Dicionário importado!
+import { formatDisplayName } from "@/lib/dictionary";
 
 interface VitrineDigitalProps {
   data: { category: string; subcategories: string[] }[];
@@ -19,7 +19,7 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
   const activeData = data.find((d) => d.category === activeTab);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-16 md:pt-8 md:pb-24 relative overflow-hidden">
+    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-16 md:pt-8 md:pb-24 relative overflow-hidden z-10">
       <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-emerald-400/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       <div className="mb-10 md:mb-12">
@@ -53,20 +53,22 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
                 <button
                   key={item.category}
                   onClick={() => setActiveTab(item.category)}
-                  className={`snap-start shrink-0 lg:w-full flex items-center justify-between px-6 py-4 md:py-5 rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest transition-all duration-300 relative overflow-hidden ${
+                  // ✅ AQUI ESTÁ A CORREÇÃO DE CONTRASTE: Usando um gradient escuro super premium quando ativo
+                  className={`snap-start shrink-0 lg:w-full flex items-center justify-between px-6 py-4 md:py-5 rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest transition-all duration-300 relative overflow-hidden border-2 ${
                     isActive
-                      ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20 scale-100"
-                      : "bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-800 scale-[0.98] hover:scale-100"
+                      ? "bg-gradient-to-r from-slate-900 to-slate-800 text-white border-slate-900 shadow-xl shadow-slate-900/20 scale-100"
+                      : "bg-slate-50 text-slate-500 border-transparent hover:border-slate-200 hover:bg-slate-100 hover:text-slate-800 scale-[0.98] hover:scale-100"
                   }`}
                 >
                   <div className="flex items-center gap-3 relative z-10">
                     <ShoppingBag
                       size={18}
                       className={
-                        isActive ? "text-emerald-400" : "text-slate-400"
+                        isActive
+                          ? "text-emerald-400 drop-shadow-sm"
+                          : "text-slate-400"
                       }
                     />
-                    {/* ✅ Categoria do Menu Lateral Formata */}
                     {formatDisplayName(item.category)}
                   </div>
                   {isActive && (
@@ -74,7 +76,10 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
                       layoutId="activeIndicator"
                       className="hidden lg:block relative z-10"
                     >
-                      <ArrowRight size={18} className="text-emerald-400" />
+                      <ArrowRight
+                        size={18}
+                        className="text-emerald-400 drop-shadow-sm"
+                      />
                     </motion.div>
                   )}
                 </button>
@@ -97,7 +102,6 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b border-slate-200/80 gap-4">
                   <h4 className="font-black text-2xl md:text-3xl italic uppercase text-slate-800 tracking-tighter">
-                    {/* ✅ Título do bloco Formata */}
                     {formatDisplayName(activeData.category)}{" "}
                     <span className="text-emerald-500">Online</span>
                   </h4>
@@ -116,7 +120,6 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
                       >
                         <div className="absolute inset-0 bg-emerald-50 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300 ease-out" />
 
-                        {/* ✅ Nome do botão da subcategoria Formata */}
                         <span className="relative z-10">
                           {formatDisplayName(sub)}
                         </span>

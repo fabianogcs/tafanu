@@ -12,8 +12,12 @@ export default function Categories({ activeCats }: { activeCats: string[] }) {
   if (!activeCats || activeCats.length === 0) return null;
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-b from-slate-50 to-white py-16 md:py-24">
-      {/* 🌟 O Segredo da "Vida": Fundo Decorativo com Mesh Gradient */}
+    // ✅ AQUI ESTÁ A MÁGICA: -mt-12 md:-mt-24 sobe o componente. rounded-t-[3rem] arredonda. shadow-[0_-20px...] cria sombra por cima do fundo escuro.
+    <section className="relative w-full z-20 -mt-12 md:-mt-24 overflow-hidden bg-gradient-to-b from-slate-50 to-white pt-16 md:pt-24 pb-16 md:pb-24 rounded-t-[2.5rem] md:rounded-t-[4rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)]">
+      {/* Detalhe Premium: Pílula de "App Mobile" no topo */}
+      <div className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 w-16 md:w-24 h-1.5 md:h-2 bg-slate-200 rounded-full opacity-60" />
+
+      {/* Fundo Decorativo com Mesh Gradient */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-tafanu-blue/5 blur-[100px]" />
         <div className="absolute top-[40%] -left-[10%] w-[400px] h-[400px] rounded-full bg-emerald-400/5 blur-[120px]" />
@@ -57,7 +61,6 @@ export default function Categories({ activeCats }: { activeCats: string[] }) {
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-tafanu-action/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
 
-                  {/* ✅ AQUI ESTÁ A MÁGICA: formatamos o texto de exibição */}
                   <span className="relative z-10 font-black text-[11px] md:text-xs uppercase tracking-widest text-slate-700 group-hover:text-slate-900 transition-colors line-clamp-2 leading-tight break-words pr-3">
                     {formatDisplayName(cat)}
                   </span>
