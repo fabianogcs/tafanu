@@ -2,6 +2,8 @@
 
 import { Tag, Hash, X } from "lucide-react";
 import { TAFANU_CATEGORIES } from "./constants";
+// 1. Importamos a nossa função mágica do dicionário
+import { formatDisplayName } from "@/lib/dictionary";
 
 interface SegmentationSectionProps {
   categoria: string;
@@ -45,6 +47,7 @@ export function SegmentationSection({
         <Tag size={16} /> Segmentação
       </h3>
 
+      {/* --- SEÇÃO 1: RAMO PRINCIPAL --- */}
       <div className="mb-8">
         <label className="text-[9px] font-black uppercase text-indigo-400 mb-3 block tracking-widest">
           1. Ramo Principal
@@ -54,6 +57,7 @@ export function SegmentationSection({
             <button
               key={cat}
               onClick={() => {
+                // O estado (backend) continua guardando a versão sem acento
                 setCategoria(cat);
                 setSelectedSubs([]);
               }}
@@ -63,14 +67,15 @@ export function SegmentationSection({
                   : "bg-white text-slate-400 border-slate-200"
               }`}
             >
-              {cat}
+              {/* 2. O usuário vê a versão formatada (com acentos) */}
+              {formatDisplayName(cat)}
             </button>
           ))}
         </div>
       </div>
 
+      {/* --- SEÇÃO 2: NICHOS (SUBCATEGORIAS) --- */}
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8">
-        {/* Trocamos <label> por <div> e removemos a classe "block" */}
         <div className="text-[9px] font-black uppercase text-slate-400 mb-3 flex tracking-widest justify-between">
           <span>2. Nichos</span>
           <span className="text-indigo-400">
@@ -82,6 +87,7 @@ export function SegmentationSection({
             <button
               key={sub}
               onClick={() =>
+                // O estado (backend) continua guardando a versão sem acento
                 setSelectedSubs((prev) =>
                   prev.includes(sub)
                     ? prev.filter((s) => s !== sub)
@@ -95,12 +101,14 @@ export function SegmentationSection({
               }`}
             >
               {selectedSubs.includes(sub) ? "✓ " : "+ "}
-              {sub}
+              {/* 3. O usuário vê a versão formatada (com acentos) */}
+              {formatDisplayName(sub)}
             </button>
           ))}
         </div>
       </div>
 
+      {/* --- SEÇÃO 3: PALAVRAS-CHAVE --- */}
       <div className="pt-6 border-t border-slate-100">
         <div className="flex justify-between items-end mb-3">
           <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
