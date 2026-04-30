@@ -3,19 +3,23 @@ import React from "react";
 import { Zap, Sparkles, Briefcase, Camera } from "lucide-react";
 
 export const TAFANU_CATEGORIES: Record<string, string[]> = {
+  //  Ajustar sempre sem acentos e colocar no dicionario com acento quando for acrescentar algo
+  // Ajustar sempre o lib/dicionary caso tenha acento
   Alimentacao: [
     "Hamburguer",
     "Pizza",
-    "Sushi / Japonesa",
+    "Japonesa",
     "Churrasco",
-    "Marmita / PF",
+    "Marmita",
     "Comida Saudavel",
     "Acai",
     "Sorveteria",
-    "Doces / Bolos",
+    "Doces",
+    "Bolos",
     "Cafeteria",
     "Padaria",
-    "Bebidas / Adega",
+    "Bebidas",
+    "Adega",
   ].sort(),
 
   Automotivo: [
@@ -24,21 +28,24 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Ar Condicionado",
     "Lava Jato",
     "Estetica Automotiva",
-    "Pneus / Alinhamento",
+    "Pneus",
+    "Alinhamento",
     "Som Automotivo",
     "Auto Pecas",
-    "Funilaria / Martelinho",
+    "Funilaria",
     "Venda de Veiculos",
   ].sort(),
 
   Beleza: [
-    "Cabelo / Salao",
+    "Salao",
     "Barbearia",
     "Manicure",
-    "Cilios / Sobrancelha",
+    "Cilios",
+    "Sobrancelha",
     "Estetica",
     "Depilacao",
-    "Massagem / Spa",
+    "Massagem",
+    "Spa",
     "Maquiagem",
   ].sort(),
 
@@ -76,6 +83,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Fotografo",
     "Marketing",
     "Designer",
+    "DJ",
     "Seguros",
     "Professor Particular",
   ].sort(),
@@ -90,7 +98,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Farmacia",
     "Otica",
     "Academia",
-    "Pilates / Yoga",
+    "Pilates",
   ].sort(),
 
   Servicos: [

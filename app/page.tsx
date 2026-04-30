@@ -50,8 +50,7 @@ export default async function Home() {
               <span className="text-tafanu-action">ser vista.</span>
             </h2>
             <p className="text-slate-400 font-medium text-sm md:text-base leading-relaxed">
-              Junte-se a centenas de empresas que já estão crescendo com o
-              Tafanu.
+              "Os melhores negócios não dependem da sorte. Eles usam o Tafanu."
             </p>
           </div>
 
