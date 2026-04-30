@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, ChevronDown } from "lucide-react";
+// 1. Importamos o Loader2 para usar como ícone de carregamento
+import { Search, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -8,15 +9,20 @@ export default function Hero() {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
+  // 2. Criamos o estado que controla se a pesquisa está em andamento
+  const [isSearching, setIsSearching] = useState(false);
+
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    // 3. Ao enviar o formulário, ativamos o estado de carregamento
+    setIsSearching(true);
+
     const params = new URLSearchParams();
     if (query) params.append("q", query);
     router.push(`/busca?${params.toString()}`);
   };
 
-  // ✅ CORREÇÃO 1: Reduzimos de 0.95 para 0.85.
-  // Agora a tela desce de forma mais controlada, sem passar direto do ponto ideal.
   const handleScrollDown = () => {
     window.scrollBy({ top: window.innerHeight * 0.85, behavior: "smooth" });
   };
@@ -71,25 +77,31 @@ export default function Hero() {
               className="w-full h-full bg-transparent outline-none text-white placeholder-white/30 font-medium text-base md:text-lg appearance-none"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              disabled={isSearching} // Opcional: desabilita o input durante a busca
             />
           </label>
 
+          {/* 4. Atualizamos o botão para reagir ao estado isSearching */}
           <button
             type="submit"
+            disabled={isSearching}
             aria-label="Realizar pesquisa"
-            className="w-full md:w-auto bg-tafanu-action hover:bg-gradient-to-r hover:from-tafanu-action hover:to-emerald-400 text-tafanu-blue font-black rounded-xl md:rounded-2xl px-12 h-14 md:h-16 shadow-[0_0_40px_rgba(45,212,191,0.25)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 flex items-center justify-center uppercase tracking-[0.15em] text-sm md:text-base shrink-0 border-t border-white/20"
+            className="w-full md:w-auto bg-tafanu-action hover:bg-gradient-to-r hover:from-tafanu-action hover:to-emerald-400 text-tafanu-blue font-black rounded-xl md:rounded-2xl px-12 h-14 md:h-16 shadow-[0_0_40px_rgba(45,212,191,0.25)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 uppercase tracking-[0.15em] text-sm md:text-base shrink-0 border-t border-white/20 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:-translate-y-0"
           >
-            Pesquisar
+            {isSearching ? (
+              <>
+                <Loader2 size={20} strokeWidth={3} className="animate-spin" />
+                <span>Buscando...</span>
+              </>
+            ) : (
+              <span>Pesquisar</span>
+            )}
           </button>
         </form>
       </div>
 
-      {/* 
-        ✅ CORREÇÕES 2 E 3 (Z-index e Posicionamento Desktop):
-        - Trocamos z-40 por z-20. Agora a seta passa elegantemente por trás do Navbar.
-        - Trocamos md:bottom-16 por md:bottom-32. Isso afasta o botão da área branca sobreposta pelo Guia de Negócios.
-      */}
-      <div className="absolute bottom-16 md:bottom-32 left-1/2 -translate-x-1/2 z-20">
+      {/* Indicativo de Rolagem Flutuante */}
+      <div className="absolute bottom-14 md:bottom-32 left-1/2 -translate-x-1/2 z-20">
         <button
           onClick={handleScrollDown}
           type="button"
