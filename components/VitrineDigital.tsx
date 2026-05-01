@@ -28,7 +28,7 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
             <Globe size={16} strokeWidth={2.5} />
           </span>
           <span className="text-emerald-600 font-black text-[11px] uppercase tracking-[0.25em]">
-            Shopping Nacional
+            Shopping
           </span>
         </div>
         <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase italic tracking-tighter leading-none drop-shadow-sm">

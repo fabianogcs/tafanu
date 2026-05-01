@@ -616,8 +616,15 @@ export async function createBusiness(payload: any) {
     revalidatePath("/busca");
     revalidatePath("/");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro no create:", error);
+
+    // 🚀 O INTERCEPTADOR DE ERROS DO PRISMA:
+    // P2002 é o código oficial do Prisma para "Unique constraint failed"
+    if (error?.code === "P2002" && error?.meta?.target?.includes("slug")) {
+      return { error: "Erro de slug: Este link já está em uso na plataforma." };
+    }
+
     return { error: "Erro ao criar anúncio." };
   }
 }
@@ -801,8 +808,14 @@ export async function updateFullBusiness(slug: string, payload: any) {
     }
 
     return { success: true, newSlug: validatedData.slug };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro no update:", error);
+
+    // 🚀 O INTERCEPTADOR DE ERROS NA EDIÇÃO:
+    if (error?.code === "P2002" && error?.meta?.target?.includes("slug")) {
+      return { error: "Erro de slug: Este link já está em uso na plataforma." };
+    }
+
     return { error: "Erro ao salvar." };
   }
 }

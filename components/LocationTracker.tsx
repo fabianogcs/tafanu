@@ -10,6 +10,15 @@ export default function LocationTracker() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // 🚀 A MÁGICA ACONTECE AQUI:
+  // Verificamos se o usuário veio da Vitrine Digital (modo=online)
+  const isOnlineMode = searchParams.get("modo") === "online";
+
+  // Se estiver no modo online, o componente retorna "null" e fica invisível na tela!
+  if (isOnlineMode) {
+    return null;
+  }
+
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       toast.error("Seu navegador não suporta geolocalização.");
