@@ -14,6 +14,9 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br",
+  ),
   title: "TAFANU | O que você precisa, perto de você",
   description:
     "Encontre os melhores serviços e comércios. Explore vitrines exclusivas e conecte-se diretamente pelo WhatsApp.",
@@ -34,7 +37,7 @@ export const metadata: Metadata = {
     siteName: "Tafanu",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br"}/og-default.png`,
+        url: "/og-default.png",
         width: 1200,
         height: 630,
         alt: "Logo Tafanu",
@@ -47,9 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TAFANU | Guia de Negócios",
     description: "Encontre os melhores serviços da sua cidade em um só lugar.",
-    images: [
-      `${process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br"}/og-default.png`,
-    ],
+    images: ["/og-default.png"],
   },
 };
 

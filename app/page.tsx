@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "De serviços essenciais a experiências únicas. Encontre as melhores empresas e profissionais de confiança em poucos segundos.",
   openGraph: {
     title: "Tafanu | Conectando você aos melhores negócios",
-    description: "Encontre as melhores empresas e profissionais na sua região.",
+    description: "Encontre as melhores empresas e profissionais",
     type: "website",
   },
 };
