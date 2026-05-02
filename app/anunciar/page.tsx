@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = {
   title: "Anuncie no Tafanu | Teste 7 Dias Grátis",
   description:
-    "Crie sua vitrine profissional no Tafanu. Seja encontrado por clientes da sua região e receba contatos direto no seu WhatsApp.",
+    "Crie sua vitrine profissional no Tafanu. Apareça para quem está buscando seus produtos ou serviços e receba contatos direto no WhatsApp.",
   openGraph: {
     title: "Impulsione seu Negócio com o Tafanu",
     description:
@@ -94,8 +94,9 @@ export default async function AnunciarPage() {
           </h1>
 
           <p className="text-lg md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto font-medium leading-tight">
-            Crie sua vitrine profissional no Tafanu. Seja encontrado por
-            clientes da sua região e receba contatos direto no seu WhatsApp.
+            Crie sua vitrine profissional no Tafanu e apareça para clientes que
+            estão buscando produtos ou serviços. Receba contatos direto no seu
+            WhatsApp.
             <span className="text-white block mt-2">
               Teste o Plano Mensal grátis por 7 dias na sua primeira assinatura.
             </span>

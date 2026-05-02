@@ -48,8 +48,7 @@ export default function Hero() {
         </h1>
 
         <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-8 font-medium leading-relaxed relative z-20 opacity-90">
-          A vitrine mais exclusiva da sua região. Conectamos você aos melhores
-          serviços e comércios de confiança.
+          Conectamos você aos melhores serviços e empresas.
         </p>
 
         {/* Barra de Pesquisa */}

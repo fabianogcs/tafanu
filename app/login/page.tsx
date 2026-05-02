@@ -180,7 +180,7 @@ export default function LoginPage() {
             <p className="text-slate-400 font-medium">
               {isLogin
                 ? "Acesse seu painel agora."
-                : "Junte-se à maior rede de negócios da região."}
+                : "Junte-se ao Tafanu e conecte seu negócio a novos clientes."}
             </p>
           </div>
 
