@@ -31,7 +31,7 @@ function calculateDistance(
   return R * c * 1.3;
 }
 
-// 🚀 DICIONÁRIO DE SINÔNIMOS (Bidirecional Automático e Completo)
+// 🚀 DICIONÁRIO DE SINÔNIMOS MANTIDO INTACTO
 const SINONIMOS_BASE: Record<string, string[]> = {
   pao: ["padaria", "panificadora", "confeitaria", "baguete"],
   lanche: [
@@ -149,7 +149,7 @@ interface BuscaProps {
     city?: string;
     state?: string;
     neighborhood?: string;
-    modo?: string; // 🚀 NOVO PARÂMETRO DA NOSSA ESTRATÉGIA
+    modo?: string;
   }>;
 }
 
@@ -161,9 +161,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const rawQuery = (params.q || "").trim();
   let query = normalizeText(rawQuery);
 
-  // 🚀 MODO ONLINE (O SEGREDO DA NOVA ESTRATÉGIA)
   const isOnlineMode = params.modo === "online";
-
   let isIntentOpen = false;
   const openKeywords = [
     "aberto",
@@ -175,16 +173,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     "hoje",
   ];
 
-  if (!isOnlineMode) {
-    // Só busca abertos se NÃO for online
-    openKeywords.forEach((word) => {
-      const regex = new RegExp(`\\b${word}\\b`, "g");
-      if (regex.test(query)) {
-        isIntentOpen = true;
-        query = query.replace(regex, "").trim();
-      }
-    });
-  }
+  openKeywords.forEach((word) => {
+    const regex = new RegExp(`\\b${word}\\b`, "g");
+    if (regex.test(query)) {
+      isIntentOpen = true;
+      query = query.replace(regex, "").trim();
+    }
+  });
 
   const page = Number(params.page) || 1;
   const skip = (page - 1) * PAGE_SIZE;
@@ -196,8 +191,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const statusFilter = isIntentOpen ? "open" : params.status || "all";
   const subcategoryArray = subcategoryParam ? subcategoryParam.split(",") : [];
 
-  // Se for modo online, a gente ignora a cidade para buscar no Brasil todo
-  const cityFilter = isOnlineMode ? "" : normalizeText(rawCityFilter);
+  // 🚀 GPS DESTRANCADO: A cidade filtra normalmente, mesmo na Vitrine!
+  const cityFilter = normalizeText(rawCityFilter);
   const sort = params.sort || "relevance";
 
   const userLat = params.lat ? parseFloat(String(params.lat)) : null;
@@ -211,7 +206,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     isActive: true,
     published: true,
 
-    // 🚀 A MÁGICA: Se for online, só traz quem tem link de venda
+    // 🚀 A MÁGICA ATUALIZADA: Incluindo a TAG hasDelivery
     ...(isOnlineMode
       ? {
           OR: [
@@ -219,6 +214,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             { mercadoLivre: { not: "" } },
             { shein: { not: "" } },
             { ifood: { not: "" } },
+            { hasDelivery: true }, // <-- Este é o novo passaporte!
           ],
         }
       : {}),
@@ -264,20 +260,18 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     ],
   };
 
-  // --- 2. BUSCA DE CATEGORIAS DINÂMICAS E LOCALIZAÇÃO ---
+  // --- 2. BUSCA DE CATEGORIAS E LOCALIZAÇÃO ---
+  // 🚀 GPS DESTRANCADO: As cidades carregam sempre!
   const [categoriesData, locationRaw] = await Promise.all([
     db.business.findMany({
       where: baseWhereClause,
       select: { category: true, subcategory: true },
     }),
-    // Locais só importam se não for modo online
-    isOnlineMode
-      ? Promise.resolve([])
-      : db.business.findMany({
-          where: { isActive: true, published: true },
-          select: { state: true, city: true, neighborhood: true },
-          distinct: ["state", "city", "neighborhood"],
-        }),
+    db.business.findMany({
+      where: { isActive: true, published: true },
+      select: { state: true, city: true, neighborhood: true },
+      distinct: ["state", "city", "neighborhood"],
+    }),
   ]);
 
   const filterMap: Record<string, Set<string>> = {};
@@ -310,7 +304,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       : undefined,
   };
 
-  // A busca online agora também é um alvo válido, mesmo sem digitar nada!
   const hasSearchTarget = !!(
     rawQuery ||
     category ||
@@ -351,7 +344,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       );
 
     let distanceValue: number | null = null;
-    if (!isOnlineMode && userLat && userLng && b.latitude && b.longitude) {
+    // 🚀 GPS DESTRANCADO: Já não tem o '!isOnlineMode' a bloquear o cálculo!
+    if (userLat && userLng && b.latitude && b.longitude) {
       distanceValue = calculateDistance(
         userLat,
         userLng,
@@ -419,29 +413,24 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
   }
 
-  if (statusFilter === "open" && !isOnlineMode) {
+  if (statusFilter === "open") {
     businesses = businesses.filter((b) => b.isOpen);
   }
 
-  // 🚀 O ALGORITMO REI DA COLINA PARA O MODO ONLINE
-  if (isOnlineMode) {
-    // No modo online, o que importa são as views, a menos que haja uma busca forte de texto
-    businesses.sort((a, b) => b.views - a.views);
-  } else if (sort === "distance" && userLat && userLng) {
+  // 🚀 O ALGORITMO REI DA COLINA: Mantém os Mais Vistos por padrão, mas aceita GPS se o cliente clicar no botão Distância!
+  if (sort === "distance" && userLat && userLng) {
     businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
+  } else if (isOnlineMode) {
+    businesses.sort((a, b) => b.views - a.views);
   } else if (sort === "popular") {
     businesses.sort((a, b) => b.views - a.views);
   } else if (sort === "recent" || sort === "newest") {
     businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } else if (query && sort === "relevance") {
-    // Se a pessoa digitou algo na barra de pesquisa (query), usa o seu sistema de pontos!
     businesses = businesses
       .filter((b) => b.score > 0)
       .sort((a, b) => b.score - a.score);
   } else {
-    // 🚀 REGRA PADRÃO (CATEGORIAS):
-    // Se a pessoa SÓ clicou na categoria (a query está vazia e nenhuma regra acima bateu),
-    // o sistema organiza automaticamente colocando os MAIS VISTOS no topo!
     businesses.sort((a, b) => b.views - a.views);
   }
 
@@ -454,7 +443,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div className="space-y-1">
-              {/* 🚀 Feedback visual elegante se estiver no modo online */}
               <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
                 {isOnlineMode ? (
                   <>
@@ -470,7 +458,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                 )}
               </h1>
               <p className="text-gray-400 font-medium text-sm">
-                {statusFilter === "open" && !isOnlineMode ? (
+                {statusFilter === "open" ? (
                   <>
                     Exibindo{" "}
                     <strong className="text-white">{businesses.length}</strong>{" "}
@@ -518,7 +506,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     key={item.id}
                     business={item}
                     isLoggedIn={!!userId}
-                    showDistance={sort === "distance" && !isOnlineMode}
+                    showDistance={sort === "distance"} // 🚀 Mostra a plaquinha de distância se ativado!
                   />
                 ))
               )}

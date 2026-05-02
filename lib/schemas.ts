@@ -36,15 +36,14 @@ export const businessSchema = z.object({
 
   // --- Localização ---
   address: z.string().optional().or(z.literal("")),
-  number: z.string().optional().or(z.literal("")), // ⬅️ NOVO: Número
-  complement: z.string().optional().or(z.literal("")), // ⬅️ NOVO: Complemento
-  cep: z.string().optional().or(z.literal("")), // ⬅️ CORREÇÃO: Adicionado CEP
-  neighborhood: z.string().optional().or(z.literal("")), // ⬅️ CORREÇÃO: Adicionado Bairro
+  number: z.string().optional().or(z.literal("")),
+  complement: z.string().optional().or(z.literal("")),
+  cep: z.string().optional().or(z.literal("")),
+  neighborhood: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
 
   // --- Contato ---
-  // Aceitamos strings e vamos limpar os números no backend
   whatsapp: z.string().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
 
@@ -53,17 +52,21 @@ export const businessSchema = z.object({
   facebook: z.string().optional().nullable(),
   tiktok: z.string().optional().nullable(),
   website: z.string().optional().nullable(),
+
   // --- Novos Canais de Venda ---
   shopee: z.string().optional().nullable(),
   mercadoLivre: z.string().optional().nullable(),
   shein: z.string().optional().nullable(),
   ifood: z.string().optional().nullable(),
 
+  // 🚀 ADICIONA ESTA LINHA AQUI! (O teu novo botão de Delivery)
+  hasDelivery: z.boolean().optional().default(false),
+
   // --- Mídia ---
   imageUrl: z.string().optional().or(z.literal("")),
   gallery: z
     .array(z.string().url())
-    .max(12, "O limite é de 12 fotos na galeria") // 🚀 AUMENTADO PARA 12
+    .max(12, "O limite é de 12 fotos na galeria")
     .default([]),
   mediaFeed: z
     .preprocess(

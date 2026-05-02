@@ -8,9 +8,10 @@ import {
   ShoppingCart,
   MessageCircle,
   PhoneCall,
+  Truck, // 🚀 Novo ícone importado
 } from "lucide-react";
 import { contactPlaceholders } from "./constants";
-import { formatPhoneNumber } from "@/lib/normalize"; // 🚀 Importando a máscara que centralizamos
+import { formatPhoneNumber } from "@/lib/normalize";
 
 interface Socials {
   instagram: string;
@@ -30,6 +31,9 @@ interface ConnectionsSectionProps {
   setWhatsapp: (val: string) => void;
   phone: string;
   setPhone: (val: string) => void;
+  // 🚀 NOVAS PROPRIEDADES PARA O DELIVERY
+  hasDelivery: boolean;
+  setHasDelivery: (val: boolean) => void;
 }
 
 export function ConnectionsSection({
@@ -39,6 +43,8 @@ export function ConnectionsSection({
   setWhatsapp,
   phone,
   setPhone,
+  hasDelivery,
+  setHasDelivery,
 }: ConnectionsSectionProps) {
   const updateSocial = (id: keyof Socials, value: string) => {
     setSocials({ ...socials, [id]: value });
@@ -46,7 +52,7 @@ export function ConnectionsSection({
 
   return (
     <div className="space-y-8">
-      {/* CONTATOS PRINCIPAIS (Moveram para cá!) */}
+      {/* CONTATOS PRINCIPAIS */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* WhatsApp */}
         <div className="flex-1 bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100/50 transition-all focus-within:ring-4 ring-emerald-50 focus-within:border-emerald-200">
@@ -131,12 +137,56 @@ export function ConnectionsSection({
               <input
                 value={(socials as any)[social.id]}
                 onChange={(e) => updateSocial(social.id as any, e.target.value)}
-                placeholder={contactPlaceholders[social.id]}
+                placeholder={
+                  contactPlaceholders[
+                    social.id as keyof typeof contactPlaceholders
+                  ]
+                }
                 className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
               />
             </div>
           </label>
         ))}
+      </div>
+
+      {/* 🚀 O NOVO BOTÃO DE DELIVERY */}
+      <div
+        onClick={() => setHasDelivery(!hasDelivery)}
+        className={`cursor-pointer rounded-[2.5rem] p-6 border-2 transition-all flex items-center justify-between ${
+          hasDelivery
+            ? "bg-emerald-50 border-emerald-400 shadow-[0_8px_30px_rgb(16,185,129,0.15)]"
+            : "bg-white border-slate-200 hover:border-slate-300"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+              hasDelivery
+                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
+                : "bg-slate-100 text-slate-400"
+            }`}
+          >
+            <Truck size={28} />
+          </div>
+          <div>
+            <h3
+              className={`font-black text-sm md:text-base uppercase tracking-tight ${hasDelivery ? "text-emerald-700" : "text-slate-700"}`}
+            >
+              Fazemos Entregas (Delivery)
+            </h3>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">
+              O seu negócio aparecerá na Vitrine Digital para compras online.
+            </p>
+          </div>
+        </div>
+        {/* Toggle Switch Visual */}
+        <div
+          className={`w-14 h-8 rounded-full p-1 transition-colors ${hasDelivery ? "bg-emerald-500" : "bg-slate-200"}`}
+        >
+          <div
+            className={`w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${hasDelivery ? "translate-x-6" : "translate-x-0"}`}
+          />
+        </div>
       </div>
 
       {/* MARKETPLACES */}

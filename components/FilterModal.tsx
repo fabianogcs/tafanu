@@ -17,7 +17,6 @@ import {
   RotateCcw,
   MapPin,
   CalendarDays,
-  Globe, // 🚀 Ícone novo
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -43,8 +42,7 @@ export default function FilterModal({
 
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const isOnlineMode = searchParams.get("modo") === "online"; // 🚀 LÊ SE ESTAMOS NO MODO ONLINE
+  const isOnlineMode = searchParams.get("modo") === "online";
 
   const [draftCategory, setDraftCategory] = useState("");
   const [draftSubs, setDraftSubs] = useState<string[]>([]);
@@ -109,14 +107,14 @@ export default function FilterModal({
     if (draftSubs.length > 0) params.set("subcategory", draftSubs.join(","));
     else params.delete("subcategory");
 
-    if (draftState && !isOnlineMode) params.set("state", draftState);
+    // 🚀 GPS DESTRANCADO: Já não tem "!isOnlineMode" a bloquear
+    if (draftState) params.set("state", draftState);
     else params.delete("state");
 
-    if (draftCity && !isOnlineMode) params.set("city", draftCity);
+    if (draftCity) params.set("city", draftCity);
     else params.delete("city");
 
-    if (draftNeighborhood && !isOnlineMode)
-      params.set("neighborhood", draftNeighborhood);
+    if (draftNeighborhood) params.set("neighborhood", draftNeighborhood);
     else params.delete("neighborhood");
 
     params.set("status", draftStatus);
@@ -139,7 +137,6 @@ export default function FilterModal({
     const query = searchParams.get("q");
     setIsOpen(false);
 
-    // 🚀 O BOTÃO LIMPAR TAMBÉM DESLIGA O MODO ONLINE, VOLTANDO AO NORMAL
     if (query) router.push(`/busca?q=${query}&page=1`);
     else router.push(`/busca`);
   };
@@ -186,7 +183,6 @@ export default function FilterModal({
             <div
               role="dialog"
               aria-modal="true"
-              aria-labelledby="filter-modal-title"
               className="fixed inset-0 z-[99999] flex items-end md:items-center justify-end animate-in fade-in duration-300"
             >
               <div
@@ -216,82 +212,67 @@ export default function FilterModal({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-10 pb-36 no-scrollbar">
-                  {/* 🚀 O SEGREDO DE UX: Se for online, a gente não exibe o filtro de Localização, exibe uma mensagem legal! */}
-                  {isOnlineMode ? (
-                    <div className="bg-tafanu-action/10 border border-tafanu-action/20 p-5 rounded-2xl flex items-start gap-4">
-                      <Globe size={24} className="text-tafanu-blue shrink-0" />
-                      <div>
-                        <h4 className="text-[11px] font-black uppercase tracking-widest text-tafanu-blue mb-1">
-                          Busca Nacional
-                        </h4>
-                        <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                          Você está pesquisando em lojas que entregam em todo o
-                          Brasil. Filtros de distância estão desativados.
-                        </p>
-                      </div>
+                  {/* 🚀 O SEGREDO: O GPS agora aparece SEMPRE, mesmo no modo Vitrine! */}
+                  <section className="space-y-4">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                      <MapPin size={14} className="text-rose-500" /> Onde você
+                      procura?
+                    </label>
+                    <div className="space-y-3">
+                      <select
+                        value={draftState}
+                        onChange={(e) => handleStateChange(e.target.value)}
+                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer"
+                      >
+                        <option value="">Todos os Estados</option>
+                        {availableStates.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={draftCity}
+                        onChange={(e) => handleCityChange(e.target.value)}
+                        disabled={!draftState}
+                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-50"
+                      >
+                        <option value="">
+                          {draftState
+                            ? "Todas as Cidades"
+                            : "Selecione um Estado primeiro"}
+                        </option>
+                        {availableCitiesForState.map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={draftNeighborhood}
+                        onChange={(e) => setDraftNeighborhood(e.target.value)}
+                        disabled={!draftCity}
+                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-50"
+                      >
+                        <option value="">
+                          {draftCity
+                            ? "Todos os Bairros"
+                            : "Selecione uma Cidade primeiro"}
+                        </option>
+                        {availableNeighborhoodsForCity.map((neighborhood) => (
+                          <option key={neighborhood} value={neighborhood}>
+                            {neighborhood}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  ) : (
-                    <section className="space-y-4">
-                      <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                        <MapPin size={14} className="text-rose-500" />
-                        Onde você procura?
-                      </label>
-                      <div className="space-y-3">
-                        <select
-                          value={draftState}
-                          onChange={(e) => handleStateChange(e.target.value)}
-                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer"
-                        >
-                          <option value="">Todos os Estados</option>
-                          {availableStates.map((state) => (
-                            <option key={state} value={state}>
-                              {state}
-                            </option>
-                          ))}
-                        </select>
-
-                        <select
-                          value={draftCity}
-                          onChange={(e) => handleCityChange(e.target.value)}
-                          disabled={!draftState}
-                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <option value="">
-                            {draftState
-                              ? "Todas as Cidades"
-                              : "Selecione um Estado primeiro"}
-                          </option>
-                          {availableCitiesForState.map((city) => (
-                            <option key={city} value={city}>
-                              {city}
-                            </option>
-                          ))}
-                        </select>
-
-                        <select
-                          value={draftNeighborhood}
-                          onChange={(e) => setDraftNeighborhood(e.target.value)}
-                          disabled={!draftCity}
-                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 focus:border-tafanu-action focus:ring-0 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <option value="">
-                            {draftCity
-                              ? "Todos os Bairros"
-                              : "Selecione uma Cidade primeiro"}
-                          </option>
-                          {availableNeighborhoodsForCity.map((neighborhood) => (
-                            <option key={neighborhood} value={neighborhood}>
-                              {neighborhood}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </section>
-                  )}
+                  </section>
 
                   <section className="space-y-4">
                     <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                      <Navigation size={14} className="text-tafanu-blue" />
+                      <Navigation size={14} className="text-tafanu-blue" />{" "}
                       Prioridade de Exibição
                     </label>
                     <div className="grid grid-cols-1 gap-2">
@@ -333,35 +314,31 @@ export default function FilterModal({
                     </div>
                   </section>
 
-                  {/* 🚀 Oculta a disponibilidade física se estiver buscando online */}
-                  {!isOnlineMode && (
-                    <section className="space-y-4">
-                      <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                        <Clock size={14} className="text-emerald-500" />
-                        Disponibilidade
-                      </label>
-                      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-                        <button
-                          onClick={() => setDraftStatus("all")}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-400"}`}
-                        >
-                          Todos
-                        </button>
-                        <button
-                          onClick={() => setDraftStatus("open")}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "open" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400"}`}
-                        >
-                          Abertos
-                        </button>
-                      </div>
-                    </section>
-                  )}
+                  <section className="space-y-4">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                      <Clock size={14} className="text-emerald-500" />{" "}
+                      Disponibilidade
+                    </label>
+                    <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
+                      <button
+                        onClick={() => setDraftStatus("all")}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-400"}`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        onClick={() => setDraftStatus("open")}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "open" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400"}`}
+                      >
+                        Abertos
+                      </button>
+                    </div>
+                  </section>
 
                   <section className="space-y-4">
                     <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
                       <Zap size={14} className="text-tafanu-action" /> Segmento
                     </label>
-
                     {catStep === "main" ? (
                       <div className="grid grid-cols-1 gap-2">
                         {Object.keys(availableCategories).map((cat) => (

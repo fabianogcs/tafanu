@@ -123,7 +123,6 @@ export default function BusinessEditor({
     isNew ? false : safeBusiness.published,
   );
 
-  // 🚀 O ESTADO UNIFICADO DA MÍDIA
   const [mediaFeed, setMediaFeed] = useState<any[]>(() => {
     if (safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0) {
       return safeBusiness.mediaFeed;
@@ -203,6 +202,10 @@ export default function BusinessEditor({
     ifood: safeBusiness.ifood || "",
   });
 
+  const [hasDelivery, setHasDelivery] = useState(
+    safeBusiness.hasDelivery || false,
+  );
+
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -219,6 +222,7 @@ export default function BusinessEditor({
       isPublished !== safeBusiness.published ||
       profileImage !== safeBusiness.imageUrl ||
       categoria !== safeBusiness.category ||
+      hasDelivery !== (safeBusiness.hasDelivery || false) ||
       selectedTheme !== safeBusiness.theme ||
       selectedLayout !==
         (layoutInfo[
@@ -234,7 +238,7 @@ export default function BusinessEditor({
       phone !== formatPhoneNumber(safeBusiness.phone);
 
     const isArraysDifferent =
-      !isDeepEqual(mediaFeed, safeBusiness.mediaFeed || []) || // 🚀 RADAR NOVO
+      !isDeepEqual(mediaFeed, safeBusiness.mediaFeed || []) ||
       !isDeepEqual(selectedSubs, safeBusiness.subcategory) ||
       !isDeepEqual(keywords, safeBusiness.keywords) ||
       !isDeepEqual(features, safeBusiness.features) ||
@@ -281,7 +285,7 @@ export default function BusinessEditor({
     layoutText,
     whatsapp,
     phone,
-    mediaFeed, // 🚀 Vigiando a passarela mista
+    mediaFeed,
     selectedSubs,
     keywords,
     features,
@@ -291,7 +295,9 @@ export default function BusinessEditor({
     addressData,
     isNew,
     safeBusiness,
+    hasDelivery, // 🚀 Mantido aqui
   ]);
+
   const filteredThemeKeys = useMemo(() => {
     return Object.keys(businessThemes).filter(
       (key) => businessThemes[key].layout === selectedLayout,
@@ -359,7 +365,7 @@ export default function BusinessEditor({
         number: safeBusiness.number || "",
         complement: safeBusiness.complement || "",
       });
-
+      setHasDelivery(safeBusiness.hasDelivery || false);
       hasInitialized.current = true;
     }
   }, [safeBusiness, isNew]);
@@ -389,6 +395,7 @@ export default function BusinessEditor({
       setIsLoading(false);
     }
   };
+
   const handleUpdate = async (overridePublished?: boolean) => {
     if (isLoading) return;
     if (!name || name.trim() === "") {
@@ -483,7 +490,10 @@ export default function BusinessEditor({
             ? socials.website
             : `https://${socials.website}`
           : "",
-        // 🚀 ENVIA O FEED EXATO DA PASSARELA (O backend separa automático)
+
+        // 🚀 CORREÇÃO AQUI 1: ENVIAR PARA O BANCO DE DADOS
+        hasDelivery: hasDelivery,
+
         mediaFeed: mediaFeed.filter(
           (m: any) => typeof m.url === "string" && m.url.trim() !== "",
         ),
@@ -598,7 +608,6 @@ export default function BusinessEditor({
     setSlug(newSlug);
   };
 
-  // Aqui pegamos só as imagens do mediaFeed pra mandar pro preview mobile não quebrar
   const mockGallery = useMemo(() => {
     return mediaFeed.filter((m) => m.type === "image").map((m) => m.url);
   }, [mediaFeed]);
@@ -742,7 +751,6 @@ export default function BusinessEditor({
             categoryKeys={categoryKeys}
           />
 
-          {/* AQUI NÓS CHAMAMOS A CONTENT SECTION PASSANDO A MÍDIA */}
           <ContentSection
             mediaFeed={mediaFeed}
             setMediaFeed={setMediaFeed}
@@ -772,6 +780,9 @@ export default function BusinessEditor({
               setWhatsapp={setWhatsapp}
               phone={phone}
               setPhone={setPhone}
+              // 🚀 CORREÇÃO AQUI 2: ENTREGAR AS VARIÁVEIS PRO FILHO NÃO DAR ERRO
+              hasDelivery={hasDelivery}
+              setHasDelivery={setHasDelivery}
             />
           </div>
 

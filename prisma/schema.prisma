@@ -137,6 +137,8 @@ model Business {
   shein               String?
   ifood               String?
 
+  hasDelivery         Boolean        @default(false)
+
   // 💰 Dados da Assinatura Deste Negócio Específico
   planType            PlanType?      // ⬅️ NOVO: Transferido do User
   subscriptionStatus String?        @default("inactive") // ⬅️ NOVO: 'active', 'past_due', 'cancelled'

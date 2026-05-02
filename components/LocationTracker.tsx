@@ -10,14 +10,8 @@ export default function LocationTracker() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 🚀 A MÁGICA ACONTECE AQUI:
-  // Verificamos se o usuário veio da Vitrine Digital (modo=online)
-  const isOnlineMode = searchParams.get("modo") === "online";
-
-  // Se estiver no modo online, o componente retorna "null" e fica invisível na tela!
-  if (isOnlineMode) {
-    return null;
-  }
+  // 🚀 O CADEADO FOI REMOVIDO DAQUI!
+  // Agora o componente nunca retorna "null", ele sempre aparece na tela.
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -28,11 +22,10 @@ export default function LocationTracker() {
     setLoading(true);
 
     // AJUSTE DE PERFORMANCE:
-    // Aumentamos o timeout e permitimos localização por Wi-Fi/IP (mais estável)
     const options = {
-      enableHighAccuracy: false, // Se true, falha muito em desktops. False usa Wi-Fi/Torre (muito rápido).
-      timeout: 15000, // Aumentamos para 15 segundos (era 10)
-      maximumAge: 60000, // Aceita uma localização de até 1 minuto atrás (evita novo cálculo demorado)
+      enableHighAccuracy: false, // Usa Wi-Fi/Torre (muito rápido).
+      timeout: 15000,
+      maximumAge: 60000,
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -43,11 +36,10 @@ export default function LocationTracker() {
         params.set("lat", latitude.toString());
         params.set("lng", longitude.toString());
 
-        // 🚀 O SEGREDO QUE FALTAVA: Força a ordenação por distância na URL
+        // Força a ordenação por distância na URL
         params.set("sort", "distance");
 
         setLoading(false);
-        // Usamos replace para não criar um histórico infinito de cliques
         router.replace(`/busca?${params.toString()}`);
       },
       (error) => {
@@ -64,7 +56,6 @@ export default function LocationTracker() {
               "Sinal fraco! Não conseguimos obter sua localização agora. Tente novamente em instantes.";
             break;
           case error.TIMEOUT:
-            // No Timeout, sugerimos tentar de novo porque agora o navegador já "aqueceu" o sensor
             msg =
               "O tempo acabou! Tente clicar novamente para uma segunda busca mais rápida.";
             break;
@@ -74,8 +65,6 @@ export default function LocationTracker() {
 
         console.error("Erro detalhado:", error.message);
 
-        // Se for Timeout, não damos o alert chato imediatamente, apenas paramos o loading
-        // para o usuário tentar de novo se quiser.
         if (error.code === error.PERMISSION_DENIED) {
           toast.error("Localização negada", {
             description:

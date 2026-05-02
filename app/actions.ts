@@ -592,6 +592,7 @@ export async function createBusiness(payload: any) {
           ifood: validatedData.ifood?.trim() || "",
           website: payload.website || "",
           published: false,
+          hasDelivery: payload.hasDelivery || false,
           urban_tag: payload.urban_tag || "",
           luxe_quote: payload.luxe_quote || "",
           showroom_collection: payload.showroom_collection || "",
@@ -757,6 +758,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         website: payload.website || "", // O Seu Site de volta!
         features: payload.features || [], // Os seus Destaques de volta!
         published: payload.published, // O botão Online/Pausado de volta!
+        hasDelivery: payload.hasDelivery || false,
         urban_tag: payload.urban_tag || "",
         luxe_quote: payload.luxe_quote || "",
         showroom_collection: payload.showroom_collection || "",
@@ -2610,12 +2612,8 @@ export async function updateUserNameInline(newName: string) {
     return { error: "Erro ao salvar o nome." };
   }
 }
-// ==============================================================================
-// 🛍️ SHOPPING VIRTUAL (Marketplaces)
-// ==============================================================================
 export async function getOnlineMarketplaceMetadata() {
   try {
-    // 1. Busca APENAS os negócios que têm link oficial de marketplace
     const data = await db.business.findMany({
       where: {
         isActive: true,
@@ -2625,12 +2623,10 @@ export async function getOnlineMarketplaceMetadata() {
           { mercadoLivre: { not: "" } },
           { shein: { not: "" } },
           { ifood: { not: "" } },
-        ], // 🚀 Removido o 'website'
+          { hasDelivery: true }, // 🚀 O NOVO PASSAPORTE DA VITRINE AQUI!
+        ],
       },
-      select: {
-        category: true,
-        subcategory: true,
-      },
+      select: { category: true, subcategory: true },
     });
 
     const map: Record<string, Set<string>> = {};
