@@ -434,9 +434,15 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   } else if (sort === "recent" || sort === "newest") {
     businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } else if (query && sort === "relevance") {
+    // Se a pessoa digitou algo na barra de pesquisa (query), usa o seu sistema de pontos!
     businesses = businesses
       .filter((b) => b.score > 0)
       .sort((a, b) => b.score - a.score);
+  } else {
+    // 🚀 REGRA PADRÃO (CATEGORIAS):
+    // Se a pessoa SÓ clicou na categoria (a query está vazia e nenhuma regra acima bateu),
+    // o sistema organiza automaticamente colocando os MAIS VISTOS no topo!
+    businesses.sort((a, b) => b.views - a.views);
   }
 
   const paginatedResults = businesses.slice(skip, skip + PAGE_SIZE);
