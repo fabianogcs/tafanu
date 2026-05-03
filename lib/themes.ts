@@ -78,122 +78,118 @@ export const businessThemes: Record<string, any> = {
   },
 
   // =========================================================
-  // 💎 EDITORIAL (LUXE) - 4 CLAROS + 1 ESCUROS
+  // 💎 EDITORIAL (LUXE) - 5 CLAROS SUAVES + 2 ESCUROS CHIQUES
   // =========================================================
 
-  // 1. GOLDEN PEARL (Substituiu o Creme - Quente, Iluminado e Rico)
+  // 1. GOLDEN PEARL (Quente, Iluminado e Rico - O seu favorito)
   luxe_ivory: {
     label: "Luxe - Golden Pearl",
     layout: "editorial",
     bgPage: "bg-[#FCFBF9]",
     bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FDF0E6] to-[#EACBA6]",
     textColor: "text-[#2A231E]",
-    subTextColor: "text-[#2A231E]/70",
     cardBg: "bg-white",
     border: "border-[#B67645]/20",
     primary: "text-[#B67645]",
     bgSecondary: "bg-[#F3EDE6]",
-    // 🚀 AJUSTE AQUI: Trocamos o text-white pelo marrom café profundo para blindar a acessibilidade
     bgAction: "bg-[#B67645] text-[#2A231E]",
     previewColor: "linear-gradient(135deg, #FDF0E6 0%, #EACBA6 100%)",
   },
 
-  // 2. SAPPHIRE GLOW (Azul Safira e Ciano Brilhante)
+  // 2. BIANCO MARBLE (Branco, Cinza Frio e Prata - Super Clean)
   luxe_hamptons: {
-    label: "Luxe - Sapphire Glow",
+    // Chave mantida para não quebrar cadastros antigos
+    label: "Luxe - Bianco Marble",
+    layout: "editorial",
+    bgPage: "bg-[#F8F9FA]",
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F3F4F6] to-[#E5E7EB]",
+    textColor: "text-[#1F2937]",
+    cardBg: "bg-white",
+    border: "border-[#D1D5DB]/40",
+    primary: "text-[#4B5563]", // Cinza chumbo/prata elegante
+    bgSecondary: "bg-[#F3F4F6]",
+    bgAction: "bg-[#1F2937] text-white",
+    previewColor: "linear-gradient(135deg, #FFFFFF 0%, #E5E7EB 100%)",
+  },
+
+  // 3. ROSE QUARTZ (Rosa Bebê muito suave com Branco - Delicado)
+  luxe_matcha: {
+    // Chave mantida
+    label: "Luxe - Rose Quartz",
+    layout: "editorial",
+    bgPage: "bg-[#FFFBFB]",
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FFF0F5] to-[#FCE7F3]",
+    textColor: "text-[#4C0519]",
+    cardBg: "bg-white",
+    border: "border-[#FBCFE8]/50",
+    primary: "text-[#DB2777]", // Rosa elegante
+    bgSecondary: "bg-[#FDF2F8]",
+    bgAction: "bg-[#DB2777] text-white",
+    previewColor: "linear-gradient(135deg, #FFF0F5 0%, #FCE7F3 100%)",
+  },
+
+  // 4. SAGE LINEN (Creme e Verde Sálvia super claro - Natural/Spa)
+  luxe_rose: {
+    // Chave mantida
+    label: "Luxe - Sage Linen",
+    layout: "editorial",
+    bgPage: "bg-[#FAFAF9]",
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F4F5F0] to-[#DCE3D8]",
+    textColor: "text-[#1C1917]",
+    cardBg: "bg-white",
+    border: "border-[#A3B19B]/30",
+    primary: "text-[#5C715E]", // Verde sálvia profundo
+    bgSecondary: "bg-[#F4F5F0]",
+    bgAction: "bg-[#5C715E] text-white",
+    previewColor: "linear-gradient(135deg, #F4F5F0 0%, #DCE3D8 100%)",
+  },
+
+  // 5. CASHMERE WOOD (Bege Acinzentado e Marrom Frio - Arquitetura)
+  luxe_terracotta: {
+    // Chave mantida
+    label: "Luxe - Cashmere Wood",
+    layout: "editorial",
+    bgPage: "bg-[#FAF9F6]",
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F5F2EB] to-[#E8E1D5]",
+    textColor: "text-[#3E2723]",
+    cardBg: "bg-white",
+    border: "border-[#D7CCC8]/50",
+    primary: "text-[#8D6E63]", // Marrom Cashmere
+    bgSecondary: "bg-[#F5F2EB]",
+    bgAction: "bg-[#8D6E63] text-white",
+    previewColor: "linear-gradient(135deg, #F5F2EB 0%, #E8E1D5 100%)",
+  },
+
+  // 6. OBSIDIAN GOLD (O Escuro Supremo - Preto Absoluto e Ouro Velho)
+  luxe_midnight: {
+    // Chave mantida
+    label: "Luxe - Obsidian Gold",
+    layout: "editorial",
+    bgPage: "bg-[#0A0A0A]",
+    bgHero: "bg-gradient-to-br from-[#1A1A1A] via-[#0A0A0A] to-[#000000]",
+    textColor: "text-[#F5F5F5]",
+    cardBg: "bg-[#171717]/90",
+    border: "border-[#333333]",
+    primary: "text-[#D4AF37]", // Ouro
+    bgSecondary: "bg-[#121212]",
+    bgAction: "bg-[#D4AF37] text-black",
+    previewColor: "linear-gradient(135deg, #171717 0%, #D4AF37 100%)",
+  },
+
+  // 7. MIDNIGHT SAPPHIRE (Azul Noturno Profundo e Prata - Executivo)
+  luxe_amethyst: {
+    // Chave mantida
+    label: "Luxe - Midnight Sapphire",
     layout: "editorial",
     bgPage: "bg-[#020617]",
-    bgHero: "bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e3a8a]",
+    bgHero: "bg-gradient-to-br from-[#0F172A] via-[#020617] to-[#000000]",
     textColor: "text-[#F8FAFC]",
-    subTextColor: "text-[#F8FAFC]/70",
-    cardBg: "bg-[#0f172a]/80",
-    border: "border-[#38bdf8]/20",
-    primary: "text-[#38bdf8]",
-    bgSecondary: "bg-[#1e293b]",
-    bgAction: "bg-[#38bdf8] text-[#020617]",
-    previewColor: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)",
-  },
-
-  // 3. EMERALD VELVET (Esmeralda Profundo e Neon)
-  luxe_matcha: {
-    label: "Luxe - Emerald Velvet",
-    layout: "editorial",
-    bgPage: "bg-[#022c22]",
-    bgHero: "bg-gradient-to-br from-[#022c22] via-[#064e3b] to-[#047857]",
-    textColor: "text-[#ecfdf5]",
-    subTextColor: "text-[#ecfdf5]/70",
-    cardBg: "bg-[#064e3b]/80",
-    border: "border-[#10b981]/30",
-    primary: "text-[#34d399]",
-    bgSecondary: "bg-[#065f46]",
-    bgAction: "bg-[#34d399] text-[#022c22]",
-    previewColor: "linear-gradient(135deg, #064e3b 0%, #047857 100%)",
-  },
-
-  // 4. RUBY NOIR (Vinho Tinto Escuro e Rubi Quente)
-  luxe_rose: {
-    label: "Luxe - Ruby Noir",
-    layout: "editorial",
-    bgPage: "bg-[#170505]",
-    bgHero: "bg-gradient-to-br from-[#2a0800] via-[#4c0519] to-[#881337]",
-    textColor: "text-[#ffe4e6]",
-    subTextColor: "text-[#ffe4e6]/70",
-    cardBg: "bg-[#4c0519]/60",
-    border: "border-[#fb7185]/20",
-    primary: "text-[#fb7185]",
-    bgSecondary: "bg-[#2b0808]",
-    bgAction: "bg-[#fb7185] text-[#170505]",
-    previewColor: "linear-gradient(135deg, #4c0519 0%, #881337 100%)",
-  },
-
-  // 5. 24K OBSIDIAN (A Joia Suprema - Preto e Ouro)
-  luxe_midnight: {
-    label: "Luxe - 24K Obsidian",
-    layout: "editorial",
-    bgPage: "bg-[#000000]",
-    bgHero: "bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#362706]",
-    textColor: "text-[#fef3c7]",
-    subTextColor: "text-[#fef3c7]/60",
-    cardBg: "bg-[#0a0a0a]/90",
-    border: "border-[#d4af37]/30",
-    primary: "text-[#d4af37]",
-    bgSecondary: "bg-[#171717]",
-    bgAction: "bg-[#d4af37] text-black",
-    previewColor: "linear-gradient(135deg, #0a0a0a 0%, #362706 100%)",
-  },
-
-  // 6. VELVET AMETHYST (Nobreza, Roxo Fashion e Lilás Vivo)
-  // Identidade: Marcas Autorais, Beauty Hype, Estúdios Criativos
-  luxe_amethyst: {
-    label: "Luxe - Velvet Amethyst",
-    layout: "editorial",
-    bgPage: "bg-[#0B0410]", // Roxo incrivelmente escuro (quase preto)
-    bgHero: "bg-gradient-to-br from-[#0B0410] via-[#200D36] to-[#451A61]", // Roxo abissal explodindo num Ametista
-    textColor: "text-[#FAFAFA]",
-    subTextColor: "text-[#FAFAFA]/70",
-    cardBg: "bg-[#200D36]/80",
-    border: "border-[#D8B4E2]/20",
-    primary: "text-[#DDA0DD]", // Lavanda / Ametista Vibrante
-    bgSecondary: "bg-[#170824]",
-    bgAction: "bg-[#DDA0DD] text-[#0B0410]",
-    previewColor: "linear-gradient(135deg, #200D36 0%, #451A61 100%)",
-  },
-
-  // 7. TUSCAN SUN (Terracota Escuro e Pôr do Sol)
-  // Identidade: Beachwear de Luxo, Produtos Naturais, Alta Gastronomia
-  luxe_terracotta: {
-    label: "Luxe - Tuscan Sun",
-    layout: "editorial",
-    bgPage: "bg-[#1C0E0A]", // Marrom terra ultra escuro
-    bgHero: "bg-gradient-to-br from-[#1C0E0A] via-[#4A1D13] to-[#8C381E]", // O calor da terracota
-    textColor: "text-[#FFF8F0]", // Off-white quente
-    subTextColor: "text-[#FFF8F0]/70",
-    cardBg: "bg-[#2D1610]/80",
-    border: "border-[#F4A261]/20",
-    primary: "text-[#F4A261]", // Laranja Pôr do Sol super vivo
-    bgSecondary: "bg-[#140806]",
-    bgAction: "bg-[#F4A261] text-[#1C0E0A]",
-    previewColor: "linear-gradient(135deg, #4A1D13 0%, #8C381E 100%)",
+    cardBg: "bg-[#0F172A]/80",
+    border: "border-[#1E293B]",
+    primary: "text-[#38BDF8]", // Azul Gelo
+    bgSecondary: "bg-[#080F1E]",
+    bgAction: "bg-[#38BDF8] text-[#020617]",
+    previewColor: "linear-gradient(135deg, #0F172A 0%, #38BDF8 100%)",
   },
 
   // 1. VIBRANT VIOLET (Igual à sua imagem de referência!)

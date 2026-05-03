@@ -58,8 +58,8 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- 🚀 MOTOR DE VÍDEOS (OTIMIZADO COM LAZY LOAD E ACESSIBILIDADE) ---
-const VideoEmbed = ({ url }: { url: string }) => {
+// --- 🚀 MOTOR DE VÍDEOS (LUXE EDITION) ---
+const VideoEmbed = ({ url, primary }: { url: string; primary?: string }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
   let isInstagram = false;
@@ -88,25 +88,36 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
-  // A FACHADA: Mostra apenas um botão de play falso antes do clique
+  // 🚀 A NOVA FACHADA DE LUXO
   if (!isLoaded) {
+    // Extrai a cor base para o brilho (Glow). Se o primary for 'text-rose-500', vira 'bg-rose-500'
+    const glowColor = primary ? primary.replace("text-", "bg-") : "bg-white";
+
     return (
       <button
         aria-label="Carregar e reproduzir vídeo"
         onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group border border-white/10"
+        className="w-full h-full bg-[#0a0a0a] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group"
       >
-        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
-          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        {/* Efeito de Brilho Sutil no fundo usando a cor do tema */}
+        <div
+          className={`absolute inset-0 opacity-20 ${glowColor} blur-[80px] group-hover:opacity-40 transition-opacity duration-1000`}
+        />
+
+        {/* Botão de Vidro (Glassmorphism) Minimalista */}
+        <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center backdrop-blur-xl bg-white/10 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+          <div className="w-0 h-0 border-y-[8px] md:border-y-[10px] border-y-transparent border-l-[12px] md:border-l-[16px] border-l-white ml-1 md:ml-2 opacity-90 group-hover:opacity-100 transition-opacity"></div>
         </div>
-        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
-          Toque para carregar
+
+        {/* Tipografia Editorial */}
+        <span className="relative z-20 text-white/60 text-[8px] md:text-[10px] mt-6 md:mt-8 font-serif italic tracking-[0.4em] uppercase group-hover:text-white transition-colors duration-500">
+          Experience
         </span>
       </button>
     );
   }
 
-  // O VÍDEO REAL: Só carrega depois que clicou
+  // O VÍDEO REAL
   return (
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto">
       <iframe
@@ -647,311 +658,396 @@ export default function LuxeLayout({
           })()}
       </section>
 
-      <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-10 md:py-20 flex flex-col gap-24 md:gap-32 relative z-10 border-t border-current/10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
-          <div className="lg:col-span-7 flex flex-col gap-20 md:gap-32 w-full min-w-0">
-            {hasFeatures && (
-              <motion.section
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-                className="space-y-10"
-              >
-                <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10">
-                  Signatures
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                  {business.features
-                    .filter(Boolean)
-                    .map((f: string, i: number) => (
-                      <div key={i} className="flex items-start gap-4 group">
+      <main className="w-full flex flex-col items-center relative z-10">
+        {/* ==========================================
+            FAIXA 1: DESTAQUES
+        ========================================== */}
+        {hasFeatures && (
+          <section
+            className={`w-full py-16 md:py-20 px-6 md:px-12 border-t ${border}`}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="max-w-5xl mx-auto flex flex-col items-center text-center space-y-16"
+            >
+              <h2 className="text-4xl md:text-6xl font-serif italic tracking-tight opacity-90 flex flex-col items-center gap-4">
+                <span
+                  className={`text-[10px] font-sans font-bold tracking-[0.4em] uppercase ${primary} not-italic mb-4`}
+                >
+                  Os Detalhes
+                </span>
+                Destaques
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-16 w-full mt-8">
+                {business.features
+                  .filter(Boolean)
+                  .map((f: string, i: number) => (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center text-center gap-6 group p-6 rounded-3xl hover:bg-current/5 transition-all duration-500"
+                    >
+                      <div
+                        className={`w-14 h-14 rounded-full ${theme.bgSecondary} flex items-center justify-center border ${border} shadow-lg group-hover:scale-110 transition-transform duration-500`}
+                      >
                         <Sparkles
-                          size={18}
-                          className={`shrink-0 mt-0.5 opacity-40 ${primary} group-hover:opacity-100 transition-opacity`}
+                          size={24}
+                          className={primary}
                           strokeWidth={1.5}
                         />
-                        <span className="font-light text-base md:text-lg leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                          {f}
-                        </span>
                       </div>
-                    ))}
-                </div>
-              </motion.section>
-            )}
+                      <span className="font-light text-lg leading-relaxed opacity-80 group-hover:opacity-100">
+                        {f}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
 
-            {hasFaqs && (
-              <motion.section
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true, margin: "-50px" }}
-                className="space-y-8"
-              >
-                <div className="flex flex-col items-start">
-                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full">
-                    Inquiries
-                  </h2>
-                </div>
-                <div className="flex flex-col">
-                  {faqs.map((f: any, i: number) => (
-                    <LuxeAccordion
-                      key={i}
-                      q={f.q || f.question}
-                      a={f.a || f.answer}
-                      primary={primary}
-                      themeBorder={border}
-                    />
+        {/* ==========================================
+            FAIXA 2: ATENDIMENTO (Concierge)
+        ========================================== */}
+        {(hasWhatsapp || hasPhone) && (
+          <section
+            className={`w-full py-16 md:py-24 px-6 md:px-12 ${theme.bgHero} relative overflow-hidden flex justify-center items-center`}
+          >
+            <div
+              className={`absolute inset-0 ${glassBg} backdrop-blur-md opacity-30`}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className={`relative z-10 w-full max-w-3xl flex flex-col items-center text-center`}
+            >
+              <h2 className="text-[10px] font-sans font-bold tracking-[0.4em] uppercase mb-6 opacity-60">
+                Como podemos ajudar?
+              </h2>
+              <h3 className="text-4xl md:text-6xl font-serif italic mb-16 drop-shadow-lg">
+                Atendimento
+              </h3>
+              <div className="w-full flex flex-col sm:flex-row gap-5 justify-center">
+                {hasWhatsapp && (
+                  <button
+                    onClick={() => handleTrackLead("whatsapp")}
+                    className={`flex-1 flex items-center justify-center gap-4 p-5 md:p-6 rounded-[2rem] bg-current/5 backdrop-blur-md border border-current/20 text-current hover:bg-current/10 transition-all duration-500 hover:scale-[1.05] shadow-lg group`}
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-full border border-current/30 flex items-center justify-center group-hover:bg-current/10 transition-colors`}
+                    >
+                      <MessageCircle
+                        size={20}
+                        strokeWidth={1.5}
+                        className={primary}
+                      />
+                    </div>
+                    <span className="text-sm font-bold tracking-widest uppercase">
+                      WhatsApp
+                    </span>
+                  </button>
+                )}
+                {hasPhone && (
+                  <button
+                    onClick={() => handleTrackLead("phone")}
+                    className={`flex-1 flex items-center justify-center gap-4 p-5 md:p-6 rounded-[2rem] bg-current/5 backdrop-blur-md border border-current/20 text-current hover:bg-current/10 transition-all duration-500 hover:scale-[1.05] shadow-lg group`}
+                  >
+                    <div
+                      className={`w-12 h-12 rounded-full border border-current/30 flex items-center justify-center group-hover:bg-current/10 transition-colors`}
+                    >
+                      <Phone size={20} strokeWidth={1.5} className={primary} />
+                    </div>
+                    <span className="text-sm font-bold tracking-widest uppercase">
+                      Ligar Agora
+                    </span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* ==========================================
+            FAIXA 3: COMPRAR ONLINE (Marketplaces) - SUBIU!
+        ========================================== */}
+        {salesChannels.length > 0 && (
+          <section
+            className={`w-full py-16 md:py-20 px-6 md:px-12 border-t ${border}`}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="max-w-5xl mx-auto flex flex-col items-center"
+            >
+              <div className="w-full flex flex-col items-center">
+                <h2
+                  className={`text-xs font-sans font-bold tracking-[0.4em] uppercase mb-10 text-center opacity-60`}
+                >
+                  Comprar Online
+                </h2>
+                <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+                  {salesChannels.map((channel) => (
+                    <a
+                      key={channel.key}
+                      href={formatExternalLink(channel.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        Actions.registerClickEvent(
+                          business.id,
+                          channel.key.toUpperCase(),
+                        )
+                      }
+                      className={`flex items-center gap-4 px-8 py-5 rounded-full border border-current/10 bg-current/5 hover:bg-current/10 transition-all duration-300 hover:-translate-y-1 group`}
+                    >
+                      <div
+                        className={`opacity-80 group-hover:opacity-100 transition-opacity ${channel.hover}`}
+                      >
+                        {channel.icon}
+                      </div>
+                      <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-80 group-hover:opacity-100 transition-opacity mt-0.5">
+                        {channel.name}
+                      </span>
+                    </a>
                   ))}
                 </div>
-              </motion.section>
-            )}
-          </div>
+              </div>
+            </motion.div>
+          </section>
+        )}
 
-          <div className="lg:col-span-5 lg:sticky lg:top-10">
-            <div
-              className={`p-8 md:p-10 rounded-[2rem] ${glassBg} border ${glassBorder} backdrop-blur-xl ${cardShadow} flex flex-col`}
+        {/* ==========================================
+            FAIXA 4: LOCALIZAÇÃO, REDES SOCIAIS E HORÁRIOS
+        ========================================== */}
+        {(hasAddress || hasHours || availableSocials.length > 0) && (
+          <section
+            className={`w-full py-16 md:py-24 px-6 md:px-12 ${theme.bgSecondary} border-t ${border} shadow-inner`}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10"
             >
-              {(hasWhatsapp || hasPhone) && (
-                <div className="flex flex-col pb-8">
-                  <h2 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
-                    The Concierge
-                  </h2>
-                  <div className="space-y-4">
-                    {hasWhatsapp && (
-                      <button
-                        onClick={() => handleTrackLead("whatsapp")}
-                        className={`w-full flex items-center justify-between p-5 rounded-xl ${bgAction} transition-all duration-500 hover:scale-[1.02] shadow-lg group`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <MessageCircle size={18} strokeWidth={1.5} />
-                          <span className="text-xs md:text-sm font-bold tracking-widest uppercase">
-                            Book via WhatsApp
-                          </span>
-                        </div>
-                        <ChevronRight
-                          size={18}
-                          strokeWidth={1.5}
-                          className="opacity-60 group-hover:translate-x-1 transition-transform"
-                        />
-                      </button>
-                    )}
-                    {hasPhone && (
-                      <button
-                        onClick={() => handleTrackLead("phone")}
-                        className={`w-full flex items-center justify-between p-5 rounded-xl border border-current/20 hover:bg-current/5 transition-all duration-300 group`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Phone
-                            size={18}
-                            strokeWidth={1.5}
-                            className={`opacity-60 ${primary}`}
-                          />
-                          <span className="text-xs md:text-sm font-bold opacity-80 tracking-widest">
-                            {formatPhoneNumber(business.phone)}
-                          </span>
-                        </div>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {hasAddress && (
-                <div
-                  className={`flex flex-col py-8 ${hasWhatsapp || hasPhone ? "border-t border-current/10" : ""}`}
-                >
-                  <h2 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
-                    Location
-                  </h2>
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Abrir localização no Google Maps"
-                    onClick={() =>
-                      Actions.registerClickEvent(business.id, "MAP")
-                    }
-                    className="block group"
+              {/* LADO ESQUERDO: Endereço + Redes Sociais */}
+              <div className="lg:col-span-6 flex flex-col gap-8 md:gap-10">
+                {hasAddress && (
+                  <div
+                    className={`p-8 md:p-12 rounded-[2.5rem] ${theme.cardBg} border ${border} shadow-xl flex flex-col justify-between group hover:-translate-y-1 transition-transform duration-500`}
                   >
-                    <p className="text-base md:text-lg font-light leading-relaxed mb-2 opacity-90 transition-opacity group-hover:opacity-100">
-                      {business.address || "Address not provided"}
-                      {business.number &&
-                        !business.address?.includes(business.number) &&
-                        `, ${business.number}`}
-                    </p>
-                    {business.complement && (
-                      <p className="text-sm font-serif italic opacity-60 mb-4">
-                        {business.complement}
-                      </p>
-                    )}
-                    <p className="text-[10px] font-sans uppercase tracking-[0.2em] opacity-40 font-bold mt-2">
-                      {business.neighborhood && `${business.neighborhood} • `}{" "}
-                      {business.city}{" "}
-                      {business.state ? `• ${business.state}` : ""}
-                    </p>
-                    <div
-                      className={`mt-5 flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold ${primary} opacity-60 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0`}
-                    >
-                      Get Directions <ChevronRight size={14} strokeWidth={2} />
-                    </div>
-                  </a>
-                </div>
-              )}
-
-              {hasHours && (
-                <div
-                  className={`flex flex-col py-8 ${hasWhatsapp || hasPhone || hasAddress ? "border-t border-current/10" : ""}`}
-                >
-                  <h2 className="text-[10px] font-sans font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
-                    Opening Hours
-                  </h2>
-                  <div className="space-y-4">
-                    {realHours.map((h: any, i: number) => (
+                    <div>
                       <div
-                        key={i}
-                        className="flex justify-between items-end font-light text-xs md:text-sm pb-2"
+                        className={`w-14 h-14 rounded-full ${theme.bgSecondary} flex items-center justify-center mb-6 border ${border}`}
                       >
-                        <span className="opacity-50 uppercase tracking-widest text-[10px] font-bold">
-                          {h.day}
-                        </span>
-                        <div className="flex-grow mx-3 border-b border-dotted border-current/20 mb-1" />
-                        <span
-                          className={
-                            h.isClosed
-                              ? "opacity-40 italic"
-                              : "opacity-90 font-medium"
-                          }
-                        >
-                          {h.time}
-                        </span>
+                        <Globe size={20} className={primary} />
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {(salesChannels.length > 0 || availableSocials.length > 0) && (
-                <div
-                  className={`flex flex-col pt-8 ${hasWhatsapp || hasPhone || hasAddress || hasHours ? "border-t border-current/10" : ""}`}
-                >
-                  {salesChannels.length > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 mb-6">
-                        Directories
-                      </h2>
-                      {salesChannels.map((channel) => (
-                        <a
-                          key={channel.key}
-                          href={formatExternalLink(channel.url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`Comprar na loja ${channel.name}`}
-                          onClick={() =>
-                            Actions.registerClickEvent(
-                              business.id,
-                              channel.key.toUpperCase(),
-                            )
-                          }
-                          className={`flex items-center justify-between py-3 group border-b border-current/5 last:border-0`}
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          Actions.registerClickEvent(business.id, "MAP")
+                        }
+                        className="block"
+                      >
+                        <h2
+                          className={`text-[10px] font-sans font-bold tracking-[0.4em] uppercase mb-4 opacity-50`}
                         >
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`opacity-50 group-hover:opacity-100 transition-opacity ${channel.hover} scale-110`}
-                            >
-                              {channel.icon}
-                            </div>
-                            <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-80 group-hover:opacity-100 transition-opacity">
-                              {channel.name}
-                            </span>
-                          </div>
-                          <ChevronRight
-                            size={16}
-                            className="opacity-0 group-hover:opacity-50 transition-opacity"
-                          />
-                        </a>
-                      ))}
+                          Localização
+                        </h2>
+                        <p className="text-xl md:text-2xl lg:text-3xl font-serif italic leading-snug mb-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                          {business.address || "Endereço não informado"}
+                          {business.number &&
+                            !business.address?.includes(business.number) &&
+                            `, ${business.number}`}
+                        </p>
+                        {business.complement && (
+                          <p className="text-sm md:text-base font-light opacity-60 mb-4">
+                            {business.complement}
+                          </p>
+                        )}
+                        <p className="text-[9px] md:text-[10px] font-sans uppercase tracking-[0.2em] md:tracking-[0.3em] opacity-50 font-bold bg-current/5 inline-block px-4 py-2.5 rounded-lg mb-6 leading-relaxed">
+                          {business.neighborhood &&
+                            `${business.neighborhood} • `}{" "}
+                          {business.city}{" "}
+                          {business.state ? `• ${business.state}` : ""}{" "}
+                          {business.cep ? `• ${business.cep}` : ""}
+                        </p>
+                        <div
+                          className={`inline-flex items-center gap-3 text-[10px] tracking-widest uppercase font-bold px-6 py-3.5 rounded-full ${bgAction} shadow-md group-hover:scale-[1.03] transition-all`}
+                        >
+                          Como Chegar <ChevronRight size={14} strokeWidth={2} />
+                        </div>
+                      </a>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {availableSocials.length > 0 && (
-                    <div
-                      className={`pt-8 ${salesChannels.length > 0 ? "border-t border-current/10 mt-6" : ""}`}
+                {/* Redes Sociais logo abaixo do Endereço preenchendo o espaço */}
+                {availableSocials.length > 0 && (
+                  <div
+                    className={`p-8 md:p-10 rounded-[2.5rem] ${theme.cardBg} border ${border} shadow-xl flex flex-col items-center justify-center`}
+                  >
+                    <h2
+                      className={`text-[10px] font-sans font-bold tracking-[0.4em] uppercase mb-6 text-center ${primary}`}
                     >
-                      <div className="flex gap-6 justify-center">
-                        {availableSocials.map((s) => {
-                          const username = business[s];
-                          if (!username) return null;
-                          const finalUrl =
-                            username.startsWith("http") ||
-                            username.startsWith("www")
-                              ? formatExternalLink(username)
-                              : s === "instagram"
-                                ? `https://instagram.com/${username.replace("@", "")}`
-                                : s === "facebook"
-                                  ? `https://facebook.com/${username.replace("@", "")}`
-                                  : s === "tiktok"
-                                    ? `https://tiktok.com/@${username.replace("@", "")}`
-                                    : formatExternalLink(username);
-                          return (
-                            <a
-                              key={s}
-                              href={finalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label={`Visitar perfil no ${s}`}
-                              onClick={() =>
-                                Actions.registerClickEvent(
-                                  business.id,
-                                  s.toUpperCase(),
-                                )
-                              }
-                              className="opacity-40 hover:opacity-100 hover:-translate-y-1 transition-all"
-                            >
+                      Siga-nos
+                    </h2>
+                    <div className="flex flex-wrap gap-4 md:gap-5 justify-center w-full">
+                      {availableSocials.map((s) => {
+                        const username = business[s];
+                        if (!username) return null;
+                        const finalUrl =
+                          username.startsWith("http") ||
+                          username.startsWith("www")
+                            ? formatExternalLink(username)
+                            : s === "instagram"
+                              ? `https://instagram.com/${username.replace("@", "")}`
+                              : s === "facebook"
+                                ? `https://facebook.com/${username.replace("@", "")}`
+                                : s === "tiktok"
+                                  ? `https://tiktok.com/@${username.replace("@", "")}`
+                                  : formatExternalLink(username);
+                        return (
+                          <a
+                            key={s}
+                            href={finalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() =>
+                              Actions.registerClickEvent(
+                                business.id,
+                                s.toUpperCase(),
+                              )
+                            }
+                            className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border border-current/10 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 group ${theme.bgSecondary}`}
+                          >
+                            <div className="opacity-60 group-hover:opacity-100 transition-opacity">
                               {s === "instagram" ? (
                                 <Instagram
-                                  className="w-6 h-6"
                                   strokeWidth={1.5}
+                                  className="w-5 h-5"
                                 />
                               ) : s === "facebook" ? (
                                 <Facebook
-                                  className="w-6 h-6"
                                   strokeWidth={1.5}
+                                  className="w-5 h-5"
                                 />
                               ) : s === "tiktok" ? (
-                                <TikTokIcon className="w-6 h-6" />
+                                <TikTokIcon className="w-5 h-5" />
                               ) : (
-                                <Globe className="w-6 h-6" strokeWidth={1.5} />
+                                <Globe strokeWidth={1.5} className="w-5 h-5" />
                               )}
-                            </a>
-                          );
-                        })}
-                      </div>
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+
+              {/* LADO DIREITO: Horários */}
+              {hasHours && (
+                <div className="lg:col-span-6">
+                  <div
+                    className={`h-full p-8 md:p-12 rounded-[2.5rem] ${theme.cardBg} border ${border} shadow-xl flex flex-col hover:-translate-y-1 transition-transform duration-500`}
+                  >
+                    <div
+                      className={`w-14 h-14 rounded-full ${theme.bgSecondary} flex items-center justify-center mb-6 border ${border}`}
+                    >
+                      <Clock size={20} className={primary} />
+                    </div>
+                    <h2 className="text-[10px] font-sans font-bold tracking-[0.4em] uppercase opacity-50 mb-8">
+                      Horário de Funcionamento
+                    </h2>
+                    <div className="space-y-6 flex-grow">
+                      {realHours.map((h: any, i: number) => (
+                        <div
+                          key={i}
+                          className="flex justify-between items-end font-light text-sm group"
+                        >
+                          <span
+                            className={`uppercase tracking-widest text-[11px] font-bold ${h.isClosed ? "opacity-30" : "opacity-70 group-hover:opacity-100"}`}
+                          >
+                            {h.day}
+                          </span>
+                          <div className="flex-grow mx-4 border-b border-dashed border-current/20 mb-1.5 opacity-50" />
+                          <span
+                            className={
+                              h.isClosed
+                                ? "opacity-30 italic"
+                                : `opacity-100 font-medium ${primary}`
+                            }
+                          >
+                            {h.time}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* === FAIXA 5: PERGUNTAS FREQUENTES (FAQs) === */}
+        {hasFaqs && (
+          <section
+            className={`w-full py-16 md:py-24 px-6 md:px-12 border-t ${border}`}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true, margin: "-50px" }}
+              className="max-w-3xl mx-auto space-y-12"
+            >
+              <h2 className="text-4xl md:text-5xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full text-center">
+                Perguntas Frequentes
+              </h2>
+              <div className="flex flex-col">
+                {faqs.map((f: any, i: number) => (
+                  <LuxeAccordion
+                    key={i}
+                    q={f.q || f.question}
+                    a={f.a || f.answer}
+                    primary={primary}
+                    themeBorder={border}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
       </main>
 
-      <div className="max-w-4xl mx-auto w-full px-6 md:px-12 pb-32">
-        <div className="w-full flex justify-center py-16 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10">
-          <ReportModal businessSlug={business.slug} />
+      <div className={`w-full ${theme.bgPage}`}>
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-16">
+          <div className="w-full flex justify-center py-10 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10 mt-6">
+            <ReportModal businessSlug={business.slug} />
+          </div>
+          <CommentsSection
+            businessId={rawBusiness.id}
+            businessOwnerId={rawBusiness.userId}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            emailVerified={emailVerified}
+            themeColor={theme.primary}
+            comments={rawBusiness.comments || []}
+          />
         </div>
-        <CommentsSection
-          businessId={rawBusiness.id}
-          businessOwnerId={rawBusiness.userId}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          emailVerified={emailVerified}
-          themeColor={theme.primary}
-          comments={rawBusiness.comments || []}
-        />
       </div>
 
-      <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
+      <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
 
       {hasWhatsapp && (
         <motion.button
