@@ -63,7 +63,7 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- 🚀 MOTOR DE VÍDEOS (OTIMIZADO COM LAZY LOAD E ACESSIBILIDADE) ---
+// --- 🚀 MOTOR DE VÍDEOS (URBAN MODERN EDITION) ---
 const VideoEmbed = ({ url }: { url: string }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
@@ -93,19 +93,25 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
-  // A FACHADA: Mostra apenas um botão de play falso antes do clique
+  // 🚀 NOVA FACHADA MODERNA (URBAN STYLE)
   if (!isLoaded) {
     return (
       <button
         aria-label="Carregar e reproduzir vídeo"
         onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10"
+        className="w-full h-full bg-gradient-to-br from-slate-900 via-black to-slate-900 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-500"
       >
-        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
-          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        {/* Efeito de brilho sutil de fundo no hover */}
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-500" />
+
+        {/* Botão de Play Glassmorphism Moderno */}
+        <div className="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:scale-110 group-hover:bg-white/20 group-hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all duration-500">
+          <div className="w-0 h-0 border-y-[10px] md:border-y-[12px] border-y-transparent border-l-[16px] md:border-l-[20px] border-l-white ml-2 opacity-90 group-hover:opacity-100 transition-opacity"></div>
         </div>
-        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
-          Toque para carregar
+
+        {/* Tipografia de Ação */}
+        <span className="relative z-10 text-white/50 text-[10px] md:text-xs mt-6 md:mt-8 font-bold uppercase tracking-[0.3em] group-hover:text-white transition-colors duration-500">
+          Reproduzir
         </span>
       </button>
     );

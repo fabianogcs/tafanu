@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
+import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
-  Heart,
   Share2,
   X,
   Instagram,
@@ -14,13 +13,13 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  Camera,
   MessageCircle,
   Clock,
   CheckCircle2,
   HelpCircle,
   Plus,
-  Video,
+  Navigation,
+  Info,
 } from "lucide-react";
 import * as Actions from "@/app/actions";
 import { toast } from "sonner";
@@ -30,15 +29,11 @@ import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
 
-// --- HELPERS E ÍCONES ---
-const TikTokIcon = ({
-  className,
-  color,
-}: {
-  className?: string;
-  color?: string;
-}) => (
-  <svg className={className} viewBox="0 0 24 24" fill={color || "currentColor"}>
+// ==========================================
+// 1. ÍCONES
+// ==========================================
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
   </svg>
 );
@@ -68,7 +63,9 @@ const SheinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- 🚀 MOTOR DE VÍDEOS (EMBUTIDO PARA O CARD PADRÃO SHOWROOM) ---
+// ==========================================
+// 2. COMPONENTES DE MÍDIA
+// ==========================================
 const VideoEmbed = ({ url }: { url: string }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   let embedUrl = "";
@@ -81,18 +78,15 @@ const VideoEmbed = ({ url }: { url: string }) => {
         : url.includes("shorts/")
           ? url.split("shorts/")[1]?.split("?")[0]
           : new URL(url).searchParams.get("v");
-      if (videoId) {
+      if (videoId)
         embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
-      }
     } else if (url.includes("instagram.com")) {
       const cleanUrl = url.split("?")[0].replace(/\/$/, "");
       embedUrl = `${cleanUrl}/embed`;
       isInstagram = true;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
-      if (videoId) {
-        embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-      }
+      if (videoId) embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
     }
   } catch (e) {}
 
@@ -103,24 +97,19 @@ const VideoEmbed = ({ url }: { url: string }) => {
       <button
         aria-label="Carregar e reproduzir vídeo"
         onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-3xl cursor-pointer group border border-white/10"
+        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-300"
       >
-        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
-          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
+        <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
+          <div className="w-0 h-0 border-y-[10px] border-y-transparent border-l-[16px] border-l-white ml-1"></div>
         </div>
-        <span className="text-white/50 text-[10px] mt-4 font-bold uppercase tracking-widest group-hover:text-white/80 transition-colors">
-          Toque para carregar
-        </span>
       </button>
     );
   }
 
   return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-3xl">
+    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl">
       <iframe
         src={embedUrl}
-        title="Vídeo de demonstração do negócio"
-        aria-label="Reprodutor de vídeo"
         className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -130,63 +119,63 @@ const VideoEmbed = ({ url }: { url: string }) => {
   );
 };
 
-// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Design Showroom: Minimalista, rounded-3xl)
+// Galeria (MasterRunway) Otimizada e com setas no Desktop
 const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Função de Scroll Lateral
   const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current)
+    if (scrollRef.current) {
       scrollRef.current.scrollBy({
-        left: dir === "left" ? -350 : 350,
+        left: dir === "left" ? -300 : 300,
         behavior: "smooth",
       });
+    }
   };
-  const arrowClass = `hidden lg:flex absolute top-[50%] -translate-y-1/2 z-20 w-12 h-12 items-center justify-center bg-white border border-black/10 rounded-full shadow-xl opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 text-slate-800`;
+
+  const arrowClass = `hidden lg:flex absolute top-[40%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center bg-white/80 backdrop-blur-md border border-black/10 rounded-full shadow-lg opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 hover:bg-white text-slate-800`;
 
   return (
-    <div className="relative group/runway w-full">
+    <div className="relative group/runway w-full mt-4">
+      {/* Setas (Visíveis apenas em Desktop no hover) */}
       <button
-        aria-label="Rolar galeria para a esquerda"
+        aria-label="Rolar para a esquerda"
         onClick={() => scroll("left")}
-        className={`${arrowClass} -left-6`}
+        className={`${arrowClass} -left-5`}
       >
-        <ChevronLeft size={28} />
+        <ChevronLeft size={24} />
       </button>
 
       <div
         ref={scrollRef}
-        className="flex items-center gap-4 md:gap-6 overflow-x-auto snap-x no-scrollbar pb-8 pt-2 scroll-smooth px-1"
+        className="flex items-center gap-3 overflow-x-auto snap-x no-scrollbar pb-4 scroll-smooth px-1"
       >
         {feed.map((item: any, i: number) => {
-          // 🚀 PADRÃO SHOWROOM: rounded-3xl e shadow super clean
-          const cardBaseClasses = `shrink-0 snap-center w-[220px] sm:w-[280px] md:w-[320px] aspect-[4/5] rounded-3xl overflow-hidden relative border ${theme.border} bg-black/5 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg group`;
+          const cardBaseClasses = `shrink-0 snap-center w-[140px] sm:w-[180px] md:w-[220px] aspect-square rounded-2xl overflow-hidden relative border ${theme.border} bg-black/5 shadow-sm transition-transform duration-300 hover:-translate-y-1 group`;
 
           if (item.type === "image") {
             return (
               <motion.div
                 key={`img-${i}`}
                 onClick={() => setSelectedIndex(item.lightboxIndex)}
-                whileHover={{ scale: 0.98 }}
                 className={`${cardBaseClasses} cursor-pointer`}
                 role="button"
                 tabIndex={0}
-                aria-label="Abrir imagem em tela cheia"
               >
-                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
                 <Image
                   src={item.url}
                   alt="Vitrine"
                   fill
                   quality={60}
-                  sizes="(max-width: 768px) 250px, 350px"
+                  sizes="(max-width: 768px) 160px, 280px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Plus size={32} className="text-white" />
+                  <Plus size={32} className="text-white drop-shadow-md" />
                 </div>
               </motion.div>
             );
           }
-
           if (
             item.type === "video" ||
             item.type === "video_v" ||
@@ -198,22 +187,61 @@ const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
               </div>
             );
           }
-
           return null;
         })}
       </div>
 
       <button
-        aria-label="Rolar galeria para a direita"
+        aria-label="Rolar para a direita"
         onClick={() => scroll("right")}
-        className={`${arrowClass} -right-6`}
+        className={`${arrowClass} -right-5`}
       >
-        <ChevronRight size={28} />
+        <ChevronRight size={24} />
       </button>
     </div>
   );
 };
 
+const AccordionItem = ({ q, a, theme }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div
+      className={`border-b ${theme.border} transition-all duration-300 last:border-0`}
+    >
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full py-4 flex justify-between items-center text-left gap-4 outline-none bg-transparent group"
+      >
+        <span className="text-sm font-semibold opacity-90 group-hover:opacity-100">
+          {q}
+        </span>
+        <Plus
+          size={16}
+          className={`shrink-0 transition-transform duration-300 opacity-50 ${isOpen ? "rotate-45" : ""}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="pb-5 text-sm leading-relaxed opacity-70">{a}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ==========================================
+// 3. UTILITÁRIOS
+// ==========================================
 const handleShare = async (businessName: string) => {
   const url = typeof window !== "undefined" ? window.location.href : "";
   if (navigator.share) {
@@ -228,7 +256,7 @@ const handleShare = async (businessName: string) => {
   }
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(url);
-    toast.success("Link copiado para a área de transferência!");
+    toast.success("Link copiado!");
   }
 };
 
@@ -247,46 +275,9 @@ const formatExternalLink = (url: string) => {
   return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
 };
 
-const AccordionItem = ({ q, a, theme }: any) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className={`border-b ${theme.border} transition-all duration-300`}>
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        aria-label="Alternar visualização da resposta"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-5 flex justify-between items-center text-left gap-4 outline-none bg-transparent"
-      >
-        <span
-          className={`text-sm md:text-base font-semibold ${isOpen ? "opacity-100" : "opacity-70"}`}
-        >
-          {q}
-        </span>
-        <Plus
-          size={18}
-          className={`shrink-0 transition-transform duration-300 opacity-50 ${isOpen ? "rotate-45" : ""}`}
-        />
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            style={{ overflow: "hidden" }}
-          >
-            <div className="pb-6 text-sm md:text-base leading-relaxed opacity-60">
-              {a}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
+// ==========================================
+// 4. LAYOUT PRINCIPAL (Google Meu Negócio Style)
+// ==========================================
 export default function ShowroomLayout({
   business: rawBusiness,
   theme: propTheme,
@@ -312,9 +303,10 @@ export default function ShowroomLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
-    "all",
-  );
+  const footerTriggerRef = useRef(null);
+  const isFooterVisible = useInView(footerTriggerRef, {
+    margin: "0px 0px 50px 0px",
+  });
 
   const theme =
     propTheme ||
@@ -331,41 +323,34 @@ export default function ShowroomLayout({
       name: "Mercado Livre",
       icon: <MeliIcon className="w-5 h-5" />,
       url: business.mercadoLivre,
-      colorClass: "hover:text-[#2D3277] hover:bg-[#FFE600]/10",
+      colorClass: "text-[#2D3277] bg-[#FFE600]",
     },
     {
       key: "shopee",
       name: "Shopee",
       icon: <ShopeeIcon className="w-5 h-5" />,
       url: business.shopee,
-      colorClass: "hover:text-[#EE4D2D] hover:bg-[#EE4D2D]/10",
+      colorClass: "text-white bg-[#EE4D2D]",
     },
     {
       key: "ifood",
       name: "iFood",
       icon: <IfoodIcon className="w-5 h-5" />,
       url: business.ifood,
-      colorClass: "hover:text-[#EA1D2C] hover:bg-[#EA1D2C]/10",
+      colorClass: "text-white bg-[#EA1D2C]",
     },
     {
       key: "shein",
       name: "Shein",
       icon: <SheinIcon className="w-5 h-5" />,
       url: business.shein,
-      colorClass: "hover:text-black hover:bg-black/10",
+      colorClass: "text-white bg-slate-900",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
-  const footerTriggerRef = useRef(null);
-  const isFooterVisible = useInView(footerTriggerRef, {
-    margin: "0px 0px 50px 0px",
-  });
-
-  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED PARA O SHOWROOM
   const rawFeed = useMemo(() => {
-    if (business.mediaFeed && business.mediaFeed.length > 0) {
+    if (business.mediaFeed && business.mediaFeed.length > 0)
       return business.mediaFeed;
-    }
     const oldGallery = (business.gallery || []).map((url: string) => ({
       type: "image",
       url,
@@ -377,7 +362,6 @@ export default function ShowroomLayout({
     return [...oldGallery, ...oldVideos];
   }, [business.mediaFeed, business.gallery, business.videos]);
 
-  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
   const cleanFeed = useMemo(() => {
     let imgIndexCounter = 0;
     return rawFeed
@@ -386,14 +370,12 @@ export default function ShowroomLayout({
           item && typeof item.url === "string" && item.url.trim() !== "",
       )
       .map((item: any) => {
-        if (item.type === "image") {
+        if (item.type === "image")
           return { ...item, lightboxIndex: imgIndexCounter++ };
-        }
         return item;
       });
   }, [rawFeed]);
 
-  // Lista pura de imagens pro Lightbox (Modal tela cheia)
   const lightboxImages = useMemo(() => {
     return cleanFeed
       .filter((item: any) => item.type === "image")
@@ -418,7 +400,6 @@ export default function ShowroomLayout({
         ? cleanNumber
         : `55${cleanNumber}`;
       const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
-
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
@@ -444,405 +425,386 @@ export default function ShowroomLayout({
     business.state,
     business.cep,
   ].filter(Boolean);
-
   const completeAddressForMap = addressPartsForMap.join(", ");
-
   const mapDestination =
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
       : completeAddressForMap;
-
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
 
   return (
     <div
-      className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
+      className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
     >
-      {/* --- HEADER CORPORATIVO (Ultrawide) --- */}
-      <header className={`pt-12 md:pt-20 pb-10 border-b ${theme.border}`}>
-        <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12 xl:px-20 flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+      {/* --- CAPA E TOPO (ESTILO GMB) --- */}
+      <div className={`w-full h-40 md:h-56 ${theme.bgHero} relative`}>
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 z-20">
+          <button
+            onClick={() => handleShare(business.name)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:scale-105 transition-all shadow-sm"
+          >
+            <Share2 size={18} />
+          </button>
+          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:scale-105 transition-all shadow-sm">
+            <FavoriteButton
+              businessId={business.id}
+              isLoggedIn={isLoggedIn}
+              initialIsFavorited={isFavorited}
+              emailVerified={emailVerified}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 relative -mt-16 md:-mt-20 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-end">
           {business.imageUrl && (
             <div
-              className={`w-28 h-28 md:w-40 md:h-40 rounded-3xl border ${theme.border} shadow-sm overflow-hidden bg-white shrink-0`}
+              className={`w-32 h-32 md:w-40 md:h-40 rounded-full border-4 ${theme.border} bg-white shadow-xl overflow-hidden relative shrink-0 z-10`}
             >
-              {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
-              <div className="relative w-full h-full">
-                <Image
-                  src={business.imageUrl}
-                  alt={`Logotipo de ${business.name}`}
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 150px, 200px"
-                  className="object-cover"
-                />
+              <Image
+                src={business.imageUrl}
+                alt="Logo"
+                fill
+                priority
+                sizes="160px"
+                className="object-cover"
+              />
+            </div>
+          )}
+          <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1 mb-2">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-1">
+              {business.name}
+            </h1>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <span className="text-sm font-medium opacity-70">
+                {business.urban_tag || business.city || "Negócio Local"}
+              </span>
+
+              {/* Lógica Corrigida para evitar frase duplicada! */}
+              {business.comercial_badge &&
+                business.comercial_badge !== business.urban_tag && (
+                  <>
+                    <span className="opacity-40">•</span>
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider ${theme.primary} flex items-center gap-1`}
+                    >
+                      <CheckCircle2 size={12} /> {business.comercial_badge}
+                    </span>
+                  </>
+                )}
+            </div>
+          </div>
+        </div>
+
+        {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
+        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
+          {hasWhatsapp && (
+            <button
+              onClick={() => handleTrackLead("whatsapp")}
+              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
+            >
+              <div
+                className={`w-12 h-12 rounded-full ${theme.bgAction} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}
+              >
+                <MessageCircle size={20} />
+              </div>
+              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
+                WhatsApp
+              </span>
+            </button>
+          )}
+          {hasPhone && (
+            <button
+              onClick={() => handleTrackLead("phone")}
+              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
+            >
+              <div
+                className={`w-12 h-12 rounded-full border ${theme.border} ${theme.cardBg} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}
+              >
+                <PhoneCall size={20} className={theme.primary} />
+              </div>
+              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
+                Ligar
+              </span>
+            </button>
+          )}
+          {hasAddress && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => Actions.registerClickEvent(business.id, "MAP")}
+              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
+            >
+              <div
+                className={`w-12 h-12 rounded-full border ${theme.border} ${theme.cardBg} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}
+              >
+                <Navigation size={20} className={theme.primary} />
+              </div>
+              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
+                Rota
+              </span>
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* --- CORPO PRINCIPAL (2 Colunas) --- */}
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-12">
+        {/* COLUNA ESQUERDA: Visão Geral */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          {hasDescription && (
+            <div
+              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+            >
+              <h2 className="text-base font-bold mb-3 flex items-center gap-2 opacity-90">
+                <Info size={18} className={theme.primary} /> Visão Geral
+              </h2>
+              <p className="text-sm md:text-base leading-relaxed opacity-80 whitespace-pre-line">
+                {business.description}
+              </p>
+            </div>
+          )}
+
+          {cleanFeed.length > 0 && (
+            <div
+              className={`p-6 pb-2 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+            >
+              <h2 className="text-base font-bold mb-2 flex items-center gap-2 opacity-90">
+                Fotos e Vídeos
+              </h2>
+              <MasterRunway
+                feed={cleanFeed}
+                setSelectedIndex={setSelectedIndex}
+                theme={theme}
+              />
+            </div>
+          )}
+
+          {hasFeatures && (
+            <div
+              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+            >
+              <h2 className="text-base font-bold mb-4 flex items-center gap-2 opacity-90">
+                O que oferecemos
+              </h2>
+              <div className="flex flex-col gap-3">
+                {business.features
+                  .filter(Boolean)
+                  .map((f: string, i: number) => (
+                    <div key={i} className="flex items-start gap-3">
+                      {/* O shrink-0 garante que o ícone nunca perca o seu tamanho original */}
+                      <CheckCircle2
+                        size={18}
+                        className={`shrink-0 ${theme.primary} mt-0.5`}
+                        strokeWidth={2.5}
+                      />
+                      <span className="text-sm font-medium opacity-80">
+                        {f}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
 
-          <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-3">
-            <h1 className="text-3xl md:text-6xl font-extrabold tracking-tight leading-none mb-1">
-              {business.name}
-            </h1>
-
-            {business.comercial_badge && (
-              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-60 border border-black/10 px-4 py-1.5 rounded-md inline-block mb-2">
-                {business.comercial_badge}
-              </span>
-            )}
-
-            <div className="flex items-center gap-3 pt-5">
-              <button
-                aria-label="Compartilhar perfil ou copiar link"
-                onClick={() => handleShare(business.name)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full border ${theme.border} hover:bg-black/5 transition-colors text-xs font-bold uppercase tracking-wider`}
-              >
-                <Share2 size={16} /> Compartilhar
-              </button>
-              <div
-                className={`w-12 h-12 flex items-center justify-center rounded-full border ${theme.border} hover:bg-black/5 transition-colors`}
-              >
-                <FavoriteButton
-                  businessId={business.id}
-                  isLoggedIn={isLoggedIn}
-                  initialIsFavorited={isFavorited}
-                  emailVerified={emailVerified}
-                />
+          {hasFaqs && (
+            <div
+              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+            >
+              <h2 className="text-base font-bold mb-2 flex items-center gap-2 opacity-90">
+                Perguntas Frequentes
+              </h2>
+              <div className="flex flex-col">
+                {faqs.map((f: any, i: number) => (
+                  <AccordionItem
+                    key={i}
+                    q={f.q || f.question}
+                    a={f.a || f.answer}
+                    theme={theme}
+                  />
+                ))}
               </div>
             </div>
-          </div>
+          )}
         </div>
-      </header>
 
-      {/* --- ESTRUTURA DE COLUNAS REFEITA (Tudo Integrado no Fluxo de 8/4) --- */}
-      <main className="w-full max-w-[1600px] mx-auto px-6 md:px-12 xl:px-20 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20 items-start">
-          {/* COLUNA ESQUERDA (Principal: Info -> Fotos -> Vídeos -> FAQ) */}
-          <div className="lg:col-span-8 flex flex-col gap-16 md:gap-24 w-full min-w-0">
-            {/* Descrição e Destaques */}
-            {(hasDescription || hasFeatures) && (
-              <section className="space-y-8">
-                {hasDescription && (
-                  <div>
-                    <h2 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
-                      Sobre a Empresa
-                    </h2>
-                    <p className="text-base md:text-xl font-normal leading-relaxed opacity-90 whitespace-pre-line break-words max-w-4xl">
-                      {business.description}
+        {/* COLUNA DIREITA: Detalhes Práticos */}
+        <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-6">
+          {(hasAddress || hasHours) && (
+            <div
+              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm flex flex-col gap-6`}
+            >
+              {hasAddress && (
+                <div>
+                  <h2 className="text-base font-bold mb-3 flex items-center gap-2 opacity-90">
+                    <MapPin size={18} className={theme.primary} /> Endereço
+                  </h2>
+                  <p className="text-sm font-semibold opacity-90 leading-snug">
+                    {business.address || "Endereço não cadastrado"}
+                    {business.number &&
+                      !business.address?.includes(business.number) &&
+                      `, ${business.number}`}
+                  </p>
+                  {business.complement && (
+                    <p className="text-xs font-medium opacity-60 mt-1">
+                      {business.complement}
                     </p>
-                  </div>
-                )}
+                  )}
+                  <p className="text-xs opacity-50 mt-1">
+                    {business.neighborhood && `${business.neighborhood} • `}
+                    {business.city}{" "}
+                    {business.state ? `— ${business.state}` : ""}
+                  </p>
 
-                {hasFeatures && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-                    {business.features
-                      .filter(Boolean)
-                      .map((f: string, i: number) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <CheckCircle2
-                            size={18}
-                            className={`shrink-0 ${theme.primary} opacity-60`}
-                          />
-                          <span className="text-sm md:text-base font-semibold opacity-90">
-                            {f}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </section>
-            )}
+                  {/* Botão de navegação integrado no próprio cartão de endereço */}
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      Actions.registerClickEvent(business.id, "MAP")
+                    }
+                    className={`mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl ${theme.bgSecondary} ${theme.primary} border ${theme.border} hover:opacity-80 transition-all`}
+                  >
+                    <Navigation size={14} /> Traçar Rota
+                  </a>
+                </div>
+              )}
 
-            {/* 🚀 THE MASTER RUNWAY (Mídia Unificada SHOWROOM) */}
-            {cleanFeed.length > 0 &&
-              (() => {
-                const filteredFeed = cleanFeed.filter((item: any) => {
-                  if (mediaFilter === "all") return true;
-                  if (mediaFilter === "photos") return item.type === "image";
-                  if (mediaFilter === "motion")
-                    return (
-                      item.type === "video" ||
-                      item.type === "video_v" ||
-                      item.type === "video_h"
-                    );
-                  return true;
-                });
-
-                if (filteredFeed.length === 0) return null;
-
-                return (
-                  <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
-                      <h2 className="text-xs font-bold uppercase tracking-widest opacity-40 flex items-center gap-2">
-                        <Camera size={14} /> Catálogo Visual
-                      </h2>
-
-                      {/* Capsula Switch (Showroom Style Minimalista) */}
+              {hasHours && (
+                <div
+                  className={`${hasAddress ? "pt-5 border-t border-black/5" : ""}`}
+                >
+                  <h2 className="text-base font-bold mb-3 flex items-center gap-2 opacity-90">
+                    <Clock size={18} className={theme.primary} /> Horários
+                  </h2>
+                  <div className="space-y-2.5">
+                    {safeHours.map((h: any, i: number) => (
                       <div
-                        className={`flex items-center p-1 bg-white/50 backdrop-blur-md border ${theme.border} rounded-full shadow-sm`}
+                        key={i}
+                        className="flex justify-between items-center text-xs md:text-sm"
                       >
-                        <button
-                          onClick={() => setMediaFilter("all")}
-                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? "bg-black/10 opacity-100" : "opacity-50 hover:opacity-100"}`}
+                        <span className="font-semibold opacity-60 capitalize">
+                          {h.day}
+                        </span>
+                        <span
+                          className={`font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
                         >
-                          All
-                        </button>
-                        <button
-                          onClick={() => setMediaFilter("photos")}
-                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? "bg-black/10 opacity-100" : "opacity-50 hover:opacity-100"}`}
-                        >
-                          Photos
-                        </button>
-                        <button
-                          onClick={() => setMediaFilter("motion")}
-                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? "bg-black/10 opacity-100" : "opacity-50 hover:opacity-100"}`}
-                        >
-                          Motion
-                        </button>
-                      </div>
-                    </div>
-
-                    <MasterRunway
-                      key={mediaFilter}
-                      feed={filteredFeed}
-                      setSelectedIndex={setSelectedIndex}
-                      theme={theme}
-                    />
-                  </section>
-                );
-              })()}
-
-            {/* FAQ Minimalista Integrado */}
-            {hasFaqs && (
-              <section className="w-full">
-                <h2 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
-                  <HelpCircle size={14} /> Dúvidas Frequentes
-                </h2>
-                <div className="flex flex-col max-w-4xl">
-                  {faqs.map((f: any, i: number) => (
-                    <AccordionItem
-                      key={i}
-                      q={f.q || f.question}
-                      a={f.a || f.answer}
-                      theme={theme}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* COLUNA DIREITA (Sidebar Comercial Clean) */}
-          <div className="lg:col-span-4 space-y-8 sticky top-10">
-            {/* 🚀 ATENDIMENTO & LOJAS UNIFICADOS */}
-            {(hasWhatsapp || hasPhone || availableSocials.length > 0) && (
-              <div
-                className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm space-y-8`}
-              >
-                <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 text-center">
-                  Atendimento Rápido
-                </h2>
-
-                <div className="space-y-4">
-                  {hasWhatsapp && (
-                    <button
-                      aria-label="Atendimento via WhatsApp"
-                      onClick={() => handleTrackLead("whatsapp")}
-                      className="w-full flex items-center justify-between p-5 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors group border border-emerald-100"
-                    >
-                      <div className="flex items-center gap-4">
-                        <MessageCircle size={22} />
-                        <span className="text-sm font-bold">
-                          Chamar no WhatsApp
+                          {h.time}
                         </span>
                       </div>
-                      <ChevronRight
-                        size={18}
-                        className="opacity-40 group-hover:translate-x-1 transition-transform"
-                      />
-                    </button>
-                  )}
-
-                  {hasPhone && (
-                    <button
-                      aria-label="Ligar para a empresa"
-                      onClick={() => handleTrackLead("phone")}
-                      className={`w-full flex items-center justify-between p-5 rounded-2xl border ${theme.border} hover:bg-black/5 transition-colors group`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <PhoneCall size={22} className="opacity-60" />
-                        <span className="text-sm font-bold opacity-90">
-                          {formatPhoneNumber(business.phone)}
-                        </span>
-                      </div>
-                    </button>
-                  )}
+                    ))}
+                  </div>
                 </div>
+              )}
+            </div>
+          )}
 
-                {availableSocials.length > 0 && (
-                  <div className="pt-6 border-t border-black/5 flex justify-center gap-5">
+          {/* Social e Web */}
+          {(availableSocials.length > 0 || salesChannels.length > 0) && (
+            <div
+              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm flex flex-col gap-5`}
+            >
+              {availableSocials.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-bold opacity-60 uppercase tracking-wider mb-3">
+                    Redes Sociais
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
                     {availableSocials.map((s) => {
                       const username = business[s];
                       if (!username) return null;
-
-                      const isUrl =
+                      const finalUrl =
                         username.startsWith("http") ||
-                        username.startsWith("www");
-
-                      const finalUrl = isUrl
-                        ? username.startsWith("http")
-                          ? username
-                          : `https://${username}`
-                        : s === "instagram"
-                          ? `https://instagram.com/${username.replace("@", "")}`
-                          : s === "facebook"
-                            ? `https://facebook.com/${username}`
-                            : s === "tiktok"
-                              ? `https://tiktok.com/@${username.replace("@", "")}`
-                              : formatExternalLink(username);
-
+                        username.startsWith("www")
+                          ? formatExternalLink(username)
+                          : s === "instagram"
+                            ? `https://instagram.com/${username.replace("@", "")}`
+                            : s === "facebook"
+                              ? `https://facebook.com/${username.replace("@", "")}`
+                              : s === "tiktok"
+                                ? `https://tiktok.com/@${username.replace("@", "")}`
+                                : formatExternalLink(username);
                       return (
                         <a
                           key={s}
                           href={finalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          aria-label={`Visitar perfil no ${s}`}
                           onClick={() =>
                             Actions.registerClickEvent(
                               business.id,
                               s.toUpperCase(),
                             )
                           }
-                          className={`w-12 h-12 rounded-full border ${theme.border} flex items-center justify-center hover:bg-black/5 transition-colors opacity-70 hover:opacity-100`}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl ${theme.bgSecondary} border ${theme.border} hover:opacity-80 transition-opacity`}
                         >
                           {s === "instagram" ? (
-                            <Instagram size={20} />
+                            <Instagram size={14} />
                           ) : s === "facebook" ? (
-                            <Facebook size={20} />
+                            <Facebook size={14} />
                           ) : s === "tiktok" ? (
-                            <TikTokIcon className="w-5 h-5" />
+                            <TikTokIcon className="w-3.5 h-3.5" />
                           ) : (
-                            <Globe size={20} />
+                            <Globe size={14} />
                           )}
+                          <span className="text-xs font-semibold capitalize opacity-80">
+                            {s}
+                          </span>
                         </a>
                       );
                     })}
                   </div>
-                )}
-              </div>
-            )}
-            {/* Canais de Vendas Oficiais */}
-            {salesChannels.length > 0 && (
-              <div
-                className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm`}
-              >
-                <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-6 text-center">
-                  Lojas Oficiais
-                </h2>
-                <div className="flex flex-col gap-3">
-                  {salesChannels.map((channel) => (
-                    <a
-                      key={channel.key}
-                      href={formatExternalLink(channel.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Comprar na loja ${channel.name}`}
-                      onClick={() =>
-                        Actions.registerClickEvent(
-                          business.id,
-                          channel.key.toUpperCase(),
-                        )
-                      }
-                      className={`flex items-center gap-4 p-4 rounded-xl border ${theme.border} transition-all font-sans group opacity-80 hover:opacity-100 hover:shadow-md ${channel.colorClass}`}
-                    >
-                      <div className="transition-transform duration-300 group-hover:scale-110">
-                        {channel.icon}
-                      </div>
-                      <span className="text-xs font-bold tracking-widest uppercase">
-                        {channel.name}
-                      </span>
-                    </a>
-                  ))}
                 </div>
-              </div>
-            )}
-            {/* Endereço Seguro e Oficial */}
-            {hasAddress && (
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Abrir localização no Google Maps"
-                onClick={() => Actions.registerClickEvent(business.id, "MAP")}
-                className={`block p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm hover:border-black/20 transition-colors group`}
-              >
-                <div className="flex items-center gap-3 mb-6 opacity-40">
-                  <MapPin size={18} />
-                  <h2 className="text-[10px] font-bold uppercase tracking-widest">
-                    Localização
+              )}
+
+              {salesChannels.length > 0 && (
+                <div
+                  className={`${availableSocials.length > 0 ? "pt-4 border-t border-black/5" : ""}`}
+                >
+                  <h2 className="text-sm font-bold opacity-60 uppercase tracking-wider mb-3">
+                    Onde Comprar
                   </h2>
-                </div>
-
-                <p className="text-base font-bold leading-relaxed mb-1 opacity-90 break-words">
-                  {business.address || "Endereço não cadastrado"}
-                  {business.number &&
-                    !business.address?.includes(business.number) &&
-                    `, ${business.number}`}
-                </p>
-
-                {business.complement && (
-                  <p className="text-xs font-medium opacity-70 mb-2">
-                    {business.complement}
-                  </p>
-                )}
-
-                <p className="text-[11px] uppercase tracking-widest opacity-50 mt-4">
-                  {business.neighborhood && `${business.neighborhood} • `}
-                  {business.city} {business.state ? `— ${business.state}` : ""}
-                  {business.cep && ` • CEP: ${business.cep}`}
-                </p>
-              </a>
-            )}
-
-            {/* Horários */}
-            {hasHours && (
-              <div
-                className={`p-8 md:p-10 rounded-[2rem] border ${theme.border} ${theme.cardBg} shadow-sm`}
-              >
-                <div className="flex items-center gap-3 mb-6 opacity-40">
-                  <Clock size={18} />
-                  <h2 className="text-[10px] font-bold uppercase tracking-widest">
-                    Horários
-                  </h2>
-                </div>
-                <div className="space-y-3">
-                  {safeHours.map((h: any, i: number) => (
-                    <div
-                      key={i}
-                      className={`flex justify-between items-center text-sm pb-3 border-b border-black/5 last:border-0 last:pb-0`}
-                    >
-                      <span className="font-semibold opacity-60 uppercase text-[11px] tracking-wider">
-                        {h.day}
-                      </span>
-                      <span
-                        className={`font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
+                  <div className="flex flex-col gap-2">
+                    {salesChannels.map((channel) => (
+                      <a
+                        key={channel.key}
+                        href={formatExternalLink(channel.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          Actions.registerClickEvent(
+                            business.id,
+                            channel.key.toUpperCase(),
+                          )
+                        }
+                        className={`flex items-center gap-3 p-3 rounded-xl transition-all font-sans group hover:opacity-90 ${channel.colorClass}`}
                       >
-                        {h.time}
-                      </span>
-                    </div>
-                  ))}
+                        <div className="w-5 h-5">{channel.icon}</div>
+                        <span className="text-xs font-bold tracking-widest uppercase">
+                          {channel.name}
+                        </span>
+                        <ChevronRight
+                          size={16}
+                          className="ml-auto opacity-50"
+                        />
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
-      </main>
+      </div>
 
-      {/* --- SEÇÃO FINAL (Avaliações e Report) --- */}
-      <div className="max-w-5xl mx-auto w-full px-6 md:px-12 pb-20 mt-10">
-        <div className="w-full flex justify-center py-10 opacity-30 hover:opacity-100 transition-opacity">
+      {/* --- RODAPÉ --- */}
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 pt-4 pb-20">
+        <div className="w-full flex justify-center py-6 opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
         <CommentsSection
@@ -856,28 +818,25 @@ export default function ShowroomLayout({
         />
       </div>
 
-      <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
+      <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
 
-      {/* WHATSAPP FLUTUANTE (Discreto no canto) */}
+      {/* --- WHATSAPP FLUTUANTE UNIVERSAL (Estilo App/Flutuante em todas as telas) --- */}
       {hasWhatsapp && (
         <motion.button
-          aria-label="Abrir WhatsApp Flutuante"
+          aria-label="Abrir WhatsApp"
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-30 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl border-4 border-white/50 hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all"
+          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:scale-105 active:scale-95 transition-all"
         >
-          <MessageCircle
-            className="w-8 h-8 md:w-10 md:h-10"
-            fill="currentColor"
-          />
+          <MessageCircle size={28} />
         </motion.button>
       )}
 
-      {/* LIGHTBOX DE ALTA PERFORMANCE (APENAS PARA FOTOS) */}
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {selectedIndex !== null && (
           <motion.div
@@ -887,15 +846,11 @@ export default function ShowroomLayout({
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center"
             onClick={() => setSelectedIndex(null)}
           >
-            <button
-              aria-label="Fechar galeria"
-              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[210]"
-            >
+            <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[210]">
               <X size={32} />
             </button>
             <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4 pt-10">
               <button
-                aria-label="Imagem anterior"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex - 1);
@@ -905,7 +860,6 @@ export default function ShowroomLayout({
                 <ChevronLeft size={28} />
               </button>
               <button
-                aria-label="Próxima imagem"
                 onClick={(e) => {
                   e.stopPropagation();
                   safeSetIndex(selectedIndex + 1);
@@ -918,8 +872,6 @@ export default function ShowroomLayout({
                 <motion.img
                   key={selectedIndex}
                   src={lightboxImages[selectedIndex]}
-                  loading="eager"
-                  decoding="async"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -932,7 +884,7 @@ export default function ShowroomLayout({
                     else if (info.offset.x < -80)
                       safeSetIndex(selectedIndex + 1);
                   }}
-                  className={`max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl`}
+                  className="max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
@@ -944,11 +896,9 @@ export default function ShowroomLayout({
               {lightboxImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
-                  aria-label={`Ver miniatura ${idx + 1}`}
                   onClick={() => setSelectedIndex(idx)}
                   className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-300 snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-105 opacity-100" : "opacity-40 hover:opacity-100"}`}
                 >
-                  {/* ✅ MINIATURAS OTIMIZADAS */}
                   <Image
                     src={img || "/og-default.png"}
                     alt="Thumbnail"

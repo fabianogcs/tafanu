@@ -660,45 +660,45 @@ export default function LuxeLayout({
 
       <main className="w-full flex flex-col items-center relative z-10">
         {/* ==========================================
-            FAIXA 1: DESTAQUES
+            FAIXA 1: DESTAQUES (Agora com 2 colunas compactas no Mobile)
         ========================================== */}
         {hasFeatures && (
           <section
-            className={`w-full py-16 md:py-20 px-6 md:px-12 border-t ${border}`}
+            className={`w-full py-16 md:py-20 px-4 md:px-12 border-t ${border}`}
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="max-w-5xl mx-auto flex flex-col items-center text-center space-y-16"
+              className="max-w-5xl mx-auto flex flex-col items-center text-center space-y-10 md:space-y-16"
             >
               <h2 className="text-4xl md:text-6xl font-serif italic tracking-tight opacity-90 flex flex-col items-center gap-4">
                 <span
-                  className={`text-[10px] font-sans font-bold tracking-[0.4em] uppercase ${primary} not-italic mb-4`}
+                  className={`text-[10px] font-sans font-bold tracking-[0.4em] uppercase ${primary} not-italic mb-2 md:mb-4`}
                 >
                   Os Detalhes
                 </span>
                 Destaques
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-16 w-full mt-8">
+              {/* 🚀 A MÁGICA AQUI: grid-cols-2 no mobile, gaps e paddings ajustados para caber perfeitamente */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-8 md:gap-x-12 md:gap-y-16 w-full mt-4 md:mt-8">
                 {business.features
                   .filter(Boolean)
                   .map((f: string, i: number) => (
                     <div
                       key={i}
-                      className="flex flex-col items-center text-center gap-6 group p-6 rounded-3xl hover:bg-current/5 transition-all duration-500"
+                      className="flex flex-col items-center text-center gap-4 md:gap-6 group p-3 md:p-6 rounded-3xl hover:bg-current/5 transition-all duration-500"
                     >
                       <div
-                        className={`w-14 h-14 rounded-full ${theme.bgSecondary} flex items-center justify-center border ${border} shadow-lg group-hover:scale-110 transition-transform duration-500`}
+                        className={`w-12 h-12 md:w-14 md:h-14 rounded-full ${theme.bgSecondary} flex items-center justify-center border ${border} shadow-lg group-hover:scale-110 transition-transform duration-500`}
                       >
                         <Sparkles
-                          size={24}
-                          className={primary}
+                          className={`w-5 h-5 md:w-6 md:h-6 ${primary}`}
                           strokeWidth={1.5}
                         />
                       </div>
-                      <span className="font-light text-lg leading-relaxed opacity-80 group-hover:opacity-100">
+                      <span className="font-light text-xs sm:text-sm md:text-lg leading-relaxed opacity-80 group-hover:opacity-100 px-1">
                         {f}
                       </span>
                     </div>
@@ -772,12 +772,42 @@ export default function LuxeLayout({
         )}
 
         {/* ==========================================
-            FAIXA 3: COMPRAR ONLINE (Marketplaces) - SUBIU!
+            FAIXA 3: PERGUNTAS FREQUENTES (FAQs) - MOVIDA!
+        ========================================== */}
+        {hasFaqs && (
+          <section
+            className={`w-full py-16 md:py-24 px-6 md:px-12 ${theme.bgSecondary} border-b ${border}`}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true, margin: "-50px" }}
+              className="max-w-3xl mx-auto space-y-12"
+            >
+              <h2 className="text-4xl md:text-5xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full text-center">
+                Perguntas Frequentes
+              </h2>
+              <div className="flex flex-col">
+                {faqs.map((f: any, i: number) => (
+                  <LuxeAccordion
+                    key={i}
+                    q={f.q || f.question}
+                    a={f.a || f.answer}
+                    primary={primary}
+                    themeBorder={border}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* ==========================================
+            FAIXA 4: COMPRAR ONLINE (Marketplaces)
         ========================================== */}
         {salesChannels.length > 0 && (
-          <section
-            className={`w-full py-16 md:py-20 px-6 md:px-12 border-t ${border}`}
-          >
+          <section className={`w-full py-16 md:py-20 px-6 md:px-12`}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -823,7 +853,7 @@ export default function LuxeLayout({
         )}
 
         {/* ==========================================
-            FAIXA 4: LOCALIZAÇÃO, REDES SOCIAIS E HORÁRIOS
+            FAIXA 5: LOCALIZAÇÃO, REDES SOCIAIS E HORÁRIOS
         ========================================== */}
         {(hasAddress || hasHours || availableSocials.length > 0) && (
           <section
@@ -995,36 +1025,6 @@ export default function LuxeLayout({
                   </div>
                 </div>
               )}
-            </motion.div>
-          </section>
-        )}
-
-        {/* === FAIXA 5: PERGUNTAS FREQUENTES (FAQs) === */}
-        {hasFaqs && (
-          <section
-            className={`w-full py-16 md:py-24 px-6 md:px-12 border-t ${border}`}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true, margin: "-50px" }}
-              className="max-w-3xl mx-auto space-y-12"
-            >
-              <h2 className="text-4xl md:text-5xl font-serif italic tracking-tight opacity-90 pb-6 border-b border-current/10 w-full text-center">
-                Perguntas Frequentes
-              </h2>
-              <div className="flex flex-col">
-                {faqs.map((f: any, i: number) => (
-                  <LuxeAccordion
-                    key={i}
-                    q={f.q || f.question}
-                    a={f.a || f.answer}
-                    primary={primary}
-                    themeBorder={border}
-                  />
-                ))}
-              </div>
             </motion.div>
           </section>
         )}

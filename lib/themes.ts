@@ -3,78 +3,163 @@ export const businessThemes: Record<string, any> = {
   // ☀️ COMERCIAL (3 CLAROS + 2 ESCUROS)
   // =========================================================
 
-  // 1. LIGHT -
+  // =========================================================
+  // 🏢 COMERCIAL (8 TEMAS CLAROS + 2 ESCUROS) - Top Identity
+  // =========================================================
+
+  // --- TEMAS CLAROS (Frescos, Modernos e Elegantes) ---
+
+  // 1. PEARL LUXE (O seu original atualizado - Quente e Dourado)
   comercial_pearl: {
     label: "Comercial - Pearl Luxe",
     layout: "businessList",
-    bgPage: "bg-[#fdfcfb]", // Off-white quente e luxuoso
-    textColor: "text-[#2d2421]", // Marrom café para leitura suave
-    cardBg: "bg-white", // Card branco puro para destacar
-    border: "border-[#e5e1da]", // Borda sutil perolada
-    primary: "text-[#a38040]", // Dourado Champagne (Elegância)
-    bgSecondary: "bg-[#f4f1ea]", // Fundo de ícones em tom areia
-    bgAction: "bg-[#c5a059] text-slate-900", // Botão Dourado
+    bgPage: "bg-[#fdfcfb]", // Off-white quente
+    bgHero: "bg-gradient-to-r from-[#F4F1EA] to-[#EAE4D9]", // Capa bege
+    textColor: "text-[#2d2421]",
+    cardBg: "bg-white",
+    border: "border-[#e5e1da]",
+    primary: "text-[#a38040]",
+    bgSecondary: "bg-[#f4f1ea]",
+    bgAction: "bg-[#c5a059] text-white",
     previewColor: "linear-gradient(135deg, #fdfcfb 0%, #c5a059 100%)",
   },
 
-  // 2. LIGHT -
+  // 2. CLOUD VIOLET (O seu original atualizado - Azulado e Índigo)
   comercial_violet: {
     label: "Comercial - Cloud Violet",
     layout: "businessList",
-    bgPage: "bg-[#f8f9ff]", // Branco azulado (limpeza visual)
-    textColor: "text-[#1e1b4b]", // Azul marinho profundo
+    bgPage: "bg-[#f8f9ff]",
+    bgHero: "bg-gradient-to-r from-[#EEF2FF] to-[#E0E7FF]", // Capa azulada
+    textColor: "text-[#1e1b4b]",
     cardBg: "bg-white",
-    border: "border-[#e0e7ff]", // Borda azulada clara
-    primary: "text-[#6366f1]", // Violeta/Índigo vibrante
+    border: "border-[#e0e7ff]",
+    primary: "text-[#6366f1]",
     bgSecondary: "bg-[#eef2ff]",
     bgAction: "bg-[#4f46e5] text-white",
     previewColor: "linear-gradient(135deg, #f8f9ff 0%, #6366f1 100%)",
   },
 
-  // 3. DARK - MIDNIGHT INDIGO (Substituindo o Vermelho por um Azul Profundo)
-  // Identidade: Tecnológico, Profissional e Elegante
-  // Mix: Indigo Profundo + Ciano Elétrico + Branco Gelo
+  // 3. OCEAN CLEAR (Azul e Ciano super limpo)
   comercial_blue_dark: {
-    label: "Comercial - Digital Clear",
+    // Mantive a chave para não quebrar a sua BD
+    label: "Comercial - Ocean Clear",
     layout: "businessList",
-    bgPage: "bg-[#FDF2F8]", // Cinza azulado ultra-claro (Cor de fundo do Gemini)
-    textColor: "text-[[#4A044E]", // Cinza quase preto (Suave para leitura longa)
-    cardBg: "bg-white", // Card branco puro (Destaque total)
-    border: "border-[#FDBA74]", // Borda muito fina e discreta
-    primary: "text-[#1a73e8]", // Azul Google (Focado em tecnologia e clareza)
-    bgSecondary: "bg-[#FAE8FF]", // Fundo de ícones em azul pálido
-    bgAction: "bg-[#7E22CE] text-white", // Botão azul vibrante (Ação clara)
-    previewColor: "linear-gradient(135deg, #f0f4f8 0%, #7E22CE 100%)",
+    bgPage: "bg-[#F0F9FF]", // Fundo azul gelo
+    bgHero: "bg-gradient-to-r from-[#E0F2FE] to-[#BAE6FD]", // Capa Ciano
+    textColor: "text-[#0C4A6E]",
+    cardBg: "bg-white",
+    border: "border-[#BAE6FD]",
+    primary: "text-[#0284C7]", // Azul tech
+    bgSecondary: "bg-[#E0F2FE]",
+    bgAction: "bg-[#0284C7] text-white",
+    previewColor: "linear-gradient(135deg, #F0F9FF 0%, #0284C7 100%)",
   },
 
-  // 4. DARK - ONYX & GOLD (Estilo Luxo / High-End)
-  // Identidade: Exclusividade, Poder e Sofisticação
-  // Mix: Preto Absoluto + Ouro Champagne + Branco Gelo
+  // 4. FRESH MINT (Verde Claro e Minimalista)
   comercial_mint: {
+    label: "Comercial - Fresh Mint",
+    layout: "businessList",
+    bgPage: "bg-[#F0FDF4]",
+    bgHero: "bg-gradient-to-r from-[#D1FAE5] to-[#A7F3D0]", // Capa Verde Menta
+    textColor: "text-[#064E3B]",
+    cardBg: "bg-white",
+    border: "border-[#A7F3D0]",
+    primary: "text-[#059669]", // Verde esmeralda
+    bgSecondary: "bg-[#D1FAE5]",
+    bgAction: "bg-[#059669] text-white",
+    previewColor: "linear-gradient(135deg, #F0FDF4 0%, #059669 100%)",
+  },
+
+  // 5. PEACH SUNSET (Pêssego e Laranja Vivo)
+  comercial_peach: {
+    label: "Comercial - Peach Sunset",
+    layout: "businessList",
+    bgPage: "bg-[#FFF5F5]",
+    bgHero: "bg-gradient-to-r from-[#FFEDD5] to-[#FFCFCD]", // Capa Pêssego
+    textColor: "text-[#431407]",
+    cardBg: "bg-white",
+    border: "border-[#FFDEDD]",
+    primary: "text-[#F97316]", // Laranja Vivo
+    bgSecondary: "bg-[#FFEDD5]",
+    bgAction: "bg-[#F97316] text-white",
+    previewColor: "linear-gradient(135deg, #FFF5F5 0%, #F97316 100%)",
+  },
+
+  // 6. ROSE GOLD (Tons femininos e delicados)
+  comercial_rose: {
+    label: "Comercial - Rose Gold",
+    layout: "businessList",
+    bgPage: "bg-[#FFF1F2]",
+    bgHero: "bg-gradient-to-r from-[#FFE4E6] to-[#FECDD3]", // Capa Rosa
+    textColor: "text-[#881337]",
+    cardBg: "bg-white",
+    border: "border-[#FECDD3]",
+    primary: "text-[#E11D48]", // Rosa forte
+    bgSecondary: "bg-[#FFE4E6]",
+    bgAction: "bg-[#E11D48] text-white",
+    previewColor: "linear-gradient(135deg, #FFF1F2 0%, #E11D48 100%)",
+  },
+
+  // 7. LEMONADE (Amarelo e Mostarda vibrante)
+  comercial_lemon: {
+    label: "Comercial - Lemonade",
+    layout: "businessList",
+    bgPage: "bg-[#FEFCE8]",
+    bgHero: "bg-gradient-to-r from-[#FEF08A] to-[#FDE047]", // Capa Amarela
+    textColor: "text-[#713F12]",
+    cardBg: "bg-white",
+    border: "border-[#FEF08A]",
+    primary: "text-[#CA8A04]", // Mostarda Escuro
+    bgSecondary: "bg-[#FEF08A]",
+    bgAction: "bg-[#CA8A04] text-white",
+    previewColor: "linear-gradient(135deg, #FEFCE8 0%, #CA8A04 100%)",
+  },
+
+  // 8. MINIMAL MONOCHROME (Preto, Branco e Cinza puro)
+  comercial_mono: {
+    label: "Comercial - Minimal Mono",
+    layout: "businessList",
+    bgPage: "bg-[#F3F4F6]", // Cinza muito suave
+    bgHero: "bg-gradient-to-r from-[#E5E7EB] to-[#D1D5DB]", // Capa Cinza
+    textColor: "text-[#111827]",
+    cardBg: "bg-white",
+    border: "border-[#E5E7EB]",
+    primary: "text-[#000000]", // Preto
+    bgSecondary: "bg-[#F3F4F6]",
+    bgAction: "bg-[#000000] text-white",
+    previewColor: "linear-gradient(135deg, #F3F4F6 0%, #000000 100%)",
+  },
+
+  // --- TEMAS ESCUROS (Elegância Extrema e Contraste) ---
+
+  // 9. ONYX & GOLD (Preto Oled com Ouro)
+  comercial_obsidian: {
     label: "Comercial - Onyx & Gold",
     layout: "businessList",
-    bgPage: "bg-[#000000]", // PRETO ABSOLUTO (Oled)
-    textColor: "text-[#f8f8f8]", // Branco Gelo para leitura nítida no preto
-    cardBg: "bg-[#0d0d0d]", // Card quase preto (Sutil separação de profundidade)
-    border: "border-[#EAD900]/30", // Borda Dourada sutil (30% de opacidade para não carregar)
-    primary: "text-[#FFD700]", // Ouro Champagne (A cor que dá o brilho)
-    bgSecondary: "bg-[#1a1a1a]", // Fundo de ícones em cinza chumbo
-    bgAction: "bg-[#AFA700] text-[#000000]", // Botão Dourado com texto preto (Máxima elegância)
-    previewColor: "linear-gradient(135deg, #000000 0%, #FFD700 100%)",
+    bgPage: "bg-[#000000]",
+    bgHero: "bg-gradient-to-r from-[#171717] to-[#262626]", // Capa Cinza Chumbo
+    textColor: "text-[#FAFAFA]",
+    cardBg: "bg-[#0A0A0A]",
+    border: "border-[#27272A]",
+    primary: "text-[#FBBF24]", // Dourado
+    bgSecondary: "bg-[#18181B]",
+    bgAction: "bg-[#FBBF24] text-[#000000]",
+    previewColor: "linear-gradient(135deg, #000000 0%, #FBBF24 100%)",
   },
 
-  // 5. DARK - TECH NIGHT
+  // 10. DEEP FOREST (O seu original - Verde Noturno)
   comercial_forest: {
     label: "Comercial - Deep Forest",
     layout: "businessList",
-    bgPage: "bg-[#0d1410]", // Verde quase preto (Sólido)
-    textColor: "text-[#ecf3f0]", // Texto menta gelo
-    cardBg: "bg-[#16211b]", // Card um tom acima do fundo (profundidade)
-    border: "border-[#23352a]",
-    primary: "text-[#4ade80]", // Verde neon para "quebrar" a sobriedade
-    bgSecondary: "bg-[#23352a]",
-    bgAction: "bg-[#4ade80] text-[#0d1410]", // Botão Neon com texto escuro
-    previewColor: "linear-gradient(135deg, #0d1410 0%, #4ade80 100%)",
+    bgPage: "bg-[#052E16]", // Verde muito escuro
+    bgHero: "bg-gradient-to-r from-[#064E3B] to-[#065F46]", // Capa Esmeralda
+    textColor: "text-[#ECFDF5]",
+    cardBg: "bg-[#064E3B]",
+    border: "border-[#047857]",
+    primary: "text-[#34D399]", // Verde Menta vibrante
+    bgSecondary: "bg-[#047857]",
+    bgAction: "bg-[#34D399] text-[#052E16]",
+    previewColor: "linear-gradient(135deg, #052E16 0%, #34D399 100%)",
   },
 
   // =========================================================
@@ -182,6 +267,53 @@ export const businessThemes: Record<string, any> = {
     bgSecondary: "bg-[#F7F5FC]",
     bgAction: "bg-[#8267A6] text-white",
     previewColor: "linear-gradient(135deg, #F7F5FC 0%, #EDE7F5 100%)",
+  },
+  // 8. PLATINUM MIST (Moda de Alta Costura, Joalharia Prata, Minimalismo)
+  luxe_platinum: {
+    label: "Luxe - Platinum Mist",
+    layout: "editorial",
+    bgPage: "bg-[#F8F9FA]", // Cinza gelo quase branco
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F1F3F5] to-[#E2E8F0]", // Degradê prateado
+    textColor: "text-[#334155]", // Chumbo elegante
+    subTextColor: "text-[#334155]/70",
+    cardBg: "bg-white",
+    border: "border-[#E2E8F0]",
+    primary: "text-[#64748B]", // Prata/Cinza escuro nos ícones
+    bgSecondary: "bg-[#F1F3F5]",
+    bgAction: "bg-[#475569] text-white", // Botão Chumbo forte
+    previewColor: "linear-gradient(135deg, #F1F3F5 0%, #E2E8F0 100%)",
+  },
+
+  // 9. PEACH SILK (Skincare, Cosméticos, Moda Praia, Acolhedor)
+  luxe_peach: {
+    label: "Luxe - Peach Silk",
+    layout: "editorial",
+    bgPage: "bg-[#FFFAF8]", // Off-white puxado para um pêssego muito pálido
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FFF1E6] to-[#FCD5CE]", // Degradê sedoso Pêssego/Coral
+    textColor: "text-[#5D4037]", // Castanho café para contraste suave
+    subTextColor: "text-[#5D4037]/70",
+    cardBg: "bg-white",
+    border: "border-[#F8EDEB]",
+    primary: "text-[#F08080]", // Coral suave nos ícones
+    bgSecondary: "bg-[#FFF1E6]",
+    bgAction: "bg-[#F08080] text-white", // Botão Coral
+    previewColor: "linear-gradient(135deg, #FFF1E6 0%, #FCD5CE 100%)",
+  },
+
+  // 10. MATCHA SAGE (Produtos Orgânicos, Spas, Sustentabilidade)
+  luxe_sage: {
+    label: "Luxe - Matcha Sage",
+    layout: "editorial",
+    bgPage: "bg-[#F9FAF8]", // Fundo natural quase branco
+    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F2F5F0] to-[#CCD5AE]", // Degradê chá verde/matcha
+    textColor: "text-[#283618]", // Verde musgo profundo para texto
+    subTextColor: "text-[#283618]/70",
+    cardBg: "bg-white",
+    border: "border-[#E9EDC9]",
+    primary: "text-[#606C38]", // Verde Sálvia
+    bgSecondary: "bg-[#F2F5F0]",
+    bgAction: "bg-[#606C38] text-white", // Botão verde terroso
+    previewColor: "linear-gradient(135deg, #F2F5F0 0%, #CCD5AE 100%)",
   },
 
   // 1. VIBRANT VIOLET (Igual à sua imagem de referência!)
@@ -399,80 +531,164 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #451a03 0%, #9a3412 100%)",
   },
   // =========================================================
-  // 🏛️ SHOWROOM (3 CLAROS + 2 ESCUROS)
+  // 🏛️ SHOWROOM (8 TEMAS CLAROS + 2 ESCUROS) - ESTILO GMB
   // =========================================================
-  // 1. Showroom Clean (Vibe: Apple, Minimalismo Absoluto, Tech)
+
+  // --- TEMAS CLAROS (Focados em Legibilidade e Confiança) ---
+
+  // 1. SHOWROOM GOOGLE (Inspirado no visual limpo do Google Workspace)
   showroom_clean: {
-    label: "Showroom - Clean",
+    label: "Showroom - Blue Trust",
     layout: "showroom",
-    bgPage: "bg-[#FFFFFF]",
-    cardBg: "bg-[#F9FAFB]",
-    textColor: "text-[#111827]",
-    subTextColor: "text-[#6B7280]",
+    bgPage: "bg-[#F3F4F6]", // Fundo cinza super claro (padrão de apps)
+    bgHero: "bg-gradient-to-r from-[#1A73E8] to-[#4285F4]", // Azul corporativo do Google
+    textColor: "text-[#1F2937]", // Texto chumbo escuro
+    cardBg: "bg-[#FFFFFF]", // Cartões brancos para destaque
     border: "border-[#E5E7EB]",
-    primary: "text-[#000000]",
-    bgSecondary: "bg-[#F3F4F6]",
-    bgAction: "bg-[#000000] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
-    previewColor: "linear-gradient(135deg, #FFFFFF 0%, #E5E7EB 100%)",
+    primary: "text-[#1A73E8]", // Azul nos ícones
+    bgSecondary: "bg-[#F9FAFB]", // Fundo de badges cinza extra-claro
+    bgAction: "bg-[#1A73E8] text-white", // Botão Azul
+    previewColor: "linear-gradient(135deg, #1A73E8 0%, #4285F4 100%)",
   },
 
-  // 2. Showroom Latte (Vibe: Estúdios de Arquitetura, Móveis Planejados)
+  // 2. SHOWROOM VIBRANT ORANGE (Para Serviços Dinâmicos, Delivery, Oficinas)
   showroom_latte: {
-    label: "Showroom - Latte",
+    // Chave mantida
+    label: "Showroom - Vibrant Orange",
     layout: "showroom",
-    bgPage: "bg-[#FDFBF7]",
+    bgPage: "bg-[#FFF7ED]", // Fundo laranja ultra pálido
+    bgHero: "bg-gradient-to-r from-[#EA580C] to-[#F97316]", // Laranja forte na capa
+    textColor: "text-[#431407]",
     cardBg: "bg-[#FFFFFF]",
-    textColor: "text-[#433831]",
-    subTextColor: "text-[#8A7E76]",
-    border: "border-[#E8E2D9]",
-    primary: "text-[#B48E6D]",
-    bgSecondary: "bg-[#F4EFE6]",
-    bgAction: "bg-[#B48E6D] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
-    previewColor: "linear-gradient(135deg, #FDFBF7 0%, #B48E6D 100%)",
+    border: "border-[#FFEDD5]",
+    primary: "text-[#EA580C]",
+    bgSecondary: "bg-[#FFEDD5]",
+    bgAction: "bg-[#EA580C] text-white",
+    previewColor: "linear-gradient(135deg, #EA580C 0%, #F97316 100%)",
   },
 
-  // 3. Showroom Cloud (Vibe: Clínicas, Odonto, Startups B2B)
+  // 3. SHOWROOM EMERALD (Saúde, Natureza, Bem-estar, Clínicas)
   showroom_cloud: {
-    label: "Showroom - Cloud",
+    // Chave mantida
+    label: "Showroom - Fresh Emerald",
     layout: "showroom",
-    bgPage: "bg-[#F4F7FB]",
+    bgPage: "bg-[#ECFDF5]", // Fundo verde menta clarinho
+    bgHero: "bg-gradient-to-r from-[#059669] to-[#10B981]", // Capa esmeralda
+    textColor: "text-[#064E3B]",
     cardBg: "bg-[#FFFFFF]",
-    textColor: "text-[#0F172A]",
-    subTextColor: "text-[#64748B]",
-    border: "border-[#CBD5E1]",
-    primary: "text-[#0284C7]",
-    bgSecondary: "bg-[#E2E8F0]",
-    bgAction: "bg-[#0284C7] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
-    previewColor: "linear-gradient(135deg, #F4F7FB 0%, #0284C7 100%)",
+    border: "border-[#D1FAE5]",
+    primary: "text-[#059669]",
+    bgSecondary: "bg-[#D1FAE5]",
+    bgAction: "bg-[#059669] text-white",
+    previewColor: "linear-gradient(135deg, #059669 0%, #10B981 100%)",
   },
 
-  // 4. Showroom SaaS (Vibe: Dark Mode de Aplicativos, Agências de Marketing)
+  // 4. SHOWROOM INDIGO (Advogados, Imobiliárias, Agências)
   showroom_saas: {
-    label: "Showroom - SaaS",
+    // Chave mantida
+    label: "Showroom - Deep Indigo",
     layout: "showroom",
-    bgPage: "bg-[#09090B]",
-    cardBg: "bg-[#18181B]",
-    textColor: "text-[#FAFAFA]",
-    subTextColor: "text-[#A1A1AA]",
-    border: "border-[#27272A]",
-    primary: "text-[#3B82F6]",
-    bgSecondary: "bg-[#27272A]",
-    bgAction: "bg-[#3B82F6] text-white", // 🚀 AJUSTE DE CONTRASTE AQUI
-    previewColor: "linear-gradient(135deg, #09090B 0%, #3B82F6 100%)",
+    bgPage: "bg-[#EEF2FF]", // Azul índigo muito suave
+    bgHero: "bg-gradient-to-r from-[#4338CA] to-[#6366F1]", // Capa roxa/índigo
+    textColor: "text-[#312E81]",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-[#E0E7FF]",
+    primary: "text-[#4F46E5]",
+    bgSecondary: "bg-[#E0E7FF]",
+    bgAction: "bg-[#4F46E5] text-white",
+    previewColor: "linear-gradient(135deg, #4338CA 0%, #6366F1 100%)",
   },
 
-  // 5. Showroom Obsidian (Vibe: Estúdios Premium, Fotografia, Tech Luxo)
-  showroom_obsidian: {
-    label: "Showroom - Obsidian",
+  // 5. SHOWROOM RUBY (Beleza, Estética, Docerias)
+  showroom_ruby: {
+    label: "Showroom - Ruby Blush",
     layout: "showroom",
-    bgPage: "bg-[#000000]",
-    cardBg: "bg-[#0A0A0A]",
-    textColor: "text-[#E4E4E7]",
-    subTextColor: "text-[#71717A]",
-    border: "border-[#27272A]",
-    primary: "text-[#FFFFFF]",
-    bgSecondary: "bg-[#18181B]",
-    bgAction: "bg-[#FFFFFF] text-slate-900", // 🚀 AJUSTE DE CONTRASTE AQUI
-    previewColor: "linear-gradient(135deg, #000000 0%, #27272A 100%)",
+    bgPage: "bg-[#FFF1F2]", // Fundo rosa muito claro
+    bgHero: "bg-gradient-to-r from-[#E11D48] to-[#F43F5E]", // Capa rosa/cereja vibrante
+    textColor: "text-[#881337]",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-[#FFE4E6]",
+    primary: "text-[#E11D48]", // Rosa escuro
+    bgSecondary: "bg-[#FFE4E6]",
+    bgAction: "bg-[#E11D48] text-white",
+    previewColor: "linear-gradient(135deg, #E11D48 0%, #F43F5E 100%)",
+  },
+
+  // 6. SHOWROOM SAND (Arquitetura, Padarias, Produtos Naturais)
+  showroom_sand: {
+    label: "Showroom - Golden Sand",
+    layout: "showroom",
+    bgPage: "bg-[#FEFCE8]", // Fundo amarelo/bege super suave
+    bgHero: "bg-gradient-to-r from-[#D97706] to-[#F59E0B]", // Capa mostarda/ouro
+    textColor: "text-[#78350F]",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-[#FEF08A]",
+    primary: "text-[#D97706]", // Mostarda escuro
+    bgSecondary: "bg-[#FEF08A]",
+    bgAction: "bg-[#D97706] text-white",
+    previewColor: "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)",
+  },
+
+  // 7. SHOWROOM LILAC (Psicologia, Lojas Criativas, Marcas Teen)
+  showroom_lilac: {
+    label: "Showroom - Lilac Dream",
+    layout: "showroom",
+    bgPage: "bg-[#FAF5FF]", // Fundo lilás quase invisível
+    bgHero: "bg-gradient-to-r from-[#9333EA] to-[#A855F7]", // Capa roxa/lavanda
+    textColor: "text-[#581C87]",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-[#F3E8FF]",
+    primary: "text-[#9333EA]", // Lilás forte
+    bgSecondary: "bg-[#F3E8FF]",
+    bgAction: "bg-[#9333EA] text-white",
+    previewColor: "linear-gradient(135deg, #9333EA 0%, #A855F7 100%)",
+  },
+
+  // 8. SHOWROOM AQUA (Turismo, Limpeza, Piscinas, Odonto)
+  showroom_aqua: {
+    label: "Showroom - Aqua Splash",
+    layout: "showroom",
+    bgPage: "bg-[#F0FDFA]", // Fundo turquesa bebê
+    bgHero: "bg-gradient-to-r from-[#0D9488] to-[#14B8A6]", // Capa Teal/Aqua
+    textColor: "text-[#134E4A]",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-[#CCFBF1]",
+    primary: "text-[#0D9488]", // Turquesa escuro
+    bgSecondary: "bg-[#CCFBF1]",
+    bgAction: "bg-[#0D9488] text-white",
+    previewColor: "linear-gradient(135deg, #0D9488 0%, #14B8A6 100%)",
+  },
+
+  // --- TEMAS ESCUROS (Focados em Elegância e Alto Contraste) ---
+
+  // 9. SHOWROOM LUXE DARK (Barbearias, Estúdios VIP, Baladas)
+  showroom_obsidian: {
+    // Chave mantida
+    label: "Showroom - Night Obsidian",
+    layout: "showroom",
+    bgPage: "bg-[#0A0A0A]", // Fundo preto absoluto
+    bgHero: "bg-gradient-to-r from-[#171717] to-[#262626]", // Capa cinza chumbo
+    textColor: "text-[#F3F4F6]",
+    cardBg: "bg-[#171717]", // Cartões em chumbo para destacar do fundo preto
+    border: "border-[#374151]",
+    primary: "text-[#A78BFA]", // Roxo neon para dar o contraste "dark mode"
+    bgSecondary: "bg-[#1F2937]",
+    bgAction: "bg-[#A78BFA] text-[#0A0A0A]", // Botão roxo texto preto
+    previewColor: "linear-gradient(135deg, #171717 0%, #A78BFA 100%)",
+  },
+
+  // 10. SHOWROOM CRIMSON (Tatuadores, Hamburguerias Artesanais, Bares)
+  showroom_crimson: {
+    label: "Showroom - Midnight Crimson",
+    layout: "showroom",
+    bgPage: "bg-[#111111]", // Fundo quase preto (tom carvão)
+    bgHero: "bg-gradient-to-r from-[#7F1D1D] to-[#9F1239]", // Capa vermelho escuro sangue
+    textColor: "text-[#FEE2E2]",
+    cardBg: "bg-[#1C1917]", // Cartões em tom carvão levemente quente
+    border: "border-[#451A03]", // Borda rústica
+    primary: "text-[#F43F5E]", // Rosa/Vermelho brilhante nos detalhes
+    bgSecondary: "bg-[#292524]",
+    bgAction: "bg-[#F43F5E] text-white", // Botão vermelho vibrante
+    previewColor: "linear-gradient(135deg, #7F1D1D 0%, #F43F5E 100%)",
   },
 };
