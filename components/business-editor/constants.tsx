@@ -9,6 +9,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Hamburguer",
     "Pizza",
     "Japonesa",
+    "Lanches",
     "Churrasco",
     "Marmita",
     "Comida Saudavel",
@@ -77,6 +78,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
   Profissionais: [
     "Advogado",
     "Contador",
+    "Chaveiro",
     "Arquiteto",
     "Engenheiro",
     "Imobiliaria",
