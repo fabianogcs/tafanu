@@ -11,6 +11,7 @@ import {
   Home,
   Lock,
   Briefcase,
+  Target,
 } from "lucide-react";
 import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
@@ -155,13 +156,24 @@ export default async function DashboardLayout({
                   </Link>
 
                   {(isAdmin || isAfiliado) && (
-                    <Link
-                      href="/dashboard/novo"
-                      className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
-                    >
-                      <PlusCircle size={20} />
-                      <span className="text-sm">Novo Negócio</span>
-                    </Link>
+                    <>
+                      <Link
+                        href="/dashboard/novo"
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
+                      >
+                        <PlusCircle size={20} />
+                        <span className="text-sm">Novo Negócio</span>
+                      </Link>
+
+                      {/* 🚀 NOVO: BOTÃO DO FUNIL */}
+                      <Link
+                        href="/dashboard/funil"
+                        className="flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
+                      >
+                        <Target size={20} />
+                        <span className="text-sm">Funil de Vendas</span>
+                      </Link>
+                    </>
                   )}
 
                   <Link

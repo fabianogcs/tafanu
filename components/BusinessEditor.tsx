@@ -811,59 +811,60 @@ export default function BusinessEditor({
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
             <AnimatePresence>
               {!isPublished && !isLoading && (
-                <motion.button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setIsPublished(true);
-                    handleUpdate(true);
-                  }}
-                  initial={{ y: 5, opacity: 0 }}
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 5, opacity: 0 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-rose-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center gap-2 border border-rose-400 hover:bg-rose-600 transition-colors cursor-pointer group"
+                  exit={{ y: 10, opacity: 0 }}
+                  className="w-full bg-rose-50 border border-rose-200 p-5 rounded-[2rem] shadow-lg flex flex-col items-center text-center gap-4"
                 >
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse shrink-0" />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-1">
-                    Status: Pausado
-                    <span className="hidden group-hover:inline ml-1 opacity-80">
-                      • Clique para Publicar
-                    </span>
-                  </span>
-                </motion.button>
+                  <div className="flex items-center gap-2 text-rose-600 font-black uppercase text-xs tracking-widest">
+                    <Power size={18} /> Vitrine Offline
+                  </div>
+                  <p className="text-xs text-rose-700 font-semibold leading-relaxed px-4">
+                    Este negócio está invisível para o público. Deseja
+                    reativá-lo para aparecer nas buscas antes de salvar?
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsPublished(true);
+                      toast.success(
+                        "Marcado para ficar Online! Clique em Gravar Mudanças.",
+                      );
+                    }}
+                    className="w-full md:w-auto px-8 bg-emerald-500 text-white py-3 rounded-xl shadow-md font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex justify-center items-center gap-2"
+                  >
+                    <Eye size={16} /> Deixar Online
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
+
             <button
               onClick={() => handleUpdate()}
               disabled={isLoading || !hasChanges}
               className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic ${
                 isLoading || (!hasChanges && !isNew)
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  : !isPublished
-                    ? "bg-slate-700 text-slate-300 shadow-xl active:scale-95"
-                    : "bg-slate-900 text-white hover:bg-indigo-600 shadow-2xl active:scale-95"
+                  : "bg-slate-900 text-white hover:bg-indigo-600 shadow-2xl active:scale-95"
               }`}
             >
               {isLoading ? (
                 <Loader2 className="animate-spin" size={18} />
               ) : !hasChanges && !isNew ? (
                 <CheckCircle2 size={20} className="text-slate-400" />
-              ) : isPublished ? (
-                <CheckCircle2 size={20} />
               ) : (
-                <Power size={20} />
+                <Save size={20} />
               )}
 
               {isLoading
                 ? "Salvando..."
                 : !hasChanges && !isNew
                   ? "Tudo Atualizado"
-                  : isPublished
-                    ? isNew
-                      ? "Criar Perfil"
-                      : "Gravar Mudanças"
-                    : "Salvar em Modo Offline"}
+                  : isNew
+                    ? "Criar Perfil"
+                    : "Gravar Mudanças"}
             </button>
           </div>
         </div>

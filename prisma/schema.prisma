@@ -144,6 +144,8 @@ model Business {
   subscriptionStatus String?        @default("inactive") // ⬅️ NOVO: 'active', 'past_due', 'cancelled'
   expiresAt           DateTime?      // ⬅️ NOVO: Transferido do User
   mpSubscriptionId    String?        // ⬅️ NOVO: Transferido do User
+
+  etapaFunil         Int            @default(1)
   
   published           Boolean        @default(true) 
   isActive            Boolean        @default(true) 
