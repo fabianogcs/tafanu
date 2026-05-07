@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import FunilBoard from "@/components/FunilBoard"; // Importamos seu componente
+import FunilBoard from "@/components/FunilBoard";
 import CriarLeadForm from "@/components/CriarLeadForm";
 
 export default async function FunilPage() {
@@ -13,17 +13,20 @@ export default async function FunilPage() {
     select: { role: true },
   });
 
+  // Trava blindada: Se não for Admin nem Afiliado, joga para o painel
   if (currentUser?.role !== "ADMIN" && currentUser?.role !== "AFILIADO") {
     redirect("/dashboard");
   }
 
-  const isAdmin = currentUser.role === "ADMIN";
+  const isAdmin = currentUser?.role === "ADMIN";
 
+  // Busca os negócios do funil
   const leads = await db.business.findMany({
     where: {
       user: {
         email: { endsWith: "@tafanu.com.br" },
-        ...(isAdmin ? { affiliateId: null } : { affiliateId: session.user.id }),
+        // A MÁGICA SIMPLIFICADA: Se for Admin, busca os sem dono (null). Se for Afiliado, busca os dele.
+        affiliateId: isAdmin ? null : session.user.id,
       },
     },
     include: {
@@ -44,9 +47,10 @@ export default async function FunilPage() {
       <p className="text-sm font-semibold text-gray-400 mb-8">
         Painel de acompanhamento e prospecção de parceiros.
       </p>
-      {/* ⬅️ 2. SÓ MOSTRA O FORMULÁRIO SE FOR ADMIN */}
+
+      {/* Somente o Admin vê o gerador relâmpago */}
       {isAdmin && <CriarLeadForm />}
-      {/* 🚀 O COMPONENTE MÁGICO ENTRA AQUI */}
+
       <FunilBoard leads={leads} />
     </div>
   );
