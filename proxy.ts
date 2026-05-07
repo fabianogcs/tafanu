@@ -91,12 +91,12 @@ export const proxy = auth((req) => {
     const isDono = emailSessao === donoEmail;
 
     // 🚀 O SEGREDO: Delegamos a segurança real para as páginas (Server Components)
-    // porque elas olham direto no banco de dados e nunca falham.
     if (
       pathname === "/dashboard" ||
       pathname.startsWith("/dashboard/editar") ||
       pathname.startsWith("/dashboard/perfil") ||
-      pathname.startsWith("/dashboard/novo")
+      pathname.startsWith("/dashboard/novo") ||
+      pathname.startsWith("/dashboard/funil") // 🚀 FUNIL ADICIONADO AQUI NA LISTA VIP!
     ) {
       return NextResponse.next();
     }
