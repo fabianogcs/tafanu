@@ -41,6 +41,7 @@ import {
   Check,
   CalendarPlus,
   MessageCircle, // 🚀 NOVO: Ícone adicionado para o botão de WhatsApp
+  KeyRound,
 } from "lucide-react";
 
 import {
@@ -57,6 +58,7 @@ import {
   deleteComment,
   assignUserToAffiliate,
   adminActivateVisitor,
+  forceResetPasswordAdmin,
 } from "@/app/actions";
 
 type AdminData = {
@@ -241,6 +243,16 @@ export default function AdminDashboard({
   };
 
   // --- AÇÕES ---
+  const handleResetPassword = (userId: string, name: string) => {
+    if (!confirm(`Redefinir a senha de ${name.toUpperCase()} para 'mudar123'?`))
+      return;
+
+    startTransition(async () => {
+      const res = await forceResetPasswordAdmin(userId);
+      res.success ? toast.success(res.message) : toast.error(res.error);
+    });
+  };
+
   const handleBan = (userId: string, name: string) => {
     if (
       !confirm(
@@ -1356,19 +1368,33 @@ export default function AdminDashboard({
               </div>
 
               {/* Ação de banir e promover parceiro */}
-              <div className="pt-4 border-t border-slate-100 flex gap-2">
+              {/* Ação de resetar, banir e promover parceiro */}
+              <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
                 <button
-                  onClick={() => setPromotingUser(selectedUser)}
-                  className="flex-1 px-3 py-3 bg-amber-50 text-amber-600 rounded-xl text-[11px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all border border-amber-100 flex items-center justify-center gap-1.5"
+                  onClick={() =>
+                    handleResetPassword(selectedUser.id, selectedUser.name)
+                  }
+                  className="w-full px-3 py-3 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all border border-blue-100 flex items-center justify-center gap-1.5"
+                  title="Redefine a senha para 'mudar123'"
                 >
-                  <Award size={13} /> Promover a Parceiro
+                  <KeyRound size={14} /> Forçar Senha para 'mudar123'
                 </button>
-                <button
-                  onClick={() => handleBan(selectedUser.id, selectedUser.name)}
-                  className="flex-1 px-3 py-3 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-1.5"
-                >
-                  <Gavel size={13} /> Banir Usuário
-                </button>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={() => setPromotingUser(selectedUser)}
+                    className="flex-1 px-3 py-3 bg-amber-50 text-amber-600 rounded-xl text-[11px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all border border-amber-100 flex items-center justify-center gap-1.5"
+                  >
+                    <Award size={13} /> Promover a Parceiro
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleBan(selectedUser.id, selectedUser.name)
+                    }
+                    className="flex-1 px-3 py-3 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-1.5"
+                  >
+                    <Gavel size={13} /> Banir Usuário
+                  </button>
+                </div>
               </div>
             </div>
           </div>

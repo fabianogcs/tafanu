@@ -2324,7 +2324,34 @@ export async function unbanUserAction(userId: string) {
     return { error: "Erro ao desbanir usuário." };
   }
 }
+// ==============================================================================
+// 🛠️ ADMIN: RESET DE SENHA MANUAL
+// ==============================================================================
+export async function forceResetPasswordAdmin(userId: string) {
+  // 1. Trava de segurança: só você (Admin) pode rodar isso
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Acesso negado." };
 
+  try {
+    // Verifica se o usuário não é você mesmo (evita travamento acidental da própria conta)
+    if (userId === adminId) {
+      return { error: "Você não pode resetar a própria senha por aqui." };
+    }
+
+    // A senha padrão definida é sempre 'mudar123'
+    const hashedPassword = await hash("mudar123", 10);
+
+    await db.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { success: true, message: "Senha redefinida para 'mudar123'!" };
+  } catch (error) {
+    console.error("Erro ao resetar senha:", error);
+    return { error: "Falha ao resetar a senha no banco de dados." };
+  }
+}
 // 🚀 ATUALIZAÇÃO: Mudamos o nome e agora ela pede o 'businessId'
 export async function adminAddExactDaysToBusiness(
   businessId: string,
