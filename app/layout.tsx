@@ -29,6 +29,12 @@ export const metadata: Metadata = {
     "empresas",
   ],
   applicationName: "Tafanu",
+
+  // 🚀 AQUI ESTÁ A CHAVE DE MESTRE DO GOOGLE SEARCH CONSOLE:
+  verification: {
+    google: "-kDSLFRyjNWv42JCNpcfI92VMIaB-TyRAuZxMTnXlbY",
+  },
+
   openGraph: {
     title: "TAFANU | Descubra e Conecte-se",
     description:
