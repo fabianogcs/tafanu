@@ -50,7 +50,7 @@ export default function Hero() {
         </h1>
 
         <p className="text-base md:text-xl text-slate-400 max-w-2xl mx-auto mb-8 md:mb-10 font-medium leading-relaxed relative z-20 opacity-90 animate-in fade-in duration-700 delay-200">
-          Conectamos você aos melhores serviços, empresas e profissionais.
+          Conectamos você aos melhores serviços, comércios e profissionais.
         </p>
 
         {/* 🚀 NOVA BARRA DE PESQUISA "SINGLE PILL" */}
