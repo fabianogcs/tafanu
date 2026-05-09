@@ -21,15 +21,7 @@ export const metadata: Metadata = {
   },
 };
 
-/* 🚀 A MÁGICA DO CACHE (ISR): 
-   A Vercel vai salvar essa página na memória (Edge Network). 
-   Ela vai no Prisma/Neon buscar empresas novas apenas 1 vez por hora (3600 segundos).
-   Para o usuário, o site vai abrir em 0.01s! */
-export const revalidate = 3600;
-
 export default async function Home() {
-  // 🚀 Removido o 'await auth()' que estava forçando o site a ser dinâmico e lento!
-
   // Busca Tudo Paralelamente
   const [activeCategories, onlineMarketplaceData, trendingBusinesses] =
     await Promise.all([

@@ -5,8 +5,8 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
   if (!businesses || businesses.length === 0) return null;
 
   return (
-    /* 🚀 SEM ANIMAÇÃO DE LAYOUT: Voltamos para o espaçamento sólido e perfeito */
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-20 md:pt-16 md:pb-24 animate-in fade-in duration-700 delay-400">
+    /* 🚀 DESCENDO MAIS: Usamos mt-[220px] no desktop para descolar bem do Hero */
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 md:mt-40 lg:mt-[220px] pt-10 pb-20 md:pt-16 md:pb-24 animate-in fade-in duration-700 delay-400">
       {/* CABEÇALHO DA SESSÃO */}
       <div className="flex items-center gap-3 md:gap-4 mb-8 md:mb-10">
         <div className="bg-orange-100 p-2.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm">

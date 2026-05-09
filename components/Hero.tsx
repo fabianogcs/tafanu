@@ -22,14 +22,13 @@ export default function Hero() {
   };
 
   return (
-    /* 🚀 A MÁGICA: Adicionamos transition-all duration-500 ease-in-out.
-   Isso suaviza as mudanças de pb-40 para pb-[280px] e pb-[320px]! */
-    <section className="relative bg-[#050B14] overflow-hidden pt-8 pb-40 md:pt-20 lg:pt-24 md:pb-[280px] lg:pb-[320px] border-b border-white/5">
+    /* 🚀 CIRURGIA 1: Aumentamos o pb-[clamp(...)] para o fundo escuro descer mais sem empurrar o texto. */
+    <section className="relative bg-[#050B14] overflow-hidden pt-8 md:pt-20 lg:pt-24 pb-[clamp(200px,35vw,380px)] border-b border-white/5">
       {/* 1. FUNDO PREMIUM VETORIAL */}
       <div
         className="absolute inset-0 z-0 opacity-[0.03] mix-blend-screen pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       />
 
@@ -54,22 +53,19 @@ export default function Hero() {
           Conectamos você aos melhores serviços, empresas e profissionais.
         </p>
 
-        {/* Barra de Pesquisa */}
+        {/* 🚀 NOVA BARRA DE PESQUISA "SINGLE PILL" */}
         <form
           onSubmit={handleSearch}
           role="search"
           aria-label="Buscar serviços locais"
-          className="relative z-30 w-full max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-3 md:gap-3 bg-[#0A1220] border border-white/10 p-3 md:p-3 rounded-[1.5rem] md:rounded-[2.5rem] shadow-2xl shadow-black/50 transition-all hover:border-white/20 focus-within:border-tafanu-action/50 focus-within:bg-[#0D172A] focus-within:shadow-[0_0_50px_rgba(45,212,191,0.15)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300"
+          className="relative z-30 w-full max-w-4xl mx-auto flex items-center bg-[#0A1220] border border-white/10 p-1.5 md:p-2 rounded-2xl md:rounded-full shadow-2xl shadow-black/50 transition-all hover:border-white/20 focus-within:border-tafanu-action/50 focus-within:bg-[#0D172A] focus-within:ring-4 focus-within:ring-tafanu-action/10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300"
         >
           <label
             htmlFor="hero-search"
-            /* 🚀 AQUI ESTÁ A CORREÇÃO DO MOBILE:
-               Devolvemos o 'bg-[#132035]' e 'rounded-xl' SÓ para o celular.
-               E aumentamos a altura de h-12 para h-14 para ficar melhor para o toque! */
-            className="w-full h-14 md:h-16 flex items-center px-4 md:px-6 bg-[#132035] rounded-xl md:bg-transparent md:rounded-none cursor-text"
+            className="flex-1 h-12 md:h-14 flex items-center pl-4 md:pl-6 cursor-text"
           >
             <Search
-              className="text-tafanu-action/70 w-5 h-5 md:w-6 md:h-6 mr-3 md:mr-4 shrink-0"
+              className="text-slate-400 focus-within:text-tafanu-action w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3 shrink-0 transition-colors"
               aria-hidden="true"
             />
             <input
@@ -78,7 +74,7 @@ export default function Hero() {
               autoComplete="off"
               type="text"
               aria-label="O que você está procurando?"
-              placeholder="Ex: Pizzaria, Salão de Beleza..."
+              placeholder="Pizzaria, Salão de Beleza..."
               className="w-full h-full !bg-transparent border-none outline-none focus:ring-0 text-white placeholder-slate-500 font-medium text-sm md:text-lg appearance-none shadow-none"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -90,27 +86,26 @@ export default function Hero() {
             type="submit"
             disabled={isSearching}
             aria-label="Realizar pesquisa"
-            /* 🚀 Aumentamos a altura (h-14) no mobile para ficar simétrico com o input */
-            className="w-full md:w-auto bg-tafanu-action hover:bg-gradient-to-r hover:from-tafanu-action hover:to-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-2xl px-6 md:px-12 h-14 md:h-16 shadow-[0_0_30px_rgba(45,212,191,0.2)] transform transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 uppercase tracking-[0.15em] text-sm md:text-base shrink-0 md:border-l md:border-white/10 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="bg-tafanu-action hover:bg-gradient-to-r hover:from-tafanu-action hover:to-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-full px-5 md:px-10 h-10 md:h-14 flex items-center justify-center gap-2 uppercase tracking-[0.1em] text-xs md:text-sm shrink-0 transition-all duration-300 hover:scale-[1.03] active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isSearching ? (
-              <>
-                <Loader2
-                  size={18}
-                  strokeWidth={3}
-                  className="animate-spin md:w-5 md:h-5"
-                />
-                <span>Buscando...</span>
-              </>
+              <Loader2
+                size={18}
+                strokeWidth={3}
+                className="animate-spin md:w-5 md:h-5"
+              />
             ) : (
-              <span>Pesquisar</span>
+              <>
+                <span className="md:hidden">Buscar</span>
+                <span className="hidden md:inline">Pesquisar</span>
+              </>
             )}
           </button>
         </form>
       </div>
 
-      {/* 🚀 SETINHA AJUSTADA: Aumentamos o bottom no md e lg para ela subir no desktop */}
-      <div className="absolute bottom-6 md:bottom-10 lg:bottom-12 left-0 w-full flex justify-center z-20 animate-bounce">
+      {/* 🚀 CIRURGIA 2: A setinha caiu de bottom-14 para bottom-8 no mobile e bottom-10 no PC */}
+      <div className="absolute bottom-8 md:bottom-10 lg:bottom-10 left-0 w-full flex justify-center z-20 animate-bounce">
         <button
           onClick={handleScrollDown}
           type="button"

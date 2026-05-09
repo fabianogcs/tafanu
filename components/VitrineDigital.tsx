@@ -25,7 +25,8 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
   const activeData = data.find((d) => d.category === activeTab);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-16 md:pt-8 md:pb-24 relative overflow-hidden z-10">
+    /* 🚀 SUBINDO A VITRINE: Usamos margem negativa (-mt-8 e -mt-16) para puxar a seção para cima e colar nos Mais Buscados */
+    <section className="max-w-7xl mx-auto px-4 md:px-6 -mt-4 md:-mt-8 lg:-mt-16 pt-4 pb-16 md:pt-8 md:pb-24 relative overflow-hidden z-10">
       {/* Brilho de Fundo Suave */}
       <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-emerald-400/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
