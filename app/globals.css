@@ -27,3 +27,13 @@ main {
 .report-container {
   background: none !important;
 }
+/* 🚀 MATA O FANTASMA DO CHROME: 
+   Impede que o navegador injete fundos cinzas/amarelos em inputs 
+   e garante que o texto continue branco mesmo se ele tentar auto-completar */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 5000s ease-in-out 0s !important;
+  -webkit-text-fill-color: white !important;
+}

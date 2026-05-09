@@ -5,9 +5,8 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
   if (!businesses || businesses.length === 0) return null;
 
   return (
-    /* 🚀 CORREÇÃO DE ESPAÇAMENTO: Adicionamos md:mt-[100px] e lg:mt-[160px] 
-       para empurrar a seção para baixo no PC, compensando a subida das categorias! */
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-20 md:pt-16 md:pb-24 md:mt-[100px] lg:mt-[270px] animate-in fade-in duration-700 delay-400">
+    /* 🚀 SEM ANIMAÇÃO DE LAYOUT: Voltamos para o espaçamento sólido e perfeito */
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-20 md:pt-16 md:pb-24 animate-in fade-in duration-700 delay-400">
       {/* CABEÇALHO DA SESSÃO */}
       <div className="flex items-center gap-3 md:gap-4 mb-8 md:mb-10">
         <div className="bg-orange-100 p-2.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm">
@@ -23,17 +22,15 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
         </div>
       </div>
 
-      {/* 🚀 GRID DE CARTÕES */}
+      {/* GRID DE CARTÕES SÓLIDA */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         {businesses.map((biz) => (
           <Link
             href={`/site/${biz.slug}`}
             key={biz.id}
-            className="group relative bg-white border border-slate-100 p-4 md:p-8 rounded-2xl md:rounded-[2rem] transition-all duration-500 flex flex-col h-full hover:-translate-y-2 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(2,48,89,0.12)] hover:border-slate-200"
+            className="group relative bg-white border border-slate-100 p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col h-full overflow-hidden shadow-sm hover:border-slate-200 hover:-translate-y-2 transition-all duration-500"
           >
-            {/* 1. DESTAQUE DO LOGO E SETA */}
             <div className="flex justify-between items-start mb-4 md:mb-6">
-              {/* SUPER LOGO */}
               <div className="w-14 h-14 md:w-20 md:h-20 bg-white rounded-xl md:rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm group-hover:shadow-md group-hover:border-[#F28705]/30 transition-all duration-300 p-0.5">
                 <div className="w-full h-full rounded-[10px] md:rounded-[14px] overflow-hidden bg-slate-50 relative">
                   {biz.imageUrl ? (
@@ -50,7 +47,6 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
                 </div>
               </div>
 
-              {/* Seta de Ação */}
               <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-[#F28705] group-hover:border-[#F28705] group-hover:text-white transition-all duration-300 shadow-sm">
                 <ArrowUpRight
                   size={16}
@@ -59,13 +55,11 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
               </div>
             </div>
 
-            {/* 2. INFORMAÇÕES PRINCIPAIS */}
             <div className="flex-1 flex flex-col">
               <h3 className="font-black text-[#023059] text-sm md:text-xl uppercase tracking-tight line-clamp-2 leading-tight mb-2 group-hover:text-[#F28705] transition-colors">
                 {biz.name}
               </h3>
 
-              {/* Tags inline */}
               <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[8px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-4">
                 <span className="text-[#F28705]">{biz.category}</span>
                 <span className="text-slate-200">•</span>
@@ -78,7 +72,6 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
               </div>
             </div>
 
-            {/* 3. FRASE DE IMPACTO */}
             <div className="mt-auto pt-3 md:pt-4 border-t border-slate-100">
               <p className="text-[10px] md:text-sm font-medium text-slate-500 italic line-clamp-2 group-hover:text-slate-700 transition-colors">
                 "{biz.luxe_quote || `A melhor opção de ${biz.category}`}"

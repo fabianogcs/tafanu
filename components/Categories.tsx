@@ -79,8 +79,9 @@ export default function Categories({ activeCats }: { activeCats: string[] }) {
   if (!activeCats || activeCats.length === 0) return null;
 
   return (
-    /* 🚀 O ELEVADOR MÁXIMO: -mt-28 puxa o carrossel inteirinho para dentro da área escura do Hero */
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 relative z-30 -mt-[132px] md:-mt-[350px] lg:-mt-[360px] mb-16 md:mb-24 animate-in fade-in duration-700 delay-500">
+    /* 🚀 A MÁGICA: A mesma transição de 500ms foi adicionada aqui.
+   Ela suaviza a mudança do -mt-[132px] para o -mt-[240px]! */
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 relative z-30 -mt-[132px] md:-mt-[200px] lg:-mt-[240px] mb-16 md:mb-[120px] lg:mb-[160px] animate-in fade-in duration-700 delay-500">
       {/* 🚀 RESPIRANDO: Removemos o -mx-4 que colava o carrossel na borda do celular. Agora ele respeita as margens! */}
       <div className="flex gap-2 md:gap-3 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-1 md:px-0 md:justify-center">
         {activeCats.sort().map((cat) => {
