@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { setInitialPassword } from "@/app/actions";
-import { Lock, X, ShieldCheck } from "lucide-react";
+import { Lock, X, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
 export default function PasswordAlert() {
   const { data: session, update, status } = useSession();
@@ -14,6 +14,9 @@ export default function PasswordAlert() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // 🛡️ PROTEÇÃO REFORÇADA:
   // Se o status mudar para unauthenticated (deslogado), o componente retorna null imediatamente.
@@ -110,21 +113,41 @@ export default function PasswordAlert() {
               </button>
             </div>
 
-            <input
-              type="password"
-              placeholder="Digite a senha (min. 6)"
-              className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-sm outline-none focus:ring-2 ring-indigo-500/20"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            {/* CAMPO DE SENHA */}
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Digite a senha (min. 6)"
+                className="w-full px-4 pr-12 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-sm outline-none focus:ring-2 ring-indigo-500/20"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 transition-colors focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
-            <input
-              type="password"
-              placeholder="Confirme a senha"
-              className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-sm outline-none focus:ring-2 ring-indigo-500/20"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+            {/* CAMPO DE CONFIRMAR SENHA */}
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirme a senha"
+                className="w-full px-4 pr-12 py-3 rounded-2xl bg-slate-50 border border-slate-100 text-sm outline-none focus:ring-2 ring-indigo-500/20"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 transition-colors focus:outline-none"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             <button
               onClick={handleSave}

@@ -13,6 +13,8 @@ import {
   Loader2,
   Sparkles,
   MailWarning, // ⬅️ Adicionado para o ícone de erro
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { registerUser, loginUser, resendVerificationEmail } from "../actions"; // ⬅️ resendVerificationEmail adicionado aqui
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
@@ -23,6 +25,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // --- 🛡️ NOVOS ESTADOS PARA A TRAVA DE E-MAIL ---
   const [loginError, setLoginError] = useState("");
@@ -290,14 +294,23 @@ export default function LoginPage() {
                   <Lock size={18} />
                 </div>
                 <input
-                  id="password" // 🚀 AJUSTE: id conectado ao label
+                  id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
-                  autoComplete={isLogin ? "current-password" : "new-password"} // 🚀 AJUSTE: Inteligente para login/cadastro
+                  autoComplete={isLogin ? "current-password" : "new-password"}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold"
+                  className="w-full pl-11 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold"
                 />
+
+                {/* 👁️ BOTÃO DO OLHINHO */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-tafanu-blue transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

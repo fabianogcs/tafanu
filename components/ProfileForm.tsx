@@ -1,8 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState, useEffect } from "react"; // ✅ Mantido useState e adicionado useEffect
-import { updateUserProfile, cancelSubscriptionAction } from "@/app/actions"; // ✅ Adicionado cancelSubscriptionAction aqui
+import { useState, useEffect } from "react";
+import { updateUserProfile, cancelSubscriptionAction } from "@/app/actions";
 import { cpf, cnpj } from "cpf-cnpj-validator";
 
 import {
@@ -14,16 +14,14 @@ import {
   ShieldAlert,
   Smartphone,
   FileText,
-  Trash2,
   Sparkles,
-  ArrowRight,
   Info,
-  ShieldCheck,
+  Eye, // ⬅️ Adicionado Ícone
+  EyeOff, // ⬅️ Adicionado Ícone
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import DeleteBusinessModal from "@/components/DeleteBusinessModal";
 
 export default function ProfileForm({ user }: { user: any }) {
   const router = useRouter();
@@ -32,7 +30,6 @@ export default function ProfileForm({ user }: { user: any }) {
   const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
 
   useEffect(() => {
-    // Só buscamos o código se o usuário ainda não tiver um "pai" (affiliateId) no banco
     if (!user.affiliateId) {
       const savedRef = localStorage.getItem("tafanu_affiliate_ref");
       if (savedRef) setAffiliateCode(savedRef);
@@ -43,6 +40,11 @@ export default function ProfileForm({ user }: { user: any }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showWelcome, setShowWelcome] = useState(!user.password);
   const [termosAceitos, setTermosAceitos] = useState(!!user.phone);
+
+  // --- 👁️ ESTADOS DOS OLHINHOS DA SENHA ---
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // --- 3. MÁSCARAS ORIGINAIS (PRESERVADAS) ---
   const maskPhone = (v: string) => {
@@ -130,7 +132,7 @@ export default function ProfileForm({ user }: { user: any }) {
     }
   }
 
-  // --- 5. CANCELAMENTO ORIGINAL (PRESERVADO E CORRIGIDO IMPORT) ---
+  // --- 5. CANCELAMENTO ORIGINAL (PRESERVADO) ---
   async function handleCancelSubscription() {
     const confirmar = confirm(
       "Deseja realmente cancelar sua assinatura? Você não será mais cobrado e sua loja sairá do ar quando o prazo atual vencer.",
@@ -139,7 +141,6 @@ export default function ProfileForm({ user }: { user: any }) {
 
     setIsSaving(true);
     try {
-      // 🚀 Não passamos mais ID nenhum! O Backend é inteligente e vai achar a assinatura sozinho.
       const res = await cancelSubscriptionAction();
 
       if (res.success) {
@@ -157,7 +158,7 @@ export default function ProfileForm({ user }: { user: any }) {
 
   return (
     <div className="w-full space-y-10 pb-20">
-      {/* BANNER DE BOAS-VINDAS ORIGINIAL */}
+      {/* BANNER DE BOAS-VINDAS */}
       {showWelcome && (
         <div className="bg-[#023059] p-8 rounded-[40px] shadow-2xl relative overflow-hidden animate-in slide-in-from-top duration-700">
           <div className="absolute top-[-20px] right-[-20px] text-[#F28705] opacity-10 rotate-12">
@@ -184,11 +185,10 @@ export default function ProfileForm({ user }: { user: any }) {
       )}
 
       <form onSubmit={handleFormSubmit} className="w-full space-y-12">
-        {/* ⬅️ CAMPO ESCONDIDO DO AFILIADO (INJETADO COM SUCESSO) */}
         <input type="hidden" name="affiliateCode" value={affiliateCode || ""} />
 
         <div className="flex flex-col gap-10">
-          {/* SEÇÃO 1: PESSOAL ORIGINAL */}
+          {/* SEÇÃO 1: PESSOAL */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
               <User size={18} className="text-[#F28705]" />
@@ -230,7 +230,7 @@ export default function ProfileForm({ user }: { user: any }) {
             </div>
           </div>
 
-          {/* SEÇÃO 2: DOCUMENTAÇÃO ORIGINAL */}
+          {/* SEÇÃO 2: DOCUMENTAÇÃO */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
               <ShieldAlert size={18} className="text-[#F28705]" />
@@ -270,7 +270,7 @@ export default function ProfileForm({ user }: { user: any }) {
             </div>
           </div>
 
-          {/* SEÇÃO 3: SEGURANÇA ORIGINAL */}
+          {/* SEÇÃO 3: SEGURANÇA */}
           <div className="bg-white p-8 md:p-10 rounded-[40px] border border-gray-100 shadow-xl space-y-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -295,16 +295,31 @@ export default function ProfileForm({ user }: { user: any }) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {user.password ? (
-                <div className="space-y-3">
+                <div className="flex flex-col justify-end h-full space-y-3">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                     Senha Atual
                   </label>
-                  <input
-                    name="currentPassword"
-                    type="password"
-                    placeholder="Senha de hoje"
-                    className="w-full p-5 bg-gray-50 border border-gray-100 rounded-3xl outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
-                  />
+                  <div className="relative">
+                    <input
+                      name="currentPassword"
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Senha de hoje"
+                      className="w-full pl-5 pr-12 py-5 bg-gray-50 border border-gray-100 rounded-3xl outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowCurrentPassword(!showCurrentPassword)
+                      }
+                      className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#023059] transition-colors focus:outline-none"
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-indigo-50 p-4 md:p-6 rounded-2xl flex items-center justify-center text-center h-full md:col-span-1">
@@ -313,31 +328,57 @@ export default function ProfileForm({ user }: { user: any }) {
                   </p>
                 </div>
               )}
-              <div className="space-y-3">
+
+              {/* CAMPO DE NOVA SENHA */}
+              <div className="flex flex-col justify-end h-full space-y-3">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                   Nova Senha
                 </label>
-                <input
-                  name="newPassword"
-                  type="password"
-                  placeholder="Mínimo 6 dígitos"
-                  className="w-full p-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
-                />
+                <div className="relative">
+                  <input
+                    name="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Mínimo 6 dígitos"
+                    className="w-full pl-5 pr-12 py-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#023059] transition-colors focus:outline-none"
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
-              <div className="space-y-3">
+
+              {/* CAMPO CONFIRMAR NOVA SENHA */}
+              <div className="flex flex-col justify-end h-full space-y-3">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                  Confirmar Nova Senha
+                  Confirme a Senha
                 </label>
-                <input
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Repita a nova senha"
-                  className="w-full p-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
-                />
+                <div className="relative">
+                  <input
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Repita a nova senha"
+                    className="w-full pl-5 pr-12 py-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#023059] transition-colors focus:outline-none"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* TERMOS E SALVAR ORIGINAIS */}
+            {/* TERMOS E SALVAR */}
             <div className="pt-6 border-t border-gray-50 flex flex-col gap-6">
               <div
                 className={`flex items-start gap-4 p-6 rounded-[2rem] transition-all border ${termosAceitos ? "bg-emerald-50 border-emerald-100" : "bg-slate-50 border-slate-100"}`}
@@ -365,7 +406,7 @@ export default function ProfileForm({ user }: { user: any }) {
                   .<br />
                   <span className="text-slate-400 font-medium">
                     Entendo que violações das regras podem causar banimento sem
-                    reembolso.
+                    reembolse.
                   </span>
                 </label>
               </div>
@@ -390,7 +431,7 @@ export default function ProfileForm({ user }: { user: any }) {
         </div>
       </form>
 
-      {/* GESTÃO DE PLANO - VERSÃO INTELIGENTE */}
+      {/* GESTÃO DE PLANO */}
       <div className="pt-10 border-t border-gray-100 mt-10">
         <div className="flex items-center gap-2 mb-6">
           <ShieldAlert size={18} className="text-indigo-500" />
@@ -399,7 +440,6 @@ export default function ProfileForm({ user }: { user: any }) {
           </h2>
         </div>
 
-        {/* Agora verificamos se NÃO é visitante, cobrindo Assinantes, Afiliados e Admins */}
         {user.role !== "VISITANTE" ? (
           <div className="p-8 border-2 border-indigo-100 rounded-[40px] bg-indigo-50/30 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-1 text-center md:text-left">
@@ -416,7 +456,6 @@ export default function ProfileForm({ user }: { user: any }) {
               </p>
             </div>
 
-            {/* Botão de cancelar só aparece para quem não é Admin */}
             {user.role !== "ADMIN" && (
               <button
                 type="button"

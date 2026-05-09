@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { EventType, Role, LayoutType, PlanType } from "@prisma/client";
 import { hash, compare } from "bcryptjs";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { cpf } from "cpf-cnpj-validator";
 import { auth, signIn, signOut } from "@/auth";
 import { Resend } from "resend";
@@ -1093,11 +1093,19 @@ export async function incrementViews(businessId: string) {
       return { success: true, ignored: true };
     }
 
-    // Se não tem carimbo, soma +1 no banco de dados
-    await db.business.update({
-      where: { id: businessId },
-      data: { views: { increment: 1 } },
-    });
+    // 🚀 ATUALIZAÇÃO SÊNIOR: Fazemos as duas coisas ao mesmo tempo!
+    await db.$transaction([
+      db.business.update({
+        where: { id: businessId },
+        data: { views: { increment: 1 } },
+      }),
+      db.analyticsEvent.create({
+        data: {
+          eventType: "VIEW",
+          businessId: businessId,
+        },
+      }),
+    ]);
 
     // 🕒 CRIA O CARIMBO: Dura 30 minutos (1800 segundos)
     cookieStore.set(cookieName, "true", {
@@ -2680,3 +2688,61 @@ export async function getOnlineMarketplaceMetadata() {
     return [];
   }
 }
+// ==============================================================================
+// 🌟 OS MAIS BUSCADOS (CACHE CONGELADO)
+// ==============================================================================
+export const getTrendingBusinesses = unstable_cache(
+  async () => {
+    try {
+      const seteDiasAtras = new Date();
+      seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+
+      // 1. Pega os IDs das 6 lojas mais vistas nos últimos 7 dias usando a "Caixa Preta"
+      const topViews = await db.analyticsEvent.groupBy({
+        by: ["businessId"],
+        where: {
+          eventType: "VIEW",
+          createdAt: { gte: seteDiasAtras },
+        },
+        _count: { businessId: true },
+        orderBy: { _count: { businessId: "desc" } },
+        take: 6, // Quantidade de vitrines na página inicial (pode mudar se quiser)
+      });
+
+      if (topViews.length === 0) return [];
+
+      const topBusinessIds = topViews.map((v) => v.businessId);
+
+      // 2. Busca os dados reais dessas lojas (apenas o essencial para o card ficar microscópico no peso)
+      const businesses = await db.business.findMany({
+        where: {
+          id: { in: topBusinessIds },
+          isActive: true,
+          published: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          imageUrl: true,
+          category: true,
+          luxe_quote: true, // A frase de impacto que definimos
+          neighborhood: true,
+          city: true,
+        },
+      });
+
+      // 3. Reorganiza a lista na exata ordem do Ranking de Visualizações
+      const sortedBusinesses = topBusinessIds
+        .map((id) => businesses.find((b) => b.id === id))
+        .filter(Boolean); // Se uma loja top 6 foi pausada, ela é ignorada silenciosamente
+
+      return sortedBusinesses;
+    } catch (error) {
+      console.error("Erro ao buscar os mais buscados:", error);
+      return [];
+    }
+  },
+  ["trending-businesses-7days"], // A etiqueta da "gaveta" do cache do Next.js
+  { revalidate: 86400 }, // ⏱️ 86400 segundos = 24 horas congelado (Custo zero no Vercel/Prisma)
+);
