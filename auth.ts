@@ -110,6 +110,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
 
   events: {
+    // 🚀 NOVO: GRAVADOR DE ÚLTIMO LOGIN
+    // Roda silenciosamente em segundo plano toda vez que alguém loga com sucesso
+    async signIn({ user }) {
+      if (user.id) {
+        try {
+          await db.user.update({
+            where: { id: user.id },
+            data: { lastLogin: new Date() },
+          });
+        } catch (error) {
+          console.error("Erro ao registrar lastLogin:", error);
+        }
+      }
+    },
+
     async createUser({ user }) {
       try {
         const cookieStore = await cookies();

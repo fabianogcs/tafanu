@@ -49,7 +49,11 @@ export default async function FunilPage() {
             affiliateId: null, // Admin vê os órfãos
           },
         },
-        include: { user: { select: { name: true, phone: true, email: true } } },
+        include: {
+          user: {
+            select: { name: true, phone: true, email: true, lastLogin: true },
+          },
+        },
         orderBy: { expiresAt: "asc" },
       });
     } else {
@@ -60,7 +64,11 @@ export default async function FunilPage() {
             affiliateId: session.user.id, // Afiliado vê os dele
           },
         },
-        include: { user: { select: { name: true, phone: true, email: true } } },
+        include: {
+          user: {
+            select: { name: true, phone: true, email: true, lastLogin: true },
+          },
+        },
         orderBy: { expiresAt: "asc" },
       });
     }

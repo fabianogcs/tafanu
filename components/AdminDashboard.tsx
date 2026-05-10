@@ -42,6 +42,7 @@ import {
   CalendarPlus,
   MessageCircle, // 🚀 NOVO: Ícone adicionado para o botão de WhatsApp
   KeyRound,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -59,6 +60,7 @@ import {
   assignUserToAffiliate,
   adminActivateVisitor,
   forceResetPasswordAdmin,
+  transferBusinessToUser,
 } from "@/app/actions";
 
 type AdminData = {
@@ -89,11 +91,15 @@ export default function AdminDashboard({
   const [subTab, setSubTab] = useState("subscribers");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [loginSort, setLoginSort] = useState<"recentes" | "antigos" | null>(
+    null,
+  );
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
   const [promotingUser, setPromotingUser] = useState<any>(null);
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [assignCodeInput, setAssignCodeInput] = useState("");
+  const [transferSlugInput, setTransferSlugInput] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const ADMIN_EMAIL = adminEmail || "";
@@ -215,13 +221,30 @@ export default function AdminDashboard({
 
     if (!debouncedSearch.trim()) return list;
     const q = debouncedSearch.toLowerCase();
-    return segments.all.filter(
+    let result = list.filter(
       (u) =>
         u.name?.toLowerCase().includes(q) ||
         u.email?.toLowerCase().includes(q) ||
         (u.document || "").includes(q),
     );
-  }, [debouncedSearch, subTab, segments]);
+
+    // 🚀 A MÁGICA DA ORDENAÇÃO DE LOGIN AQUI:
+    if (loginSort === "recentes") {
+      result.sort(
+        (a, b) =>
+          new Date(b.lastLogin || 0).getTime() -
+          new Date(a.lastLogin || 0).getTime(),
+      );
+    } else if (loginSort === "antigos") {
+      result.sort(
+        (a, b) =>
+          new Date(a.lastLogin || 0).getTime() -
+          new Date(b.lastLogin || 0).getTime(),
+      );
+    }
+
+    return result;
+  }, [debouncedSearch, subTab, segments, loginSort]);
 
   const totalOwed = useMemo(
     () => payouts.reduce((acc, p) => acc + p.valorDevido, 0),
@@ -337,6 +360,31 @@ export default function AdminDashboard({
         setAssignCodeInput("");
         router.refresh();
       } else toast.error(res.error);
+    });
+  };
+
+  const handleTransferBusiness = () => {
+    if (!transferSlugInput)
+      return toast.error("Digite o link ou o slug da vitrine pronta!");
+
+    startTransition(async () => {
+      // 🚀 Extrai só o finalzinho se você colar o link inteiro (ex: tafanu.com.br/site/minha-loja)
+      let cleanSlug = transferSlugInput.trim();
+      if (cleanSlug.includes("/site/")) {
+        cleanSlug = cleanSlug
+          .split("/site/")[1]
+          .split("?")[0]
+          .replace(/\/$/, "");
+      }
+
+      const res = await transferBusinessToUser(cleanSlug, selectedUser.id);
+      if (res.success) {
+        toast.success(res.message);
+        setTransferSlugInput("");
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
     });
   };
 
@@ -462,6 +510,27 @@ export default function AdminDashboard({
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            {/* 🚀 BOTÃO ORDENAR POR LOGIN */}
+            <button
+              onClick={() =>
+                setLoginSort((prev) =>
+                  prev === "recentes"
+                    ? "antigos"
+                    : prev === "antigos"
+                      ? null
+                      : "recentes",
+                )
+              }
+              className={`p-3 rounded-xl transition-all border flex items-center gap-2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest ${loginSort ? "bg-slate-900 text-emerald-400 border-slate-900" : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"}`}
+              title="Ordenar por Último Acesso"
+            >
+              <Clock size={16} />
+              {loginSort === "recentes"
+                ? "Logaram Há Pouco"
+                : loginSort === "antigos"
+                  ? "Estão Sumidos"
+                  : "Filtro de Acesso"}
+            </button>
             <button
               onClick={handleGarbageCollection}
               className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all border border-rose-100"
@@ -697,6 +766,7 @@ export default function AdminDashboard({
                     <th className="p-5 text-left">Membro</th>
                     <th className="p-5 text-left">Status</th>
                     <th className="p-5 text-left">Vencimento</th>
+                    <th className="p-5 text-left">Último Acesso</th>
                     <th className="p-5 text-right">Ação</th>
                   </tr>
                 </thead>
@@ -743,6 +813,32 @@ export default function AdminDashboard({
                               ).toLocaleDateString("pt-BR")
                             : "—"}
                         </span>
+                      </td>
+                      <td className="p-5">
+                        {user.role === "ASSINANTE" ||
+                        user.role === "AFILIADO" ? (
+                          user.lastLogin ? (
+                            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-1.5 rounded-lg flex items-center gap-1.5 w-fit border border-slate-200">
+                              <Clock size={12} className="text-emerald-500" />
+                              {new Date(user.lastLogin).toLocaleDateString(
+                                "pt-BR",
+                              )}{" "}
+                              às{" "}
+                              {new Date(user.lastLogin).toLocaleTimeString(
+                                "pt-BR",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-300 italic border border-dashed border-slate-200 px-2 py-1 rounded-md">
+                              Nunca logou
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-200">
+                            —
+                          </span>
+                        )}
                       </td>
                       <td
                         className="p-5 text-right"
@@ -1231,7 +1327,41 @@ export default function AdminDashboard({
                   </button>
                 </div>
               </div>
+              {/* 🚀 CRM ADMIN: TRANSFERIR VITRINE PRONTA */}
+              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 my-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase text-emerald-600 mb-1 flex items-center gap-1.5">
+                    <Zap size={12} /> Transplante de Vitrine
+                  </p>
+                  <p className="text-[11px] font-bold text-emerald-700/80 leading-tight max-w-sm">
+                    Cole o link de uma loja já montada (com fotos, textos e
+                    views). O sistema passará tudo para esta conta sem quebrar a
+                    assinatura atual!
+                  </p>
+                </div>
 
+                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-emerald-200 w-full md:w-auto shadow-sm">
+                  <input
+                    type="text"
+                    placeholder="Link ou slug da loja..."
+                    value={transferSlugInput}
+                    onChange={(e) => setTransferSlugInput(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs font-bold px-2 w-full md:w-48 text-slate-700 placeholder:text-slate-300"
+                  />
+                  <button
+                    onClick={handleTransferBusiness}
+                    disabled={isPending}
+                    className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition-all flex items-center gap-1.5 shrink-0"
+                  >
+                    {isPending ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <LinkIcon size={12} />
+                    )}
+                    Aplicar
+                  </button>
+                </div>
+              </div>
               {/* 🚀 AJUSTE: Lojas com o Gerenciador de Tempo embutido */}
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">

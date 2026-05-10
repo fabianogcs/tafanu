@@ -68,6 +68,8 @@ model User {
   createdAt       DateTime  @default(now())
   isBanned        Boolean   @default(false)
 
+  lastLogin       DateTime?
+
   accounts      Account[] 
   sessions      Session[] 
 

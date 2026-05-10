@@ -121,6 +121,20 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
                       {lead.name}
                     </h3>
                     <p className="text-xs text-gray-400">{lead.user?.email}</p>
+                    {lead.user?.lastLogin && (
+                      <div className="mt-2 inline-flex items-center gap-1 bg-blue-50 text-blue-500 px-2 py-1 rounded-lg text-[10px] font-black uppercase border border-blue-100">
+                        <Clock size={12} />
+                        Visto:{" "}
+                        {new Date(lead.user.lastLogin).toLocaleDateString(
+                          "pt-BR",
+                        )}{" "}
+                        às{" "}
+                        {new Date(lead.user.lastLogin).toLocaleTimeString(
+                          "pt-BR",
+                          { hour: "2-digit", minute: "2-digit" },
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg text-xs font-bold text-gray-500">
                     <Clock size={14} /> {diasRestantes} dias

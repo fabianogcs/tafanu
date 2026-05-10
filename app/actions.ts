@@ -1828,6 +1828,7 @@ export async function getAffiliateStats() {
         phone: true,
         role: true,
         createdAt: true,
+        lastLogin: true,
         // 🚀 ATUALIZAÇÃO: Removidos planType/expiresAt daqui.
         // Agora pegamos as assinaturas através dos negócios do indicado:
         businesses: {
@@ -1888,6 +1889,7 @@ export async function getAffiliateDashboardData() {
             phone: true,
             createdAt: true,
             role: true, // 🚀 MANTÉM O CARGO (ASSINANTE/VISITANTE)
+            lastLogin: true,
             businesses: {
               select: {
                 slug: true,
@@ -2746,3 +2748,194 @@ export const getTrendingBusinesses = unstable_cache(
   ["trending-businesses-7days"], // A etiqueta da "gaveta" do cache do Next.js
   { revalidate: 86400 }, // ⏱️ 86400 segundos = 24 horas congelado (Custo zero no Vercel/Prisma)
 );
+
+// ==============================================================================
+// 🔄 TRANSPLANTE DE VITRINE (PRESERVA MÉTRICAS, FOTOS E PAGAMENTOS)
+// ==============================================================================
+export async function transferBusinessToUser(
+  slugDaVitrinePronta: string,
+  idDoNovoDono: string,
+) {
+  const adminId = await requireAdmin();
+  if (!adminId) return { error: "Acesso negado." };
+
+  try {
+    // 1. Busca a Vitrine Pronta (Modelo) com todos os seus tesouros (Favoritos, Cliques, Views)
+    const vitrinePronta = await db.business.findUnique({
+      where: { slug: slugDaVitrinePronta.trim().toLowerCase() },
+    });
+
+    if (!vitrinePronta) {
+      return { error: "Vitrine pronta não encontrada. Verifique o link." };
+    }
+
+    // 2. Busca a "Loja Gaveta" do novo dono (A dona legítima do ID da assinatura do Mercado Pago)
+    const novoDono = await db.user.findUnique({
+      where: { id: idDoNovoDono },
+      include: { businesses: true },
+    });
+
+    if (!novoDono || novoDono.businesses.length === 0) {
+      return {
+        error:
+          "O usuário não possui uma assinatura/loja base para receber o transplante.",
+      };
+    }
+
+    const lojaGaveta = novoDono.businesses[0];
+
+    // Se a Vitrine Pronta já for da mesma pessoa, não faz nada
+    if (vitrinePronta.id === lojaGaveta.id) {
+      return {
+        error: "A vitrine já está vinculada a este usuário perfeitamente.",
+      };
+    }
+
+    // 3. TRANSAÇÃO ATÔMICA (O TRANSPLANTE REVERSO)
+    await db.$transaction(async (tx) => {
+      // Passo A: Para o Prisma deixar a Gaveta assumir o Slug (que é único), precisamos colocar um "lixo" no slug antigo
+      await tx.business.update({
+        where: { id: vitrinePronta.id },
+        data: { slug: `lixo-${Date.now()}` },
+      });
+
+      // Passo B: Copia TUDO (exceto IDs e o status de assinatura) da Vitrine Pronta para a Gaveta
+      await tx.business.update({
+        where: { id: lojaGaveta.id },
+        data: {
+          name: vitrinePronta.name,
+          slug: vitrinePronta.slug, // A gaveta assume o link oficial
+          description: vitrinePronta.description,
+          theme: vitrinePronta.theme,
+          layout: vitrinePronta.layout,
+          category: vitrinePronta.category,
+          subcategory: vitrinePronta.subcategory,
+          keywords: vitrinePronta.keywords,
+
+          // Contadores
+          whatsapp_clicks: vitrinePronta.whatsapp_clicks,
+          phone_clicks: vitrinePronta.phone_clicks,
+          instagram_clicks: vitrinePronta.instagram_clicks,
+          facebook_clicks: vitrinePronta.facebook_clicks,
+          tiktok_clicks: vitrinePronta.tiktok_clicks,
+          website_clicks: vitrinePronta.website_clicks,
+          map_clicks: vitrinePronta.map_clicks,
+          views: vitrinePronta.views,
+
+          // Mídia
+          imageUrl: vitrinePronta.imageUrl,
+          gallery: vitrinePronta.gallery,
+          videos: vitrinePronta.videos,
+          mediaFeed: vitrinePronta.mediaFeed as any,
+
+          // Tags e Endereço
+          features: vitrinePronta.features,
+          faqs: vitrinePronta.faqs as any,
+          address: vitrinePronta.address,
+          number: vitrinePronta.number,
+          complement: vitrinePronta.complement,
+          cep: vitrinePronta.cep,
+          neighborhood: vitrinePronta.neighborhood,
+          city: vitrinePronta.city,
+          state: vitrinePronta.state,
+          latitude: vitrinePronta.latitude,
+          longitude: vitrinePronta.longitude,
+
+          // Contatos Sociais
+          whatsapp: vitrinePronta.whatsapp,
+          phone: vitrinePronta.phone,
+          website: vitrinePronta.website,
+          instagram: vitrinePronta.instagram,
+          facebook: vitrinePronta.facebook,
+          tiktok: vitrinePronta.tiktok,
+          shopee: vitrinePronta.shopee,
+          mercadoLivre: vitrinePronta.mercadoLivre,
+          shein: vitrinePronta.shein,
+          ifood: vitrinePronta.ifood,
+
+          // Flags Visuais
+          urban_tag: vitrinePronta.urban_tag,
+          luxe_quote: vitrinePronta.luxe_quote,
+          comercial_badge: vitrinePronta.comercial_badge,
+          showroom_collection: vitrinePronta.showroom_collection,
+          hasDelivery: vitrinePronta.hasDelivery,
+
+          // O Transplante foi um sucesso, ativamos a loja pro mundo!
+          published: true,
+          isActive: true,
+        },
+      });
+
+      // Passo C: Redirecionar as Múltiplas Relações (Favoritos, Analytics e Horários)
+      await tx.favorite.updateMany({
+        where: { businessId: vitrinePronta.id },
+        data: { businessId: lojaGaveta.id },
+      });
+      await tx.report.updateMany({
+        where: { businessId: vitrinePronta.id },
+        data: { businessId: lojaGaveta.id },
+      });
+      await tx.analyticsEvent.updateMany({
+        where: { businessId: vitrinePronta.id },
+        data: { businessId: lojaGaveta.id },
+      });
+      await tx.comment.updateMany({
+        where: { businessId: vitrinePronta.id },
+        data: { businessId: lojaGaveta.id },
+      });
+
+      // Apagamos os horários velhos da gaveta e passamos os horários da vitrine pronta
+      await tx.businessHour.deleteMany({
+        where: { businessId: lojaGaveta.id },
+      });
+      await tx.businessHour.updateMany({
+        where: { businessId: vitrinePronta.id },
+        data: { businessId: lojaGaveta.id },
+      });
+
+      // Passo D: Agora que a Gaveta sugou a alma da Vitrine Pronta, a gente desintegra o corpo original
+      await tx.business.delete({ where: { id: vitrinePronta.id } });
+
+      // 🚀 NOVO PASSO: Rebaixa o antigo dono para Visitante (Lead) se ele ficar sem lojas
+      const lojasRestantes = await tx.business.count({
+        where: { userId: vitrinePronta.userId },
+      });
+      if (lojasRestantes === 0) {
+        const antigoDono = await tx.user.findUnique({
+          where: { id: vitrinePronta.userId },
+        });
+        // Só rebaixa se ele não for Admin ou Afiliado
+        if (antigoDono && antigoDono.role === "ASSINANTE") {
+          await tx.user.update({
+            where: { id: vitrinePronta.userId },
+            data: { role: "VISITANTE" },
+          });
+        }
+      }
+
+      // Passo E: Garante o selo do usuário NOVO
+      if (novoDono.role !== "ASSINANTE") {
+        await tx.user.update({
+          where: { id: idDoNovoDono },
+          data: { role: "ASSINANTE" },
+        });
+      }
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+    revalidatePath(`/site/${vitrinePronta.slug}`);
+    revalidatePath("/busca");
+
+    return {
+      success: true,
+      message:
+        "Transplante concluído! A vitrine foi sincronizada com a assinatura.",
+    };
+  } catch (error) {
+    console.error("Erro no Transplante de Vitrine:", error);
+    return {
+      error: "Erro interno: A operação precisou ser cancelada por segurança.",
+    };
+  }
+}

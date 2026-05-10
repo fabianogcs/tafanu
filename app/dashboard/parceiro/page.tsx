@@ -27,6 +27,9 @@ export default function AffiliateDashboard() {
   const [activeTab, setActiveTab] = useState("mensal");
   const [searchTerm, setSearchTerm] = useState("");
   const [origin, setOrigin] = useState("");
+  const [loginSort, setLoginSort] = useState<"recentes" | "antigos" | null>(
+    null,
+  );
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -155,7 +158,21 @@ export default function AffiliateDashboard() {
         ref.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
+    // 🚀 CORTE 4.2 (LÓGICA) AQUI:
     .sort((a: any, b: any) => {
+      // 🚀 ORDENAÇÃO DE LOGIN TEM PRIORIDADE SE O FILTRO ESTIVER ATIVO
+      if (loginSort === "recentes")
+        return (
+          new Date(b.lastLogin || 0).getTime() -
+          new Date(a.lastLogin || 0).getTime()
+        );
+      if (loginSort === "antigos")
+        return (
+          new Date(a.lastLogin || 0).getTime() -
+          new Date(b.lastLogin || 0).getTime()
+        );
+
+      // Se não, usa a ordem padrão (vencimento)
       const expA = a.businesses?.[0]?.expiresAt
         ? new Date(a.businesses[0].expiresAt).getTime()
         : 0;
@@ -248,7 +265,7 @@ export default function AffiliateDashboard() {
 
       {/* 2. CRM - BUSCA E ABAS */}
       <div className="space-y-6">
-        <div className="bg-[#f8fafc] p-6 rounded-[2rem] border border-gray-100 flex items-center shadow-sm relative">
+        <div className="bg-[#f8fafc] p-6 rounded-[2rem] border border-gray-100 flex items-center shadow-sm relative pr-[120px]">
           <Search className="absolute left-6 text-gray-300" size={24} />
           <input
             value={searchTerm}
@@ -256,6 +273,26 @@ export default function AffiliateDashboard() {
             placeholder="Buscar cliente na lista..."
             className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-full text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-[#F28705] transition-all text-[#023059]"
           />
+          {/* 🚀 CORTE 4.2 (BOTÃO VISUAL) AQUI: */}
+          <button
+            onClick={() =>
+              setLoginSort((prev) =>
+                prev === "recentes"
+                  ? "antigos"
+                  : prev === "antigos"
+                    ? null
+                    : "recentes",
+              )
+            }
+            className={`absolute right-6 p-2 rounded-xl transition-all border flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${loginSort ? "bg-[#023059] text-emerald-400 border-[#023059]" : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100"}`}
+          >
+            <Clock size={14} />
+            {loginSort
+              ? loginSort === "recentes"
+                ? "Ativos"
+                : "Sumidos"
+              : "Filtro: Login"}
+          </button>
         </div>
 
         {/* Scroll Horizontal de Abas do Funil */}
@@ -437,6 +474,20 @@ export default function AffiliateDashboard() {
                             repassar a parte da plataforma.
                           </p>
                         )}
+                      </div>
+                    )}
+                    {/* 🚀 CORTE 4.3 (ETIQUETA NO CARD) AQUI: */}
+                    {ref.role === "ASSINANTE" && ref.lastLogin && (
+                      <div className="mt-1 flex items-center gap-1.5 w-fit text-[9px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                        <Clock size={10} className="text-blue-400" />
+                        Acessou:{" "}
+                        {new Date(ref.lastLogin).toLocaleDateString(
+                          "pt-BR",
+                        )} às{" "}
+                        {new Date(ref.lastLogin).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                     )}
                   </div>
