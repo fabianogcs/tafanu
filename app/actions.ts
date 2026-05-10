@@ -2768,8 +2768,7 @@ export async function transferBusinessToUser(
     if (!vitrinePronta) {
       return { error: "Vitrine pronta não encontrada. Verifique o link." };
     }
-
-    // 2. Busca a "Loja Gaveta" do novo dono (A dona legítima do ID da assinatura do Mercado Pago)
+    // 2. Busca a "Loja Gaveta" do novo dono
     const novoDono = await db.user.findUnique({
       where: { id: idDoNovoDono },
       include: { businesses: true },
@@ -2782,7 +2781,11 @@ export async function transferBusinessToUser(
       };
     }
 
-    const lojaGaveta = novoDono.businesses[0];
+    // 🚀 A BLINDAGEM AQUI:
+    // Procura a loja que tem a assinatura do Mercado Pago. Se não achar, pega a primeira.
+    const lojaGaveta =
+      novoDono.businesses.find((b) => b.mpSubscriptionId) ||
+      novoDono.businesses[0];
 
     // Se a Vitrine Pronta já for da mesma pessoa, não faz nada
     if (vitrinePronta.id === lojaGaveta.id) {

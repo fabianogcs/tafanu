@@ -62,13 +62,20 @@ export default async function AdminPage() {
       }),
     ]);
 
-  const users = usersData.map((u) => ({
-    ...u,
-    referredBy: u.affiliate
-      ? `${u.affiliate.name} (${u.affiliate.referralCode})`
-      : null,
-    referralCount: u.referrals.length,
-  }));
+  // 🛡️ CIRURGIA DE SEGURANÇA: Removemos a senha aqui no servidor
+  // antes de enviar os dados para o componente de tela (Front-end)
+  const users = usersData.map((u) => {
+    // Extraímos a senha e guardamos todo o resto em 'userWithoutPassword'
+    const { password, ...userWithoutPassword } = u;
+
+    return {
+      ...userWithoutPassword,
+      referredBy: u.affiliate
+        ? `${u.affiliate.name} (${u.affiliate.referralCode})`
+        : null,
+      referralCount: u.referrals.length,
+    };
+  });
 
   const businessOwnerMap = new Map<string, string>();
   users.forEach((u) => {
