@@ -209,6 +209,7 @@ export async function POST(request: Request) {
             userId,
             transactionAmount,
             `Assinatura ${descricaoPlano} - Negócio ID: ${businessId}`,
+            planType, // 🚀 ENVIANDO A CHAVE MESTRA: "monthly", "quarterly" ou "yearly"
           );
         }
 

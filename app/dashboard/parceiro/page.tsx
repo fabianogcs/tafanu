@@ -234,6 +234,19 @@ export default function AffiliateDashboard() {
                 Copiar Link
               </button>
             </div>
+
+            {/* 🚀 O BOOST DE VENDAS DO AFILIADO AQUI */}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <span className="bg-[#F28705] text-[#023059] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
+                <Target size={14} /> Mensal: R$ 10
+              </span>
+              <span className="bg-[#F28705] text-[#023059] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-lg">
+                <Target size={14} /> Trimestral: R$ 30
+              </span>
+              <span className="bg-emerald-400 text-[#023059] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-[0_0_15px_rgba(52,211,153,0.5)] border border-emerald-300">
+                <Zap size={14} /> Anual: R$ 120
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">

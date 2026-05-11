@@ -1768,6 +1768,7 @@ export async function generateCommission(
   userId: string,
   orderAmount: number,
   description: string,
+  planType: "monthly" | "quarterly" | "yearly" = "monthly", // 🚀 1. Recebe o tipo do plano!
 ) {
   try {
     // 1. Verifica se quem comprou tem um afiliado vinculado
@@ -1779,10 +1780,16 @@ export async function generateCommission(
     if (!customer?.affiliateId)
       return { success: false, message: "Usuário não tem afiliado." };
 
-    // 2. Calcula os 20% exatos
-    const commissionAmount = Number((orderAmount * 0.2).toFixed(2));
+    // 🚀 2. A NOVA MATEMÁTICA: O Multiplicador Fixo
+    let commissionAmount = 10.0; // Padrão: Plano Mensal
 
-    // 3. Define a data de liberação (Ex: 7 dias de garantia para evitar estorno)
+    if (planType === "quarterly") {
+      commissionAmount = 30.0; // Trimestral
+    } else if (planType === "yearly") {
+      commissionAmount = 120.0; // O grande prêmio do Anual!
+    }
+
+    // 3. Define a data de liberação (7 dias de garantia)
     const releaseDate = new Date();
     releaseDate.setDate(releaseDate.getDate() + 7);
 
@@ -1793,14 +1800,14 @@ export async function generateCommission(
         userId: userId,
         amount: commissionAmount,
         orderAmount: orderAmount,
-        status: CommissionStatus.PENDING, // 🛡️ Usa o Enum oficial que você já importou lá no topo!
+        status: CommissionStatus.PENDING,
         description: description,
         releaseDate: releaseDate,
       },
     });
 
     console.log(
-      `✅ Comissão de R$ ${commissionAmount} gerada para o afiliado ${customer.affiliateId}`,
+      `✅ Comissão Fixa (CPA) de R$ ${commissionAmount} gerada para o afiliado ${customer.affiliateId}`,
     );
     return { success: true };
   } catch (error) {
