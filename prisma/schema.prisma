@@ -58,7 +58,7 @@ model User {
  role            Role      @default(VISITANTE)
   referralCode    String?   @unique 
   affiliateId     String?           
-  affiliate       User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id])
+ affiliate User? @relation("AffiliateToUser", fields: [affiliateId], references: [id], onDelete: SetNull)
   affiliateSince  DateTime? 
   lastPayoutDate  DateTime?
   lastPrice       Float?    @default(0)    
@@ -302,8 +302,8 @@ model ReferralLog {
   referredId  String   @unique // ID do User que foi indicado
   createdAt   DateTime @default(now())
   
-  affiliate   User     @relation("AffiliateLogs", fields: [affiliateId], references: [id])
-  referred    User     @relation("ReferredUser", fields: [referredId], references: [id])
+affiliate User @relation("AffiliateLogs", fields: [affiliateId], references: [id], onDelete: Cascade)
+referred User @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
 }
@@ -323,7 +323,7 @@ model Commission {
   withdrawalId   String?          
   withdrawal     Withdrawal?      @relation(fields: [withdrawalId], references: [id])
   
-  affiliate     User             @relation("AffiliateCommissions", fields: [affiliateId], references: [id])
+ affiliate User @relation("AffiliateCommissions", fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
   @@index([status])
@@ -339,7 +339,7 @@ model Withdrawal {
   createdAt   DateTime @default(now())
   paidAt      DateTime?
 
-  affiliate   User     @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id])
+affiliate User @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id], onDelete: Cascade)
   commissions Commission[] // ⬅️ NOVO: Lista de comissões que compõem este saque
 
   @@index([affiliateId])

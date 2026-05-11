@@ -79,6 +79,7 @@ export default function BusinessEditor({
 
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [showOfflineWarning, setShowOfflineWarning] = useState(false);
 
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -395,7 +396,13 @@ export default function BusinessEditor({
       setIsLoading(false);
     }
   };
-
+  const handleSaveClick = () => {
+    if (!isPublished) {
+      setShowOfflineWarning(true);
+    } else {
+      handleUpdate();
+    }
+  };
   const handleUpdate = async (overridePublished?: boolean) => {
     if (isLoading) return;
     if (!name || name.trim() === "") {
@@ -682,8 +689,8 @@ export default function BusinessEditor({
               </>
             )}
             <button
-              onClick={() => handleUpdate()}
-              disabled={isLoading || !hasChanges}
+              onClick={handleSaveClick}
+              disabled={isLoading || (!hasChanges && !isNew)}
               className={`hidden md:flex items-center gap-3 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-sm ${
                 !hasChanges && !isNew && !isLoading
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
@@ -807,65 +814,88 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-[60] gap-3 pointer-events-none">
+        <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-40 gap-3 pointer-events-none">
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
-            <AnimatePresence>
-              {!isPublished && !isLoading && (
+            <AnimatePresence mode="wait">
+              {showOfflineWarning && !isLoading ? (
                 <motion.div
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 10, opacity: 0 }}
-                  className="w-full bg-rose-50 border border-rose-200 p-5 rounded-[2rem] shadow-lg flex flex-col items-center text-center gap-4"
+                  key="warning-card"
+                  // 🚀 1. Removi o y: 20 para ele não afundar na tela
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  // 🚀 2. Adicionei o 'origin-bottom' no final do className
+                  className="w-full bg-white border-2 border-rose-200 p-6 md:p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center text-center gap-4 origin-bottom"
                 >
-                  <div className="flex items-center gap-2 text-rose-600 font-black uppercase text-xs tracking-widest">
-                    <Power size={18} /> Vitrine Offline
+                  <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-[-10px]">
+                    <Power size={28} />
                   </div>
-                  <p className="text-xs text-rose-700 font-semibold leading-relaxed px-4">
-                    Este negócio está invisível para o público. Deseja
-                    reativá-lo para aparecer nas buscas antes de salvar?
-                  </p>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsPublished(true);
-                      toast.success(
-                        "Marcado para ficar Online! Clique em Gravar Mudanças.",
-                      );
-                    }}
-                    className="w-full md:w-auto px-8 bg-emerald-500 text-white py-3 rounded-xl shadow-md font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex justify-center items-center gap-2"
-                  >
-                    <Eye size={16} /> Deixar Online
-                  </button>
+                  <div>
+                    <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">
+                      Sua vitrine está oculta
+                    </h3>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed mt-2 px-2">
+                      Sua loja ainda não aparece nas buscas. Deseja deixá-la
+                      online agora junto com suas edições?
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowOfflineWarning(false);
+                        handleUpdate(false);
+                      }}
+                      className="flex-1 px-4 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all"
+                    >
+                      Manter Oculta
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsPublished(true);
+                        setShowOfflineWarning(false);
+                        handleUpdate(true);
+                      }}
+                      className="flex-1 px-4 py-4 bg-emerald-500 text-white rounded-2xl shadow-md font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex justify-center items-center gap-2"
+                    >
+                      <Eye size={16} /> Publicar e Salvar
+                    </button>
+                  </div>
                 </motion.div>
+              ) : (
+                <motion.button
+                  key="save-button"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  onClick={handleSaveClick}
+                  disabled={isLoading || (!hasChanges && !isNew)}
+                  className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic pointer-events-auto ${
+                    isLoading || (!hasChanges && !isNew)
+                      ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                      : "bg-slate-900 text-white hover:bg-indigo-600 shadow-2xl active:scale-95"
+                  }`}
+                >
+                  {isLoading ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : !hasChanges && !isNew ? (
+                    <CheckCircle2 size={20} className="text-slate-400" />
+                  ) : (
+                    <Save size={20} />
+                  )}
+                  {isLoading
+                    ? "Salvando..."
+                    : !hasChanges && !isNew
+                      ? "Tudo Atualizado"
+                      : isNew
+                        ? "Criar Perfil"
+                        : "Gravar Mudanças"}
+                </motion.button>
               )}
             </AnimatePresence>
-
-            <button
-              onClick={() => handleUpdate()}
-              disabled={isLoading || !hasChanges}
-              className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic ${
-                isLoading || (!hasChanges && !isNew)
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  : "bg-slate-900 text-white hover:bg-indigo-600 shadow-2xl active:scale-95"
-              }`}
-            >
-              {isLoading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : !hasChanges && !isNew ? (
-                <CheckCircle2 size={20} className="text-slate-400" />
-              ) : (
-                <Save size={20} />
-              )}
-
-              {isLoading
-                ? "Salvando..."
-                : !hasChanges && !isNew
-                  ? "Tudo Atualizado"
-                  : isNew
-                    ? "Criar Perfil"
-                    : "Gravar Mudanças"}
-            </button>
           </div>
         </div>
         {rawImageSrc && (

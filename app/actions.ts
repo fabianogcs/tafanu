@@ -3,7 +3,7 @@ import { z } from "zod";
 import { businessSchema, userProfileSchema } from "@/lib/schemas";
 import { UTApi } from "uploadthing/server";
 import { db } from "@/lib/db";
-import { EventType, Role, LayoutType, PlanType } from "@prisma/client";
+import { EventType, Role, LayoutType, PlanType, Prisma } from "@prisma/client";
 import { hash, compare } from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath, unstable_cache } from "next/cache";
@@ -825,47 +825,57 @@ export async function updateFullBusiness(slug: string, payload: any) {
 // ==============================================================================
 // 7. ATUALIZAÇÃO ESPECÍFICA DE MÍDIA (VÍDEO E GALERIA)
 // ==============================================================================
-
 export async function updateBusinessMedia(slug: string, gallery: string[]) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
   try {
-    // 1. Busca o negócio atual para saber o que ele já tinha
+    // 1. Busca o negócio atual e traz o mediaFeed junto
     const business = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true, gallery: true },
+      select: { id: true, userId: true, gallery: true, mediaFeed: true },
     });
 
-    if (!business || business.userId !== user.id) {
+    // 🛡️ Trava de segurança: apenas dono ou ADMIN podem editar
+    if (!business || (business.userId !== user.id && user.role !== "ADMIN")) {
       return { error: "Negócio não encontrado ou permissão negada." };
     }
 
     // 2. Lógica de Faxina (Deleta fotos removidas do UploadThing)
     const filesToDelete: string[] = [];
+    const oldGallery = (business.gallery as string[]) || [];
 
-    // Compara as galerias: se a foto estava na antiga e não está na nova, deleta.
-    const oldGallery = business.gallery || [];
     oldGallery.forEach((url) => {
       if (!gallery.includes(url)) {
         filesToDelete.push(url);
       }
     });
 
-    // Executa a deleção no servidor do UploadThing
     if (filesToDelete.length > 0) {
       await deleteFilesFromUploadThing(filesToDelete);
     }
 
-    // 3. Atualiza o banco de dados
+    // 🚀 3. MÁGICA DO MEDIAFEED: Filtra os vídeos (Embeds) existentes
+    const currentVideos = Array.isArray(business.mediaFeed)
+      ? business.mediaFeed.filter((m: any) => m && m.type === "video")
+      : [];
+
+    // Mapeia as novas fotos vindas do formulário
+    const newImages = gallery.map((url) => ({ type: "image", url }));
+
+    // Une fotos novas e vídeos antigos
+    const newMediaFeed = [...newImages, ...currentVideos];
+
+    // 4. Atualiza o banco de dados com a tipagem forçada e segura do Prisma
     await db.business.update({
       where: { id: business.id },
       data: {
         gallery: gallery,
+        mediaFeed: newMediaFeed as unknown as Prisma.InputJsonValue[],
       },
     });
 
-    // 4. Limpa o cache para as mudanças aparecerem no site
+    // 5. Limpa o cache para as mudanças aparecerem no site
     revalidatePath(`/site/${slug}`);
     revalidatePath("/dashboard");
 
@@ -1017,16 +1027,29 @@ async function executeCoreCleanup() {
           { expiresAt: { lt: trintaDiasAtras } },
         ],
       },
-      select: { id: true, imageUrl: true, gallery: true },
+      // 🚀 INJEÇÃO 1: Pedimos para o Prisma trazer o mediaFeed junto
+      select: { id: true, imageUrl: true, gallery: true, mediaFeed: true },
     });
 
     if (ghosts.length === 0) return { success: true, message: "Banco limpo." };
 
     const linksParaDeletar: string[] = [];
     ghosts.forEach((business) => {
+      // 1. Apaga a Logo
       if (business.imageUrl) linksParaDeletar.push(business.imageUrl);
+
+      // 2. Apaga a Galeria Antiga
       if (business.gallery && Array.isArray(business.gallery)) {
         linksParaDeletar.push(...(business.gallery as string[]));
+      }
+
+      // 🚀 INJEÇÃO 2: Vasculha o feed novo e pega só o que for imagem
+      if (business.mediaFeed && Array.isArray(business.mediaFeed)) {
+        business.mediaFeed.forEach((item: any) => {
+          if (item && item.type === "image" && item.url) {
+            linksParaDeletar.push(item.url);
+          }
+        });
       }
     });
 
@@ -1067,7 +1090,8 @@ export async function runSystemGhostCleanup() {
 async function cleanStorageFiles(slug: string) {
   const business = await db.business.findUnique({
     where: { slug },
-    select: { imageUrl: true, gallery: true },
+    // 🚀 AJUSTE 1: Pedimos para o banco trazer o mediaFeed também
+    select: { imageUrl: true, gallery: true, mediaFeed: true },
   });
   if (!business) return;
 
@@ -1075,6 +1099,15 @@ async function cleanStorageFiles(slug: string) {
   if (business.imageUrl) filesToDelete.push(business.imageUrl);
   if (business.gallery && business.gallery.length > 0) {
     filesToDelete.push(...(business.gallery as string[]));
+  }
+
+  // 🚀 AJUSTE 2: Lemos o mediaFeed e pegamos as URLs das imagens para deletar
+  if (business.mediaFeed && Array.isArray(business.mediaFeed)) {
+    business.mediaFeed.forEach((item: any) => {
+      if (item && item.type === "image" && item.url) {
+        filesToDelete.push(item.url);
+      }
+    });
   }
 
   if (filesToDelete.length > 0) {

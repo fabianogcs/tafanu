@@ -28,12 +28,12 @@ main {
   background: none !important;
 }
 /* 🚀 MATA O FANTASMA DO CHROME: 
-   Impede que o navegador injete fundos cinzas/amarelos em inputs 
-   e garante que o texto continue branco mesmo se ele tentar auto-completar */
+   Garante fundo claro (slate-50) e texto escuro (slate-900) no autocompletar */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #f8fafc inset !important;
+  -webkit-text-fill-color: #0f172a !important;
   transition: background-color 5000s ease-in-out 0s !important;
-  -webkit-text-fill-color: white !important;
 }

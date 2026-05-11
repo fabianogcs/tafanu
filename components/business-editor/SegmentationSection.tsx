@@ -77,8 +77,12 @@ export function SegmentationSection({
       {/* --- SEÇÃO 2: NICHOS (SUBCATEGORIAS) --- */}
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8">
         <div className="text-[9px] font-black uppercase text-slate-400 mb-3 flex tracking-widest justify-between">
-          <span>2. Nichos</span>
-          <span className="text-indigo-400">
+          <span>2. Nichos (Máx 5)</span>
+          <span
+            className={
+              selectedSubs.length >= 5 ? "text-rose-500" : "text-indigo-400"
+            }
+          >
             {selectedSubs.length} Selecionados
           </span>
         </div>
@@ -87,21 +91,28 @@ export function SegmentationSection({
             <button
               key={sub}
               onClick={() =>
-                // O estado (backend) continua guardando a versão sem acento
-                setSelectedSubs((prev) =>
-                  prev.includes(sub)
-                    ? prev.filter((s) => s !== sub)
-                    : [...prev, sub],
-                )
+                setSelectedSubs((prev) => {
+                  // Se já tem, ele tira (desmarca)
+                  if (prev.includes(sub)) {
+                    return prev.filter((s) => s !== sub);
+                  }
+                  // 🚀 A TRAVA: Se não tem e já deu 5, ele bloqueia e não faz nada
+                  if (prev.length >= 5) {
+                    return prev;
+                  }
+                  // Se tem espaço, ele adiciona
+                  return [...prev, sub];
+                })
               }
               className={`px-3 py-2 rounded-lg text-[9px] font-bold uppercase transition-all border ${
                 selectedSubs.includes(sub)
                   ? "bg-indigo-500 text-white border-indigo-500"
-                  : "bg-white text-slate-500 border-slate-200"
+                  : selectedSubs.length >= 5
+                    ? "bg-slate-100 text-slate-300 border-slate-100 cursor-not-allowed opacity-50" // Visual de "Bloqueado"
+                    : "bg-white text-slate-500 border-slate-200"
               }`}
             >
               {selectedSubs.includes(sub) ? "✓ " : "+ "}
-              {/* 3. O usuário vê a versão formatada (com acentos) */}
               {formatDisplayName(sub)}
             </button>
           ))}
