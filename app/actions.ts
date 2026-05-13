@@ -463,12 +463,15 @@ export async function checkProfileStatus() {
 // 4. GESTÃO DE NEGÓCIOS (CRUD)
 // ==============================================================================
 
-// 🚀 MELHORIA: Busca categorias de forma leve e SEM esquecer ninguém
 export async function getFilterMetadata() {
+  // 🚀 ADICIONA A REGRA DA CARÊNCIA: O que venceu há menos de 48h ainda aparece!
+  const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
   const data = await db.business.findMany({
     where: {
       isActive: true,
       published: true,
+      OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
     },
     select: {
       category: true,
@@ -1678,11 +1681,15 @@ export async function runGarbageCollector() {
 
 export async function getActiveCategories() {
   try {
+    // 🚀 ADICIONA A REGRA DAS 48H NA BARRA DE CATEGORIAS!
+    const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
     const categories = await db.business.groupBy({
       by: ["category"],
       where: {
         published: true,
         isActive: true,
+        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
       },
       _count: {
         category: true,
@@ -2388,15 +2395,19 @@ export async function forceResetPasswordAdmin(userId: string) {
       return { error: "Você não pode resetar a própria senha por aqui." };
     }
 
-    // A senha padrão definida é sempre 'mudar123'
-    const hashedPassword = await hash("mudar123", 10);
+    // 🚀 CORREÇÃO DA AUDITORIA: Gera uma senha aleatória de 8 caracteres
+    const novaSenhaAleatoria = Math.random().toString(36).slice(-8);
+    const hashedPassword = await hash(novaSenhaAleatoria, 10);
 
     await db.user.update({
       where: { id: userId },
       data: { password: hashedPassword },
     });
 
-    return { success: true, message: "Senha redefinida para 'mudar123'!" };
+    return {
+      success: true,
+      message: `Sucesso! A nova senha é: ${novaSenhaAleatoria}`,
+    };
   } catch (error) {
     console.error("Erro ao resetar senha:", error);
     return { error: "Falha ao resetar a senha no banco de dados." };
@@ -2691,16 +2702,25 @@ export async function updateUserNameInline(newName: string) {
 }
 export async function getOnlineMarketplaceMetadata() {
   try {
+    const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
     const data = await db.business.findMany({
       where: {
         isActive: true,
         published: true,
-        OR: [
-          { shopee: { not: "" } },
-          { mercadoLivre: { not: "" } },
-          { shein: { not: "" } },
-          { ifood: { not: "" } },
-          { hasDelivery: true }, // 🚀 O NOVO PASSAPORTE DA VITRINE AQUI!
+        AND: [
+          {
+            OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+          },
+          {
+            OR: [
+              { shopee: { not: "" } },
+              { mercadoLivre: { not: "" } },
+              { shein: { not: "" } },
+              { ifood: { not: "" } },
+              { hasDelivery: true },
+            ],
+          },
         ],
       },
       select: { category: true, subcategory: true },
@@ -2756,11 +2776,14 @@ export const getTrendingBusinesses = unstable_cache(
       const topBusinessIds = topViews.map((v) => v.businessId);
 
       // 2. Busca os dados reais dessas lojas (apenas o essencial para o card ficar microscópico no peso)
+      const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000); // 2. Busca os dados reais dessas lojas respeitando a carência
+
       const businesses = await db.business.findMany({
         where: {
           id: { in: topBusinessIds },
           isActive: true,
           published: true,
+          OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
         },
         select: {
           id: true,

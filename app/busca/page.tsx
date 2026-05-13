@@ -201,6 +201,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const smartTerms = getSmartTerms(query);
   const searchTerms = smartTerms;
 
+  // 🚀 A REGRA DAS 48 HORAS NO BUSCADOR:
+  const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
   // --- 1. CONSTRUÇÃO DO FILTRO BASE ---
   const baseWhereClause: Prisma.BusinessWhereInput = {
     isActive: true,
@@ -220,6 +223,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       : {}),
 
     AND: [
+      // 🚀 TRAVA DAS 48H: Exige que a loja esteja dentro da validade + carência
+      {
+        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+      },
       ...(cityFilter
         ? [
             {
@@ -268,7 +275,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       select: { category: true, subcategory: true },
     }),
     db.business.findMany({
-      where: { isActive: true, published: true },
+      where: {
+        isActive: true,
+        published: true,
+        // 🚀 TRAVA DAS 48H APLICADA ÀS CIDADES TAMBÉM:
+        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+      },
       select: { state: true, city: true, neighborhood: true },
       distinct: ["state", "city", "neighborhood"],
     }),

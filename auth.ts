@@ -25,6 +25,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.password) return null;
 
+        // 🚀 TRAVA CRÍTICA DA AUDITORIA: Bloqueia na raiz da API!
+        if (user.isBanned) return null;
+
         const isValid = compareSync(
           credentials.password as string,
           user.password,

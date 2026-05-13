@@ -32,6 +32,7 @@ export default async function DashboardLayout({
     select: {
       id: true,
       name: true,
+      email: true, // 🚀 ADICIONE ESTA LINHA AQUI!
       role: true,
       document: true,
       phone: true,
@@ -57,10 +58,18 @@ export default async function DashboardLayout({
     );
 
     if (new Date() > dataComCarencia) {
-      await db.user.update({
-        where: { id: user.id },
-        data: { role: "VISITANTE" as Role },
-      });
+      // 🚀 Rebaixa o usuário E derruba as vitrines dele no banco de dados!
+      await db.$transaction([
+        db.user.update({
+          where: { id: user.id },
+          data: { role: "VISITANTE" as Role },
+        }),
+        db.business.updateMany({
+          where: { userId: user.id },
+          data: { published: false, isActive: false },
+        }),
+      ]);
+
       redirect("/login?expired=true");
     }
   }
@@ -74,7 +83,11 @@ export default async function DashboardLayout({
   }
 
   const isPro = isAdmin || isAfiliado || (isAssinante && hasValidSubscription);
-  const isLocked = isAssinante && (!user.document || !user.phone);
+
+  // 🚀 A CHAVE MESTRA: Se for uma conta de teste do Funil (@tafanu.com.br), o cadeado se abre sozinho e ignora o CPF!
+  const isTestAccount = user.email?.endsWith("@tafanu.com.br");
+  const isLocked =
+    isAssinante && !isTestAccount && (!user.document || !user.phone);
 
   const displayName = user.name?.split(" ")[0] ?? "Usuário";
 

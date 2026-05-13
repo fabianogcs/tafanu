@@ -62,13 +62,18 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
 
               <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[8px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-4">
                 <span className="text-[#F28705]">{biz.category}</span>
-                <span className="text-slate-200">•</span>
-                <span className="flex items-center gap-1 truncate">
-                  <MapPin size={10} className="text-slate-400 flex-shrink-0" />
-                  <span className="truncate">
-                    {biz.neighborhood || biz.city || "Guarulhos"}
-                  </span>
-                </span>
+                {biz.city && (
+                  <>
+                    <span className="text-slate-200">•</span>
+                    <span className="flex items-center gap-1 truncate">
+                      <MapPin
+                        size={10}
+                        className="text-slate-400 flex-shrink-0"
+                      />
+                      <span className="truncate">{biz.city}</span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 

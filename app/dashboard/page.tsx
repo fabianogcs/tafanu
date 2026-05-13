@@ -53,10 +53,15 @@ export default async function DashboardPage() {
   if (user.role === "VISITANTE") redirect("/dashboard/favoritos");
 
   // 🚀 Lógica Inteligente:
-  // Se for ASSINANTE, checa se tem documento e telefone.
-  // Se for ADMIN ou AFILIADO, considera "completo" automaticamente (true).
+  // 1. Visitantes do Funil (@tafanu.com.br), ADMIN e AFILIADOS passam direto.
+  // 2. ASSINANTES comuns precisam ter preenchido CPF e Telefone.
+  const isTestAccount = user.email?.endsWith("@tafanu.com.br");
+
   const isProfileComplete =
-    user.role === "ASSINANTE" ? !!(user.document && user.phone) : true;
+    user.role === "ADMIN" ||
+    user.role === "AFILIADO" ||
+    isTestAccount ||
+    (user.role === "ASSINANTE" && !!(user.document && user.phone));
 
   const canCreateBusiness =
     user.role === "ADMIN" ||

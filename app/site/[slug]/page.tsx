@@ -158,17 +158,16 @@ export default async function BusinessPage({
     business.user?.role === "ADMIN" || business.user?.role === "AFILIADO";
   const isVisitorAdmin = loggedUser?.role === "ADMIN";
 
-  // 🚀 CORREÇÃO 2: Agora olhamos o expiresAt direto da raiz do 'business'
-  const isExpired = business.expiresAt
-    ? new Date(business.expiresAt) < now
-    : true;
+  // 🚀 A MATEMÁTICA DA MORTE: Calcula as 48 horas de carência
+  const limiteCarencia = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const isVencidoDeVerdade = business.expiresAt
+    ? new Date(business.expiresAt) < limiteCarencia
+    : false;
 
-  // 🚀 TRAVA TAFANU: Visibilidade vinculada ao status financeiro (isActive)
   const isOwner = userId === business.userId;
 
-  // O negócio só "some" do mapa se estiver inativo (isActive: false)
-  // Isso dá ao usuário os dias de carência do Mercado Pago/Cron
-  if (!isOwnerImmune && !business.isActive) {
+  // 🚀 A TRAVA DEFINITIVA: Se passou das 48h OU a loja foi desativada, dá erro 404 (Not Found) na hora!
+  if (!isOwnerImmune && (isVencidoDeVerdade || !business.isActive)) {
     return notFound();
   }
 

@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 
   // 🚀 AQUI ESTÁ A CHAVE DE MESTRE DO GOOGLE SEARCH CONSOLE:
   verification: {
-    google: "-kDSLFRyjNWv42JCNpcfI92VMIaB-TyRAuZxMTnXlbY",
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
   },
 
   openGraph: {

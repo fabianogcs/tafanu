@@ -3,8 +3,18 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { hashSync } from "bcrypt-ts";
+import { auth } from "@/auth";
 
 export async function moverEtapaFunil(businessId: string, novaEtapa: number) {
+  // 👈 ADICIONE ESTAS 4 LINHAS DE TRAVA:
+  const session = await auth();
+  if (
+    !session?.user ||
+    (session.user.role !== "ADMIN" && session.user.role !== "AFILIADO")
+  ) {
+    return { success: false, error: "Acesso negado." };
+  }
+
   try {
     await db.business.update({
       where: { id: businessId },
@@ -19,6 +29,14 @@ export async function moverEtapaFunil(businessId: string, novaEtapa: number) {
 }
 
 export async function criarLeadDireto(formData: FormData) {
+  const session = await auth();
+  if (
+    !session?.user ||
+    (session.user.role !== "ADMIN" && session.user.role !== "AFILIADO")
+  ) {
+    return { success: false, error: "Acesso negado." };
+  }
+
   const email = formData.get("email") as string;
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
@@ -36,10 +54,6 @@ export async function criarLeadDireto(formData: FormData) {
 
     const hashedPassword = hashSync(password, 10);
 
-    // 🔥 GERA UM CPF FALSO ÚNICO (Para não dar erro de documento duplicado no banco)
-    const randomCpf =
-      "111" + Math.floor(10000000 + Math.random() * 90000000).toString();
-
     const newUser = await db.user.create({
       data: {
         email,
@@ -47,7 +61,6 @@ export async function criarLeadDireto(formData: FormData) {
         phone,
         role: "ASSINANTE",
         emailVerified: new Date(),
-        document: randomCpf, // Agora nunca vai repetir!
         affiliateId: affiliateId,
         password: hashedPassword,
       },

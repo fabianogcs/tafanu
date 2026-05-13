@@ -267,7 +267,11 @@ export default function AdminDashboard({
 
   // --- AÇÕES ---
   const handleResetPassword = (userId: string, name: string) => {
-    if (!confirm(`Redefinir a senha de ${name.toUpperCase()} para 'mudar123'?`))
+    if (
+      !confirm(
+        `Redefinir a senha de ${name.toUpperCase()}? Uma nova senha segura e aleatória será gerada.`,
+      )
+    )
       return;
 
     startTransition(async () => {
@@ -1505,9 +1509,9 @@ export default function AdminDashboard({
                     handleResetPassword(selectedUser.id, selectedUser.name)
                   }
                   className="w-full px-3 py-3 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all border border-blue-100 flex items-center justify-center gap-1.5"
-                  title="Redefine a senha para 'mudar123'"
+                  title="Gera uma nova senha aleatória"
                 >
-                  <KeyRound size={14} /> Forçar Senha para 'mudar123'
+                  <KeyRound size={14} /> Gerar Nova Senha
                 </button>
                 <div className="flex gap-2 w-full">
                   <button

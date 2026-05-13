@@ -8,6 +8,10 @@ import { criarLeadDireto } from "@/app/dashboard/funil/actions";
 export default function CriarLeadForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // 🚀 GERA UMA SENHA ALEATÓRIA AUTOMÁTICA
+  const [senhaProvisoria] = useState(() =>
+    Math.random().toString(36).slice(-6),
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,13 +94,13 @@ export default function CriarLeadForm() {
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase">
-              Senha Provisória
+              Senha Provisória (Segura)
             </label>
             <input
               name="password"
-              defaultValue="mudar123"
+              defaultValue={senhaProvisoria}
               required
-              className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
+              className="w-full p-3 rounded-xl border border-gray-200 bg-gray-100 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
 

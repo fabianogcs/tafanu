@@ -13,7 +13,7 @@ export default {
           response_type: "code",
         },
       },
-      allowDangerousEmailAccountLinking: true,
+
       profile(profile) {
         const isAdmin =
           profile.email?.toLowerCase() ===
