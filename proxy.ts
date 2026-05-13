@@ -1,18 +1,67 @@
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 import { NextResponse } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+// 🛡️ INICIALIZAÇÃO DO RATE LIMIT (Só liga se as chaves existirem no .env)
+let ratelimit: Ratelimit | null = null;
+if (
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+  // Permite 10 requisições por minuto por IP (Excelente para Login/Webhooks)
+  ratelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(10, "1 m"),
+  });
+}
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+// 🚀 Transformamos a função em 'async' para poder "esperar" a verificação do Upstash
+export default auth(async (req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
   const pathname = nextUrl.pathname;
 
   // =====================================================================
+  // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING (Proteção Anti-DDoS e Força Bruta)
+  // =====================================================================
+  if (
+    ratelimit &&
+    (pathname.startsWith("/login") ||
+      pathname.startsWith("/api/webhook") ||
+      pathname.startsWith("/api/auth"))
+  ) {
+    // Tenta pegar o IP real (Se não achar, usa um IP local de fallback)
+    const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+
+    // Pergunta pro Upstash: "Esse IP pode passar?"
+    const { success } = await ratelimit.limit(ip);
+
+    if (!success) {
+      // Se estourou o limite (mais de 10 tentativas), corta a conexão na hora!
+      return new NextResponse(
+        JSON.stringify({
+          error:
+            "Muitas requisições detectadas. Por segurança, aguarde 1 minuto.",
+        }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      );
+    }
+  }
+
+  // =====================================================================
   // 🚧 TRAVA GERAL DE MANUTENÇÃO (A PRIMEIRA COISA A SER CHECADA)
   // =====================================================================
   const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
+  // ... (A PARTIR DAQUI O SEU CÓDIGO CONTINUA EXATAMENTE IGUAL)
 
   // Se a manutenção estiver LIGADA, e a pessoa NÃO estiver na página de manutenção,
   // e NÃO for uma rota do sistema (api, arquivos do next), redireciona ela!
@@ -86,8 +135,7 @@ export default auth((req) => {
     const isAssinante = userRole === "ASSINANTE";
 
     const emailSessao = req.auth?.user?.email?.toLowerCase();
-    const donoEmail =
-      process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
+    const donoEmail = process.env.ADMIN_EMAIL?.toLowerCase() || "";
     const isDono = emailSessao === donoEmail;
 
     // 🚀 O SEGREDO: Delegamos a segurança real para as páginas (Server Components)
@@ -125,8 +173,7 @@ export default auth((req) => {
     // 🚀 Se o email for o do dono, o Middleware deixa passar para a página
     // fazer a verificação segura no banco de dados e atualizar o cargo.
     const emailSessao = req.auth?.user?.email?.toLowerCase();
-    const donoEmail =
-      process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
+    const donoEmail = process.env.ADMIN_EMAIL?.toLowerCase() || "";
 
     if (userRole !== "ADMIN" && emailSessao !== donoEmail) {
       return NextResponse.redirect(new URL("/", nextUrl));

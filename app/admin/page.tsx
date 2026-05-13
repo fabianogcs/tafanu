@@ -19,8 +19,7 @@ export default async function AdminPage() {
     select: { role: true },
   });
 
-  const adminEmailEnv =
-    process.env.ADMIN_EMAIL?.toLowerCase() || "prfabianoguedes@gmail.com";
+  const adminEmailEnv = process.env.ADMIN_EMAIL?.toLowerCase() || "";
   const isEmailAutorizado = emailSessao === adminEmailEnv;
   const isAdminNoBanco = usuarioNoBanco?.role === "ADMIN";
 
