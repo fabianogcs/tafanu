@@ -8,6 +8,7 @@ import BusinessCard from "@/components/BusinessCard";
 import { auth } from "@/auth";
 import Link from "next/link";
 import { normalizeText } from "@/lib/normalize";
+import { unstable_cache } from "next/cache";
 
 const PAGE_SIZE = 12;
 const STOPWORDS = ["na", "no", "em", "de", "do", "da", "com", "para", "o", "a"];
@@ -31,7 +32,6 @@ function calculateDistance(
   return R * c * 1.3;
 }
 
-// 🚀 DICIONÁRIO DE SINÔNIMOS MANTIDO INTACTO
 const SINONIMOS_BASE: Record<string, string[]> = {
   pao: ["padaria", "panificadora", "confeitaria", "baguete"],
   lanche: [
@@ -121,20 +121,45 @@ function getSmartTerms(query: string) {
     .toLowerCase()
     .split(" ")
     .filter((t) => t.length > 2 && !STOPWORDS.includes(t));
-
   const result = new Set<string>();
   terms.forEach((term) => {
     const normalizedTerm = normalizeText(term);
     result.add(normalizedTerm);
-    if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3) {
+    if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3)
       result.add(normalizedTerm.slice(0, -1));
-    }
-    if (SYNONYMS_MAP[normalizedTerm]) {
+    if (SYNONYMS_MAP[normalizedTerm])
       SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
-    }
   });
   return Array.from(result);
 }
+
+// 🚀 O CACHE GLOBAL CORRIGIDO
+const getGlobalFilters = unstable_cache(
+  async () => {
+    const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    return await Promise.all([
+      db.business.findMany({
+        where: {
+          isActive: true,
+          published: true,
+          OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+        },
+        select: { category: true, subcategory: true },
+      }),
+      db.business.findMany({
+        where: {
+          isActive: true,
+          published: true,
+          OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+        },
+        select: { state: true, city: true, neighborhood: true },
+        distinct: ["state", "city", "neighborhood"],
+      }),
+    ]);
+  },
+  ["global-filter-menu"],
+  { revalidate: 3600 },
+);
 
 interface BuscaProps {
   searchParams: Promise<{
@@ -191,7 +216,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const statusFilter = isIntentOpen ? "open" : params.status || "all";
   const subcategoryArray = subcategoryParam ? subcategoryParam.split(",") : [];
 
-  // 🚀 GPS DESTRANCADO: A cidade filtra normalmente, mesmo na Vitrine!
   const cityFilter = normalizeText(rawCityFilter);
   const sort = params.sort || "relevance";
 
@@ -201,15 +225,11 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const smartTerms = getSmartTerms(query);
   const searchTerms = smartTerms;
 
-  // 🚀 A REGRA DAS 48 HORAS NO BUSCADOR:
   const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  // --- 1. CONSTRUÇÃO DO FILTRO BASE ---
   const baseWhereClause: Prisma.BusinessWhereInput = {
     isActive: true,
     published: true,
-
-    // 🚀 A MÁGICA ATUALIZADA: Incluindo a TAG hasDelivery
     ...(isOnlineMode
       ? {
           OR: [
@@ -217,16 +237,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             { mercadoLivre: { not: "" } },
             { shein: { not: "" } },
             { ifood: { not: "" } },
-            { hasDelivery: true }, // <-- Este é o novo passaporte!
+            { hasDelivery: true },
           ],
         }
       : {}),
-
     AND: [
-      // 🚀 TRAVA DAS 48H: Exige que a loja esteja dentro da validade + carência
-      {
-        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
-      },
+      { OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }] },
       ...(cityFilter
         ? [
             {
@@ -264,27 +280,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             },
           ]
         : []),
+      ...(category
+        ? [{ category: { equals: category, mode: "insensitive" as const } }]
+        : []),
     ],
   };
 
-  // --- 2. BUSCA DE CATEGORIAS E LOCALIZAÇÃO ---
-  // 🚀 GPS DESTRANCADO: As cidades carregam sempre!
-  const [categoriesData, locationRaw] = await Promise.all([
-    db.business.findMany({
-      where: baseWhereClause,
-      select: { category: true, subcategory: true },
-    }),
-    db.business.findMany({
-      where: {
-        isActive: true,
-        published: true,
-        // 🚀 TRAVA DAS 48H APLICADA ÀS CIDADES TAMBÉM:
-        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
-      },
-      select: { state: true, city: true, neighborhood: true },
-      distinct: ["state", "city", "neighborhood"],
-    }),
-  ]);
+  const [categoriesData, locationRaw] = await getGlobalFilters();
 
   const filterMap: Record<string, Set<string>> = {};
   categoriesData.forEach((item) => {
@@ -304,17 +306,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     if (!b.state || !b.city || !b.neighborhood) return;
     if (!locationData[b.state]) locationData[b.state] = {};
     if (!locationData[b.state][b.city]) locationData[b.state][b.city] = [];
-    if (!locationData[b.state][b.city].includes(b.neighborhood)) {
+    if (!locationData[b.state][b.city].includes(b.neighborhood))
       locationData[b.state][b.city].push(b.neighborhood);
-    }
   });
-
-  const finalWhereClause: Prisma.BusinessWhereInput = {
-    ...baseWhereClause,
-    category: category
-      ? { equals: category, mode: "insensitive" as const }
-      : undefined,
-  };
 
   const hasSearchTarget = !!(
     rawQuery ||
@@ -323,22 +317,56 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     isOnlineMode
   );
 
-  const [businessesData, totalCount] = hasSearchTarget
-    ? await Promise.all([
+  const needsJsEngine =
+    query !== "" ||
+    sort === "distance" ||
+    sort === "relevance" ||
+    statusFilter === "open" ||
+    subcategoryArray.length > 0;
+
+  // 🚀 A CORREÇÃO DO TYPESCRIPT ESTÁ AQUI: Avisamos que as variáveis são Arrays do tipo 'any'
+  let businessesData: any[] = [];
+  let totalCount = 0;
+  let paginatedResults: any[] = [];
+
+  if (hasSearchTarget) {
+    if (needsJsEngine) {
+      const dbResult = await db.business.findMany({
+        where: baseWhereClause,
+        take: 400,
+        orderBy: { views: "desc" },
+        include: {
+          hours: true,
+          favorites: userId ? { where: { userId } } : false,
+          _count: { select: { favorites: true } },
+        },
+      });
+      totalCount = await db.business.count({ where: baseWhereClause });
+      businessesData = dbResult;
+    } else {
+      let dbOrderBy: any = { views: "desc" };
+      if (sort === "recent" || sort === "newest")
+        dbOrderBy = { createdAt: "desc" };
+
+      const [dbResult, count] = await Promise.all([
         db.business.findMany({
-          where: finalWhereClause,
-          take: 400,
+          where: baseWhereClause,
+          skip: skip,
+          take: PAGE_SIZE,
+          orderBy: dbOrderBy,
           include: {
             hours: true,
             favorites: userId ? { where: { userId } } : false,
             _count: { select: { favorites: true } },
           },
         }),
-        db.business.count({ where: finalWhereClause }),
-      ])
-    : [[], 0];
+        db.business.count({ where: baseWhereClause }),
+      ]);
+      businessesData = dbResult;
+      totalCount = count;
+    }
+  }
 
-  // --- 4. RANKING E SCORE ---
   const serverTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Sao_Paulo",
   });
@@ -349,14 +377,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   let businesses = businessesData.map((b) => {
     const matchesSubcategoryFilter =
       subcategoryArray.length === 0 ||
-      b.subcategory.some((sub) =>
+      b.subcategory.some((sub: string) =>
         subcategoryArray.some(
           (filterSub) => normalizeText(filterSub) === normalizeText(sub),
         ),
       );
-
     let distanceValue: number | null = null;
-    // 🚀 GPS DESTRANCADO: Já não tem o '!isOnlineMode' a bloquear o cálculo!
     if (userLat && userLng && b.latitude && b.longitude) {
       distanceValue = calculateDistance(
         userLat,
@@ -365,9 +391,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         b.longitude,
       );
     }
-
     let isOpen = false;
-    const todayHours = b.hours.find((h) => h.dayOfWeek === currentDay);
+    const todayHours = b.hours.find((h: any) => h.dayOfWeek === currentDay);
     if (
       todayHours &&
       !todayHours.isClosed &&
@@ -378,38 +403,31 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       const [cH, cM] = todayHours.closeTime.split(":").map(Number);
       isOpen = currentTime >= oH * 100 + oM && currentTime < cH * 100 + cM;
     }
-
     let score = 0;
     if (query) {
       const nName = normalizeText(b.name);
       const nCat = normalizeText(b.category);
-      const nSubs = b.subcategory.map((s) => normalizeText(s));
+      const nSubs = b.subcategory.map((s: string) => normalizeText(s));
       const nSubsString = nSubs.join(" ");
-      const nKeys = b.keywords.map((k) => normalizeText(k)).join(" ");
+      const nKeys = b.keywords.map((k: string) => normalizeText(k)).join(" ");
 
       if (nName === query) score += 120;
       else if (nName.startsWith(query)) score += 90;
       else if (nName.includes(query)) score += 60;
-
       if (nSubs.includes(query)) score += 70;
-
       let termScore = 0;
       smartTerms.forEach((t) => {
         if (nKeys.includes(t)) termScore += 50;
         if (nCat.includes(t)) termScore += 40;
         if (nSubsString.includes(t)) termScore += 40;
       });
-
       score += Math.min(termScore, 200);
-
       if (distanceValue !== null) score += Math.max(0, 50 - distanceValue);
       if (b.keywords.length === 0) score -= 10;
     } else {
       score = 1;
     }
-
     if (subcategoryArray.length > 0 && matchesSubcategoryFilter) score += 200;
-
     return {
       ...b,
       matchesSubcategoryFilter,
@@ -421,33 +439,30 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     };
   });
 
-  if (subcategoryArray.length > 0) {
+  if (subcategoryArray.length > 0)
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
-  }
+  if (statusFilter === "open") businesses = businesses.filter((b) => b.isOpen);
 
-  if (statusFilter === "open") {
-    businesses = businesses.filter((b) => b.isOpen);
-  }
+  if (needsJsEngine) {
+    if (sort === "distance" && userLat && userLng)
+      businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
+    else if (isOnlineMode || sort === "popular")
+      businesses.sort((a, b) => b.views - a.views);
+    else if (sort === "recent" || sort === "newest")
+      businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    else if (query && sort === "relevance")
+      businesses = businesses
+        .filter((b) => b.score > 0)
+        .sort((a, b) => b.score - a.score);
+    else businesses.sort((a, b) => b.views - a.views);
 
-  // 🚀 O ALGORITMO REI DA COLINA: Mantém os Mais Vistos por padrão, mas aceita GPS se o cliente clicar no botão Distância!
-  if (sort === "distance" && userLat && userLng) {
-    businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
-  } else if (isOnlineMode) {
-    businesses.sort((a, b) => b.views - a.views);
-  } else if (sort === "popular") {
-    businesses.sort((a, b) => b.views - a.views);
-  } else if (sort === "recent" || sort === "newest") {
-    businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  } else if (query && sort === "relevance") {
-    businesses = businesses
-      .filter((b) => b.score > 0)
-      .sort((a, b) => b.score - a.score);
+    paginatedResults = businesses.slice(skip, skip + PAGE_SIZE);
   } else {
-    businesses.sort((a, b) => b.views - a.views);
+    paginatedResults = businesses;
   }
 
-  const paginatedResults = businesses.slice(skip, skip + PAGE_SIZE);
-  const totalPages = Math.ceil(businesses.length / PAGE_SIZE);
+  const effectiveTotal = needsJsEngine ? businesses.length : totalCount;
+  const totalPages = Math.ceil(effectiveTotal / PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -473,8 +488,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                 {statusFilter === "open" ? (
                   <>
                     Exibindo{" "}
-                    <strong className="text-white">{businesses.length}</strong>{" "}
-                    abertos de {totalCount}
+                    <strong className="text-white">{effectiveTotal}</strong>{" "}
+                    abertos
                   </>
                 ) : (
                   <>
@@ -498,9 +513,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <aside className="hidden lg:block lg:col-span-1">
+      <div className="max-w-7xl mx-auto px-4 mt-4 md:mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
+          <aside className="w-full lg:col-span-1">
             <LocationTracker />
           </aside>
 
@@ -518,14 +533,14 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     key={item.id}
                     business={item}
                     isLoggedIn={!!userId}
-                    showDistance={sort === "distance"} // 🚀 Mostra a plaquinha de distância se ativado!
+                    showDistance={sort === "distance"}
                   />
                 ))
               )}
             </div>
 
             {totalPages > 1 && (
-              <div className="flex gap-2 mt-12 justify-center">
+              <div className="flex gap-2 mt-12 justify-center flex-wrap">
                 {Array.from({ length: totalPages }).map((_, i) => {
                   const pNum = i + 1;
                   const active = pNum === page;
@@ -539,11 +554,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     <Link
                       key={pNum}
                       href={`/busca?${urlParams.toString()}`}
-                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-black transition-all ${
-                        active
-                          ? "bg-tafanu-action text-white scale-110 shadow-lg"
-                          : "bg-white text-gray-400 hover:bg-gray-100"
-                      }`}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-black transition-all ${active ? "bg-tafanu-action text-white scale-110 shadow-lg" : "bg-white text-gray-400 hover:bg-gray-100"}`}
                     >
                       {pNum}
                     </Link>

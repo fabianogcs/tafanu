@@ -1,3 +1,6 @@
+// 🚀 O PULO DO GATO: Força o sitemap a olhar o banco de dados em tempo real!
+export const dynamic = "force-dynamic";
+
 import { db } from "@/lib/db";
 import { MetadataRoute } from "next";
 

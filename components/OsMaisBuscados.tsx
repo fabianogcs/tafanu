@@ -2,11 +2,15 @@ import Link from "next/link";
 import { TrendingUp, MapPin, ArrowUpRight } from "lucide-react";
 
 export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
-  if (!businesses || businesses.length === 0) return null;
+  // 🚀 O CALÇO INVISÍVEL: Se o banco estiver zerado, ele não mostra lojas,
+  // mas mantém a distância correta para a Vitrine não bater no teto!
+  if (!businesses || businesses.length === 0) {
+    return <div className="w-full pt-24 md:pt-40 lg:pt-[220px]" />;
+  }
 
   return (
-    /* 🚀 DESCENDO MAIS: Usamos mt-[220px] no desktop para descolar bem do Hero */
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 md:mt-40 lg:mt-[220px] pt-10 pb-20 md:pt-16 md:pb-24 animate-in fade-in duration-700 delay-400">
+    /* 🚀 Reduzimos o "pb" (padding-bottom) para ele não empurrar a Vitrine pra tão longe */
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 md:mt-40 lg:mt-[220px] pt-10 pb-4 md:pt-16 md:pb-8 animate-in fade-in duration-700 delay-400">
       {/* CABEÇALHO DA SESSÃO */}
       <div className="flex items-center gap-3 md:gap-4 mb-8 md:mb-10">
         <div className="bg-orange-100 p-2.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm">
@@ -17,7 +21,7 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
             Os Mais <span className="text-[#F28705]">Buscados</span>
           </h2>
           <p className="text-slate-400 font-medium text-[10px] md:text-sm">
-            As vitrines que estão bombando na região.
+            As vitrines que estão bombando no TAFANU.
           </p>
         </div>
       </div>

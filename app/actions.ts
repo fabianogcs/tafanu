@@ -1176,8 +1176,19 @@ export async function toggleFavorite(businessId: string) {
     const existing = await db.favorite.findUnique({
       where: { userId_businessId: { userId, businessId } },
     });
-    if (existing) await db.favorite.delete({ where: { id: existing.id } });
-    else await db.favorite.create({ data: { userId, businessId } });
+    if (existing) {
+      await db.favorite.delete({ where: { id: existing.id } });
+    } else {
+      await db.favorite.create({ data: { userId, businessId } });
+
+      // 🚀 NOVO: Registra o evento de FAVORITE no Analytics para o "Score Híbrido" subir essa loja!
+      await db.analyticsEvent.create({
+        data: {
+          eventType: "FAVORITE",
+          businessId: businessId,
+        },
+      });
+    }
 
     revalidatePath("/dashboard/favoritos");
     revalidatePath("/busca");
@@ -2759,25 +2770,45 @@ export const getTrendingBusinesses = unstable_cache(
       const seteDiasAtras = new Date();
       seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
 
-      // 1. Pega os IDs das 6 lojas mais vistas nos últimos 7 dias usando a "Caixa Preta"
-      const topViews = await db.analyticsEvent.groupBy({
-        by: ["businessId"],
+      // 1. BUSCA INTELIGENTE: Pega TODOS os eventos dos últimos 7 dias
+      const eventos = await db.analyticsEvent.groupBy({
+        by: ["businessId", "eventType"],
         where: {
-          eventType: "VIEW",
           createdAt: { gte: seteDiasAtras },
         },
-        _count: { businessId: true },
-        orderBy: { _count: { businessId: "desc" } },
-        take: 6, // Quantidade de vitrines na página inicial (pode mudar se quiser)
+        _count: { _all: true },
       });
 
-      if (topViews.length === 0) return [];
+      if (eventos.length === 0) return [];
 
-      const topBusinessIds = topViews.map((v) => v.businessId);
+      // 2. O ALGORITMO DE SCORE HÍBRIDO
+      const scoreMap = new Map<string, number>();
 
-      // 2. Busca os dados reais dessas lojas (apenas o essencial para o card ficar microscópico no peso)
-      const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000); // 2. Busca os dados reais dessas lojas respeitando a carência
+      eventos.forEach((evento) => {
+        const id = evento.businessId;
+        const count = evento._count._all;
+        let pontos = 0;
 
+        // 🎯 PESOS DO ENGAJAMENTO (Aqui lemos o WHATSAPP e o FAVORITE)
+        if (evento.eventType === "VIEW") pontos = count * 1;
+        else if (evento.eventType === "WHATSAPP") pontos = count * 3;
+        else if (evento.eventType === "FAVORITE") pontos = count * 5;
+        else pontos = count * 1;
+
+        scoreMap.set(id, (scoreMap.get(id) || 0) + pontos);
+      });
+
+      // 3. RANKING: Ordena do maior pro menor e corta os top 6
+      const topBusinessIds = Array.from(scoreMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([id]) => id);
+
+      if (topBusinessIds.length === 0) return [];
+
+      const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+      // 4. Busca os dados reais respeitando a carência
       const businesses = await db.business.findMany({
         where: {
           id: { in: topBusinessIds },
@@ -2791,16 +2822,18 @@ export const getTrendingBusinesses = unstable_cache(
           slug: true,
           imageUrl: true,
           category: true,
-          luxe_quote: true, // A frase de impacto que definimos
+          luxe_quote: true,
           neighborhood: true,
           city: true,
         },
       });
 
-      // 3. Reorganiza a lista na exata ordem do Ranking de Visualizações
+      // 5. PERFORMANCE O(1): A sacada do Map para o site voar!
+      const businessMap = new Map(businesses.map((b) => [b.id, b]));
+
       const sortedBusinesses = topBusinessIds
-        .map((id) => businesses.find((b) => b.id === id))
-        .filter(Boolean); // Se uma loja top 6 foi pausada, ela é ignorada silenciosamente
+        .map((id) => businessMap.get(id))
+        .filter(Boolean);
 
       return sortedBusinesses;
     } catch (error) {
@@ -2808,8 +2841,8 @@ export const getTrendingBusinesses = unstable_cache(
       return [];
     }
   },
-  ["trending-businesses-7days"], // A etiqueta da "gaveta" do cache do Next.js
-  { revalidate: 86400 }, // ⏱️ 86400 segundos = 24 horas congelado (Custo zero no Vercel/Prisma)
+  ["trending-businesses-hybrid-v1"],
+  { revalidate: 3600 }, // ⏱️ 1 hora de cache (O site fica vivo e quente!)
 );
 
 // ==============================================================================

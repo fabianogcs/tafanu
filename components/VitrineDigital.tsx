@@ -25,8 +25,8 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
   const activeData = data.find((d) => d.category === activeTab);
 
   return (
-    /* 🚀 SUBINDO A VITRINE: Usamos margem negativa (-mt-8 e -mt-16) para puxar a seção para cima e colar nos Mais Buscados */
-    <section className="max-w-7xl mx-auto px-4 md:px-6 -mt-4 md:-mt-8 lg:-mt-16 pt-4 pb-16 md:pt-8 md:pb-24 relative overflow-hidden z-10">
+    /* 🛡️ LAYOUT SEGURO: Agora a margem é bem pequena (mt-4/mt-8), pois os 'Mais Buscados' sempre seguram o teto! */
+    <section className="max-w-7xl mx-auto px-4 md:px-6 mt-4 md:mt-8 pb-16 md:pb-24 relative overflow-hidden z-10">
       {/* Brilho de Fundo Suave */}
       <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-emerald-400/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
@@ -40,12 +40,23 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
             Shopping Local
           </span>
         </div>
-        <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-[#023059] uppercase italic tracking-tighter leading-[1.1] drop-shadow-sm">
+        <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-[#023059] uppercase italic tracking-tighter leading-[1.1] drop-shadow-sm mb-4">
           Compre Sem <br className="md:hidden" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400 pr-2">
             Sair de Casa
           </span>
         </h2>
+
+        {/* 🚀 MICRO PROVA SOCIAL: Gatilho de movimento e urgência */}
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full shadow-sm">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="text-[10px] md:text-xs font-bold text-emerald-700 uppercase tracking-wider">
+            Centenas de negócios ativos agora
+          </span>
+        </div>
       </div>
 
       {/* CAIXA PRINCIPAL (Glassmorphism Suave) */}

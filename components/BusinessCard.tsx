@@ -1,20 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   MapPin,
   MessageCircle,
-  Sparkles,
   Navigation,
   Heart,
+  Loader2,
+  Clock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function BusinessCard({ business, showDistance }: any) {
+  const [isNavigating, setIsNavigating] = useState(false);
   const favoriteCount = business._count?.favorites || 0;
 
-  // --- SUBCATEGORIAS (Limitando a 2) ---
+  // --- SUBCATEGORIAS ---
   let allSubcategories: string[] = [];
   if (Array.isArray(business.subcategory)) {
     allSubcategories = business.subcategory;
@@ -24,100 +27,149 @@ export default function BusinessCard({ business, showDistance }: any) {
       .map((s: string) => s.trim());
   }
 
-  const currentSub =
-    allSubcategories.length > 0
-      ? allSubcategories.slice(0, 2).join(" • ")
-      : null;
+  // --- SUBCATEGORIAS (Com lógica de "+X Ocultos") ---
+  let currentSub = null;
+  if (allSubcategories.length > 0) {
+    const visibleSubs = allSubcategories.slice(0, 2).join(" • ");
+    const hiddenCount = allSubcategories.length - 2;
 
-  // --- LÓGICA ABERTO/FECHADO ---
-  const checkIsOpen = (hours: any[]) => {
-    if (!hours || hours.length === 0) return null;
+    // Se tiver mais de 2, ele mostra "Sub1 • Sub2 • +3"
+    currentSub =
+      hiddenCount > 0 ? `${visibleSubs} • +${hiddenCount}` : visibleSubs;
+  }
+
+  // --- LÓGICA INTELIGENTE ABERTO/FECHADO E PRÓXIMO HORÁRIO ---
+  const getBusinessStatus = (hours: any[]) => {
+    if (!hours || hours.length === 0) return { status: "UNKNOWN", text: null };
+
     const now = new Date();
-    const today = now.getDay();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const todayIndex = now.getDay();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const daysMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const todayHours = hours.find((h: any) => h.dayOfWeek === todayIndex);
 
-    const todayHours = hours.find((h: any) => h.dayOfWeek === today);
-    if (!todayHours || todayHours.isClosed) return false;
+    const toMinutes = (timeStr: string) => {
+      const [h, m] = timeStr.split(":").map(Number);
+      return h * 60 + m;
+    };
 
-    const [openH, openM] = todayHours.openTime.split(":").map(Number);
-    const [closeH, closeM] = todayHours.closeTime.split(":").map(Number);
-    const openMinutes = openH * 60 + openM;
-    const closeMinutes = closeH * 60 + closeM;
+    if (todayHours && !todayHours.isClosed) {
+      const openMins = toMinutes(todayHours.openTime);
+      const closeMins = toMinutes(todayHours.closeTime);
 
-    return currentTime >= openMinutes && currentTime <= closeMinutes;
+      if (currentMinutes >= openMins && currentMinutes <= closeMins) {
+        const timeToClose = closeMins - currentMinutes;
+        if (timeToClose <= 60 && timeToClose > 0) {
+          return {
+            status: "CLOSING_SOON",
+            text: `Fecha às ${todayHours.closeTime}`,
+          };
+        }
+        return { status: "OPEN", text: `Fecha às ${todayHours.closeTime}` };
+      }
+
+      if (currentMinutes < openMins) {
+        return {
+          status: "CLOSED",
+          text: `Abre hoje às ${todayHours.openTime}`,
+        };
+      }
+    }
+
+    for (let i = 1; i <= 7; i++) {
+      const nextDayIndex = (todayIndex + i) % 7;
+      const nextDayHours = hours.find((h: any) => h.dayOfWeek === nextDayIndex);
+
+      if (nextDayHours && !nextDayHours.isClosed) {
+        const isTomorrow = i === 1;
+        const dayText = isTomorrow ? "amanhã" : daysMap[nextDayIndex];
+        return {
+          status: "CLOSED",
+          text: `Abre ${dayText} às ${nextDayHours.openTime}`,
+        };
+      }
+    }
+
+    return { status: "CLOSED", text: null };
   };
 
-  const isOpen = checkIsOpen(business.hours);
+  const { status: currentStatus, text: statusText } = getBusinessStatus(
+    business.hours,
+  );
+  const isCurrentlyOpen =
+    currentStatus === "OPEN" || currentStatus === "CLOSING_SOON";
 
   // --- CONTATO WHATSAPP ---
   const rawPhone = business.whatsapp || business.phone;
   const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, "") : null;
-
-  // 🚀 MENSAGEM AUTOMÁTICA INTELIGENTE
   const defaultMessage = `Olá! Encontrei o anúncio "${business.name}" no Tafanu e gostaria de saber mais.`;
   const wppLink = cleanPhone
     ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMessage)}`
     : null;
 
   // --- ENDEREÇO TEXTO LIMPO ---
-  const locationParts = [
-    business.neighborhood,
-    business.city && business.state
-      ? `${business.city}/${business.state}`
-      : business.city || business.state,
-  ].filter((part) => part && part.trim() !== "");
-
+  const locationParts = [business.neighborhood, business.city].filter(
+    (part) => part && part.trim() !== "",
+  );
   const locationText =
-    locationParts.length > 0 ? locationParts.join(" • ") : null;
+    locationParts.length > 0 ? locationParts.join(", ") : null;
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
-      className="relative bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full overflow-hidden"
+      whileHover={!isNavigating ? { y: -4 } : {}}
+      className={`bg-white rounded-[24px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full overflow-hidden ${
+        isNavigating ? "opacity-90 pointer-events-none scale-[0.98]" : ""
+      }`}
     >
       <Link
         href={`/site/${business.slug}`}
-        className="flex flex-col flex-1 relative z-10 outline-none"
+        onClick={() => setIsNavigating(true)}
+        className="flex flex-col flex-1 outline-none"
       >
-        {/* --- HEADER VISUAL (IMAGEM E BADGES) --- */}
-        <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden shrink-0">
-          {/* ✅ TAG IMAGE OTIMIZADA */}
+        {/* --- 1. ÁREA DA FOTO (LIMPA E FOCADA) --- */}
+        <div className="relative h-[160px] md:h-[180px] w-full bg-slate-100 overflow-hidden shrink-0">
+          {/* Spinner de Loading */}
+          {isNavigating && (
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-white transition-all">
+              <Loader2 className="w-8 h-8 animate-spin mb-2" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                Abrindo...
+              </span>
+            </div>
+          )}
+
           <Image
             src={business.imageUrl || "/og-default.png"}
             alt={business.name}
             fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            sizes="(max-width: 768px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-black/20" />
+          {/* Gradiente escuro apenas no topo para dar leitura aos selos */}
+          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/50 to-transparent z-10" />
 
-          {/* TOPO: Aberto/Fechado (Esquerda) e Favoritos (Direita) */}
+          {/* Selos (Tags) Minimalistas */}
           <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-20">
-            {/* Aberto/Fechado e Distância (Esquerda) */}
-            <div className="flex gap-2 flex-col items-start">
-              {isOpen !== null && (
-                <div
-                  className={`px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-md border ${
-                    isOpen
-                      ? "bg-emerald-500/90 border-emerald-400 text-white"
-                      : "bg-red-500/90 border-red-400 text-white"
-                  }`}
-                >
+            <div className="flex flex-col gap-1.5">
+              {/* Tag Status (Aberto/Fechado) */}
+              {currentStatus !== "UNKNOWN" && (
+                <div className="bg-white/95 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm border border-black/5">
                   <div
-                    className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-white animate-pulse" : "bg-white/70"}`}
+                    className={`w-2 h-2 rounded-full ${isCurrentlyOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
                   />
-                  <span className="text-[9px] font-black uppercase tracking-widest">
-                    {isOpen ? "Aberto" : "Fechado"}
+                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">
+                    {isCurrentlyOpen ? "Aberto" : "Fechado"}
                   </span>
                 </div>
               )}
 
+              {/* Tag Distância */}
               {showDistance &&
                 business.distance !== null &&
                 business.distance !== undefined && (
-                  <div className="bg-blue-600/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md border border-white/20">
-                    <Navigation size={10} className="fill-white" />
-                    <span className="text-[9px] font-bold uppercase tracking-wide">
+                  <div className="bg-[#023059]/90 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
+                    <Navigation size={10} className="text-white" />
+                    <span className="text-[9px] font-bold text-white uppercase tracking-wide">
                       {business.distance < 1
                         ? `${(business.distance * 1000).toFixed(0)}m`
                         : `${business.distance.toFixed(1)}km`}
@@ -126,76 +178,99 @@ export default function BusinessCard({ business, showDistance }: any) {
                 )}
             </div>
 
-            {/* Favoritos (Direita) */}
+            {/* Tag Favoritos */}
             {favoriteCount > 0 && (
-              <div className="bg-white/95 backdrop-blur-md px-2 py-1 rounded-full shadow-md border border-black/5 flex items-center gap-1.5 shrink-0">
+              <div className="bg-white/95 backdrop-blur-md px-2 py-1 rounded-md shadow-sm border border-black/5 flex items-center gap-1.5 shrink-0">
                 <Heart size={12} className="fill-rose-500 text-rose-500" />
-                <span className="text-[10px] font-black text-slate-800 pr-0.5">
+                <span className="text-[10px] font-black text-slate-700">
                   {favoriteCount}
                 </span>
               </div>
             )}
           </div>
-
-          {/* BOTTOM: Categoria Principal */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-max max-w-[90%] z-20">
-            <span className="bg-white/10 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest flex items-center justify-center gap-1.5 border border-white/20 truncate shadow-lg">
-              <Sparkles size={10} className="text-amber-300 shrink-0" />
-              {business.category || "Geral"}
-            </span>
-          </div>
         </div>
 
-        {/* --- CORPO DE TEXTO --- */}
-        {/* 🚀 AQUI FOI O AJUSTE: px-2 e md:px-3 para esticar mais, e itens centralizados! */}
-        <div className="py-3.5 px-2 md:py-4 md:px-3 flex flex-col flex-1 text-center justify-start items-center">
-          {/* Subcategorias */}
-          <div className="h-4 mb-1.5 w-full flex justify-center items-center">
-            {currentSub && (
-              <span className="text-center text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate w-full">
-                {currentSub}
+        {/* --- 2. CORPO DE TEXTO (ALINHADO À ESQUERDA, FÁCIL DE LER) --- */}
+        <div className="p-4 flex flex-col flex-1 text-left justify-start">
+          {/* --- Categoria Fixa e Subcategorias em Rolagem Automática --- */}
+          <div className="flex items-center w-full mb-2 overflow-hidden relative">
+            {/* Categoria fixa na esquerda com fundo branco para sobrepor o texto que rola */}
+            <div className="shrink-0 bg-white pr-2 z-10 flex items-center">
+              <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">
+                {business.category}
               </span>
+              {allSubcategories.length > 0 && (
+                <span className="text-slate-300 ml-2">•</span>
+              )}
+            </div>
+
+            {/* Letreiro Digital (Marquee) das Subcategorias usando Framer Motion */}
+            {allSubcategories.length > 0 && (
+              <div className="flex-1 overflow-hidden relative flex">
+                <motion.div
+                  animate={{ x: ["0%", "-50%"] }}
+                  transition={{
+                    repeat: Infinity,
+                    ease: "linear",
+                    duration: 15,
+                  }} // 15 segundos para uma leitura bem suave
+                  className="flex whitespace-nowrap text-[9px] font-bold text-slate-400 uppercase tracking-widest w-max"
+                >
+                  {/* Duplicamos o texto para o loop infinito não ter fim nem solavancos */}
+                  <span className="pr-4">{allSubcategories.join(" • ")}</span>
+                  <span className="pr-4">{allSubcategories.join(" • ")}</span>
+                </motion.div>
+              </div>
             )}
           </div>
 
-          {/* Nome do Negócio */}
-          <h3 className="text-center text-base md:text-lg font-black text-slate-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2 w-full">
+          {/* Título Principal */}
+          <h3 className="text-base md:text-lg font-black text-[#023059] leading-tight mb-4 group-hover:text-emerald-500 transition-colors line-clamp-2">
             {business.name}
           </h3>
 
-          {/* Endereço */}
-          <div className="mt-auto pt-1 w-full flex items-center justify-center gap-1.5 text-slate-500">
+          {/* Dados (Endereço e Relógio) empilhados discretamente */}
+          <div className="mt-auto flex flex-col gap-2">
             {locationText ? (
-              <>
-                <MapPin size={12} className="text-slate-300 shrink-0" />
-                <span className="text-center text-[9px] md:text-[10px] font-bold uppercase tracking-wide truncate">
+              <div className="flex items-center gap-2 text-slate-400">
+                <MapPin size={12} className="shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-wide truncate">
                   {locationText}
                 </span>
-              </>
+              </div>
             ) : (
-              <span className="text-[9px] text-transparent select-none">
-                Sem endereço
-              </span>
+              <div className="h-[14px]" /> // Espaçador caso não tenha endereço
+            )}
+
+            {statusText && (
+              <div
+                className={`flex items-center gap-2 ${currentStatus === "CLOSING_SOON" ? "text-orange-500 animate-pulse" : "text-slate-400"}`}
+              >
+                <Clock size={12} className="shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-wide truncate">
+                  {statusText}
+                </span>
+              </div>
             )}
           </div>
         </div>
       </Link>
 
-      {/* --- RODAPÉ: BOTÃO WHATSAPP --- */}
+      {/* --- 3. RODAPÉ DE AÇÃO --- */}
       {wppLink ? (
-        <div className="px-3 pb-3 pt-0 relative z-20 mt-auto">
+        <div className="px-4 pb-4 mt-auto">
           <a
             href={wppLink}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-2 bg-[#F0FDF4] text-emerald-600 hover:bg-emerald-500 hover:text-white py-3 rounded-[16px] text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all border border-emerald-100 hover:border-emerald-500 w-full"
+            className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white py-2.5 rounded-[12px] text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all border border-emerald-100 w-full"
           >
             <MessageCircle size={14} /> WhatsApp
           </a>
         </div>
       ) : (
-        <div className="pb-4 mt-auto" />
+        <div className="pb-2" />
       )}
     </motion.div>
   );

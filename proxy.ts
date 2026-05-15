@@ -14,10 +14,10 @@ if (
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
-  // Permite 10 requisições por minuto por IP (Excelente para Login/Webhooks)
+  // Permite 30 requisições por minuto por IP (Seguro e não atrapalha usuários reais)
   ratelimit = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(10, "1 m"),
+    limiter: Ratelimit.slidingWindow(30, "1 m"),
   });
 }
 
@@ -34,24 +34,15 @@ export default auth(async (req) => {
   // =====================================================================
   if (
     ratelimit &&
-    (pathname.startsWith("/login") ||
-      pathname.startsWith("/api/webhook") ||
-      pathname.startsWith("/api/auth"))
+    (pathname.startsWith("/api/webhook") || pathname.startsWith("/api/auth"))
   ) {
-    // Tenta pegar o IP real (Se não achar, usa um IP local de fallback)
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-
-    // Pergunta pro Upstash: "Esse IP pode passar?"
     const { success } = await ratelimit.limit(ip);
 
     if (!success) {
-      // Se estourou o limite (mais de 10 tentativas), corta a conexão na hora!
-      return new NextResponse(
-        JSON.stringify({
-          error:
-            "Muitas requisições detectadas. Por segurança, aguarde 1 minuto.",
-        }),
-        { status: 429, headers: { "Content-Type": "application/json" } },
+      // Em vez da tela branca, joga o usuário de volta pro login com um erro!
+      return NextResponse.redirect(
+        new URL("/login?error=AccessDenied", nextUrl),
       );
     }
   }

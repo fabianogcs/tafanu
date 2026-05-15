@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://www.tafanu.com.br/sitemap.xml",
+    sitemap: "https://tafanu.com.br/sitemap.xml",
   };
 }

@@ -20,6 +20,7 @@ enum EventType {
   SHEIN
   IFOOD
   VIEW
+  FAVORITE
 }
 enum Role {
   VISITANTE

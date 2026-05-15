@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { useState } from "react";
-import { Navigation, Loader2 } from "lucide-react";
+import { Navigation, Loader2, MapPin } from "lucide-react"; // ⬅️ Adicionei o MapPin
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LocationTracker() {
@@ -10,8 +10,8 @@ export default function LocationTracker() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 🚀 O CADEADO FOI REMOVIDO DAQUI!
-  // Agora o componente nunca retorna "null", ele sempre aparece na tela.
+  // 🚀 A MÁGICA AQUI: O componente sabe se o GPS já está ligado!
+  const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -21,9 +21,8 @@ export default function LocationTracker() {
 
     setLoading(true);
 
-    // AJUSTE DE PERFORMANCE:
     const options = {
-      enableHighAccuracy: false, // Usa Wi-Fi/Torre (muito rápido).
+      enableHighAccuracy: false,
       timeout: 15000,
       maximumAge: 60000,
     };
@@ -35,12 +34,15 @@ export default function LocationTracker() {
 
         params.set("lat", latitude.toString());
         params.set("lng", longitude.toString());
-
-        // Força a ordenação por distância na URL
         params.set("sort", "distance");
 
         setLoading(false);
         router.replace(`/busca?${params.toString()}`);
+
+        // 🚀 Feedback extra pra pessoa ficar feliz
+        toast.success("Localização encontrada!", {
+          description: "Mostrando os negócios mais próximos de você.",
+        });
       },
       (error) => {
         setLoading(false);
@@ -63,8 +65,6 @@ export default function LocationTracker() {
             msg = "Erro ao buscar GPS.";
         }
 
-        console.error("Erro detalhado:", error.message);
-
         if (error.code === error.PERMISSION_DENIED) {
           toast.error("Localização negada", {
             description:
@@ -84,30 +84,49 @@ export default function LocationTracker() {
   };
 
   return (
-    <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6 flex items-center justify-between">
+    <div
+      className={`w-full bg-white rounded-2xl p-4 shadow-sm border transition-colors duration-500 mb-6 flex items-center justify-between ${isGpsActive ? "border-emerald-200 bg-emerald-50/30" : "border-gray-100"}`}
+    >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-[#1dbf8e]/10 text-[#1dbf8e] rounded-full flex items-center justify-center">
+        {/* 🚀 O ÍCONE TAMBÉM MUDA DE COR! */}
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 ${isGpsActive ? "bg-emerald-500 text-white shadow-md" : "bg-[#1dbf8e]/10 text-[#1dbf8e]"}`}
+        >
           {loading ? (
             <Loader2 size={18} className="animate-spin" />
+          ) : isGpsActive ? (
+            <MapPin size={18} className="animate-bounce" />
           ) : (
             <Navigation size={18} />
           )}
         </div>
         <div>
           <h4 className="text-xs font-black text-gray-800 uppercase italic leading-tight">
-            Ver por proximidade?
+            {isGpsActive ? "GPS Ativado" : "Ver por proximidade?"}
           </h4>
-          <p className="text-[10px] text-gray-400 font-bold uppercase italic mt-0.5">
-            GPS Inteligente
+          <p
+            className={`text-[10px] font-bold uppercase italic mt-0.5 ${isGpsActive ? "text-emerald-600" : "text-gray-400"}`}
+          >
+            {isGpsActive ? "Exibindo os mais próximos" : "GPS Inteligente"}
           </p>
         </div>
       </div>
+
+      {/* 🚀 O BOTÃO MUDA DE COR E TEXTO! */}
       <button
         onClick={handleGetLocation}
         disabled={loading}
-        className="text-[10px] font-black uppercase bg-[#0f172a] text-white px-4 py-2 rounded-lg hover:bg-black transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+        className={`text-[10px] font-black uppercase px-4 py-2 rounded-lg transition-all disabled:opacity-50 active:scale-95 shadow-sm ${
+          isGpsActive
+            ? "bg-emerald-500 text-white hover:bg-emerald-600"
+            : "bg-[#0f172a] text-white hover:bg-black"
+        }`}
       >
-        {loading ? "Localizando..." : "MAIS PRÓXIMO"}
+        {loading
+          ? "Localizando..."
+          : isGpsActive
+            ? "Atualizar"
+            : "MAIS PRÓXIMO"}
       </button>
     </div>
   );
