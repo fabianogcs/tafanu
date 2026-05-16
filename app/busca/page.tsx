@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { SlidersHorizontal } from "lucide-react";
 import LocationTracker from "@/components/LocationTracker";
 import SearchBar from "@/components/SearchBar";
 import FilterModal, { LocationTree } from "@/components/FilterModal";
@@ -33,6 +32,74 @@ function calculateDistance(
 }
 
 const SINONIMOS_BASE: Record<string, string[]> = {
+  // --- ADIÇÕES CIRÚRGICAS PARA COMPLETAR O MERCADO LOCAL ---
+  dente: [
+    "dentista",
+    "odontologia",
+    "clinica odontologica",
+    "aparelho",
+    "clareamento",
+    "implante",
+  ],
+  oculos: ["otica", "lente", "exame de vista", "lentes de contato", "armacao"],
+  medico: [
+    "clinica medica",
+    "consulta",
+    "exame",
+    "laboratorio",
+    "pediatra",
+    "ginecologista",
+  ],
+  academia: [
+    "musculacao",
+    "crossfit",
+    "pilates",
+    "personal",
+    "fitness",
+    "treino",
+  ],
+  casa: [
+    "imobiliaria",
+    "aluguel",
+    "venda",
+    "apartamento",
+    "corretor",
+    "terreno",
+  ],
+  construcao: [
+    "material de construcao",
+    "cimento",
+    "tijolo",
+    "ferragem",
+    "deposito",
+    "tintas",
+  ],
+  festa: [
+    "eventos",
+    "buffet",
+    "decoracao de festas",
+    "espaco para festas",
+    "aniversario",
+    "casamento",
+  ],
+  escola: [
+    "colegio",
+    "creche",
+    "bercario",
+    "reforco escolar",
+    "curso",
+    "idiomas",
+    "ingles",
+  ],
+  frete: ["mudanca", "carreto", "transporte", "logistica", "caminhao"],
+  corpo: [
+    "massagem",
+    "drenagem",
+    "clinica de estetica",
+    "spa",
+    "emagrecimento",
+  ],
+  foto: ["fotografo", "ensaio", "book", "estudio fotografico", "filmagem"],
   pao: ["padaria", "panificadora", "confeitaria", "baguete"],
   lanche: [
     "hamburguer",

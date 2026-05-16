@@ -943,10 +943,12 @@ export async function deleteBusiness(slug: string) {
 
     // --- DECISÃO CIRÚRGICA ---
     // Se o dono for ASSINANTE e for a ÚNICA loja dele, entra no modo RESET para não quebrar a assinatura
+    // Bloqueamos Admins e Afiliados de caírem no reset. Eles sempre fazem a exclusão total!
     if (
       donoDaLoja?.role === "ASSINANTE" &&
       totalBusinesses <= 1 &&
-      user.role !== "ADMIN"
+      user.role !== "ADMIN" &&
+      user.role !== "AFILIADO"
     ) {
       await db.$transaction([
         db.businessHour.deleteMany({ where: { businessId: business.id } }),
@@ -955,8 +957,6 @@ export async function deleteBusiness(slug: string) {
         db.business.update({
           where: { id: business.id },
           data: {
-            name: "Minha Nova Vitrine",
-            slug: `reiniciar-${Math.random().toString(36).substring(7)}`,
             description: "",
             imageUrl: "",
             gallery: [],
@@ -982,6 +982,7 @@ export async function deleteBusiness(slug: string) {
             luxe_quote: "",
             showroom_collection: "",
             comercial_badge: "",
+            etapaFunil: 1, // 🚀 Voltou para a etapa 1 do funil!
           },
         }),
       ]);
@@ -2369,23 +2370,13 @@ export async function unbanUserAction(userId: string) {
       data: { isBanned: false },
     });
 
-    // 2. Traz os anúncios de volta e limpa o status de cancelamento
-    await db.business.updateMany({
-      where: { userId: userId },
-      data: {
-        isActive: true,
-        published: true,
-        subscriptionStatus: "cancelled", // ✅ Consertado!
-      },
-    });
-
     revalidatePath("/");
     revalidatePath("/busca");
     revalidatePath("/admin");
 
     return {
       success: true,
-      message: "Usuário desbanido e anúncios reativados!",
+      message: "Usuário desbanido! Ele precisará criar uma nova assinatura.",
     };
   } catch (error) {
     console.error("Erro ao desbanir:", error);
