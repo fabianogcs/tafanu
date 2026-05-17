@@ -75,9 +75,9 @@ const VideoEmbed = ({ url, primary }: { url: string; primary?: string }) => {
         embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
       }
     } else if (url.includes("instagram.com")) {
-      const cleanUrl = url.split("?")[0].replace(/\/$/, "");
-      embedUrl = `${cleanUrl}/embed`;
       isInstagram = true;
+      // Mantém a URL original intacta para abrir em nova aba
+      embedUrl = url;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
@@ -88,28 +88,51 @@ const VideoEmbed = ({ url, primary }: { url: string; primary?: string }) => {
 
   if (!embedUrl) return null;
 
-  // 🚀 A NOVA FACHADA DE LUXO
-  if (!isLoaded) {
-    // Extrai a cor base para o brilho (Glow). Se o primary for 'text-rose-500', vira 'bg-rose-500'
-    const glowColor = primary ? primary.replace("text-", "bg-") : "bg-white";
+  const glowColor = primary ? primary.replace("text-", "bg-") : "bg-white";
 
+  // 🚀 SE FOR INSTAGRAM: Botão luxuoso (Com tom mais fechado e elegante)
+  if (isInstagram) {
+    return (
+      <a
+        href={embedUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Ver no Instagram"
+        className="w-full h-full bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group shadow-lg"
+      >
+        {/* O Segredo: Uma camada preta de 60% por cima para "fechar" o tom da cor */}
+        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors duration-700" />
+
+        {/* Ícone do Instagram em botão de Vidro (Mais fosco e discreto) */}
+        <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center backdrop-blur-md bg-white/10 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+          <Instagram
+            className="w-7 h-7 md:w-8 md:h-8 text-white/90 drop-shadow-md"
+            strokeWidth={1.5}
+          />
+        </div>
+
+        {/* 🚀 O texto atualizado aqui! */}
+        <span className="relative z-20 text-white/60 text-[8px] md:text-[10px] mt-6 md:mt-8 font-serif italic tracking-[0.3em] uppercase group-hover:text-white transition-colors duration-500 drop-shadow-md text-center px-4">
+          Instagram Experience
+        </span>
+      </a>
+    );
+  }
+
+  // 🚀 SE FOR YOUTUBE/TIKTOK: FACHADA DE LUXO ORIGINAL
+  if (!isLoaded) {
     return (
       <button
         aria-label="Carregar e reproduzir vídeo"
         onClick={() => setIsLoaded(true)}
         className="w-full h-full bg-[#0a0a0a] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group"
       >
-        {/* Efeito de Brilho Sutil no fundo usando a cor do tema */}
         <div
           className={`absolute inset-0 opacity-20 ${glowColor} blur-[80px] group-hover:opacity-40 transition-opacity duration-1000`}
         />
-
-        {/* Botão de Vidro (Glassmorphism) Minimalista */}
         <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center backdrop-blur-xl bg-white/10 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
           <div className="w-0 h-0 border-y-[8px] md:border-y-[10px] border-y-transparent border-l-[12px] md:border-l-[16px] border-l-white ml-1 md:ml-2 opacity-90 group-hover:opacity-100 transition-opacity"></div>
         </div>
-
-        {/* Tipografia Editorial */}
         <span className="relative z-20 text-white/60 text-[8px] md:text-[10px] mt-6 md:mt-8 font-serif italic tracking-[0.4em] uppercase group-hover:text-white transition-colors duration-500">
           Experience
         </span>
@@ -124,7 +147,7 @@ const VideoEmbed = ({ url, primary }: { url: string; primary?: string }) => {
         src={embedUrl}
         title="Vídeo de demonstração do negócio"
         aria-label="Reprodutor de vídeo"
-        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
+        className="w-full h-full border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         scrolling="no"

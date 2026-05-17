@@ -43,6 +43,7 @@ import {
   MessageCircle, // 🚀 NOVO: Ícone adicionado para o botão de WhatsApp
   KeyRound,
   Zap,
+  Eye,
 } from "lucide-react";
 
 import {
@@ -103,7 +104,9 @@ export default function AdminDashboard({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const ADMIN_EMAIL = adminEmail || "";
-
+  const [metricSort, setMetricSort] = useState<
+    "views" | "leads" | "favs" | null
+  >(null);
   const [baseUrl, setBaseUrl] = useState("https://tafanu.com.br");
   useEffect(() => {
     setBaseUrl(window.location.origin);
@@ -219,17 +222,28 @@ export default function AdminDashboard({
       }
     })();
 
-    if (!debouncedSearch.trim()) return list;
-    const q = debouncedSearch.toLowerCase();
-    let result = list.filter(
-      (u) =>
-        u.name?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        (u.document || "").includes(q),
-    );
+    // 🚀 A CORREÇÃO: Tiramos a saída antecipada e fazemos uma cópia limpa da lista
+    let result = [...list];
 
-    // 🚀 A MÁGICA DA ORDENAÇÃO DE LOGIN AQUI:
-    if (loginSort === "recentes") {
+    // 1. Aplica a Busca (Se houver alguma coisa digitada)
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q) ||
+          (u.document || "").includes(q),
+      );
+    }
+
+    // 2. Aplica os Botões de Ordenação!
+    if (metricSort === "views") {
+      result.sort((a, b) => (b.totalViews || 0) - (a.totalViews || 0));
+    } else if (metricSort === "leads") {
+      result.sort((a, b) => (b.totalLeads || 0) - (a.totalLeads || 0));
+    } else if (metricSort === "favs") {
+      result.sort((a, b) => (b.totalFavs || 0) - (a.totalFavs || 0));
+    } else if (loginSort === "recentes") {
       result.sort(
         (a, b) =>
           new Date(b.lastLogin || 0).getTime() -
@@ -244,7 +258,7 @@ export default function AdminDashboard({
     }
 
     return result;
-  }, [debouncedSearch, subTab, segments, loginSort]);
+  }, [debouncedSearch, subTab, segments, loginSort, metricSort]);
 
   const totalOwed = useMemo(
     () => payouts.reduce((acc, p) => acc + p.valorDevido, 0),
@@ -514,26 +528,64 @@ export default function AdminDashboard({
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {/* 🚀 BOTÃO ORDENAR POR LOGIN */}
+            {/* 🚀 BOTÕES DE RANKING DE DESEMPENHO */}
+            <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100 hidden md:flex">
+              <button
+                onClick={() => {
+                  setMetricSort(metricSort === "views" ? null : "views");
+                  setLoginSort(null);
+                }}
+                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${metricSort === "views" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"}`}
+              >
+                <Eye
+                  size={14}
+                  className={metricSort === "views" ? "text-emerald-400" : ""}
+                />{" "}
+                Top Visitas
+              </button>
+              <button
+                onClick={() => {
+                  setMetricSort(metricSort === "leads" ? null : "leads");
+                  setLoginSort(null);
+                }}
+                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${metricSort === "leads" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"}`}
+              >
+                <MessageCircle
+                  size={14}
+                  className={metricSort === "leads" ? "text-emerald-400" : ""}
+                />{" "}
+                Top Leads
+              </button>
+              <button
+                onClick={() => {
+                  setMetricSort(metricSort === "favs" ? null : "favs");
+                  setLoginSort(null);
+                }}
+                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${metricSort === "favs" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"}`}
+              >
+                <Star
+                  size={14}
+                  className={metricSort === "favs" ? "text-amber-400" : ""}
+                />{" "}
+                Top Fãs
+              </button>
+            </div>
+
             <button
-              onClick={() =>
+              onClick={() => {
                 setLoginSort((prev) =>
                   prev === "recentes"
                     ? "antigos"
                     : prev === "antigos"
                       ? null
                       : "recentes",
-                )
-              }
-              className={`p-3 rounded-xl transition-all border flex items-center gap-2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest ${loginSort ? "bg-slate-900 text-emerald-400 border-slate-900" : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"}`}
+                );
+                setMetricSort(null);
+              }}
+              className={`p-3 rounded-xl transition-all border flex items-center gap-2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest ${loginSort ? "bg-slate-900 text-emerald-400 border-slate-900" : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-200"}`}
               title="Ordenar por Último Acesso"
             >
               <Clock size={16} />
-              {loginSort === "recentes"
-                ? "Logaram Há Pouco"
-                : loginSort === "antigos"
-                  ? "Estão Sumidos"
-                  : "Filtro de Acesso"}
             </button>
             <button
               onClick={handleGarbageCollection}
@@ -767,11 +819,12 @@ export default function AdminDashboard({
               <table className="w-full min-w-[700px]">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                    <th className="p-5 text-left">Membro</th>
-                    <th className="p-5 text-left">Status</th>
-                    <th className="p-5 text-left">Vencimento</th>
-                    <th className="p-5 text-left">Último Acesso</th>
-                    <th className="p-5 text-right">Ação</th>
+                    <th className="p-4 text-left">Membro</th>
+                    <th className="p-4 text-left">Status</th>
+                    {/* 🚀 NOVA COLUNA DE DESEMPENHO */}
+                    <th className="p-4 text-center">Desempenho</th>
+                    <th className="p-4 text-right">Vencimento</th>
+                    <th className="p-4 text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -781,7 +834,7 @@ export default function AdminDashboard({
                       onClick={() => setSelectedUser(user)}
                       className={`hover:bg-slate-50/60 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/30" : ""}`}
                     >
-                      <td className="p-5">
+                      <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${user.isBanned ? "bg-rose-100 text-rose-500" : "bg-slate-100 text-slate-500"}`}
@@ -794,58 +847,67 @@ export default function AdminDashboard({
                             >
                               {user.name || "Sem Nome"}
                             </p>
-                            <p className="text-[11px] text-slate-400">
+                            <p className="text-[11px] text-slate-400 truncate max-w-[150px]">
                               {user.email}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="p-5">
+                      <td className="p-4">
                         <StatusBadge
                           role={user.role}
-                          expiresAt={
-                            user.derivedExpiresAt
-                          } /* 🚀 AJUSTE: Lendo a data derivada */
+                          expiresAt={user.derivedExpiresAt}
                           isBanned={user.isBanned}
                         />
                       </td>
-                      <td className="p-5">
-                        <span className="text-[11px] font-bold text-slate-400">
-                          {user.derivedExpiresAt /* 🚀 AJUSTE: Lendo a data derivada */
+                      {/* 🚀 OS NÚMEROS AQUI, VISÍVEIS NA HORA! */}
+                      <td className="p-4">
+                        <div className="flex items-center justify-center gap-4">
+                          <div
+                            className="flex items-center gap-1.5 text-[11px] font-black text-slate-600"
+                            title="Visitas no perfil"
+                          >
+                            <Eye size={14} className="text-slate-400" />{" "}
+                            {user.totalViews || 0}
+                          </div>
+                          <div
+                            className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600"
+                            title="Cliques no Whats/Tel"
+                          >
+                            <MessageCircle
+                              size={14}
+                              className="text-emerald-400"
+                            />{" "}
+                            {user.totalLeads || 0}
+                          </div>
+                          <div
+                            className="flex items-center gap-1.5 text-[11px] font-black text-amber-500"
+                            title="Favoritos"
+                          >
+                            <Star size={14} className="text-amber-400" />{" "}
+                            {user.totalFavs || 0}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <p className="text-[11px] font-bold text-slate-500">
+                          {user.derivedExpiresAt
                             ? new Date(
                                 user.derivedExpiresAt,
                               ).toLocaleDateString("pt-BR")
                             : "—"}
-                        </span>
-                      </td>
-                      <td className="p-5">
-                        {user.role === "ASSINANTE" ||
-                        user.role === "AFILIADO" ? (
-                          user.lastLogin ? (
-                            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-1.5 rounded-lg flex items-center gap-1.5 w-fit border border-slate-200">
-                              <Clock size={12} className="text-emerald-500" />
-                              {new Date(user.lastLogin).toLocaleDateString(
-                                "pt-BR",
-                              )}{" "}
-                              às{" "}
-                              {new Date(user.lastLogin).toLocaleTimeString(
-                                "pt-BR",
-                                { hour: "2-digit", minute: "2-digit" },
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-300 italic border border-dashed border-slate-200 px-2 py-1 rounded-md">
-                              Nunca logou
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-[10px] font-bold text-slate-200">
-                            —
-                          </span>
+                        </p>
+                        {user.lastLogin && (
+                          <p className="text-[9px] text-slate-400 font-medium mt-0.5">
+                            Acesso:{" "}
+                            {new Date(user.lastLogin).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </p>
                         )}
                       </td>
                       <td
-                        className="p-5 text-right"
+                        className="p-4 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {user.isBanned ? (
@@ -859,7 +921,7 @@ export default function AdminDashboard({
                         ) : (
                           <button
                             onClick={() => setSelectedUser(user)}
-                            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5"
+                            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5 ml-auto"
                           >
                             <Info size={13} /> Raio-X
                           </button>
@@ -870,7 +932,7 @@ export default function AdminDashboard({
                   {filteredUsers.length === 0 && (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="py-16 text-center text-[11px] font-black uppercase text-slate-300 tracking-widest"
                       >
                         Nenhum registro encontrado.
@@ -1366,104 +1428,139 @@ export default function AdminDashboard({
                   </button>
                 </div>
               </div>
-              {/* 🚀 AJUSTE: Lojas com o Gerenciador de Tempo embutido */}
+              {/* 🚀 AJUSTE: Lojas com Gerenciador de Tempo e Métricas de Engajamento */}
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
                   <Store size={13} /> Lojas e Assinaturas (
                   {selectedUser.businesses?.length || 0})
                 </p>
-                <div className="flex flex-col gap-3">
-                  {selectedUser.businesses?.map((biz: any) => (
-                    <div
-                      key={biz.id}
-                      className="p-4 bg-slate-50 rounded-2xl border border-slate-100"
-                    >
-                      <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
-                        <div>
-                          <p className="font-black text-slate-800 text-sm uppercase">
-                            {biz.name}
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md font-bold uppercase">
-                              Plano: {biz.planType || "Nenhum"}
-                            </span>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${biz.expiresAt && new Date(biz.expiresAt) > new Date() ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
-                            >
-                              Validade:{" "}
-                              {biz.expiresAt
-                                ? new Date(biz.expiresAt).toLocaleDateString(
-                                    "pt-BR",
-                                  )
-                                : "Sem data"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <a
-                            href={`/site/${biz.slug}`}
-                            target="_blank"
-                            className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center gap-1"
-                          >
-                            <ExternalLink size={12} /> Ver
-                          </a>
-                          <a
-                            href={`/dashboard/editar/${biz.slug}`}
-                            className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all"
-                          >
-                            Editar
-                          </a>
-                        </div>
-                      </div>
+                <div className="flex flex-col gap-4">
+                  {selectedUser.businesses?.map((biz: any) => {
+                    const views = biz.views || 0;
+                    const leads =
+                      (biz.whatsapp_clicks || 0) + (biz.phone_clicks || 0);
+                    const favs = biz._count?.favorites || 0;
 
-                      {/* Botões de controle de tempo isolados para esta loja */}
-                      {!selectedUser.isBanned &&
-                        (selectedUser.role === "ASSINANTE" ||
-                          selectedUser.role === "VISITANTE") && (
-                          <div className="flex items-center gap-2 flex-wrap pt-1">
-                            <CalendarPlus
-                              size={14}
-                              className="text-slate-400 mr-2"
-                            />
-                            <button
-                              onClick={(e) => handleAddTime(e, biz.id, -1)}
-                              disabled={isPending}
-                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
-                            >
-                              −1 mês
-                            </button>
-                            <button
-                              onClick={(e) => handleAddDays(e, biz.id, -1)}
-                              disabled={isPending}
-                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
-                            >
-                              −1 dia
-                            </button>
-                            <button
-                              onClick={(e) => handleAddDays(e, biz.id, 1)}
-                              disabled={isPending}
-                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
-                            >
-                              +1 dia
-                            </button>
-                            <button
-                              onClick={(e) => handleAddTime(e, biz.id, 1)}
-                              disabled={isPending}
-                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
-                            >
-                              +1 mês
-                            </button>
-                            <button
-                              onClick={(e) => handleAddTime(e, biz.id, 3)}
-                              disabled={isPending}
-                              className="px-2 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
-                            >
-                              +3 meses
-                            </button>
+                    return (
+                      <div
+                        key={biz.id}
+                        className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4"
+                      >
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                          <div>
+                            <p className="font-black text-slate-900 text-lg uppercase italic tracking-tight">
+                              {biz.name}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-1.5">
+                              <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold uppercase border border-slate-200">
+                                Plano: {biz.planType || "Nenhum"}
+                              </span>
+                              <span
+                                className={`text-[10px] px-2.5 py-1 rounded-md font-bold uppercase border ${biz.expiresAt && new Date(biz.expiresAt) > new Date() ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200"}`}
+                              >
+                                Validade:{" "}
+                                {biz.expiresAt
+                                  ? new Date(biz.expiresAt).toLocaleDateString(
+                                      "pt-BR",
+                                    )
+                                  : "Sem data"}
+                              </span>
+                            </div>
                           </div>
-                        )}
-                    </div>
-                  ))}
+                          <div className="flex gap-2 w-full md:w-auto">
+                            <a
+                              href={`/site/${biz.slug}`}
+                              target="_blank"
+                              className="flex-1 md:flex-none px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <ExternalLink size={12} /> Ver Loja
+                            </a>
+                            <a
+                              href={`/dashboard/editar/${biz.slug}`}
+                              className="flex-1 md:flex-none px-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all text-center"
+                            >
+                              Editar
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* 📊 MINI DASHBOARD DE MÉTRICAS DA LOJA */}
+                        <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                          <div className="text-center">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                              <Eye size={12} /> Visitas
+                            </p>
+                            <p className="text-lg font-black text-slate-800">
+                              {views}
+                            </p>
+                          </div>
+                          <div className="text-center border-l border-r border-slate-200">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                              <MessageCircle size={12} /> Leads
+                            </p>
+                            <p className="text-lg font-black text-emerald-600">
+                              {leads}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
+                              <Star size={12} /> Fãs
+                            </p>
+                            <p className="text-lg font-black text-rose-500">
+                              {favs}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Botões de controle de tempo isolados para esta loja */}
+                        {!selectedUser.isBanned &&
+                          (selectedUser.role === "ASSINANTE" ||
+                            selectedUser.role === "VISITANTE") && (
+                            <div className="flex items-center gap-2 flex-wrap pt-2 mt-2 border-t border-slate-100">
+                              <CalendarPlus
+                                size={16}
+                                className="text-slate-400 mr-2"
+                              />
+                              <button
+                                onClick={(e) => handleAddTime(e, biz.id, -1)}
+                                disabled={isPending}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
+                              >
+                                −1 mês
+                              </button>
+                              <button
+                                onClick={(e) => handleAddDays(e, biz.id, -1)}
+                                disabled={isPending}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
+                              >
+                                −1 dia
+                              </button>
+                              <button
+                                onClick={(e) => handleAddDays(e, biz.id, 1)}
+                                disabled={isPending}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
+                              >
+                                +1 dia
+                              </button>
+                              <button
+                                onClick={(e) => handleAddTime(e, biz.id, 1)}
+                                disabled={isPending}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
+                              >
+                                +1 mês
+                              </button>
+                              <button
+                                onClick={(e) => handleAddTime(e, biz.id, 3)}
+                                disabled={isPending}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
+                              >
+                                +3 meses
+                              </button>
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })}
                   {(!selectedUser.businesses ||
                     selectedUser.businesses.length === 0) && (
                     <div className="p-5 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center text-center bg-slate-50/50">

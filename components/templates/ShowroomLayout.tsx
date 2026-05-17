@@ -81,9 +81,9 @@ const VideoEmbed = ({ url }: { url: string }) => {
       if (videoId)
         embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
     } else if (url.includes("instagram.com")) {
-      const cleanUrl = url.split("?")[0].replace(/\/$/, "");
-      embedUrl = `${cleanUrl}/embed`;
       isInstagram = true;
+      // Para o Instagram, guardamos a URL original para abrir externamente
+      embedUrl = url;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
@@ -92,6 +92,28 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
+  // 🚀 SE FOR INSTAGRAM: Renderiza um LINK com o visual do Showroom!
+  if (isInstagram) {
+    return (
+      <a
+        href={embedUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Assistir vídeo no Instagram"
+        className="w-full h-full bg-gradient-to-br from-pink-600 via-purple-600 to-orange-500 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-300"
+      >
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
+        <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md group-hover:scale-110 group-hover:bg-white/30 transition-all shadow-xl relative z-10">
+          <Instagram className="w-7 h-7 text-white" strokeWidth={1.5} />
+        </div>
+        <span className="relative z-10 text-white mt-4 font-bold text-[10px] uppercase tracking-widest group-hover:text-white transition-colors duration-300">
+          Abrir
+        </span>
+      </a>
+    );
+  }
+
+  // 🚀 SE FOR YOUTUBE/TIKTOK: Mantém a fachada Showroom original
   if (!isLoaded) {
     return (
       <button
@@ -110,7 +132,7 @@ const VideoEmbed = ({ url }: { url: string }) => {
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl">
       <iframe
         src={embedUrl}
-        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
+        className="w-full h-full border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         scrolling="no"

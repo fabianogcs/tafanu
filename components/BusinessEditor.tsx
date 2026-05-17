@@ -29,7 +29,9 @@ import {
   updateBusinessHours,
   createBusiness,
   deleteBusiness,
+  resetBusiness, // 🚀 NOVA FUNÇÃO!
 } from "@/app/actions";
+import { RefreshCcw } from "lucide-react"; // 🚀 NOVO ÍCONE ADICIONADO!
 import HoursForm from "@/components/HoursForm";
 import { motion, AnimatePresence } from "framer-motion";
 import { businessThemes } from "@/lib/themes";
@@ -64,9 +66,11 @@ const isDeepEqual = (obj1: any, obj2: any): boolean => {
 export default function BusinessEditor({
   business,
   isNew = false,
+  userRole,
 }: {
   business: any;
   isNew?: boolean;
+  userRole?: string;
 }) {
   const router = useRouter();
   const slugRef = useRef<HTMLInputElement>(null);
@@ -373,9 +377,10 @@ export default function BusinessEditor({
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
+  // 💣 EXCLUSÃO FATAL (Apenas Admin e Afiliados)
   const handleDeleteAction = async () => {
     const confirmDelete = window.confirm(
-      "⚠️ ATENÇÃO: Tem certeza que deseja excluir esta vitrine?\n\n(Se você for um assinante e esta for sua única loja, ela será apenas resetada para proteger sua assinatura).",
+      "⚠️ ATENÇÃO: Tem certeza que deseja excluir esta vitrine PERMANENTEMENTE?\n\nIsso apagará todos os dados do banco e cancelará assinaturas vinculadas.",
     );
 
     if (!confirmDelete) return;
@@ -392,6 +397,30 @@ export default function BusinessEditor({
       }
     } catch (error) {
       toast.error("Ops! Algo deu errado ao tentar excluir.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 🧹 VASSOURA / RESET (Para Assinantes e Suporte)
+  const handleResetAction = async () => {
+    const confirmReset = window.confirm(
+      "⚠️ ATENÇÃO: Isso apagará todas as fotos, vídeos e textos desta vitrine para você recomeçar.\n\nO nome do negócio e o seu link atual serão mantidos. Deseja continuar?",
+    );
+
+    if (!confirmReset) return;
+
+    setIsLoading(true);
+    try {
+      const res = await resetBusiness(safeBusiness.slug);
+      if (res.success) {
+        toast.success(res.message);
+        window.location.reload(); // Recarrega a página para o editor vir limpo!
+      } else {
+        toast.error(res.error || "Erro ao resetar.");
+      }
+    } catch (error) {
+      toast.error("Ops! Algo deu errado ao tentar resetar.");
     } finally {
       setIsLoading(false);
     }
@@ -676,16 +705,32 @@ export default function BusinessEditor({
                   )}
                   {isPublished ? "Online" : "Pausado"}
                 </button>
+                {/* 🚀 BOTÃO DE RESET (A VASSOURA) - APARECE PARA TODOS */}
+                {/* 🚀 BOTÃO DE RESET (A VASSOURA) - APARECE PARA TODOS */}
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    handleDeleteAction();
+                    handleResetAction();
                   }}
-                  title="Excluir Vitrine"
-                  className="p-3 text-rose-300 hover:text-rose-500 transition-all shadow-sm bg-white rounded-xl border border-rose-100 hover:bg-rose-50"
+                  title="Limpar Vitrine (Zerar tudo)"
+                  className="p-3 text-amber-500 hover:text-amber-600 transition-all shadow-sm bg-white rounded-xl border border-amber-200 hover:bg-amber-50"
                 >
-                  <Trash2 size={18} />
+                  <RefreshCcw size={18} />
                 </button>
+
+                {/* 🚀 BOTÃO DE EXCLUSÃO FATAL - APARECE SÓ PARA ADMIN/AFILIADO */}
+                {(userRole === "ADMIN" || userRole === "AFILIADO") && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDeleteAction();
+                    }}
+                    title="Exclusão Definitiva do Banco (Apenas Admin/Afiliado)"
+                    className="p-3 text-rose-400 hover:text-rose-600 transition-all shadow-sm bg-white rounded-xl border border-rose-200 hover:bg-rose-50"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </>
             )}
             <button
@@ -814,7 +859,7 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-40 gap-3 pointer-events-none">
+        <div className="pt-8 flex flex-col items-center sticky bottom-28 md:bottom-8 z-30 gap-3 pointer-events-none">
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
             <AnimatePresence mode="wait">
               {showOfflineWarning && !isLoading ? (

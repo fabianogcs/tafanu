@@ -89,7 +89,7 @@ export default async function EditBusinessPage({
 
         {/* COMPONENTE DO EDITOR (Agora ele reina absoluto na tela) */}
         <div className="relative bg-white rounded-[40px] shadow-sm border border-slate-200 p-2 md:p-4">
-          <BusinessEditor business={business} />
+          <BusinessEditor business={business} userRole={session.user.role} />
         </div>
       </div>
     </div>

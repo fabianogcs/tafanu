@@ -80,9 +80,9 @@ const VideoEmbed = ({ url }: { url: string }) => {
         embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
       }
     } else if (url.includes("instagram.com")) {
-      const cleanUrl = url.split("?")[0].replace(/\/$/, "");
-      embedUrl = `${cleanUrl}/embed`;
       isInstagram = true;
+      // Para o Instagram, guardamos a URL original para abrir em nova aba
+      embedUrl = url;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) {
@@ -93,7 +93,34 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
-  // 🚀 NOVA FACHADA MODERNA (URBAN STYLE)
+  // 🚀 SE FOR INSTAGRAM: Renderiza um LINK com a cara do Instagram!
+  if (isInstagram) {
+    return (
+      <a
+        href={embedUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Assistir vídeo no Instagram"
+        className="w-full h-full bg-gradient-to-br from-pink-600 via-purple-600 to-orange-500 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-500"
+      >
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
+
+        {/* Ícone do Instagram Gigante no lugar do Play */}
+        <div className="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_0_30px_rgba(255,255,255,0.2)] group-hover:scale-110 group-hover:bg-white/30 transition-all duration-500">
+          <Instagram
+            className="w-8 h-8 md:w-10 md:h-10 text-white"
+            strokeWidth={1.5}
+          />
+        </div>
+
+        <span className="relative z-10 text-white mt-6 md:mt-8 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500 text-center px-4">
+          Ver no Instagram
+        </span>
+      </a>
+    );
+  }
+
+  // 🚀 SE FOR YOUTUBE/TIKTOK: FACHADA MODERNA URBAN STYLE
   if (!isLoaded) {
     return (
       <button
@@ -101,15 +128,10 @@ const VideoEmbed = ({ url }: { url: string }) => {
         onClick={() => setIsLoaded(true)}
         className="w-full h-full bg-gradient-to-br from-slate-900 via-black to-slate-900 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-500"
       >
-        {/* Efeito de brilho sutil de fundo no hover */}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-500" />
-
-        {/* Botão de Play Glassmorphism Moderno */}
         <div className="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:scale-110 group-hover:bg-white/20 group-hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all duration-500">
           <div className="w-0 h-0 border-y-[10px] md:border-y-[12px] border-y-transparent border-l-[16px] md:border-l-[20px] border-l-white ml-2 opacity-90 group-hover:opacity-100 transition-opacity"></div>
         </div>
-
-        {/* Tipografia de Ação */}
         <span className="relative z-10 text-white/50 text-[10px] md:text-xs mt-6 md:mt-8 font-bold uppercase tracking-[0.3em] group-hover:text-white transition-colors duration-500">
           Reproduzir
         </span>
@@ -117,14 +139,14 @@ const VideoEmbed = ({ url }: { url: string }) => {
     );
   }
 
-  // O VÍDEO REAL: Só carrega depois que clicou
+  // O VÍDEO REAL CARREGADO (YouTube/TikTok)
   return (
     <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem]">
       <iframe
         src={embedUrl}
         title="Vídeo de demonstração do negócio"
         aria-label="Reprodutor de vídeo"
-        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
+        className="w-full h-full border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         scrolling="no"

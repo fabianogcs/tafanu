@@ -90,9 +90,9 @@ const VideoEmbed = ({ url }: { url: string }) => {
       if (videoId)
         embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
     } else if (url.includes("instagram.com")) {
-      const cleanUrl = url.split("?")[0].replace(/\/$/, "");
-      embedUrl = `${cleanUrl}/embed`;
       isInstagram = true;
+      // Mantém a URL intacta para abrir em nova aba
+      embedUrl = url;
     } else if (url.includes("tiktok.com")) {
       const videoId = url.split("/video/")[1]?.split("?")[0];
       if (videoId) embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
@@ -101,12 +101,40 @@ const VideoEmbed = ({ url }: { url: string }) => {
 
   if (!embedUrl) return null;
 
+  // 🚀 SE FOR INSTAGRAM: Botão com a identidade visual do ComercialLayout
+  if (isInstagram) {
+    return (
+      <a
+        href={embedUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Ver no Instagram"
+        className="w-full h-full bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2.5rem] cursor-pointer group shadow-lg"
+      >
+        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors duration-700" />
+
+        <div className="relative z-20 w-16 h-16 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700">
+          <Instagram
+            className="w-7 h-7 text-white/90 drop-shadow-md"
+            strokeWidth={1.5}
+          />
+        </div>
+
+        {/* Repare na tipografia: font-black uppercase em vez do itálico */}
+        <span className="relative z-20 text-white/60 text-[10px] mt-6 font-black uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500 drop-shadow-md text-center px-4">
+          Instagram Experience
+        </span>
+      </a>
+    );
+  }
+
+  // 🚀 SE FOR YOUTUBE/TIKTOK: FACHADA COMERCIAL ORIGINAL
   if (!isLoaded) {
     return (
       <button
         aria-label="Carregar e reproduzir vídeo"
         onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2rem] cursor-pointer group border border-white/10"
+        className="w-full h-full bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2.5rem] cursor-pointer group border border-white/10"
       >
         <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] group-hover:scale-110 group-hover:bg-white/30 transition-all">
           <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
@@ -115,11 +143,14 @@ const VideoEmbed = ({ url }: { url: string }) => {
     );
   }
 
+  // O VÍDEO REAL
   return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2rem]">
+    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2.5rem]">
       <iframe
         src={embedUrl}
-        className={`w-full ${isInstagram ? "h-[calc(100%+80px)] -mt-10" : "h-full"} border-0`}
+        title="Vídeo de demonstração do negócio"
+        aria-label="Reprodutor de vídeo"
+        className="w-full h-full border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         scrolling="no"

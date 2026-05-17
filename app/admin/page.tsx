@@ -34,9 +34,12 @@ export default async function AdminPage() {
     await Promise.all([
       db.user.findMany({
         include: {
-          businesses: true,
+          businesses: {
+            include: {
+              _count: { select: { favorites: true } },
+            },
+          },
           referrals: { select: { id: true } },
-          // 🚀 AJUSTE: 'id' incluído para o front-end gerenciar a troca de parceiro
           affiliate: { select: { id: true, name: true, referralCode: true } },
         },
         orderBy: { createdAt: "desc" },
@@ -61,18 +64,30 @@ export default async function AdminPage() {
       }),
     ]);
 
-  // 🛡️ CIRURGIA DE SEGURANÇA: Removemos a senha aqui no servidor
-  // antes de enviar os dados para o componente de tela (Front-end)
+  // 🛡️ CIRURGIA DE SEGURANÇA E PERFORMANCE: Prepara os dados para a Tabela
   const users = usersData.map((u) => {
-    // Extraímos a senha e guardamos todo o resto em 'userWithoutPassword'
     const { password, ...userWithoutPassword } = u;
+
+    // 🚀 Soma o desempenho total de todas as lojas deste assinante
+    let totalViews = 0;
+    let totalLeads = 0;
+    let totalFavs = 0;
+
+    u.businesses?.forEach((b: any) => {
+      totalViews += b.views || 0;
+      totalLeads += (b.whatsapp_clicks || 0) + (b.phone_clicks || 0);
+      totalFavs += b._count?.favorites || 0;
+    });
 
     return {
       ...userWithoutPassword,
       referredBy: u.affiliate
         ? `${u.affiliate.name} (${u.affiliate.referralCode})`
         : null,
-      referralCount: u.referrals.length,
+      referralCount: u.referrals?.length || 0,
+      totalViews,
+      totalLeads,
+      totalFavs,
     };
   });
 

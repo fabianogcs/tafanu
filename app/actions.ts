@@ -910,12 +910,12 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
   }
 }
 
+// --- A BOMBA ATÔMICA (Exclui a loja inteira do banco) ---
 export async function deleteBusiness(slug: string) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
   try {
-    // 1. Busca a loja diretamente pelo slug (Permite ao Admin achar lojas de outros)
     const business = await db.business.findUnique({
       where: { slug },
       select: { id: true, userId: true },
@@ -923,79 +923,18 @@ export async function deleteBusiness(slug: string) {
 
     if (!business) return { error: "Loja não encontrada." };
 
-    // 2. Trava de segurança: Só o dono ou um ADMIN Master pode apagar
-    if (business.userId !== user.id && user.role !== "ADMIN") {
-      return { error: "Acesso Negado. Você não é o dono desta loja." };
-    }
-
-    // 3. Conta quantas lojas o dono desta loja tem no total
-    const totalBusinesses = await db.business.count({
-      where: { userId: business.userId },
-    });
-
-    const donoDaLoja = await db.user.findUnique({
-      where: { id: business.userId },
-      select: { role: true },
-    });
-
-    // 🚀 O PULO DO GATO: A faxina das imagens TEM que ser feita ANTES de apagar no banco!
-    await cleanStorageFiles(slug);
-
-    // --- DECISÃO CIRÚRGICA ---
-    // Se o dono for ASSINANTE e for a ÚNICA loja dele, entra no modo RESET para não quebrar a assinatura
-    // Bloqueamos Admins e Afiliados de caírem no reset. Eles sempre fazem a exclusão total!
+    // Só o dono, Admin ou Afiliado podem apagar
     if (
-      donoDaLoja?.role === "ASSINANTE" &&
-      totalBusinesses <= 1 &&
+      business.userId !== user.id &&
       user.role !== "ADMIN" &&
       user.role !== "AFILIADO"
     ) {
-      await db.$transaction([
-        db.businessHour.deleteMany({ where: { businessId: business.id } }),
-        db.favorite.deleteMany({ where: { businessId: business.id } }),
-        db.report.deleteMany({ where: { businessId: business.id } }),
-        db.business.update({
-          where: { id: business.id },
-          data: {
-            description: "",
-            imageUrl: "",
-            gallery: [],
-            videos: [],
-            mediaFeed: [], // 🚀 Zera a mídia nova também no reset
-            features: [],
-            faqs: [],
-            keywords: [],
-            category: "Geral",
-            subcategory: [],
-            published: false,
-            whatsapp: "",
-            phone: "",
-            instagram: "",
-            facebook: "",
-            tiktok: "",
-            website: "",
-            shopee: "",
-            mercadoLivre: "",
-            shein: "",
-            ifood: "",
-            urban_tag: "",
-            luxe_quote: "",
-            showroom_collection: "",
-            comercial_badge: "",
-            etapaFunil: 1, // 🚀 Voltou para a etapa 1 do funil!
-          },
-        }),
-      ]);
-
-      revalidatePath("/dashboard");
-      return {
-        success: true,
-        message:
-          "Sua vitrine foi limpa/resetada. Como assinante, sua loja base permanece ativa para nova edição.",
-      };
+      return { error: "Acesso Negado." };
     }
 
-    // 🗑️ MODO EXCLUSÃO TOTAL: Para Admins, Afiliados ou Assinantes deletando lojas secundárias
+    // A faxina das imagens no UploadThing TEM que ser feita ANTES de apagar no banco!
+    await cleanStorageFiles(slug);
+
     await db.$transaction([
       db.businessHour.deleteMany({ where: { businessId: business.id } }),
       db.favorite.deleteMany({ where: { businessId: business.id } }),
@@ -1015,6 +954,76 @@ export async function deleteBusiness(slug: string) {
   } catch (error) {
     console.error("Erro ao processar exclusão:", error);
     return { error: "Erro interno ao excluir. Tente novamente." };
+  }
+}
+
+// --- A VASSOURA (Reseta os dados, mas salva o link e assinatura) ---
+export async function resetBusiness(slug: string) {
+  const user = await getSafeUser();
+  if (!user) return { error: "Não autorizado." };
+
+  try {
+    const business = await db.business.findUnique({
+      where: { slug },
+      select: { id: true, userId: true },
+    });
+
+    if (!business) return { error: "Loja não encontrada." };
+
+    if (
+      business.userId !== user.id &&
+      user.role !== "ADMIN" &&
+      user.role !== "AFILIADO"
+    ) {
+      return { error: "Acesso Negado." };
+    }
+
+    // Apaga as fotos antigas do servidor!
+    await cleanStorageFiles(slug);
+
+    await db.$transaction([
+      db.businessHour.deleteMany({ where: { businessId: business.id } }),
+      db.favorite.deleteMany({ where: { businessId: business.id } }),
+      db.report.deleteMany({ where: { businessId: business.id } }),
+      db.business.update({
+        where: { id: business.id },
+        data: {
+          description: "",
+          imageUrl: "",
+          gallery: [],
+          videos: [],
+          mediaFeed: [],
+          features: [],
+          faqs: [],
+          keywords: [],
+          category: "Geral",
+          subcategory: [],
+          published: false,
+          whatsapp: "",
+          phone: "",
+          instagram: "",
+          facebook: "",
+          tiktok: "",
+          website: "",
+          shopee: "",
+          mercadoLivre: "",
+          shein: "",
+          ifood: "",
+          urban_tag: "",
+          luxe_quote: "",
+          showroom_collection: "",
+          comercial_badge: "",
+          etapaFunil: 1,
+        },
+      }),
+    ]);
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/site/${slug}`);
+    return { success: true, message: "Sua vitrine foi limpa com sucesso!" };
+  } catch (error) {
+    console.error("Erro ao resetar:", error);
+    return { error: "Erro interno ao resetar. Tente novamente." };
   }
 }
 
