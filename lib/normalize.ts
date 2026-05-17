@@ -16,7 +16,35 @@ export function toSlug(text: string) {
     .replace(/^-|-$/g, "");
 }
 
-// 🚀 ADICIONAMOS ESTA:
+// 🚀 A NOVA FÓRMULA À PROVA DE IDIOTAS: Limpa links, arrobas, parâmetros e rastreadores!
+export const cleanSocialHandle = (url: string = "") => {
+  if (!url) return "";
+  let clean = url.trim();
+
+  // 1. Edge Case: Se for uma página de Facebook antiga (profile.php?id=...) preserva a ID
+  if (clean.includes("profile.php?id=")) {
+    return clean.replace(/.*facebook\.com\//, "");
+  }
+
+  // 2. Remove parâmetros de rastreio de links copiados pelo celular (ex: ?igshid=123, ?hl=pt)
+  clean = clean.split("?")[0];
+
+  // 3. Remove barras sobrando no final (ex: instagram.com/loja/)
+  clean = clean.replace(/\/+$/, "");
+
+  // 4. Pega só a última parte da URL (que é o nome de usuário de fato)
+  const parts = clean.split("/");
+  let handle = parts[parts.length - 1];
+
+  // 5. Se o usuário colou com o "@" (ex: @minhaloja), a gente limpa também
+  if (handle) {
+    handle = handle.replace(/^@+/, "");
+  }
+
+  return handle || "";
+};
+
+// Mantemos a antiga aqui apenas por segurança, caso algum outro arquivo ainda tente usá-la
 export const cleanHandle = (url: string = "", regex: RegExp) => {
   const clean = (url || "").trim();
   return clean.replace(regex, "").replace(/^@+/, "").replace(/\/+$/, "");

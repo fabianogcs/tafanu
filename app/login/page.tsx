@@ -175,9 +175,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 font-sans">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 sm:px-12 lg:px-24 py-12 bg-white relative">
-        <div className="max-w-md w-full mx-auto">
-          <div className="mb-10 mt-[-20px]">
+      <div className="w-full lg:w-1/2 flex flex-col justify-start lg:justify-center px-6 sm:px-12 lg:px-24 pt-6 pb-12 lg:py-12 bg-white relative overflow-y-auto">
+        <div className="max-w-md w-full mx-auto mt-2 lg:my-auto">
+          <div className="mb-6 lg:mb-10">
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2 uppercase italic tracking-tighter leading-none">
               {isLogin ? "Bem-vindo de volta" : "Crie sua conta"}
             </h1>
@@ -219,7 +219,7 @@ export default function LoginPage() {
           )}
           {/* -------------------------------------------------- */}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4 lg:space-y-5" onSubmit={handleSubmit}>
             {/* MANTIDO: O BILHETE DO GPS PARA O SERVIDOR */}
             <input type="hidden" name="callbackUrl" value={getDestination()} />
             <input
@@ -352,7 +352,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="relative my-10 text-center">
+          <div className="relative my-6 lg:my-10 text-center">
             <span className="relative z-10 text-[10px] uppercase font-black text-slate-400 bg-white px-4">
               Ou continue com
             </span>

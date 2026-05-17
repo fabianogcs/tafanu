@@ -40,6 +40,7 @@ import {
   onlyNumbers,
   toSlug,
   cleanHandle,
+  cleanSocialHandle, // 🚀 NOVA FUNÇÃO IMPORTADA AQUI!
   formatPhoneNumber,
   normalizeText,
 } from "@/lib/normalize";
@@ -197,9 +198,9 @@ export default function BusinessEditor({
   });
 
   const [socials, setSocials] = useState({
-    instagram: cleanHandle(safeBusiness.instagram, /.*instagram\.com\//),
-    facebook: cleanHandle(safeBusiness.facebook, /.*facebook\.com\//),
-    tiktok: cleanHandle(safeBusiness.tiktok, /.*tiktok\.com\/@?/),
+    instagram: cleanSocialHandle(safeBusiness.instagram),
+    facebook: cleanSocialHandle(safeBusiness.facebook),
+    tiktok: cleanSocialHandle(safeBusiness.tiktok),
     website: safeBusiness.website || "",
     shopee: safeBusiness.shopee || "",
     mercadoLivre: safeBusiness.mercadoLivre || "",
@@ -492,15 +493,14 @@ export default function BusinessEditor({
         complement: addressData.complement,
         whatsapp: onlyNumbers(whatsapp),
         phone: onlyNumbers(phone),
+        // 🚀 O dado já vem 100% limpo da tela, então é só montar a URL oficial!
         instagram: socials.instagram
-          ? `https://instagram.com/${cleanHandle(socials.instagram, /.*instagram\.com\//)}`
+          ? `https://instagram.com/${socials.instagram}`
           : "",
         facebook: socials.facebook
-          ? `https://facebook.com/${socials.facebook.replace(/.*facebook\.com\//, "")}`
+          ? `https://facebook.com/${socials.facebook}`
           : "",
-        tiktok: socials.tiktok
-          ? `https://tiktok.com/@${socials.tiktok.replace(/.*tiktok\.com\/@?/, "")}`
-          : "",
+        tiktok: socials.tiktok ? `https://tiktok.com/@${socials.tiktok}` : "",
         shopee: socials.shopee
           ? socials.shopee.startsWith("http")
             ? socials.shopee

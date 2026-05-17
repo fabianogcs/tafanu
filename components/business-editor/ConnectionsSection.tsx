@@ -11,7 +11,7 @@ import {
   Truck, // 🚀 Novo ícone importado
 } from "lucide-react";
 import { contactPlaceholders } from "./constants";
-import { formatPhoneNumber } from "@/lib/normalize";
+import { formatPhoneNumber, cleanSocialHandle } from "@/lib/normalize";
 
 interface Socials {
   instagram: string;
@@ -93,7 +93,7 @@ export function ConnectionsSection({
         </div>
       </div>
 
-      {/* REDES SOCIAIS */}
+      {/* REDES SOCIAIS (Com Máscara Inteligente) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           {
@@ -101,24 +101,32 @@ export function ConnectionsSection({
             icon: <Instagram size={20} />,
             color: "bg-[#E1306C] text-white",
             label: "Instagram",
+            prefix: "instagram.com/",
+            isSocial: true, // Avisa que precisa passar na maquininha de limpeza
           },
           {
             id: "tiktok",
             icon: <Music2 size={20} />,
             color: "bg-black text-white",
             label: "TikTok",
+            prefix: "tiktok.com/@",
+            isSocial: true,
           },
           {
             id: "facebook",
             icon: <Facebook size={20} />,
             color: "bg-[#1877F2] text-white",
             label: "Facebook",
+            prefix: "facebook.com/",
+            isSocial: true,
           },
           {
             id: "website",
             icon: <Globe size={20} />,
             color: "bg-indigo-500 text-white",
             label: "Website Oficial",
+            prefix: "https://",
+            isSocial: false, // Sites não entram na limpeza de arroba, aceitam o link todo
           },
         ].map((social) => (
           <label
@@ -130,20 +138,36 @@ export function ConnectionsSection({
             >
               {social.icon}
             </div>
-            <div className="flex-1 pr-4">
+            <div className="flex-1 pr-4 overflow-hidden">
               <span className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
                 {social.label}
               </span>
-              <input
-                value={(socials as any)[social.id]}
-                onChange={(e) => updateSocial(social.id as any, e.target.value)}
-                placeholder={
-                  contactPlaceholders[
-                    social.id as keyof typeof contactPlaceholders
-                  ]
-                }
-                className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
-              />
+              <div className="flex items-center w-full">
+                {/* 🚀 PREFIXO VISUAL: Só aparece se o usuário digitou algo! */}
+                {(socials as any)[social.id]?.length > 0 && (
+                  <span className="text-[11px] font-medium text-slate-400 whitespace-nowrap">
+                    {social.prefix}
+                  </span>
+                )}
+                <input
+                  value={(socials as any)[social.id]}
+                  onChange={(e) => {
+                    const rawVal = e.target.value;
+                    // Se for Rede Social, passa na maquininha.
+                    // Se for Website, apenas arranca o http:// duplicado para a máscara não bugar!
+                    const finalVal = social.isSocial
+                      ? cleanSocialHandle(rawVal)
+                      : rawVal.trim().replace(/^https?:\/\//, "");
+                    updateSocial(social.id as any, finalVal);
+                  }}
+                  placeholder={
+                    contactPlaceholders[
+                      social.id as keyof typeof contactPlaceholders
+                    ]
+                  }
+                  className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30 truncate"
+                />
+              </div>
             </div>
           </label>
         ))}
