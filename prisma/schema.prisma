@@ -64,7 +64,7 @@ model User {
   lastPayoutDate  DateTime?
   lastPrice       Float?    @default(0)    
   referrals       User[]    @relation("AffiliateToUser")
-  document        String?   @unique
+  document        String?
   phone           String?
   createdAt       DateTime  @default(now())
   isBanned        Boolean   @default(false)

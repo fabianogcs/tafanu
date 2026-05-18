@@ -205,12 +205,6 @@ export async function registerUser(formData: FormData) {
     if (rawDocument) {
       cleanDocument = rawDocument.replace(/\D/g, "");
       if (!cpf.isValid(cleanDocument)) return { error: "CPF inválido." };
-
-      const existingCPF = await db.user.findUnique({
-        where: { document: cleanDocument },
-      });
-      if (existingCPF)
-        return { error: "Este CPF já está sendo usado por outra conta." };
     }
 
     const hashedPassword = await hash(password, 10);

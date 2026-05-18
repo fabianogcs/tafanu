@@ -9,6 +9,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import AdminModals from "./AdminModals";
 import {
   Users,
   CheckCircle2,
@@ -40,17 +41,20 @@ import {
   Copy,
   Check,
   CalendarPlus,
-  MessageCircle, // 🚀 NOVO: Ícone adicionado para o botão de WhatsApp
+  MessageCircle,
   KeyRound,
   Zap,
   Eye,
+  ArrowDown,
+  ArrowUp,
+  ArrowLeft,
 } from "lucide-react";
 
 import {
   approveComment,
   resolveReport,
-  adminAddDaysToBusiness, // 🚀 AJUSTE: Nova função apontando para o Negócio
-  adminAddExactDaysToBusiness, // 🚀 AJUSTE: Nova função apontando para o Negócio
+  adminAddDaysToBusiness,
+  adminAddExactDaysToBusiness,
   runGarbageCollector,
   promoteToAffiliate,
   getAffiliatePayouts,
@@ -92,9 +96,7 @@ export default function AdminDashboard({
   const [subTab, setSubTab] = useState("subscribers");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [loginSort, setLoginSort] = useState<"recentes" | "antigos" | null>(
-    null,
-  );
+
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
   const [promotingUser, setPromotingUser] = useState<any>(null);
@@ -104,15 +106,19 @@ export default function AdminDashboard({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const ADMIN_EMAIL = adminEmail || "";
+
+  // 🚀 LÓGICA DE FILTRO UNIFICADA (Limpa e Direta)
   const [metricSort, setMetricSort] = useState<
-    "views" | "leads" | "favs" | null
+    "views" | "leads" | "favs" | "login" | null
   >(null);
+  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
+
   const [baseUrl, setBaseUrl] = useState("https://tafanu.com.br");
+
   useEffect(() => {
     setBaseUrl(window.location.origin);
   }, []);
 
-  // ✅ Debounce na busca
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
     return () => clearTimeout(timer);
@@ -127,11 +133,9 @@ export default function AdminDashboard({
     if (mainTab === "affiliates" || mainTab === "overview") loadPayouts();
   }, [mainTab, loadPayouts]);
 
-  // 🚀 AJUSTE: Segmentação de usuários adaptada para o esquema Multi-Assinaturas
   const segments = useMemo(() => {
     const agora = new Date();
 
-    // 1. Calcula a data derivada (a loja que vai demorar mais para vencer)
     const usersWithDerivedDates = data.users
       .filter((u) => u.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase())
       .map((u) => {
@@ -147,7 +151,6 @@ export default function AdminDashboard({
         return { ...u, derivedExpiresAt: maxDate };
       });
 
-    // 2. Filtra usando a nova derivedExpiresAt
     const active = usersWithDerivedDates.filter(
       (u) =>
         u.role === "ASSINANTE" &&
@@ -179,7 +182,6 @@ export default function AdminDashboard({
     );
     const banned = usersWithDerivedDates.filter((u) => u.isBanned);
 
-    // ✅ Map para O(n) nos reports
     const businessMap = new Map(
       data.users.flatMap((u) =>
         u.businesses.map((b: any) => [b.id, { ...b, ownerName: u.name }]),
@@ -201,7 +203,6 @@ export default function AdminDashboard({
     };
   }, [data.users, data.reports, ADMIN_EMAIL]);
 
-  // ✅ filteredUsers com getSegmentList inline no useMemo
   const filteredUsers = useMemo(() => {
     const list = (() => {
       switch (subTab) {
@@ -222,10 +223,8 @@ export default function AdminDashboard({
       }
     })();
 
-    // 🚀 A CORREÇÃO: Tiramos a saída antecipada e fazemos uma cópia limpa da lista
     let result = [...list];
 
-    // 1. Aplica a Busca (Se houver alguma coisa digitada)
     if (debouncedSearch.trim()) {
       const q = debouncedSearch.toLowerCase();
       result = result.filter(
@@ -236,29 +235,25 @@ export default function AdminDashboard({
       );
     }
 
-    // 2. Aplica os Botões de Ordenação!
+    // 🚀 O MOTOR INTELIGENTE: Pega o que você clicou e a setinha!
+    const dir = sortDirection === "desc" ? 1 : -1;
+
     if (metricSort === "views") {
-      result.sort((a, b) => (b.totalViews || 0) - (a.totalViews || 0));
+      result.sort((a, b) => ((b.totalViews || 0) - (a.totalViews || 0)) * dir);
     } else if (metricSort === "leads") {
-      result.sort((a, b) => (b.totalLeads || 0) - (a.totalLeads || 0));
+      result.sort((a, b) => ((b.totalLeads || 0) - (a.totalLeads || 0)) * dir);
     } else if (metricSort === "favs") {
-      result.sort((a, b) => (b.totalFavs || 0) - (a.totalFavs || 0));
-    } else if (loginSort === "recentes") {
-      result.sort(
-        (a, b) =>
-          new Date(b.lastLogin || 0).getTime() -
-          new Date(a.lastLogin || 0).getTime(),
-      );
-    } else if (loginSort === "antigos") {
-      result.sort(
-        (a, b) =>
-          new Date(a.lastLogin || 0).getTime() -
-          new Date(b.lastLogin || 0).getTime(),
-      );
+      result.sort((a, b) => ((b.totalFavs || 0) - (a.totalFavs || 0)) * dir);
+    } else if (metricSort === "login") {
+      result.sort((a, b) => {
+        const timeA = new Date(a.lastLogin || 0).getTime();
+        const timeB = new Date(b.lastLogin || 0).getTime();
+        return (timeB - timeA) * dir; // "desc" = recentes primeiro, "asc" = antigos primeiro
+      });
     }
 
     return result;
-  }, [debouncedSearch, subTab, segments, loginSort, metricSort]);
+  }, [debouncedSearch, subTab, segments, metricSort, sortDirection]);
 
   const totalOwed = useMemo(
     () => payouts.reduce((acc, p) => acc + p.valorDevido, 0),
@@ -279,7 +274,6 @@ export default function AdminDashboard({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // --- AÇÕES ---
   const handleResetPassword = (userId: string, name: string) => {
     if (
       !confirm(
@@ -365,12 +359,11 @@ export default function AdminDashboard({
   const handleAssignAffiliate = () => {
     if (!assignCodeInput) return toast.error("Digite o código do parceiro!");
     startTransition(async () => {
-      // 🚀 AJUSTE: Se o Admin colar o link inteiro, nós extraímos só a parte depois do "?ref="
       let cleanCode = assignCodeInput.trim();
       if (cleanCode.includes("?ref=")) {
         cleanCode = cleanCode.split("?ref=")[1].split("&")[0];
       }
-      cleanCode = cleanCode.toUpperCase(); // Garante que vai em maiúsculo pro banco
+      cleanCode = cleanCode.toUpperCase();
 
       const res = await assignUserToAffiliate(selectedUser.id, cleanCode);
       if (res.success) {
@@ -386,7 +379,6 @@ export default function AdminDashboard({
       return toast.error("Digite o link ou o slug da vitrine pronta!");
 
     startTransition(async () => {
-      // 🚀 Extrai só o finalzinho se você colar o link inteiro (ex: tafanu.com.br/site/minha-loja)
       let cleanSlug = transferSlugInput.trim();
       if (cleanSlug.includes("/site/")) {
         cleanSlug = cleanSlug
@@ -406,7 +398,6 @@ export default function AdminDashboard({
     });
   };
 
-  // 🚀 AJUSTE: Função agora espera businessId em vez de userId
   const handleAddTime = (
     e: React.MouseEvent,
     businessId: string,
@@ -423,7 +414,6 @@ export default function AdminDashboard({
     });
   };
 
-  // 🚀 AJUSTE: Função agora espera businessId em vez de userId
   const handleAddDays = (
     e: React.MouseEvent,
     businessId: string,
@@ -493,108 +483,40 @@ export default function AdminDashboard({
     setAssignCodeInput("");
   };
 
-  // Verifica se o usuário selecionado é afiliado
   const isAffiliate = selectedUser?.role === "AFILIADO";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
-      {/* HEADER */}
+      {/* 1. HEADER GLOBAL */}
       <header className="max-w-7xl mx-auto mb-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-slate-900 rounded-2xl text-emerald-400">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white rounded-2xl transition-all border border-slate-100"
+              title="Voltar ao Painel Normal"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="p-3 bg-slate-900 rounded-2xl text-emerald-400 shadow-md">
               <ShieldCheck size={28} />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                Painel Admin
+                Central de Comando
               </p>
-              <h1 className="text-2xl font-black italic uppercase tracking-tighter">
+              <h1 className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">
                 Tafanu <span className="text-emerald-500">HQ</span>
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-72">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300"
-                size={16}
-              />
-              <input
-                type="text"
-                placeholder="Buscar por nome, e-mail, CPF ou Loja..."
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-emerald-500/20 text-sm font-medium border border-slate-100"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            {/* 🚀 BOTÕES DE RANKING DE DESEMPENHO */}
-            <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100 hidden md:flex">
-              <button
-                onClick={() => {
-                  setMetricSort(metricSort === "views" ? null : "views");
-                  setLoginSort(null);
-                }}
-                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${metricSort === "views" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"}`}
-              >
-                <Eye
-                  size={14}
-                  className={metricSort === "views" ? "text-emerald-400" : ""}
-                />{" "}
-                Top Visitas
-              </button>
-              <button
-                onClick={() => {
-                  setMetricSort(metricSort === "leads" ? null : "leads");
-                  setLoginSort(null);
-                }}
-                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${metricSort === "leads" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"}`}
-              >
-                <MessageCircle
-                  size={14}
-                  className={metricSort === "leads" ? "text-emerald-400" : ""}
-                />{" "}
-                Top Leads
-              </button>
-              <button
-                onClick={() => {
-                  setMetricSort(metricSort === "favs" ? null : "favs");
-                  setLoginSort(null);
-                }}
-                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${metricSort === "favs" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"}`}
-              >
-                <Star
-                  size={14}
-                  className={metricSort === "favs" ? "text-amber-400" : ""}
-                />{" "}
-                Top Fãs
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                setLoginSort((prev) =>
-                  prev === "recentes"
-                    ? "antigos"
-                    : prev === "antigos"
-                      ? null
-                      : "recentes",
-                );
-                setMetricSort(null);
-              }}
-              className={`p-3 rounded-xl transition-all border flex items-center gap-2 whitespace-nowrap text-[10px] font-black uppercase tracking-widest ${loginSort ? "bg-slate-900 text-emerald-400 border-slate-900" : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-200"}`}
-              title="Ordenar por Último Acesso"
-            >
-              <Clock size={16} />
-            </button>
-            <button
-              onClick={handleGarbageCollection}
-              className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all border border-rose-100"
-              title="Faxina de imagens"
-            >
-              <Eraser size={18} />
-            </button>
-          </div>
+          <button
+            onClick={handleGarbageCollection}
+            className="px-5 py-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+            title="Apagar imagens órfãs do servidor"
+          >
+            <Eraser size={16} /> Faxina de Imagens
+          </button>
         </div>
       </header>
 
@@ -611,7 +533,7 @@ export default function AdminDashboard({
               key: "users",
               label: "Membros",
               icon: <Users size={15} />,
-              count: segments.all.length - segments.affiliates.length, // 🚀 Aqui está a mágica: subtrai os afiliados do total
+              count: segments.all.length - segments.affiliates.length,
             },
             {
               key: "affiliates",
@@ -656,7 +578,7 @@ export default function AdminDashboard({
           ))}
         </div>
 
-        {/* TABS NÍVEL 2 */}
+        {/* TABS NÍVEL 2 - USERS */}
         {mainTab === "users" && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
             {[
@@ -699,6 +621,7 @@ export default function AdminDashboard({
           </div>
         )}
 
+        {/* TABS NÍVEL 2 - AFFILIATES */}
         {mainTab === "affiliates" && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
             {[
@@ -724,6 +647,7 @@ export default function AdminDashboard({
           </div>
         )}
 
+        {/* TABS NÍVEL 2 - SECURITY */}
         {mainTab === "security" && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
             {[
@@ -752,7 +676,7 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {/* CONTEÚDO */}
+        {/* CONTEÚDO PRINCIPAL */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           {/* OVERVIEW */}
           {mainTab === "overview" && (
@@ -808,143 +732,249 @@ export default function AdminDashboard({
             </div>
           )}
 
-          {/* TABELA DE USUÁRIOS */}
+          {/* MEMBROS E CRM */}
           {mainTab === "users" && (
-            <div className="overflow-x-auto">
-              {debouncedSearch && (
-                <div className="bg-emerald-50 text-emerald-700 py-2 text-center text-[10px] font-black tracking-widest uppercase">
-                  Busca global ativa — {filteredUsers.length} resultado(s)
-                </div>
-              )}
-              <table className="w-full min-w-[700px]">
-                <thead className="bg-slate-50 border-b border-slate-100">
-                  <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                    <th className="p-4 text-left">Membro</th>
-                    <th className="p-4 text-left">Status</th>
-                    {/* 🚀 NOVA COLUNA DE DESEMPENHO */}
-                    <th className="p-4 text-center">Desempenho</th>
-                    <th className="p-4 text-right">Vencimento</th>
-                    <th className="p-4 text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filteredUsers.map((user) => (
-                    <tr
-                      key={user.id}
-                      onClick={() => setSelectedUser(user)}
-                      className={`hover:bg-slate-50/60 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/30" : ""}`}
-                    >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${user.isBanned ? "bg-rose-100 text-rose-500" : "bg-slate-100 text-slate-500"}`}
-                          >
-                            {user.name?.charAt(0) || "?"}
-                          </div>
-                          <div>
-                            <p
-                              className={`font-black text-sm uppercase ${user.isBanned ? "text-rose-500 line-through" : "text-slate-800"}`}
-                            >
-                              {user.name || "Sem Nome"}
-                            </p>
-                            <p className="text-[11px] text-slate-400 truncate max-w-[150px]">
-                              {user.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <StatusBadge
-                          role={user.role}
-                          expiresAt={user.derivedExpiresAt}
-                          isBanned={user.isBanned}
-                        />
-                      </td>
-                      {/* 🚀 OS NÚMEROS AQUI, VISÍVEIS NA HORA! */}
-                      <td className="p-4">
-                        <div className="flex items-center justify-center gap-4">
-                          <div
-                            className="flex items-center gap-1.5 text-[11px] font-black text-slate-600"
-                            title="Visitas no perfil"
-                          >
-                            <Eye size={14} className="text-slate-400" />{" "}
-                            {user.totalViews || 0}
-                          </div>
-                          <div
-                            className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600"
-                            title="Cliques no Whats/Tel"
-                          >
-                            <MessageCircle
-                              size={14}
-                              className="text-emerald-400"
-                            />{" "}
-                            {user.totalLeads || 0}
-                          </div>
-                          <div
-                            className="flex items-center gap-1.5 text-[11px] font-black text-amber-500"
-                            title="Favoritos"
-                          >
-                            <Star size={14} className="text-amber-400" />{" "}
-                            {user.totalFavs || 0}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 text-right">
-                        <p className="text-[11px] font-bold text-slate-500">
-                          {user.derivedExpiresAt
-                            ? new Date(
-                                user.derivedExpiresAt,
-                              ).toLocaleDateString("pt-BR")
-                            : "—"}
-                        </p>
-                        {user.lastLogin && (
-                          <p className="text-[9px] text-slate-400 font-medium mt-0.5">
-                            Acesso:{" "}
-                            {new Date(user.lastLogin).toLocaleDateString(
-                              "pt-BR",
-                            )}
-                          </p>
-                        )}
-                      </td>
-                      <td
-                        className="p-4 text-right"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {user.isBanned ? (
-                          <button
-                            onClick={() => handleUnban(user.id)}
-                            className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all"
-                            title="Desbanir"
-                          >
-                            <UserCheck size={16} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setSelectedUser(user)}
-                            className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5 ml-auto"
-                          >
-                            <Info size={13} /> Raio-X
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredUsers.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="py-16 text-center text-[11px] font-black uppercase text-slate-300 tracking-widest"
-                      >
-                        Nenhum registro encontrado.
-                      </td>
-                    </tr>
+            <div className="flex flex-col bg-slate-50/30">
+              {/* ACTION BAR */}
+              <div className="p-4 md:p-6 border-b border-slate-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white">
+                <div className="relative w-full lg:w-[400px]">
+                  <Search
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Buscar nome, e-mail, documento..."
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-emerald-500/20 text-sm font-bold text-slate-800 border border-slate-200 transition-all placeholder:font-medium placeholder:text-slate-400"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {debouncedSearch && (
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md uppercase">
+                      {filteredUsers.length} achados
+                    </span>
                   )}
-                </tbody>
-              </table>
+                </div>
+
+                <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+                  <span className="text-[10px] font-black uppercase text-slate-300 tracking-widest mr-2 shrink-0">
+                    Ranking:
+                  </span>
+
+                  {/* 🚀 BOTÕES DE FILTRO UNIFICADOS */}
+                  <button
+                    onClick={() =>
+                      setMetricSort(metricSort === "views" ? null : "views")
+                    }
+                    className={`px-4 py-3 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm ${metricSort === "views" ? "bg-slate-900 text-emerald-400" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <Eye
+                      size={14}
+                      className={
+                        metricSort === "views"
+                          ? "text-emerald-400"
+                          : "text-slate-400"
+                      }
+                    />{" "}
+                    Visitas
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setMetricSort(metricSort === "leads" ? null : "leads")
+                    }
+                    className={`px-4 py-3 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm ${metricSort === "leads" ? "bg-slate-900 text-emerald-400" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <MessageCircle
+                      size={14}
+                      className={
+                        metricSort === "leads"
+                          ? "text-emerald-400"
+                          : "text-slate-400"
+                      }
+                    />{" "}
+                    Leads
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setMetricSort(metricSort === "favs" ? null : "favs")
+                    }
+                    className={`px-4 py-3 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm ${metricSort === "favs" ? "bg-slate-900 text-amber-400" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <Star
+                      size={14}
+                      className={
+                        metricSort === "favs"
+                          ? "text-amber-400"
+                          : "text-slate-400"
+                      }
+                    />{" "}
+                    Fãs
+                  </button>
+
+                  <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block" />
+
+                  <button
+                    onClick={() =>
+                      setMetricSort(metricSort === "login" ? null : "login")
+                    }
+                    className={`px-4 py-3 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm ${metricSort === "login" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"}`}
+                  >
+                    <Clock size={14} /> Acessos
+                  </button>
+
+                  {/* 🚀 BOTÃO UNIVERSAL DE INVERTER ORDEM */}
+                  {metricSort && (
+                    <button
+                      onClick={() =>
+                        setSortDirection((prev) =>
+                          prev === "desc" ? "asc" : "desc",
+                        )
+                      }
+                      className="px-3 py-3 rounded-xl transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm bg-slate-900 text-white hover:bg-slate-800 ml-1"
+                      title="Inverter Ordem"
+                    >
+                      {sortDirection === "desc" ? (
+                        <ArrowDown size={14} className="text-emerald-400" />
+                      ) : (
+                        <ArrowUp size={14} className="text-rose-400" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* TABELA DE MEMBROS */}
+              <div className="overflow-x-auto w-full">
+                <table className="w-full min-w-[850px] bg-white">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                      <th className="p-4 text-left">Membro</th>
+                      <th className="p-4 text-left">Status</th>
+                      <th className="p-4 text-center">Desempenho</th>
+                      <th className="p-4 text-right">Vencimento</th>
+                      <th className="p-4 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {filteredUsers.map((user) => (
+                      <tr
+                        key={user.id}
+                        onClick={() => setSelectedUser(user)}
+                        className={`hover:bg-slate-50/60 cursor-pointer transition-colors ${user.isBanned ? "bg-rose-50/30" : ""}`}
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${user.isBanned ? "bg-rose-100 text-rose-500" : "bg-slate-100 text-slate-500"}`}
+                            >
+                              {user.name?.charAt(0) || "?"}
+                            </div>
+                            <div>
+                              <p
+                                className={`font-black text-sm uppercase ${user.isBanned ? "text-rose-500 line-through" : "text-slate-800"}`}
+                              >
+                                {user.name || "Sem Nome"}
+                              </p>
+                              <p className="text-[11px] text-slate-400 truncate max-w-[150px]">
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <StatusBadge
+                            role={user.role}
+                            expiresAt={user.derivedExpiresAt}
+                            isBanned={user.isBanned}
+                          />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-center gap-4">
+                            <div
+                              className="flex items-center gap-1.5 text-[11px] font-black text-slate-600"
+                              title="Visitas no perfil"
+                            >
+                              <Eye size={14} className="text-slate-400" />{" "}
+                              {user.totalViews || 0}
+                            </div>
+                            <div
+                              className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600"
+                              title="Cliques no Whats/Tel"
+                            >
+                              <MessageCircle
+                                size={14}
+                                className="text-emerald-400"
+                              />{" "}
+                              {user.totalLeads || 0}
+                            </div>
+                            <div
+                              className="flex items-center gap-1.5 text-[11px] font-black text-amber-500"
+                              title="Favoritos"
+                            >
+                              <Star size={14} className="text-amber-400" />{" "}
+                              {user.totalFavs || 0}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          <p className="text-[11px] font-bold text-slate-500">
+                            {user.derivedExpiresAt
+                              ? new Date(
+                                  user.derivedExpiresAt,
+                                ).toLocaleDateString("pt-BR")
+                              : "—"}
+                          </p>
+                          {user.lastLogin && (
+                            <p className="text-[9px] text-slate-400 font-medium mt-0.5">
+                              Acesso:{" "}
+                              {new Date(user.lastLogin).toLocaleDateString(
+                                "pt-BR",
+                              )}
+                            </p>
+                          )}
+                        </td>
+                        <td
+                          className="p-4 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {user.isBanned ? (
+                            <button
+                              onClick={() => handleUnban(user.id)}
+                              className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all"
+                              title="Desbanir"
+                            >
+                              <UserCheck size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setSelectedUser(user)}
+                              className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black uppercase flex items-center gap-1.5 ml-auto"
+                            >
+                              <Info size={13} /> Raio-X
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredUsers.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="py-16 text-center text-[11px] font-black uppercase text-slate-300 tracking-widest"
+                        >
+                          Nenhum registro encontrado.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          {/* PARCEIROS — CARDS */}
+          {/* PARCEIROS */}
           {mainTab === "affiliates" && subTab === "affiliates" && (
             <div className="p-6">
               {segments.affiliates.length === 0 ? (
@@ -961,7 +991,6 @@ export default function AdminDashboard({
                       key={u.id}
                       className="bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden hover:shadow-md transition-all"
                     >
-                      {/* Card header */}
                       <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
@@ -981,7 +1010,6 @@ export default function AdminDashboard({
                             Parceiro
                           </span>
                         </div>
-                        {/* Stats */}
                         <div className="grid grid-cols-2 gap-2 mt-4">
                           <div className="bg-white/5 rounded-xl p-3 text-center">
                             <p className="text-[9px] font-black uppercase text-slate-400 mb-1">
@@ -1001,9 +1029,7 @@ export default function AdminDashboard({
                           </div>
                         </div>
                       </div>
-                      {/* Card body */}
                       <div className="p-4 space-y-3">
-                        {/* Link de afiliado */}
                         {u.referralCode && (
                           <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2">
                             <p className="flex-1 text-[10px] font-mono text-slate-500 truncate px-1">
@@ -1014,7 +1040,6 @@ export default function AdminDashboard({
                                 copyAffiliateLink(u.referralCode, u.id)
                               }
                               className={`shrink-0 p-2 rounded-lg transition-all ${copiedId === u.id ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white"}`}
-                              title="Copiar link"
                             >
                               {copiedId === u.id ? (
                                 <Check size={14} />
@@ -1024,7 +1049,6 @@ export default function AdminDashboard({
                             </button>
                           </div>
                         )}
-                        {/* Ações */}
                         <div className="flex gap-2">
                           <button
                             onClick={() => setSelectedUser(u)}
@@ -1034,7 +1058,7 @@ export default function AdminDashboard({
                           </button>
                           <button
                             onClick={() => handleBan(u.id, u.name)}
-                            className="px-3 py-2.5 bg-rose-50 text-rose-500 rounded-xl text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center gap-1.5"
+                            className="px-3 py-2.5 bg-rose-50 text-rose-500 rounded-xl text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-1.5"
                           >
                             <Gavel size={13} /> Banir
                           </button>
@@ -1240,632 +1264,34 @@ export default function AdminDashboard({
         </div>
       </main>
 
-      {/* MODAL RAIO-X — ASSINANTE */}
-      {selectedUser && !isAffiliate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto"
-          onClick={closeUser}
-        >
-          <div
-            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8 animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Cabeçalho */}
-            <div className="p-6 bg-slate-50 border-b flex justify-between items-start">
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${selectedUser.isBanned ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}
-                >
-                  {selectedUser.isBanned ? (
-                    <UserX size={32} />
-                  ) : (
-                    <User size={32} />
-                  )}
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">
-                    {selectedUser.name}
-                  </h2>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                      <Mail size={11} /> {selectedUser.email}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                      <CreditCard size={11} /> CPF:{" "}
-                      {selectedUser.document || "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={closeUser}
-                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Status e vencimento */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-2">
-                    Status (Melhor Loja)
-                  </p>
-                  <StatusBadge
-                    role={selectedUser.role}
-                    expiresAt={
-                      selectedUser.derivedExpiresAt
-                    } /* 🚀 AJUSTE: Lendo a data derivada */
-                    isBanned={selectedUser.isBanned}
-                  />
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-2">
-                    Vencimento Distante
-                  </p>
-                  <p className="font-black text-slate-800">
-                    {selectedUser.derivedExpiresAt /* 🚀 AJUSTE: Lendo a data derivada */
-                      ? new Date(
-                          selectedUser.derivedExpiresAt,
-                        ).toLocaleDateString("pt-BR")
-                      : "—"}
-                  </p>
-                </div>
-              </div>
-
-              {/* 🚀 CRM ADMIN: BOTÕES DE CONTATO (CLIENTE/LEAD) */}
-              <div className="flex gap-2 w-full">
-                <a
-                  href={
-                    selectedUser.phone
-                      ? `https://wa.me/55${selectedUser.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
-                          `Olá ${selectedUser.name?.split(" ")[0]}, aqui é do suporte Tafanu. Tudo bem?`,
-                        )}`
-                      : "#"
-                  }
-                  target="_blank"
-                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                    selectedUser.phone
-                      ? "bg-[#25D366] text-white shadow-sm hover:bg-[#1ebd57]"
-                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  }`}
-                  onClick={(e) => {
-                    if (!selectedUser.phone) {
-                      e.preventDefault();
-                      toast.error("Este membro não tem telefone cadastrado.");
-                    }
-                  }}
-                >
-                  <MessageCircle size={16} /> Contatar no WhatsApp
-                </a>
-                <a
-                  href={`mailto:${selectedUser.email}?subject=Contato%20Suporte%20Tafanu`}
-                  className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"
-                  title="Enviar E-mail"
-                >
-                  <Mail size={16} />
-                </a>
-              </div>
-
-              {/* Origem e Vínculo de Parceiro */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Origem da Venda
-                  </p>
-                  <p className="text-sm font-bold text-slate-700">
-                    {/* 🚀 Mostra o nome do parceiro atual ou "Orgânico" */}
-                    {selectedUser.affiliate?.name ? (
-                      <span className="text-purple-600">
-                        Indicado por: {selectedUser.affiliate.name}
-                      </span>
-                    ) : (
-                      selectedUser.referredBy || "Orgânico"
-                    )}
-                  </p>
-                </div>
-
-                {/* 🚀 REMOVIDA A TRAVA: Agora o campo sempre aparece para permitir trocas */}
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-full md:w-auto">
-                  <input
-                    type="text"
-                    placeholder={
-                      selectedUser.affiliateId
-                        ? "Trocar parceiro..."
-                        : "Código ou Link"
-                    }
-                    value={assignCodeInput}
-                    onChange={(e) => setAssignCodeInput(e.target.value)} // 🚀 REMOVIDO o toUpperCase() para não quebrar o link colado
-                    className="bg-transparent border-none outline-none text-xs font-bold px-2 w-32 md:w-40"
-                  />
-                  <button
-                    onClick={handleAssignAffiliate}
-                    disabled={isPending}
-                    className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-500 transition-all flex items-center gap-1.5 shrink-0"
-                  >
-                    {isPending ? (
-                      <Loader2 size={11} className="animate-spin" />
-                    ) : (
-                      <Link2 size={11} />
-                    )}
-                    {selectedUser.affiliateId ? "Trocar" : "Vincular"}
-                  </button>
-                </div>
-              </div>
-              {/* 🚀 CRM ADMIN: TRANSFERIR VITRINE PRONTA */}
-              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 my-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase text-emerald-600 mb-1 flex items-center gap-1.5">
-                    <Zap size={12} /> Transplante de Vitrine
-                  </p>
-                  <p className="text-[11px] font-bold text-emerald-700/80 leading-tight max-w-sm">
-                    Cole o link de uma loja já montada (com fotos, textos e
-                    views). O sistema passará tudo para esta conta sem quebrar a
-                    assinatura atual!
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-emerald-200 w-full md:w-auto shadow-sm">
-                  <input
-                    type="text"
-                    placeholder="Link ou slug da loja..."
-                    value={transferSlugInput}
-                    onChange={(e) => setTransferSlugInput(e.target.value)}
-                    className="bg-transparent border-none outline-none text-xs font-bold px-2 w-full md:w-48 text-slate-700 placeholder:text-slate-300"
-                  />
-                  <button
-                    onClick={handleTransferBusiness}
-                    disabled={isPending}
-                    className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition-all flex items-center gap-1.5 shrink-0"
-                  >
-                    {isPending ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <LinkIcon size={12} />
-                    )}
-                    Aplicar
-                  </button>
-                </div>
-              </div>
-              {/* 🚀 AJUSTE: Lojas com Gerenciador de Tempo e Métricas de Engajamento */}
-              <div>
-                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
-                  <Store size={13} /> Lojas e Assinaturas (
-                  {selectedUser.businesses?.length || 0})
-                </p>
-                <div className="flex flex-col gap-4">
-                  {selectedUser.businesses?.map((biz: any) => {
-                    const views = biz.views || 0;
-                    const leads =
-                      (biz.whatsapp_clicks || 0) + (biz.phone_clicks || 0);
-                    const favs = biz._count?.favorites || 0;
-
-                    return (
-                      <div
-                        key={biz.id}
-                        className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4"
-                      >
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                          <div>
-                            <p className="font-black text-slate-900 text-lg uppercase italic tracking-tight">
-                              {biz.name}
-                            </p>
-                            <div className="flex flex-wrap gap-2 mt-1.5">
-                              <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold uppercase border border-slate-200">
-                                Plano: {biz.planType || "Nenhum"}
-                              </span>
-                              <span
-                                className={`text-[10px] px-2.5 py-1 rounded-md font-bold uppercase border ${biz.expiresAt && new Date(biz.expiresAt) > new Date() ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200"}`}
-                              >
-                                Validade:{" "}
-                                {biz.expiresAt
-                                  ? new Date(biz.expiresAt).toLocaleDateString(
-                                      "pt-BR",
-                                    )
-                                  : "Sem data"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2 w-full md:w-auto">
-                            <a
-                              href={`/site/${biz.slug}`}
-                              target="_blank"
-                              className="flex-1 md:flex-none px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center justify-center gap-1.5"
-                            >
-                              <ExternalLink size={12} /> Ver Loja
-                            </a>
-                            <a
-                              href={`/dashboard/editar/${biz.slug}`}
-                              className="flex-1 md:flex-none px-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all text-center"
-                            >
-                              Editar
-                            </a>
-                          </div>
-                        </div>
-
-                        {/* 📊 MINI DASHBOARD DE MÉTRICAS DA LOJA */}
-                        <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                          <div className="text-center">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                              <Eye size={12} /> Visitas
-                            </p>
-                            <p className="text-lg font-black text-slate-800">
-                              {views}
-                            </p>
-                          </div>
-                          <div className="text-center border-l border-r border-slate-200">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                              <MessageCircle size={12} /> Leads
-                            </p>
-                            <p className="text-lg font-black text-emerald-600">
-                              {leads}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
-                              <Star size={12} /> Fãs
-                            </p>
-                            <p className="text-lg font-black text-rose-500">
-                              {favs}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Botões de controle de tempo isolados para esta loja */}
-                        {!selectedUser.isBanned &&
-                          (selectedUser.role === "ASSINANTE" ||
-                            selectedUser.role === "VISITANTE") && (
-                            <div className="flex items-center gap-2 flex-wrap pt-2 mt-2 border-t border-slate-100">
-                              <CalendarPlus
-                                size={16}
-                                className="text-slate-400 mr-2"
-                              />
-                              <button
-                                onClick={(e) => handleAddTime(e, biz.id, -1)}
-                                disabled={isPending}
-                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
-                              >
-                                −1 mês
-                              </button>
-                              <button
-                                onClick={(e) => handleAddDays(e, biz.id, -1)}
-                                disabled={isPending}
-                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white"
-                              >
-                                −1 dia
-                              </button>
-                              <button
-                                onClick={(e) => handleAddDays(e, biz.id, 1)}
-                                disabled={isPending}
-                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
-                              >
-                                +1 dia
-                              </button>
-                              <button
-                                onClick={(e) => handleAddTime(e, biz.id, 1)}
-                                disabled={isPending}
-                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
-                              >
-                                +1 mês
-                              </button>
-                              <button
-                                onClick={(e) => handleAddTime(e, biz.id, 3)}
-                                disabled={isPending}
-                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white"
-                              >
-                                +3 meses
-                              </button>
-                            </div>
-                          )}
-                      </div>
-                    );
-                  })}
-                  {(!selectedUser.businesses ||
-                    selectedUser.businesses.length === 0) && (
-                    <div className="p-5 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center text-center bg-slate-50/50">
-                      <p className="text-[11px] text-slate-500 font-bold mb-3 uppercase tracking-widest">
-                        Este membro ainda não tem vitrine.
-                      </p>
-
-                      {/* 🚀 Botões blindados: só aparecem para Visitantes e Assinantes sem loja */}
-                      {!selectedUser.isBanned &&
-                        (selectedUser.role === "ASSINANTE" ||
-                          selectedUser.role === "VISITANTE") && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={(e) =>
-                                handleActivateVisitor(e, selectedUser.id, 1)
-                              }
-                              disabled={isPending}
-                              className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white shadow-sm"
-                            >
-                              Ativar + 1 dia
-                            </button>
-                            <button
-                              onClick={(e) =>
-                                handleActivateVisitor(e, selectedUser.id, 30)
-                              }
-                              disabled={isPending}
-                              className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white shadow-sm"
-                            >
-                              Ativar + 30 dias
-                            </button>
-                          </div>
-                        )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Ação de banir e promover parceiro */}
-              {/* Ação de resetar, banir e promover parceiro */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
-                <button
-                  onClick={() =>
-                    handleResetPassword(selectedUser.id, selectedUser.name)
-                  }
-                  className="w-full px-3 py-3 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all border border-blue-100 flex items-center justify-center gap-1.5"
-                  title="Gera uma nova senha aleatória"
-                >
-                  <KeyRound size={14} /> Gerar Nova Senha
-                </button>
-                <div className="flex gap-2 w-full">
-                  <button
-                    onClick={() => setPromotingUser(selectedUser)}
-                    className="flex-1 px-3 py-3 bg-amber-50 text-amber-600 rounded-xl text-[11px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all border border-amber-100 flex items-center justify-center gap-1.5"
-                  >
-                    <Award size={13} /> Promover a Parceiro
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleBan(selectedUser.id, selectedUser.name)
-                    }
-                    className="flex-1 px-3 py-3 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-1.5"
-                  >
-                    <Gavel size={13} /> Banir Usuário
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL RAIO-X — AFILIADO */}
-      {selectedUser && isAffiliate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto"
-          onClick={closeUser}
-        >
-          <div
-            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8 animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header afiliado */}
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 flex justify-between items-start">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center shadow-lg border border-purple-500/30">
-                  <Star size={32} />
-                </div>
-                <div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
-                    Parceiro Oficial
-                  </span>
-                  <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter mt-1">
-                    {selectedUser.name}
-                  </h2>
-                  <div className="flex flex-wrap gap-3 mt-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                      <Mail size={11} /> {selectedUser.email}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                      <CreditCard size={11} /> CPF:{" "}
-                      {selectedUser.document || "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={closeUser}
-                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Stats do parceiro */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Total de Indicações
-                  </p>
-                  <p className="text-3xl font-black text-slate-800">
-                    {selectedUser.referralCount || 0}
-                  </p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Código
-                  </p>
-                  <code className="text-xl font-black text-emerald-600">
-                    {selectedUser.referralCode || "—"}
-                  </code>
-                </div>
-              </div>
-
-              {/* 🚀 CRM ADMIN: BOTÕES DE CONTATO (PARCEIRO) */}
-              <div className="flex gap-2 w-full">
-                <a
-                  href={
-                    selectedUser.phone
-                      ? `https://wa.me/55${selectedUser.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
-                          `Olá ${selectedUser.name?.split(" ")[0]}, aqui é do Tafanu HQ. Como estão as suas vendas de afiliado?`,
-                        )}`
-                      : "#"
-                  }
-                  target="_blank"
-                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                    selectedUser.phone
-                      ? "bg-[#25D366] text-white shadow-sm hover:bg-[#1ebd57]"
-                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  }`}
-                  onClick={(e) => {
-                    if (!selectedUser.phone) {
-                      e.preventDefault();
-                      toast.error("Este parceiro não tem telefone cadastrado.");
-                    }
-                  }}
-                >
-                  <MessageCircle size={16} /> Suporte ao Parceiro
-                </a>
-                <a
-                  href={`mailto:${selectedUser.email}?subject=Parceria%20Tafanu`}
-                  className="w-14 shrink-0 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all border border-purple-100 shadow-sm"
-                  title="Enviar E-mail"
-                >
-                  <Mail size={16} />
-                </a>
-              </div>
-
-              {/* Link de afiliado */}
-              {selectedUser.referralCode && (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3">
-                    Link de Indicação
-                  </p>
-                  <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-2.5">
-                    <p className="flex-1 text-[11px] font-mono text-slate-600 truncate">
-                      {baseUrl}/?ref={selectedUser.referralCode}
-                    </p>
-                    <button
-                      onClick={() =>
-                        copyAffiliateLink(
-                          selectedUser.referralCode,
-                          selectedUser.id,
-                        )
-                      }
-                      className={`shrink-0 px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${copiedId === selectedUser.id ? "bg-emerald-500 text-white" : "bg-slate-900 text-white hover:bg-emerald-500"}`}
-                    >
-                      {copiedId === selectedUser.id ? (
-                        <>
-                          <Check size={13} /> Copiado!
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={13} /> Copiar
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Lojas do afiliado */}
-              {selectedUser.businesses?.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
-                    <Store size={13} /> Lojas ({selectedUser.businesses.length})
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedUser.businesses.map((biz: any) => (
-                      <div
-                        key={biz.id}
-                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between"
-                      >
-                        <div>
-                          <p className="font-black text-slate-800 text-sm uppercase">
-                            {biz.name}
-                          </p>
-                          <a
-                            href={`/site/${biz.slug}`}
-                            target="_blank"
-                            className="text-[10px] text-emerald-500 font-bold hover:underline flex items-center gap-1 mt-0.5"
-                          >
-                            <ExternalLink size={10} /> /site/{biz.slug}
-                          </a>
-                        </div>
-                        <a
-                          href={`/dashboard/editar/${biz.slug}`}
-                          className="px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 transition-all"
-                        >
-                          Editar
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Ação de banir */}
-              <div className="pt-2 border-t border-slate-100">
-                <button
-                  onClick={() => handleBan(selectedUser.id, selectedUser.name)}
-                  className="w-full px-4 py-3 bg-rose-50 text-rose-600 rounded-xl text-[11px] font-black uppercase hover:bg-rose-600 hover:text-white transition-all border border-rose-100 flex items-center justify-center gap-2"
-                >
-                  <Gavel size={14} /> Banir Parceiro
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PROMOVER PARCEIRO */}
-      {promotingUser && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
-          onClick={() => setPromotingUser(null)}
-        >
-          <div
-            className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-500">
-                <Award size={36} />
-              </div>
-              <h2 className="text-xl font-black uppercase italic">
-                Novo Parceiro
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Código para {promotingUser.name?.split(" ")[0]}
-              </p>
-            </div>
-            <input
-              type="text"
-              placeholder="EX: JOAO-SP"
-              className="w-full px-4 py-4 bg-slate-50 rounded-xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center tracking-widest mb-4"
-              value={referralCodeInput}
-              onChange={(e) =>
-                setReferralCodeInput(
-                  e.target.value.toUpperCase().replace(/\s/g, "-"),
-                )
-              }
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setPromotingUser(null)}
-                className="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[11px] font-black uppercase"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handlePromote}
-                disabled={isPending}
-                className="flex-[2] py-3 bg-amber-500 text-white rounded-xl text-[11px] font-black uppercase flex items-center justify-center gap-2 shadow-lg"
-              >
-                {isPending ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  "Ativar"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* =============================================================== */}
+      {/* 3. MODAIS (Extraídos para arquivo externo para limpeza) */}
+      {/* =============================================================== */}
+      <AdminModals
+        selectedUser={selectedUser}
+        closeUser={closeUser}
+        isAffiliate={isAffiliate}
+        baseUrl={baseUrl}
+        copiedId={copiedId}
+        copyAffiliateLink={copyAffiliateLink}
+        assignCodeInput={assignCodeInput}
+        setAssignCodeInput={setAssignCodeInput}
+        handleAssignAffiliate={handleAssignAffiliate}
+        transferSlugInput={transferSlugInput}
+        setTransferSlugInput={setTransferSlugInput}
+        handleTransferBusiness={handleTransferBusiness}
+        isPending={isPending}
+        handleAddTime={handleAddTime}
+        handleAddDays={handleAddDays}
+        handleActivateVisitor={handleActivateVisitor}
+        handleResetPassword={handleResetPassword}
+        setPromotingUser={setPromotingUser}
+        handleBan={handleBan}
+        promotingUser={promotingUser}
+        referralCodeInput={referralCodeInput}
+        setReferralCodeInput={setReferralCodeInput}
+        handlePromote={handlePromote}
+      />
     </div>
   );
 }
