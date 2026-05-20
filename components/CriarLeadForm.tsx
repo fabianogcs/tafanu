@@ -8,6 +8,10 @@ import { criarLeadDireto } from "@/app/dashboard/funil/actions";
 export default function CriarLeadForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // 🚀 ESTADO NOVO: Guarda só o prefixo do e-mail
+  const [emailPrefix, setEmailPrefix] = useState("");
+
   // 🚀 GERA UMA SENHA ALEATÓRIA AUTOMÁTICA
   const [senhaProvisoria] = useState(() =>
     Math.random().toString(36).slice(-6),
@@ -23,6 +27,7 @@ export default function CriarLeadForm() {
     if (res.success) {
       toast.success("Negócio criado e adicionado à Aba 1!");
       (event.target as HTMLFormElement).reset();
+      setEmailPrefix(""); // 🚀 Limpa o prefixo do e-mail também
       setIsOpen(false);
     } else {
       toast.error(res.error);
@@ -48,18 +53,36 @@ export default function CriarLeadForm() {
           onSubmit={handleSubmit}
           className="p-6 border-t border-gray-100 bg-gray-50/50 grid grid-cols-1 md:grid-cols-3 gap-4"
         >
+          {/* 🚀 CAMPO DE E-MAIL OTIMIZADO */}
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase">
               E-mail do Negócio
             </label>
+            <div className="flex items-center w-full rounded-xl border border-gray-200 bg-white focus-within:ring-2 focus-within:ring-emerald-400 overflow-hidden transition-all">
+              <input
+                type="text"
+                placeholder="nome.da.loja"
+                required
+                value={emailPrefix}
+                // Se colar algo com @, ele corta e pega só o prefixo
+                onChange={(e) =>
+                  setEmailPrefix(e.target.value.replace(/@.*/, ""))
+                }
+                className="w-full p-3 outline-none text-sm font-bold text-[#0F172A] bg-transparent"
+              />
+              <span className="pr-4 py-3 text-sm font-black text-gray-400 select-none whitespace-nowrap bg-transparent">
+                @tafanu.com.br
+              </span>
+            </div>
+
+            {/* O INPUT ESCONDIDO QUE MANDA O DADO REAL PRO BACKEND */}
             <input
+              type="hidden"
               name="email"
-              type="email"
-              placeholder="loja@tafanu.com.br"
-              required
-              className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
+              value={emailPrefix ? `${emailPrefix}@tafanu.com.br` : ""}
             />
           </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase">
               Nome da Empresa
@@ -71,6 +94,7 @@ export default function CriarLeadForm() {
               className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase">
               WhatsApp
@@ -82,6 +106,7 @@ export default function CriarLeadForm() {
               className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase">
               Código Afiliado (Opcional)
@@ -92,6 +117,7 @@ export default function CriarLeadForm() {
               className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-400 uppercase">
               Senha Provisória (Segura)
@@ -108,7 +134,7 @@ export default function CriarLeadForm() {
             <button
               type="submit"
               disabled={isSaving}
-              className="bg-[#0F172A] text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-gray-800 flex items-center gap-2 shadow-md"
+              className="bg-[#0F172A] text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-gray-800 flex items-center gap-2 shadow-md transition-all active:scale-95"
             >
               {isSaving ? (
                 <Loader2 size={16} className="animate-spin" />

@@ -249,7 +249,7 @@ export async function registerUser(formData: FormData) {
 
     try {
       await resend.emails.send({
-        from: "Tafanu <contato@tafanu.com.br>",
+        from: "Tafanu <sistema@tafanu.com.br>",
         to: email,
         subject: "Ative sua conta no Tafanu",
         html: `
@@ -1539,7 +1539,7 @@ export async function sendPasswordResetEmail(formData: FormData) {
 
   try {
     await resend.emails.send({
-      from: "Equipe Tafanu <contato@tafanu.com.br>",
+      from: "Equipe Tafanu <sistema@tafanu.com.br>",
       to: email,
       subject: "Redefinir sua senha - Tafanu",
       html: `<p>Você solicitou a troca de senha. Clique no link abaixo para criar uma nova:</p>
@@ -2554,7 +2554,7 @@ export async function resendVerificationEmail(email: string) {
 
     // 3. Dispara o e-mail
     await resend.emails.send({
-      from: "Tafanu <contato@tafanu.com.br>",
+      from: "Tafanu <sistema@tafanu.com.br>",
       to: email,
       subject: "Novo link de ativação - Tafanu",
       html: `
