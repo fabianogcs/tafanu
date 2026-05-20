@@ -49,7 +49,7 @@ export default async function NewBusinessPage() {
     subcategory: [],
     layout: "influencer",
     theme: "carbon",
-    published: true,
+    published: false, // 🚀 AGORA O PADRÃO É NASCER PAUSADO!
     address: "",
     city: "",
     state: "SP",

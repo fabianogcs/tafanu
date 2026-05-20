@@ -679,6 +679,29 @@ export default function BusinessEditor({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* 🚀 BOTÃO ONLINE/OFFLINE (Movido para fora, agora aparece sempre!) */}
+            <button
+              type="button"
+              onClick={() => {
+                const newStatus = !isPublished;
+                setIsPublished(newStatus);
+                // 🛡️ Se for novo, só muda a cor do botão. Se já existir, salva na hora no banco!
+                if (!isNew) {
+                  handleUpdate(newStatus);
+                }
+              }}
+              disabled={isLoading}
+              className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm ${isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100" : "bg-rose-100 text-rose-600 border-rose-200 hover:bg-rose-200"}`}
+            >
+              {isLoading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Power size={14} />
+              )}
+              {isPublished ? "Online" : "Pausado"}
+            </button>
+
+            {/* Os botões de Olhinho, Vassoura e Lixeira continuam escondidos em lojas novas */}
             {!isNew && (
               <>
                 <button
@@ -689,24 +712,8 @@ export default function BusinessEditor({
                 >
                   <Eye size={18} />
                 </button>
-                <button
-                  onClick={() => {
-                    const newStatus = !isPublished;
-                    setIsPublished(newStatus);
-                    handleUpdate(newStatus);
-                  }}
-                  disabled={isLoading}
-                  className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm ${isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100" : "bg-rose-100 text-rose-600 border-rose-200 hover:bg-rose-200"}`}
-                >
-                  {isLoading ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Power size={14} />
-                  )}
-                  {isPublished ? "Online" : "Pausado"}
-                </button>
-                {/* 🚀 BOTÃO DE RESET (A VASSOURA) - APARECE PARA TODOS */}
-                {/* 🚀 BOTÃO DE RESET (A VASSOURA) - APARECE PARA TODOS */}
+
+                {/* 🚀 BOTÃO DE RESET (A VASSOURA) */}
                 <button
                   onClick={(e) => {
                     e.preventDefault();

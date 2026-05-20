@@ -68,7 +68,7 @@ function MobilePreview({
       {/* MOLDURA DO CELULAR */}
       <div className="w-[280px] h-[580px] rounded-[3rem] shadow-2xl border-[8px] border-slate-900 overflow-hidden relative bg-black">
         {/* O "Notch" do celular */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-50" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-20" />
 
         {/* ---------------------------------------------------
             1. LAYOUT LUXE (Editorial)

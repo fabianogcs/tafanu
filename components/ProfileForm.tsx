@@ -16,8 +16,8 @@ import {
   FileText,
   Sparkles,
   Info,
-  Eye, // ⬅️ Adicionado Ícone
-  EyeOff, // ⬅️ Adicionado Ícone
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
@@ -66,7 +66,7 @@ export default function ProfileForm({ user }: { user: any }) {
     }
   };
 
-  // --- 4. SUBMISSÃO ORIGINAL (PRESERVADA) ---
+  // --- 4. SUBMISSÃO ATUALIZADA (COM AVISO DE CPF) ---
   async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -96,6 +96,14 @@ export default function ProfileForm({ user }: { user: any }) {
           `O ${docClean.length <= 11 ? "CPF" : "CNPJ"} informado é inválido.`,
         );
         return;
+      }
+
+      // 🚀 ALERTA DE TRAVA DE CPF: Só avisa se ele não tinha CPF antes e está salvando agora!
+      if (!user.document) {
+        const confirmarCpf = window.confirm(
+          "⚠️ ATENÇÃO: Tem certeza que os dados estão corretos?\n\nSeu CPF/CNPJ será vinculado permanentemente a esta conta por questões de segurança e faturamento, e NÃO poderá ser alterado posteriormente.",
+        );
+        if (!confirmarCpf) return; // Cancela o salvamento se ele disser "Não"
       }
     }
 
@@ -212,7 +220,8 @@ export default function ProfileForm({ user }: { user: any }) {
                 <label
                   className={`text-[10px] font-black uppercase tracking-widest ml-1 flex items-center gap-1 ${!user.phone ? "text-[#F28705]" : "text-gray-400"}`}
                 >
-                  <Smartphone size={12} /> WhatsApp{" "}
+                  {/* 🚀 LABEL ALTERADA */}
+                  <Smartphone size={12} /> WhatsApp Pessoal:{" "}
                   {user.role === "ASSINANTE" && "*"}{" "}
                   {!user.phone && (
                     <span className="ml-2 animate-pulse">(Obrigatório)</span>
@@ -246,13 +255,23 @@ export default function ProfileForm({ user }: { user: any }) {
                   <FileText size={12} /> CPF ou CNPJ{" "}
                   {user.role === "ASSINANTE" && "*"}
                 </label>
+                {/* 🚀 INPUT DO CPF AGORA FICA TRAVADO SE JÁ EXISTIR NO BANCO */}
                 <input
                   name="document"
                   defaultValue={maskDoc(user.document || "")}
-                  onChange={(e) => (e.target.value = maskDoc(e.target.value))}
+                  onChange={(e) => {
+                    // Impede o onChange visual se já estiver travado
+                    if (!user.document)
+                      e.target.value = maskDoc(e.target.value);
+                  }}
                   placeholder="000.000.000-00"
-                  className="w-full p-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 shadow-sm font-bold text-[#023059]"
+                  className={`w-full p-5 border rounded-3xl outline-none focus:ring-4 font-bold transition-all ${
+                    user.document
+                      ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                      : "bg-white border-gray-100 text-[#023059] focus:ring-indigo-50 shadow-sm"
+                  }`}
                   required={user.role === "ASSINANTE"}
+                  readOnly={!!user.document}
                 />
               </div>
               <div className="space-y-2 opacity-60">
@@ -406,7 +425,7 @@ export default function ProfileForm({ user }: { user: any }) {
                   .<br />
                   <span className="text-slate-400 font-medium">
                     Entendo que violações das regras podem causar banimento sem
-                    reembolse.
+                    reembolso.
                   </span>
                 </label>
               </div>

@@ -64,15 +64,15 @@ export default function Footer() {
               contato@tafanu.com.br
             </a>
 
-            {/* WhatsApp Real */}
+            {/* Atendimento via WhatsApp */}
             <a
-              href="https://wa.me/5514996050250"
+              href="https://wa.me/5514991406618"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm flex items-center justify-center md:justify-start gap-2"
             >
               <MessageCircle size={16} className="text-tafanu-action" />
-              (14) 99605-0250
+              Falar com Atendimento
             </a>
 
             <div className="pt-4 text-gray-600 text-xs">

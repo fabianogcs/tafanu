@@ -149,7 +149,8 @@ export default function Navbar({
                     href="/dashboard"
                     className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
                   >
-                    <Layers size={14} className="text-tafanu-action" /> Posts
+                    <Layers size={14} className="text-tafanu-action" />{" "}
+                    Dashboard
                   </Link>
                   <Link
                     href="/admin"

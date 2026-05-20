@@ -65,8 +65,8 @@ export default async function DashboardPage() {
 
   const canCreateBusiness =
     user.role === "ADMIN" ||
-    user.role === "AFILIADO" ||
-    (user.role === "ASSINANTE" && user.businesses.length === 0);
+    ((user.role === "AFILIADO" || user.role === "ASSINANTE") &&
+      user.businesses.length === 0);
 
   return (
     <div className="min-h-screen font-sans text-slate-900 bg-[#F8FAFC] overflow-x-hidden">

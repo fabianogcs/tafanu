@@ -170,13 +170,7 @@ export default async function DashboardLayout({
 
                   {(isAdmin || isAfiliado) && (
                     <>
-                      <Link
-                        href="/dashboard/novo"
-                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
-                      >
-                        <PlusCircle size={20} />
-                        <span className="text-sm">Novo Negócio</span>
-                      </Link>
+                      {/* O botão "Novo Negócio" foi removido daqui para centralizar a criação na Dashboard Principal */}
 
                       {/* 🚀 NOVO: BOTÃO DO FUNIL */}
                       <Link

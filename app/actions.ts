@@ -502,22 +502,29 @@ export async function createBusiness(payload: any) {
     };
   }
 
-  // 2. Bloqueio de limite para Assinantes
-  if (userRole === "ASSINANTE") {
+  // 2. Bloqueio de limite para Assinantes E Afiliados
+  if (userRole === "ASSINANTE" || userRole === "AFILIADO") {
     // Contamos quantos negócios este usuário já possui no banco
     const businessCount = await db.business.count({
       where: { userId: session.id },
     });
 
     if (businessCount >= 1) {
-      return {
-        error:
-          "Assinantes podem ter apenas 1 loja ativa. Torne-se um Parceiro para criar lojas ilimitadas!",
-      };
+      if (userRole === "AFILIADO") {
+        return {
+          error:
+            "Parceiros têm direito a apenas 1 vitrine gratuita de portfólio. Para novos clientes, eles devem criar suas próprias contas.",
+        };
+      } else {
+        return {
+          error:
+            "Sua conta já possui uma vitrine ativa. Para cadastrar um novo negócio, crie uma nova conta.",
+        };
+      }
     }
   }
 
-  // Se for ADMIN ou AFILIADO, o código ignora os IFs acima e segue normalmente...
+  // Se for ADMIN, o código ignora os IFs acima e segue normalmente (Admin pode ter infinitas)...
 
   // --- RESTANTE DO SEU CÓDIGO ORIGINAL ---
   const validatedFields = businessSchema.safeParse(payload);
@@ -588,7 +595,7 @@ export async function createBusiness(payload: any) {
           shein: validatedData.shein?.trim() || "",
           ifood: validatedData.ifood?.trim() || "",
           website: payload.website || "",
-          published: false,
+          published: payload.published ?? false, // 🚀 AGORA ELE OBEDECE A TELA!
           hasDelivery: payload.hasDelivery || false,
           urban_tag: payload.urban_tag || "",
           luxe_quote: payload.luxe_quote || "",
