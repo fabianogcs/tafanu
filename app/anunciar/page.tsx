@@ -35,17 +35,17 @@ export default async function AnunciarPage() {
     ? "/checkout"
     : "/login?callbackUrl=/checkout&intent=assinante";
 
-  // 🚀 SEO AVANÇADO (JSON-LD): O Google lê isso invisivelmente e pode jogar seu FAQ direto nos resultados de busca!
+  // 🚀 SEO AVANÇADO (JSON-LD): Ajustado para focar apenas no MVP Mensal
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: [
       {
         "@type": "Question",
-        name: "COMO FUNCIONA O PERÍODO GRÁTIS E A GARANTIA?",
+        name: "COMO FUNCIONA O PERÍODO GRÁTIS?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Na sua primeira assinatura do plano Mensal, você tem 7 dias de Teste Grátis e a cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
+          text: "Na sua primeira assinatura do plano Tafanu PRO, você tem 7 dias de Teste Grátis. A primeira cobrança de R$ 39,90 só acontece no 8º dia. Se não gostar, basta cancelar antes e nada será cobrado.",
         },
       },
       {
@@ -53,15 +53,15 @@ export default async function AnunciarPage() {
         name: "PRECISO DE CARTÃO PARA COMEÇAR?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Na sua primeira assinatura do plano Mensal, nada será cobrado hoje.",
+          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Mas fique tranquilo, na sua primeira assinatura, absolutamente nada será cobrado hoje.",
         },
       },
       {
         "@type": "Question",
-        name: "POSSO CANCELAR E RECEBER MEU DINHEIRO DE VOLTA?",
+        name: "POSSO CANCELAR A QUALQUER MOMENTO?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste da sua primeira assinatura, nada será cobrado. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, estornamos 100% do valor pago. Risco zero.",
+          text: "Com certeza. Se você cancelar dentro dos 7 dias de teste, a cobrança nem chega a ser feita. O cancelamento é feito direto no seu painel, sem multas e sem burocracia.",
         },
       },
     ],
@@ -84,8 +84,7 @@ export default async function AnunciarPage() {
 
         <div className="max-w-6xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 py-2 px-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold text-[10px] uppercase tracking-[0.2em] mb-8">
-            <ShieldCheck size={14} aria-hidden="true" /> Satisfação Garantida ou
-            Risco Zero
+            <ShieldCheck size={14} aria-hidden="true" /> Risco Zero
           </div>
 
           <h1 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.9] mb-8">
@@ -98,7 +97,7 @@ export default async function AnunciarPage() {
             estão buscando produtos ou serviços. Receba contatos direto no seu
             WhatsApp.
             <span className="text-white block mt-2">
-              Teste o Plano Mensal grátis por 7 dias na sua primeira assinatura.
+              Teste o Plano PRO grátis por 7 dias na sua primeira assinatura.
             </span>
           </p>
 
@@ -111,8 +110,7 @@ export default async function AnunciarPage() {
               CRIAR MINHA VITRINE <ArrowRight size={20} aria-hidden="true" />
             </Link>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
-              7 dias grátis na 1ª assinatura do Mensal • Cancele a qualquer
-              momento
+              7 dias grátis na 1ª assinatura • Cancele a qualquer momento
             </p>
           </div>
         </div>
@@ -126,27 +124,29 @@ export default async function AnunciarPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <article className="flex flex-col gap-5 p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-emerald-500/50 transition-colors group">
             <div className="w-12 h-12 bg-[#050814] text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-emerald-500 group-hover:text-[#050814] transition-colors">
-              <BarChart3 size={24} aria-hidden="true" />
+              <Smartphone size={24} aria-hidden="true" />
             </div>
             <h3 className="text-2xl font-black uppercase italic text-slate-900 tracking-tighter leading-none">
-              Métricas Reais
+              Venda Direta. Zero Taxas.
             </h3>
             <p className="text-slate-500 font-medium leading-snug">
-              Saiba exatamente quantas pessoas viram sua página e clicaram no
-              seu botão de vendas.
+              Sem aplicativos intermediários cobrando comissão do seu lucro. O
+              cliente pesquisa no Tafanu e cai direto no seu WhatsApp, pronto
+              para fechar negócio.
             </p>
           </article>
 
           <article className="flex flex-col gap-5 p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-emerald-500/50 transition-colors group">
             <div className="w-12 h-12 bg-[#050814] text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-emerald-500 group-hover:text-[#050814] transition-colors">
-              <Smartphone size={24} aria-hidden="true" />
+              <BarChart3 size={24} aria-hidden="true" />
             </div>
             <h3 className="text-2xl font-black uppercase italic text-slate-900 tracking-tighter leading-none">
-              Foco no Whats
+              Monitor de Resultados
             </h3>
             <p className="text-slate-500 font-medium leading-snug">
-              Sem intermediários. O cliente clica e já cai direto na conversa
-              com você para fechar o serviço.
+              Pare de atirar no escuro. Acompanhe em tempo real no seu painel
+              quantas pessoas da sua cidade visitaram sua vitrine e clicaram nos
+              seus links.
             </p>
           </article>
 
@@ -155,11 +155,12 @@ export default async function AnunciarPage() {
               <Globe size={24} aria-hidden="true" />
             </div>
             <h3 className="text-2xl font-black uppercase italic text-slate-900 tracking-tighter leading-none">
-              SEO Local
+              O "Ímã" do Google
             </h3>
             <p className="text-slate-500 font-medium leading-snug">
-              Páginas otimizadas para que o Google entenda que seu negócio é a
-              melhor opção na sua cidade.
+              Aplicamos tecnologia de ponta por trás da sua vitrine para que o
+              Google recomende a sua empresa sempre que alguém buscar pelo seu
+              serviço na região.
             </p>
           </article>
         </div>
@@ -179,13 +180,13 @@ export default async function AnunciarPage() {
             </h2>
 
             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mb-8">
-              TESTE O PLANO MENSAL GRÁTIS POR 7 DIAS (VÁLIDO NA 1ª ASSINATURA)
+              TESTE GRÁTIS POR 7 DIAS (VÁLIDO NA 1ª ASSINATURA)
             </p>
 
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-10">
               <div className="text-center">
                 <span className="block text-slate-400 font-black text-xs uppercase mb-1">
-                  Hoje (Plano Mensal)
+                  Hoje
                 </span>
                 <span className="text-5xl font-black text-emerald-500 tracking-tighter italic">
                   GRÁTIS
@@ -200,22 +201,17 @@ export default async function AnunciarPage() {
                   Após 7 dias
                 </span>
                 <span className="text-5xl font-black text-slate-900 tracking-tighter italic">
-                  R$ 39,90
+                  R$ 39,90 <span className="text-xl">/mês</span>
                 </span>
               </div>
             </div>
 
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-10">
-              Ou escolha os planos Trimestral/Anual com garantia de 7 dias e{" "}
-              <span className="text-emerald-500">descontos de até 25%</span>
-            </p>
-
             <Link
               href={destination}
-              aria-label="Criar minha vitrine agora"
+              aria-label="Ativar meu teste grátis agora"
               className="w-full bg-[#050814] text-white font-black py-6 rounded-2xl hover:bg-emerald-500 hover:text-[#050814] transition-all uppercase text-sm tracking-widest flex items-center justify-center gap-3 shadow-2xl"
             >
-              VER TODOS OS PLANOS
+              ATIVAR MEU TESTE GRÁTIS
             </Link>
           </div>
         </div>
@@ -227,16 +223,16 @@ export default async function AnunciarPage() {
         <div className="space-y-4">
           {[
             {
-              q: "COMO FUNCIONA O PERÍODO GRÁTIS E A GARANTIA?",
-              a: "Na sua primeira assinatura do plano Mensal, você tem 7 dias de Teste Grátis e a cobrança de R$ 39,90 só acontece no 8º dia. Nos planos Trimestral e Anual, você ganha um super desconto pagando no ato, mas tem a Garantia Incondicional de 7 Dias: se não gostar, devolvemos 100% do seu dinheiro.",
+              q: "COMO FUNCIONA O PERÍODO GRÁTIS?",
+              a: "Na sua primeira assinatura do plano Tafanu PRO, você tem 7 dias de Teste Grátis. A primeira cobrança de R$ 39,90 só acontece no 8º dia. Se não gostar, basta cancelar antes e nada será cobrado.",
             },
             {
               q: "PRECISO DE CARTÃO PARA COMEÇAR?",
-              a: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Lembrando que na sua primeira assinatura do plano Mensal, nada será cobrado hoje.",
+              a: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Mas fique tranquilo, na sua primeira assinatura, absolutamente nada será cobrado hoje.",
             },
             {
-              q: "POSSO CANCELAR E RECEBER MEU DINHEIRO DE VOLTA?",
-              a: "Com certeza. Se você cancelar o plano Mensal dentro dos 7 dias de teste da primeira assinatura, a cobrança nem chega a ser feita. Se assinar o Trimestral ou Anual e cancelar em até 7 dias, nós estornamos 100% do valor pago direto no seu cartão. Risco zero.",
+              q: "POSSO CANCELAR A QUALQUER MOMENTO?",
+              a: "Com certeza. Se você cancelar dentro dos 7 dias de teste, a cobrança nem chega a ser feita. O cancelamento é feito direto no seu painel, sem multas e sem burocracia.",
             },
           ].map((item, i) => (
             <article

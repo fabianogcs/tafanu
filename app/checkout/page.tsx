@@ -221,12 +221,12 @@ export default function CheckoutPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              "Site Exclusivo",
-              "Métricas",
-              "Redes Sociais",
-              "Botão WhatsApp",
-              "SEO Google",
-              "Galeria de Fotos",
+              "Vitrine Exclusiva 24h",
+              "Monitor de Cliques",
+              "Hub de Redes Sociais",
+              "Venda Direta no WhatsApp",
+              "Motor de Busca Google",
+              "Destaque de Diferenciais",
             ].map((item, i) => (
               <div
                 key={i}
