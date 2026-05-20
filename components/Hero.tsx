@@ -53,12 +53,12 @@ export default function Hero() {
           Conectamos você aos melhores serviços, comércios e profissionais.
         </p>
 
-        {/* 🚀 NOVA BARRA DE PESQUISA "SINGLE PILL" */}
+        {/* 🚀 OPÇÃO A: BARRA EM VIDRO JATEADO CLARO PERFEITA PARA O MODO ESCURO */}
         <form
           onSubmit={handleSearch}
           role="search"
           aria-label="Buscar serviços locais"
-          className="relative z-30 w-full max-w-4xl mx-auto flex items-center bg-[#0A1220] border border-white/10 p-1.5 md:p-2 rounded-2xl md:rounded-full shadow-2xl shadow-black/50 transition-all hover:border-white/20 focus-within:border-tafanu-action/50 focus-within:bg-[#0D172A] focus-within:ring-4 focus-within:ring-tafanu-action/10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300"
+          className="relative z-30 w-full max-w-4xl mx-auto flex items-center bg-white/90 backdrop-blur-md border border-white/20 p-1.5 md:p-2 rounded-2xl md:rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all hover:bg-white hover:shadow-[0_8px_40px_rgba(0,0,0,0.4)] focus-within:ring-4 focus-within:ring-emerald-500/20 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300"
         >
           <label
             htmlFor="hero-search"
@@ -75,7 +75,7 @@ export default function Hero() {
               type="text"
               aria-label="O que você está procurando?"
               placeholder="Pizzaria, Salão de Beleza..."
-              className="w-full h-full !bg-transparent border-none outline-none focus:ring-0 text-white placeholder-slate-500 font-medium text-sm md:text-lg appearance-none shadow-none"
+              className="w-full h-full !bg-transparent border-none outline-none focus:ring-0 text-slate-800 placeholder-slate-400 font-bold text-sm md:text-lg appearance-none shadow-none"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               disabled={isSearching}
@@ -86,7 +86,7 @@ export default function Hero() {
             type="submit"
             disabled={isSearching}
             aria-label="Realizar pesquisa"
-            className="bg-tafanu-action hover:bg-gradient-to-r hover:from-tafanu-action hover:to-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-full px-5 md:px-10 h-10 md:h-14 flex items-center justify-center gap-2 uppercase tracking-[0.1em] text-xs md:text-sm shrink-0 transition-all duration-300 hover:scale-[1.03] active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="bg-tafanu-action hover:bg-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-full px-6 md:px-12 h-10 md:h-14 flex items-center justify-center gap-2 uppercase tracking-[0.1em] text-xs md:text-sm shrink-0 shadow-md transform transition-all duration-300 hover:scale-[1.03] active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isSearching ? (
               <Loader2

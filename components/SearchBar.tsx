@@ -43,17 +43,18 @@ export default function SearchBar({
   return (
     <form
       onSubmit={handleSearch}
-      className="w-full max-w-2xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 p-1.5 md:p-2 rounded-full shadow-lg flex items-center gap-2 group transition-all hover:bg-white/20 focus-within:ring-4 ring-white/10"
+      // 🚀 MESMO COMPORTAMENTO DE VIDRO FOSCO SUAVE
+      className="w-full max-w-2xl mx-auto bg-white/90 backdrop-blur-md border border-white/20 p-1.5 md:p-2 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center gap-2 group transition-all hover:bg-white hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] focus-within:ring-4 ring-emerald-500/20"
     >
       <div className="flex-1 flex items-center px-4 md:px-6 h-12 md:h-14">
-        <Search className="text-gray-300 w-5 h-5 md:w-6 md:h-6 mr-3 shrink-0 group-focus-within:text-tafanu-action transition-colors" />
+        <Search className="text-slate-400 w-5 h-5 md:w-6 md:h-6 mr-3 shrink-0 group-focus-within:text-tafanu-action transition-colors" />
         <input
           id="search-input"
           name="searchQuery"
           autoComplete="search"
           type="text"
           placeholder="Buscar outro negócio..."
-          className="w-full bg-transparent outline-none text-white placeholder-gray-400 font-medium text-sm md:text-lg truncate disabled:opacity-50"
+          className="w-full bg-transparent outline-none text-slate-800 placeholder-slate-400 font-bold text-sm md:text-lg truncate disabled:opacity-50"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           disabled={isSearching} // Opcional: bloqueia digitação enquanto busca
@@ -63,9 +64,8 @@ export default function SearchBar({
       <button
         type="submit"
         disabled={isSearching} // Bloqueia cliques duplos
-        className="shrink-0 bg-tafanu-action hover:bg-emerald-400 text-tafanu-blue font-black rounded-full px-5 md:px-8 h-10 md:h-12 shadow-lg transform transition hover:scale-105 active:scale-95 flex items-center justify-center uppercase tracking-wider text-[11px] md:text-sm disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
+        className="shrink-0 bg-tafanu-action hover:bg-emerald-400 text-[#0f172a] font-black rounded-full px-6 md:px-10 h-10 md:h-12 shadow-md transform transition-all hover:scale-105 active:scale-95 flex items-center justify-center uppercase tracking-wider text-[11px] md:text-sm disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100"
       >
-        {/* 5. Feedback visual: Troca o conteúdo do botão dependendo do estado */}
         {isSearching ? (
           <div className="flex items-center gap-2">
             <Loader2 size={16} strokeWidth={3} className="animate-spin" />
