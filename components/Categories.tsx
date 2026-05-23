@@ -110,7 +110,11 @@ const CATEGORIES_DATA = [
   },
 ];
 
-export default function Categories() {
+interface CategoriesProps {
+  activeCats?: string[];
+}
+
+export default function Categories({ activeCats = [] }: CategoriesProps) {
   const [isNavigating, setIsNavigating] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
