@@ -134,20 +134,29 @@ export default function FilterModal({
     setDraftNeighborhood("");
     setCatStep("main");
 
-    const query = searchParams.get("q");
     setIsOpen(false);
 
-    if (query) router.push(`/busca?q=${query}&page=1`);
-    else router.push(`/busca`);
+    // 🚀 CIRURGIA 1: Agora o "Limpar" respeita se o usuário está no Modo Shopping!
+    const params = new URLSearchParams();
+    const query = searchParams.get("q");
+    const modo = searchParams.get("modo");
+
+    if (query) params.set("q", query);
+    if (modo) params.set("modo", modo);
+
+    router.push(`/busca?${params.toString()}`);
   };
 
+  // 🚀 CIRURGIA 2: O "ponto azul" agora enxerga Subcategorias e Cidades!
   const isFilterActive =
     !!searchParams.get("category") ||
+    !!searchParams.get("subcategory") ||
     !!searchParams.get("state") ||
+    !!searchParams.get("city") ||
     searchParams.get("status") !== "all" ||
     (searchParams.get("sort") !== "distance" &&
-      searchParams.get("sort") !== "popular");
-
+      searchParams.get("sort") !== "popular" &&
+      searchParams.get("sort") !== "relevance");
   const availableStates = Object.keys(locationData).sort();
   const availableCitiesForState = draftState
     ? Object.keys(locationData[draftState] || {}).sort()

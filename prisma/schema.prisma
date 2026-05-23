@@ -178,6 +178,9 @@ model Business {
   @@index([city, isActive, published]) 
   @@index([category, isActive, published]) 
   @@index([name, city])
+  @@index([expiresAt])
+  @@index([keywords], type: Gin)
+  @@index([subcategory], type: Gin)
 }
 
 model BusinessHour {

@@ -32,7 +32,6 @@ function calculateDistance(
 }
 
 const SINONIMOS_BASE: Record<string, string[]> = {
-  // --- ADIÇÕES CIRÚRGICAS PARA COMPLETAR O MERCADO LOCAL ---
   dente: [
     "dentista",
     "odontologia",
@@ -200,7 +199,6 @@ function getSmartTerms(query: string) {
   return Array.from(result);
 }
 
-// 🚀 O CACHE GLOBAL CORRIGIDO
 const getGlobalFilters = unstable_cache(
   async () => {
     const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -249,6 +247,34 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const session = await auth();
   const userId = session?.user?.id;
 
+  const optimizedSelect: Prisma.BusinessSelect = {
+    id: true,
+    name: true,
+    slug: true,
+    imageUrl: true,
+    category: true,
+    subcategory: true,
+    keywords: true,
+    neighborhood: true,
+    city: true,
+    latitude: true,
+    longitude: true,
+    views: true,
+    createdAt: true,
+    whatsapp: true,
+    phone: true,
+    hours: {
+      select: {
+        dayOfWeek: true,
+        openTime: true,
+        closeTime: true,
+        isClosed: true,
+      },
+    },
+    favorites: userId ? { where: { userId }, select: { id: true } } : false,
+    _count: { select: { favorites: true } },
+  };
+
   const params = await searchParams;
   const rawQuery = (params.q || "").trim();
   let query = normalizeText(rawQuery);
@@ -273,85 +299,187 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     }
   });
 
-  const page = Number(params.page) || 1;
+  const rawPage = Number(params.page) || 1;
+  const page = Math.min(Math.max(rawPage, 1), 100);
   const skip = (page - 1) * PAGE_SIZE;
 
   const category = params.category || "";
   const subcategoryParam = params.subcategory || "";
-  const rawCityFilter = params.city || "";
+
+  const stateFilter = params.state || "";
+  const cityFilter = params.city || "";
+  const neighborhoodFilter = params.neighborhood || "";
 
   const statusFilter = isIntentOpen ? "open" : params.status || "all";
   const subcategoryArray = subcategoryParam ? subcategoryParam.split(",") : [];
 
-  const cityFilter = normalizeText(rawCityFilter);
   const sort = params.sort || "relevance";
 
   const userLat = params.lat ? parseFloat(String(params.lat)) : null;
   const userLng = params.lng ? parseFloat(String(params.lng)) : null;
 
   const smartTerms = getSmartTerms(query);
-  const searchTerms = smartTerms;
-
   const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  const baseWhereClause: Prisma.BusinessWhereInput = {
-    isActive: true,
-    published: true,
-    ...(isOnlineMode
-      ? {
-          OR: [
-            { shopee: { not: "" } },
-            { mercadoLivre: { not: "" } },
-            { shein: { not: "" } },
-            { ifood: { not: "" } },
-            { hasDelivery: true },
-          ],
-        }
-      : {}),
-    AND: [
-      { OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }] },
-      ...(cityFilter
-        ? [
-            {
-              OR: [
-                {
-                  city: { contains: cityFilter, mode: "insensitive" as const },
-                },
-                {
-                  state: { contains: cityFilter, mode: "insensitive" as const },
-                },
-                {
-                  neighborhood: {
-                    contains: cityFilter,
-                    mode: "insensitive" as const,
-                  },
-                },
-              ],
-            },
-          ]
-        : []),
-      ...(searchTerms.length > 0
-        ? [
-            {
-              OR: searchTerms.slice(0, 3).flatMap((term) => {
-                const termCap = term.charAt(0).toUpperCase() + term.slice(1);
-                return [
-                  { name: { contains: term, mode: "insensitive" as const } },
-                  {
-                    category: { contains: term, mode: "insensitive" as const },
-                  },
-                  { keywords: { hasSome: [term, termCap] } },
-                  { subcategory: { hasSome: [term, termCap] } },
+  const parsedTerms = query
+    .split(" ")
+    .filter((t) => t.length > 2 && !STOPWORDS.includes(t))
+    .slice(0, 4);
+
+  // 🚀 CIRURGIA DE SINÔNIMOS: O 'contains' guloso agora só aplica na palavra exata digitada!
+  const strictSearchBlock: Prisma.BusinessWhereInput[] =
+    parsedTerms.length > 0
+      ? [
+          {
+            AND: parsedTerms.map((term) => {
+              const termNormalized = normalizeText(term);
+              const group = [termNormalized];
+              if (SYNONYMS_MAP[termNormalized])
+                group.push(...SYNONYMS_MAP[termNormalized]);
+              if (termNormalized.endsWith("s") && termNormalized.length > 3)
+                group.push(termNormalized.slice(0, -1));
+
+              return {
+                OR: group.flatMap((gTerm) => {
+                  const gTermCap =
+                    gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
+                  const isOriginalTerm =
+                    gTerm === termNormalized ||
+                    gTerm === termNormalized.slice(0, -1);
+
+                  // Regras que valem para TODOS (A palavra exata tem que estar nas tags/keywords)
+                  const baseConditions: Prisma.BusinessWhereInput[] = [
+                    { keywords: { hasSome: [gTerm, gTermCap] } },
+                    { subcategory: { hasSome: [gTerm, gTermCap] } },
+                    {
+                      category: { equals: gTerm, mode: "insensitive" as const },
+                    },
+                  ];
+
+                  // Regra exclusiva para o que o usuário DIGITOU (pode pesquisar pedaços da palavra)
+                  if (isOriginalTerm) {
+                    baseConditions.push(
+                      {
+                        name: { contains: gTerm, mode: "insensitive" as const },
+                      },
+                      {
+                        city: { contains: gTerm, mode: "insensitive" as const },
+                      },
+                      {
+                        neighborhood: {
+                          contains: gTerm,
+                          mode: "insensitive" as const,
+                        },
+                      },
+                    );
+                  }
+
+                  return baseConditions;
+                }),
+              };
+            }),
+          },
+        ]
+      : [];
+
+  const looseSearchBlock: Prisma.BusinessWhereInput[] =
+    parsedTerms.length > 0
+      ? [
+          {
+            OR: parsedTerms.flatMap((term) => {
+              const termNormalized = normalizeText(term);
+              const group = [termNormalized];
+              if (SYNONYMS_MAP[termNormalized])
+                group.push(...SYNONYMS_MAP[termNormalized]);
+              if (termNormalized.endsWith("s") && termNormalized.length > 3)
+                group.push(termNormalized.slice(0, -1));
+
+              return group.flatMap((gTerm) => {
+                const gTermCap = gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
+                const isOriginalTerm =
+                  gTerm === termNormalized ||
+                  gTerm === termNormalized.slice(0, -1);
+
+                const baseConditions: Prisma.BusinessWhereInput[] = [
+                  { keywords: { hasSome: [gTerm, gTermCap] } },
+                  { subcategory: { hasSome: [gTerm, gTermCap] } },
+                  { category: { equals: gTerm, mode: "insensitive" as const } },
                 ];
-              }),
+
+                if (isOriginalTerm) {
+                  baseConditions.push(
+                    { name: { contains: gTerm, mode: "insensitive" as const } },
+                    { city: { contains: gTerm, mode: "insensitive" as const } },
+                    {
+                      neighborhood: {
+                        contains: gTerm,
+                        mode: "insensitive" as const,
+                      },
+                    },
+                  );
+                }
+
+                return baseConditions;
+              });
+            }),
+          },
+        ]
+      : [];
+
+  const commonWhere: Prisma.BusinessWhereInput[] = [
+    { OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }] },
+
+    ...(subcategoryArray.length > 0
+      ? [
+          {
+            subcategory: {
+              hasSome: subcategoryArray,
             },
-          ]
-        : []),
-      ...(category
-        ? [{ category: { equals: category, mode: "insensitive" as const } }]
-        : []),
-    ],
-  };
+          },
+        ]
+      : []),
+
+    ...(stateFilter
+      ? [{ state: { equals: stateFilter, mode: "insensitive" as const } }]
+      : []),
+    // ... resto do seu commonWhere
+    ...(cityFilter
+      ? [{ city: { equals: cityFilter, mode: "insensitive" as const } }]
+      : []),
+    ...(neighborhoodFilter
+      ? [
+          {
+            neighborhood: {
+              equals: neighborhoodFilter,
+              mode: "insensitive" as const,
+            },
+          },
+        ]
+      : []),
+    ...(category
+      ? [{ category: { equals: category, mode: "insensitive" as const } }]
+      : []),
+    ...(sort === "distance" && userLat && userLng
+      ? [
+          {
+            latitude: { gte: userLat - 0.15, lte: userLat + 0.15 },
+            longitude: { gte: userLng - 0.15, lte: userLng + 0.15 },
+          },
+        ]
+      : []),
+  ];
+
+  const onlineWhere: Prisma.BusinessWhereInput = isOnlineMode
+    ? {
+        OR: [
+          { shopee: { not: "" } },
+          { mercadoLivre: { not: "" } },
+          { shein: { not: "" } },
+          { ifood: { not: "" } },
+          { hasDelivery: true },
+        ],
+      }
+    : {};
 
   const [categoriesData, locationRaw] = await getGlobalFilters();
 
@@ -381,53 +509,70 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     rawQuery ||
     category ||
     subcategoryParam ||
-    isOnlineMode
+    isOnlineMode ||
+    (userLat && userLng)
   );
 
   const needsJsEngine =
     query !== "" ||
     sort === "distance" ||
     sort === "relevance" ||
-    statusFilter === "open" ||
-    subcategoryArray.length > 0;
+    statusFilter === "open";
 
-  // 🚀 A CORREÇÃO DO TYPESCRIPT ESTÁ AQUI: Avisamos que as variáveis são Arrays do tipo 'any'
   let businessesData: any[] = [];
   let totalCount = 0;
   let paginatedResults: any[] = [];
 
   if (hasSearchTarget) {
     if (needsJsEngine) {
-      const dbResult = await db.business.findMany({
-        where: baseWhereClause,
+      let currentWhereClause: Prisma.BusinessWhereInput = {
+        isActive: true,
+        published: true,
+        ...onlineWhere,
+        AND: [...commonWhere, ...strictSearchBlock],
+      };
+
+      let dbResult = await db.business.findMany({
+        where: currentWhereClause,
         take: 400,
         orderBy: { views: "desc" },
-        include: {
-          hours: true,
-          favorites: userId ? { where: { userId } } : false,
-          _count: { select: { favorites: true } },
-        },
+        select: optimizedSelect,
       });
-      totalCount = await db.business.count({ where: baseWhereClause });
+
+      if (dbResult.length === 0 && parsedTerms.length > 0) {
+        currentWhereClause.AND = [...commonWhere, ...looseSearchBlock];
+
+        dbResult = await db.business.findMany({
+          where: currentWhereClause,
+          take: 400,
+          orderBy: { views: "desc" },
+          select: optimizedSelect,
+        });
+      }
+
+      totalCount = await db.business.count({ where: currentWhereClause });
       businessesData = dbResult;
     } else {
+      let currentWhereClause: Prisma.BusinessWhereInput = {
+        isActive: true,
+        published: true,
+        ...onlineWhere,
+        AND: commonWhere,
+      };
+
       let dbOrderBy: any = { views: "desc" };
       if (sort === "recent" || sort === "newest")
         dbOrderBy = { createdAt: "desc" };
 
       const [dbResult, count] = await Promise.all([
         db.business.findMany({
-          where: baseWhereClause,
+          where: currentWhereClause,
           skip: skip,
           take: PAGE_SIZE,
           orderBy: dbOrderBy,
-          include: {
-            hours: true,
-            favorites: userId ? { where: { userId } } : false,
-            _count: { select: { favorites: true } },
-          },
+          select: optimizedSelect,
         }),
-        db.business.count({ where: baseWhereClause }),
+        db.business.count({ where: currentWhereClause }),
       ]);
       businessesData = dbResult;
       totalCount = count;
@@ -468,7 +613,14 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     ) {
       const [oH, oM] = todayHours.openTime.split(":").map(Number);
       const [cH, cM] = todayHours.closeTime.split(":").map(Number);
-      isOpen = currentTime >= oH * 100 + oM && currentTime < cH * 100 + cM;
+      const openVal = oH * 100 + oM;
+      const closeVal = cH * 100 + cM;
+
+      if (closeVal < openVal) {
+        isOpen = currentTime >= openVal || currentTime < closeVal;
+      } else {
+        isOpen = currentTime >= openVal && currentTime < closeVal;
+      }
     }
     let score = 0;
     if (query) {
@@ -478,10 +630,58 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       const nSubsString = nSubs.join(" ");
       const nKeys = b.keywords.map((k: string) => normalizeText(k)).join(" ");
 
-      if (nName === query) score += 120;
-      else if (nName.startsWith(query)) score += 90;
-      else if (nName.includes(query)) score += 60;
-      if (nSubs.includes(query)) score += 70;
+      const nameWords = nName.split(" ");
+      const keysWords = nKeys.split(" ");
+
+      // 1. MATCH DA FRASE COMPLETA (Caso digite o nome exato da loja)
+      if (nName === query) {
+        score += 300;
+      } else if (nName.includes(query)) {
+        score += 150;
+      }
+
+      // 2. AVALIAÇÃO PALAVRA POR PALAVRA (Cirurgia para "bar em campinas")
+      let matchedTermsCount = 0;
+
+      parsedTerms.forEach((term, index) => {
+        const isFirstTerm = index === 0; // Geralmente a intenção principal ("bar", "pizza")
+        const isExactInName = nameWords.includes(term);
+        const isExactInSubs = nSubs.includes(term);
+        const isExactInCat = nCat === term;
+        const isExactInKeys = keysWords.includes(term);
+
+        if (isExactInName || isExactInSubs || isExactInCat || isExactInKeys) {
+          matchedTermsCount++;
+        }
+
+        // Se for o termo principal (ex: "bar"), damos um peso gigantesco se a palavra for exata
+        if (isFirstTerm) {
+          if (isExactInName)
+            score += 200; // "Bar do Zé" -> +200
+          else if (isExactInSubs)
+            score += 180; // Subcategoria exata "bar" -> +180
+          else if (isExactInCat)
+            score += 150; // Categoria exata -> +150
+          else if (nName.includes(term)) {
+            score += 15; // Contém apenas como pedaço (ex: "barbearia" contém "bar") -> Ganha quase nada!
+          }
+        } else {
+          // Termos secundários do cliente (ex: "campinas", "premium")
+          if (isExactInName) score += 50;
+          else if (isExactInSubs || isExactInKeys) score += 40;
+
+          // Se o termo bater com a cidade ou o bairro cadastrado na loja
+          if (b.city === term || b.neighborhood === term) {
+            score += 100; // Bônus crucial de localização!
+          }
+        }
+      });
+
+      // Super bônus se a loja der match com TODOS os termos digitados (Relevância Cruzada)
+      if (parsedTerms.length > 1 && matchedTermsCount === parsedTerms.length) {
+        score += 120;
+      }
+
       let termScore = 0;
       smartTerms.forEach((t) => {
         if (nKeys.includes(t)) termScore += 50;
@@ -489,8 +689,22 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         if (nSubsString.includes(t)) termScore += 40;
       });
       score += Math.min(termScore, 200);
+
       if (distanceValue !== null) score += Math.max(0, 50 - distanceValue);
       if (b.keywords.length === 0) score -= 10;
+
+      // 3. O FILTRO ANTI-LIXO MULTI-TERMO
+      // Se o termo principal tem 3 letras ou menos (ex: "bar", "sal", "pao")
+      // Mas a loja não possui essa palavra de forma EXATA no nome, subcategoria ou categoria,
+      // significa que é um lixo de substring (ex: pegou "barbearia" em vez de "bar"). Zeramos o score!
+      const hasCoreIntentExact =
+        nameWords.includes(parsedTerms[0]) ||
+        nSubs.includes(parsedTerms[0]) ||
+        nCat === parsedTerms[0];
+
+      if (parsedTerms[0]?.length <= 3 && !hasCoreIntentExact) {
+        score = 0;
+      }
     } else {
       score = 1;
     }
@@ -561,7 +775,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                 ) : (
                   <>
                     Encontramos{" "}
-                    <strong className="text-white">{totalCount}</strong>{" "}
+                    <strong className="text-white">{effectiveTotal}</strong>{" "}
                     resultados {isOnlineMode && "online"}
                   </>
                 )}
@@ -571,7 +785,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               availableCategories={orderedFilterMap}
               locationData={locationData}
               currentSort={sort}
-              isDisabled={totalCount === 0 && !isOnlineMode}
+              isDisabled={effectiveTotal === 0 && !isOnlineMode}
             />
           </div>
           <div className="w-full">

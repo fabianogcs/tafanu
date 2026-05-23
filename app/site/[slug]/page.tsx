@@ -37,15 +37,27 @@ export async function generateViewport({
     maximumScale: 5,
   };
 }
-
-// --- 1. SEO DINÂMICO & PWA (VERSÃO FINAL: LOGO OU TAFANU) ---
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const business = await db.business.findUnique({ where: { slug } });
+
+  // 🚀 BUSCA TAMBÉM CATEGORIA, SUBCATEGORIA E CIDADE PARA O SEO LOCAL
+  const business = await db.business.findUnique({
+    where: { slug },
+    select: {
+      name: true,
+      slug: true,
+      description: true,
+      keywords: true,
+      imageUrl: true,
+      category: true,
+      subcategory: true, // 👈 Agora ele puxa a subcategoria do banco!
+      city: true,
+    },
+  });
 
   if (!business) return { title: "Negócio não encontrado | Tafanu" };
 
@@ -59,18 +71,36 @@ export async function generateMetadata({
 
   if (logoAssinante) {
     if (logoAssinante.startsWith("http")) {
-      // Se for Cloudinary (http), usa o link puro!
       displayImage = logoAssinante;
     } else {
-      // Se for imagem local, monta o link com o seu domínio
       displayImage = `${siteUrl}${logoAssinante.startsWith("/") ? "" : "/"}${logoAssinante}`;
     }
   }
+
+  // 🚀 TÍTULO RICO PARA O GOOGLE (SEO LOCAL AVANÇADO)
+  const locationTag = business.city ? `em ${business.city}` : "";
+
+  // Pega a primeira subcategoria da lista (já que é um Array), se existir
+  const primeiraSubcategoria =
+    business.subcategory && business.subcategory.length > 0
+      ? ` - ${business.subcategory[0]}`
+      : "";
+
+  const categoryTag =
+    business.category && business.category !== "Geral"
+      ? `${business.category}${primeiraSubcategoria} ${locationTag}`
+      : locationTag;
+
+  // Monta o título dinâmico.
+  const seoTitle = categoryTag
+    ? `${business.name} | ${categoryTag} | Tafanu`
+    : `${business.name} | Tafanu`;
+
   return {
-    title: `${business.name.toUpperCase()} | Tafanu`,
+    title: seoTitle,
     description:
       business.description?.slice(0, 160) ||
-      "Confira este anúncio exclusivo no Tafanu.",
+      `Conheça ${business.name}. Veja fotos, informações e entre em contato direto pelo WhatsApp.`,
     keywords: business.keywords,
     alternates: { canonical: fullUrl },
     applicationName: business.name,
@@ -85,8 +115,10 @@ export async function generateMetadata({
       apple: displayImage,
     },
     openGraph: {
-      title: `${business.name.toUpperCase()} - Guia Tafanu`,
-      description: "Veja fotos, informações e entre em contato agora mesmo.",
+      title: seoTitle,
+      description:
+        business.description?.slice(0, 160) ||
+        `Veja informações completas e contato de ${business.name}.`,
       url: fullUrl,
       siteName: "Tafanu",
       images: [
@@ -101,7 +133,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary",
-      title: business.name,
+      title: seoTitle,
       description: business.description?.slice(0, 160),
       images: [displayImage],
     },

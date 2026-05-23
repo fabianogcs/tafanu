@@ -35,6 +35,7 @@ export default function LocationTracker() {
         params.set("lat", latitude.toString());
         params.set("lng", longitude.toString());
         params.set("sort", "distance");
+        params.set("page", "1"); // 🚀 CIRÚRGICO: Reseta sempre para a página 1 ao ligar o GPS
 
         setLoading(false);
         router.replace(`/busca?${params.toString()}`);
