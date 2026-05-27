@@ -75,8 +75,8 @@ export default async function AnunciarPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      {/* --- HERO: FOCO NO TESTE GRÁTIS --- */}
-      <section className="relative bg-[#050814] text-white py-24 md:py-36 overflow-hidden">
+      {/* --- HERO: FOCO NO TESTE GRÁTIS E PROVA VISUAL --- */}
+      <section className="relative bg-[#050814] text-white pt-24 pb-12 md:pt-36 md:pb-24 overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent opacity-50 pointer-events-none"
           aria-hidden="true"
@@ -88,30 +88,66 @@ export default async function AnunciarPage() {
           </div>
 
           <h1 className="text-5xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.9] mb-8">
-            IMPULSIONE SEU <br />
-            <span className="text-emerald-500">NEGÓCIO.</span>
+            SUA VITRINE PRONTA EM <br />
+            <span className="text-emerald-500">5 MINUTOS.</span>
           </h1>
 
-          <p className="text-lg md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto font-medium leading-tight">
-            Crie sua vitrine profissional no Tafanu e apareça para clientes que
-            estão buscando produtos ou serviços. Receba contatos direto no seu
+          <p className="text-lg md:text-2xl text-slate-400 mb-10 max-w-3xl mx-auto font-medium leading-tight">
+            Crie sua vitrine profissional no Tafanu, sem programação. Apareça
+            para quem busca seus serviços e receba os clientes direto no
             WhatsApp.
-            <span className="text-white block mt-2">
-              Teste o Plano PRO grátis por 7 dias na sua primeira assinatura.
+            <span className="text-white block mt-2 text-sm md:text-lg">
+              Teste todas as funções PRO grátis por 7 dias.
             </span>
           </p>
 
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-6 mb-16">
             <Link
               href={destination}
               aria-label="Começar agora"
-              className="bg-emerald-500 text-[#050814] font-black text-lg px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-tighter"
+              className="bg-emerald-500 text-[#050814] font-black text-lg px-12 py-5 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-tighter"
             >
               CRIAR MINHA VITRINE <ArrowRight size={20} aria-hidden="true" />
             </Link>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
               7 dias grátis na 1ª assinatura • Cancele a qualquer momento
             </p>
+          </div>
+
+          {/* 🚀 O VÍDEO (A PROVA IRREFUTÁVEL) */}
+          <div className="relative max-w-5xl mx-auto rounded-2xl md:rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(16,185,129,0.15)] group animate-in slide-in-from-bottom-10 fade-in duration-1000">
+            {/* Efeito de brilho na borda superior */}
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent z-20"></div>
+
+            {/* Mockup Top Bar (Imitando a aba do navegador) */}
+            <div className="bg-[#0A0F1E] border-b border-white/5 px-4 py-3 md:py-4 flex items-center gap-2 relative z-20">
+              <div className="flex gap-2">
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-rose-500/80 shadow-sm"></div>
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-amber-500/80 shadow-sm"></div>
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-emerald-500/80 shadow-sm"></div>
+              </div>
+              <div className="absolute left-1/2 -translate-x-1/2 bg-white/5 border border-white/5 rounded-md px-4 py-1 hidden md:block text-[10px] text-white/40 font-mono tracking-widest">
+                tafanu.com.br/editor
+              </div>
+            </div>
+
+            {/* O Vídeo Embutido */}
+            <div className="relative aspect-video bg-black">
+              {/* Overlay verde sutil que some quando passa o mouse (Efeito Premium) */}
+              <div className="absolute inset-0 bg-emerald-500/10 group-hover:bg-transparent transition-colors duration-700 z-10 pointer-events-none"></div>
+
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+              >
+                <source src="/demo-tafanu.mp4" type="video/mp4" />
+                {/* Fallback de texto caso o navegador seja muito antigo */}
+                Seu navegador não suporta vídeos.
+              </video>
+            </div>
           </div>
         </div>
       </section>

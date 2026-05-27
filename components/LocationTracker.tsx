@@ -42,7 +42,7 @@ export default function LocationTracker() {
 
         // 🚀 Feedback extra pra pessoa ficar feliz
         toast.success("Localização encontrada!", {
-          description: "Mostrando os negócios mais próximos de você.",
+          description: "Mostrando os negócios a até 30km de você.",
         });
       },
       (error) => {
@@ -103,12 +103,14 @@ export default function LocationTracker() {
         </div>
         <div>
           <h4 className="text-xs font-black text-gray-800 uppercase italic leading-tight">
-            {isGpsActive ? "GPS Ativado" : "Ver por proximidade?"}
+            {isGpsActive ? "GPS Ativado (Até 30km)" : "Ver por proximidade?"}
           </h4>
           <p
             className={`text-[10px] font-bold uppercase italic mt-0.5 ${isGpsActive ? "text-emerald-600" : "text-gray-400"}`}
           >
-            {isGpsActive ? "Exibindo os mais próximos" : "GPS Inteligente"}
+            {isGpsActive
+              ? "Negócios em um raio de 30km"
+              : "Buscar até 30km ao seu redor"}
           </p>
         </div>
       </div>

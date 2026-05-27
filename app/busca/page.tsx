@@ -462,8 +462,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     ...(sort === "distance" && userLat && userLng
       ? [
           {
-            latitude: { gte: userLat - 0.15, lte: userLat + 0.15 },
-            longitude: { gte: userLng - 0.15, lte: userLng + 0.15 },
+            latitude: { gte: userLat - 0.3, lte: userLat + 0.3 },
+            longitude: { gte: userLng - 0.3, lte: userLng + 0.3 },
           },
         ]
       : []),

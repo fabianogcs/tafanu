@@ -924,12 +924,8 @@ export async function deleteBusiness(slug: string) {
 
     if (!business) return { error: "Loja não encontrada." };
 
-    // Só o dono, Admin ou Afiliado podem apagar
-    if (
-      business.userId !== user.id &&
-      user.role !== "ADMIN" &&
-      user.role !== "AFILIADO"
-    ) {
+    // Só o dono ou Admin podem apagar
+    if (business.userId !== user.id && user.role !== "ADMIN") {
       return { error: "Acesso Negado." };
     }
 
@@ -971,11 +967,7 @@ export async function resetBusiness(slug: string) {
 
     if (!business) return { error: "Loja não encontrada." };
 
-    if (
-      business.userId !== user.id &&
-      user.role !== "ADMIN" &&
-      user.role !== "AFILIADO"
-    ) {
+    if (business.userId !== user.id && user.role !== "ADMIN") {
       return { error: "Acesso Negado." };
     }
 
@@ -1797,7 +1789,7 @@ export async function generateCommission(
   userId: string,
   orderAmount: number,
   description: string,
-  planType: "monthly" | "quarterly" | "yearly" = "monthly", // 🚀 1. Recebe o tipo do plano!
+  planType: "monthly" | "quarterly" | "yearly" = "monthly",
 ) {
   try {
     // 1. Verifica se quem comprou tem um afiliado vinculado
@@ -1806,28 +1798,39 @@ export async function generateCommission(
       select: { affiliateId: true },
     });
 
-    if (!customer?.affiliateId)
-      return { success: false, message: "Usuário não tem afiliado." };
+    if (!customer?.affiliateId) return { success: false };
 
-    // 🚀 2. A NOVA MATEMÁTICA: O Multiplicador Fixo
-    let commissionAmount = 10.0; // Padrão: Plano Mensal
+    // 🚀 LÓGICA DE CAIXA: Mantendo os seus valores para os "Leões"
+    const comissoes = {
+      monthly: 10.0,
+      quarterly: 30.0,
+      yearly: 120.0,
+    };
 
-    if (planType === "quarterly") {
-      commissionAmount = 30.0; // Trimestral
-    } else if (planType === "yearly") {
-      commissionAmount = 120.0; // O grande prêmio do Anual!
-    }
+    const amount = comissoes[planType] || 10.0;
 
-    // 3. Define a data de liberação (7 dias de garantia)
+    // Define a data de liberação (7 dias de garantia)
     const releaseDate = new Date();
     releaseDate.setDate(releaseDate.getDate() + 7);
 
-    // 4. Salva a comissão como PENDENTE no banco de dados
+    // 🛡️ A BARRAGEM ANTI-DUPLICATA:
+    // Impede que o Webhook do Mercado Pago gere 2 comissões para o mesmo mês se der erro na rede deles
+    const jaExiste = await db.commission.findFirst({
+      where: {
+        userId: userId,
+        description: description,
+        status: { not: "CANCELLED" }, // Ignora as canceladas para caso ele refaça a compra
+      },
+    });
+
+    if (jaExiste) return { success: true, message: "Comissão já registrada." };
+
+    // Salva a comissão como PENDENTE no banco
     await db.commission.create({
       data: {
         affiliateId: customer.affiliateId,
         userId: userId,
-        amount: commissionAmount,
+        amount: amount,
         orderAmount: orderAmount,
         status: CommissionStatus.PENDING,
         description: description,
@@ -1836,7 +1839,7 @@ export async function generateCommission(
     });
 
     console.log(
-      `✅ Comissão Fixa (CPA) de R$ ${commissionAmount} gerada para o afiliado ${customer.affiliateId}`,
+      `✅ Comissão (RevShare) de R$ ${amount} gerada para o afiliado ${customer.affiliateId}`,
     );
     return { success: true };
   } catch (error) {

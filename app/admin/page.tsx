@@ -108,30 +108,39 @@ export default async function AdminPage() {
     );
   });
 
-  // 🎯 2. Cálculo de Faturamento (Bruto e Líquido com Regra de 20% para Afiliados)
+  // 🎯 2. Cálculo de Faturamento (Bruto e Líquido Real)
   let faturamentoBruto = 0;
   let faturamentoLiquido = 0;
 
   users.forEach((u) => {
     if (u.isBanned || u.email?.toLowerCase() === adminEmail) return;
 
-    // Soma o valor de todas as lojas ativas deste usuário
-    const valorDoUsuario = u.businesses
-      .filter((b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora)
-      .reduce((subtotal, biz) => {
-        if (biz.planType === "yearly") return subtotal + 358.8;
-        if (biz.planType === "quarterly") return subtotal + 104.7;
-        return subtotal + 39.9;
-      }, 0);
+    const temAfiliado = !!(u.affiliateId || u.affiliate);
 
-    faturamentoBruto += valorDoUsuario;
+    u.businesses.forEach((biz) => {
+      // Analisa apenas lojas ativas
+      if (biz.isActive && biz.expiresAt && new Date(biz.expiresAt) > agora) {
+        let valorPlano = 39.9;
+        let comissaoPlano = 10.0;
 
-    // 🛡️ CIRURGIA AQUI: Se o usuário tem um parceiro/afiliado vinculado
-    if (u.affiliateId || u.affiliate) {
-      faturamentoLiquido += valorDoUsuario * 0.8; // Você fica com 80%, 20% é do parceiro
-    } else {
-      faturamentoLiquido += valorDoUsuario; // Você fica com 100%
-    }
+        if (biz.planType === "yearly") {
+          valorPlano = 358.8;
+          comissaoPlano = 120.0;
+        } else if (biz.planType === "quarterly") {
+          valorPlano = 104.7;
+          comissaoPlano = 30.0;
+        }
+
+        faturamentoBruto += valorPlano;
+
+        // 🛡️ CIRURGIA AQUI: Subtrai o valor EXATO da comissão combinada
+        if (temAfiliado) {
+          faturamentoLiquido += valorPlano - comissaoPlano;
+        } else {
+          faturamentoLiquido += valorPlano;
+        }
+      }
+    });
   });
 
   // 3. Mantemos o cálculo apenas para exibir no Card de "Comissões a Pagar" no Dashboard

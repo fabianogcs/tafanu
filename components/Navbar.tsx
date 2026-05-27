@@ -190,9 +190,10 @@ export default function Navbar({
                   </Link>
                   <Link
                     href="/anunciar"
-                    className="flex items-center gap-2 bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue px-7 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-wider hover:scale-105 transition-all shadow-xl shadow-tafanu-action/20 border-t border-white/20"
+                    className="flex items-center gap-1.5 md:gap-2 bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue px-4 md:px-6 py-3 md:py-3.5 rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-widest md:tracking-wider hover:scale-105 transition-all shadow-xl shadow-tafanu-action/20 border-t border-white/20 whitespace-nowrap"
                   >
-                    <Sparkles size={16} /> Anunciar
+                    <Sparkles size={16} className="hidden md:block" /> Vitrine
+                    em 5 min
                   </Link>
                 </>
               ) : (
@@ -200,9 +201,9 @@ export default function Navbar({
                   {isVisitor && (
                     <Link
                       href="/anunciar"
-                      className="bg-tafanu-action/10 text-tafanu-action border border-tafanu-action/30 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-tafanu-action/20 transition-all"
+                      className="bg-tafanu-action/10 text-tafanu-action border border-tafanu-action/30 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-tafanu-action/20 transition-all whitespace-nowrap"
                     >
-                      Anunciar
+                      Vitrine em 5 min
                     </Link>
                   )}
                   <button
@@ -346,9 +347,10 @@ export default function Navbar({
               <Link
                 href="/anunciar"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center gap-3 w-full bg-white/5 text-tafanu-action font-black p-5 rounded-2xl border border-tafanu-action/30 transition-all uppercase text-[11px] tracking-widest"
+                className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue font-black p-5 rounded-2xl shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-[0.98] transition-all uppercase text-[12px] tracking-widest"
               >
-                <Sparkles size={18} /> Quero Anunciar
+                <Sparkles size={20} className="animate-pulse" /> Sua Vitrine em
+                5 Minutos
               </Link>
             )}
             {isLoggedIn && (

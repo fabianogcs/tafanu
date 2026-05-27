@@ -10,8 +10,6 @@ import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
-export const revalidate = 0; // Isso força o Next.js a sempre buscar dados novos do banco
-
 // --- 0. VIEWPORT DINÂMICO ---
 export async function generateViewport({
   params,
