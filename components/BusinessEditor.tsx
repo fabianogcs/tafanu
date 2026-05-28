@@ -866,7 +866,7 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        <div className="pt-8 flex flex-col items-center sticky bottom-28 md:bottom-8 z-30 gap-3 pointer-events-none">
+        <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-30 gap-3 pointer-events-none px-4">
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
             <AnimatePresence mode="wait">
               {showOfflineWarning && !isLoading ? (
