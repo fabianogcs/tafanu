@@ -783,21 +783,6 @@ export default function BusinessEditor({
             filteredThemeKeys={filteredThemeKeys}
           />
 
-          <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 mt-8">
-            <MobilePreview
-              themeKey={selectedTheme}
-              name={name}
-              description={description}
-              profileImage={profileImage}
-              gallery={mockGallery}
-              layoutLabel={currentLayoutData.label}
-              comercial_badge={layoutText}
-              luxe_quote={layoutText}
-              urban_tag={layoutText}
-              showroom_collection={layoutText}
-            />
-          </div>
-
           <SegmentationSection
             categoria={categoria}
             setCategoria={setCategoria}
@@ -865,9 +850,10 @@ export default function BusinessEditor({
             />
           </div>
         </div>
-
         <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-30 gap-3 pointer-events-none px-4">
-          <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg">
+                   {" "}
+          <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg relative">
+                       {" "}
             <AnimatePresence mode="wait">
               {showOfflineWarning && !isLoading ? (
                 <motion.div
@@ -960,6 +946,51 @@ export default function BusinessEditor({
             }}
           />
         )}
+        {/* ============================================================== */}
+        {/* WIDGETS FLUTUANTES (DESCOLADOS DA TELA - POSIÇÃO FIXA MÁXIMA)  */}
+        {/* ============================================================== */}
+
+        {/* 🖥️ PREVIEW DESKTOP (BEM À DIREITA DA TELA) */}
+        <div className="hidden lg:flex fixed bottom-8 right-6 2xl:right-16 origin-bottom-right scale-[0.55] hover:scale-[0.85] transition-all duration-500 z-50 flex-col items-center gap-4 bg-white/70 backdrop-blur-2xl p-5 rounded-[3.5rem] shadow-2xl border border-white/80">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white px-4 py-2 rounded-full shadow-sm">
+            Visualização Real
+          </span>
+          <div className="pointer-events-none">
+            <MobilePreview
+              themeKey={selectedTheme}
+              name={name}
+              description={description}
+              profileImage={profileImage}
+              gallery={mockGallery}
+              layoutLabel={currentLayoutData.label}
+              comercial_badge={layoutText}
+              luxe_quote={layoutText}
+              urban_tag={layoutText}
+              showroom_collection={layoutText}
+            />
+          </div>
+        </div>
+
+        {/* 📱 PREVIEW MOBILE (CANTO SUPERIOR ESQUERDO, ABAIXO DO NAV) */}
+        <div className="flex lg:hidden fixed top-64 left-2 origin-top-left scale-[0.35] active:scale-[0.85] transition-all duration-500 z-50 bg-white/80 backdrop-blur-md p-3 rounded-[3.5rem] shadow-2xl shadow-black/10 border border-slate-200 cursor-pointer group">
+          <div className="absolute top-10 -right-10 whitespace-nowrap bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-full opacity-0 animate-bounce group-hover:opacity-100 transition-opacity pointer-events-none">
+            VER PREVIEW
+          </div>
+          <div className="pointer-events-none">
+            <MobilePreview
+              themeKey={selectedTheme}
+              name={name}
+              description={description}
+              profileImage={profileImage}
+              gallery={mockGallery}
+              layoutLabel={currentLayoutData.label}
+              comercial_badge={layoutText}
+              luxe_quote={layoutText}
+              urban_tag={layoutText}
+              showroom_collection={layoutText}
+            />
+          </div>
+        </div>
       </main>
     </div>
   );

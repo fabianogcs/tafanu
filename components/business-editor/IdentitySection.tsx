@@ -206,25 +206,38 @@ export function IdentitySection({
             </div>
           )}
         </div>
-
         {/* LAYOUTS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-10 pt-8 border-t border-slate-50">
-          {Object.keys(layoutInfo).map((key) => (
-            <button
-              key={key}
-              onClick={() => setSelectedLayout(key)}
-              className={`p-4 md:p-6 rounded-[1.5rem] border-2 flex flex-col items-center gap-2 transition-all ${
-                selectedLayout === key
-                  ? "border-slate-900 bg-slate-50 text-slate-900"
-                  : "border-slate-50 text-slate-300"
-              }`}
-            >
-              {layoutInfo[key].icon}
-              <span className="text-[9px] font-black uppercase">
-                {layoutInfo[key].label}
-              </span>
-            </button>
-          ))}
+        <div className="w-full mt-10 pt-8 border-t border-slate-100">
+          <h2 className="text-xs md:text-sm font-black uppercase text-slate-800 tracking-widest text-left mb-6 flex items-center gap-2">
+            🎨 Escolha o Design da sua Vitrine
+          </h2>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+            {Object.keys(layoutInfo).map((key) => {
+              const isSelected = selectedLayout === key;
+
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedLayout(key)}
+                  className={`p-4 md:p-6 rounded-[1.5rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group ${
+                    isSelected
+                      ? "border-slate-900 bg-slate-900 text-white shadow-xl scale-[1.02]"
+                      : "border-slate-200 bg-white text-slate-400 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                  }`}
+                >
+                  <div
+                    className={`transition-transform duration-300 ${isSelected ? "scale-110 text-emerald-400" : "group-hover:scale-110"}`}
+                  >
+                    {layoutInfo[key].icon}
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {layoutInfo[key].label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* TEXTO ESPECIAL */}
