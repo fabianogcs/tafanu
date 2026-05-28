@@ -75,7 +75,7 @@ export default function MediaForm({
               );
             }}
             onClientUploadComplete={(res) => {
-              const newPhotos = res.map((r) => r.ufsUrl);
+              const newPhotos = res.map((r) => r.url || r.ufsUrl);
               setGallery((prev) =>
                 [...prev, ...newPhotos].slice(0, 12),
               ); /* 🚀 ATUALIZADO PARA 12 */
