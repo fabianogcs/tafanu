@@ -6,12 +6,14 @@ import { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br";
+  const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  // 1. Busca todos os negócios ativos e publicados do banco de dados
+  // 1. 🚀 BLINDAGEM SEO: Só avisa o Google sobre lojas que passaram no crivo das 48h
   const businesses = await db.business.findMany({
     where: {
       isActive: true,
       published: true,
+      OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
     },
     select: {
       slug: true,
@@ -27,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // 3. Adiciona as páginas principais do Tafanu
+  // 3. Adiciona as páginas principais e institucionais do Tafanu
   const staticUrls = [
     {
       url: `${siteUrl}`,
@@ -45,7 +47,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/anunciar`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
-      priority: 0.7,
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/sobre`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/termos`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${siteUrl}/privacidade`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
     },
   ];
 

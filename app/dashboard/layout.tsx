@@ -17,6 +17,7 @@ import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
 import SessionRefresher from "@/components/SessionRefresher";
 import EditableUserName from "@/components/EditableUserName";
+import FloatingSupportButton from "@/components/FloatingSupportButton"; // 🚀 NOVO IMPORT
 
 export default async function DashboardLayout({
   children,
@@ -32,10 +33,11 @@ export default async function DashboardLayout({
     select: {
       id: true,
       name: true,
-      email: true, // 🚀 ADICIONE ESTA LINHA AQUI!
+      email: true,
       role: true,
       document: true,
       phone: true,
+      affiliate: { select: { phone: true, name: true } }, // 🚀 AQUI ELE PUXA O PARCEIRO!
       businesses: {
         select: { expiresAt: true },
       },
@@ -58,7 +60,6 @@ export default async function DashboardLayout({
     );
 
     if (new Date() > dataComCarencia) {
-      // 🚀 Rebaixa o usuário E derruba as vitrines dele no banco de dados!
       await db.$transaction([
         db.user.update({
           where: { id: user.id },
@@ -84,15 +85,25 @@ export default async function DashboardLayout({
 
   const isPro = isAdmin || isAfiliado || (isAssinante && hasValidSubscription);
 
-  // 🚀 A CHAVE MESTRA: Se for uma conta de teste do Funil (@tafanu.com.br), o cadeado se abre sozinho e ignora o CPF!
   const isTestAccount = user.email?.endsWith("@tafanu.com.br");
   const isLocked =
     isAssinante && !isTestAccount && (!user.document || !user.phone);
 
   const displayName = user.name?.split(" ")[0] ?? "Usuário";
 
+  // 🚀 LÓGICA DO SUPORTE (Quem é o Gerente?)
+  const defaultTafanuPhone = "5514991406618";
+  let supportPhone = defaultTafanuPhone;
+  let supportName = "Suporte Tafanu";
+
+  if (user.affiliate?.phone) {
+    supportPhone = user.affiliate.phone.replace(/\D/g, "");
+    if (!supportPhone.startsWith("55")) supportPhone = `55${supportPhone}`;
+    supportName = `Seu Gerente: ${user.affiliate.name?.split(" ")[0] || "Parceiro"}`;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 relative pb-16 md:pb-0">
       <SessionRefresher />
 
       <aside className="w-full md:w-64 bg-[#0F172A] text-white flex flex-col md:fixed md:h-full z-20 shadow-2xl">
@@ -107,7 +118,6 @@ export default async function DashboardLayout({
                     ? "Membro Premium"
                     : "Visitante"}
             </p>
-            {/* 🚀 COMPONENTE MÁGICO DE EDIÇÃO (SÓ ATIVA SE FOR VISITANTE) */}
             <EditableUserName
               initialName={displayName}
               canEdit={currentRole === "VISITANTE"}
@@ -170,9 +180,6 @@ export default async function DashboardLayout({
 
                   {(isAdmin || isAfiliado) && (
                     <>
-                      {/* O botão "Novo Negócio" foi removido daqui para centralizar a criação na Dashboard Principal */}
-
-                      {/* 🚀 NOVO: BOTÃO DO FUNIL */}
                       <Link
                         href="/dashboard/funil"
                         className="flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
@@ -218,6 +225,16 @@ export default async function DashboardLayout({
       <main className="flex-1 md:ml-64 w-full min-h-screen bg-gray-50">
         <div className="w-full">{children}</div>
       </main>
+
+      {/* 🚀 O BOTÃO FLUTUANTE INJETADO NO MOLDE GERAL (Apenas para Assinantes) */}
+      {isAssinante && (
+        <FloatingSupportButton
+          supportName={supportName}
+          supportPhone={supportPhone}
+          userName={displayName}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

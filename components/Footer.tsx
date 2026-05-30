@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MessageCircle } from "lucide-react"; // ESSA LINHA É A QUE FALTAVA
+import { Mail, MessageCircle } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -37,6 +37,15 @@ export default function Footer() {
             >
               Termos de Uso
             </Link>
+            {/* 🚀 O LINK DA PRIVACIDADE FOI INSERIDO AQUI */}
+            <Link
+              href="/privacidade"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-tafanu-action transition-colors text-sm"
+            >
+              Política de Privacidade
+            </Link>
             <Link
               href="/login"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm"
@@ -51,7 +60,7 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* BLOCO 3: Contato - Ajustado */}
+          {/* BLOCO 3: Contato */}
           <div className="flex flex-col space-y-3">
             <h3 className="font-bold text-gray-200 mb-1">Fale Conosco</h3>
 

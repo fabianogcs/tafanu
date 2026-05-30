@@ -13,7 +13,6 @@ export default async function AdminPage() {
 
   const emailSessao = session.user.email.toLowerCase();
 
-  // 🚀 BUSCA A VERDADE ABSOLUTA DIRETO NO BANCO
   const usuarioNoBanco = await db.user.findUnique({
     where: { email: emailSessao },
     select: { role: true },
@@ -64,11 +63,10 @@ export default async function AdminPage() {
       }),
     ]);
 
-  // 🛡️ CIRURGIA DE SEGURANÇA E PERFORMANCE: Prepara os dados para a Tabela
+  // Prepara os dados para a Tabela
   const users = usersData.map((u) => {
     const { password, ...userWithoutPassword } = u;
 
-    // 🚀 Soma o desempenho total de todas as lojas deste assinante
     let totalViews = 0;
     let totalLeads = 0;
     let totalFavs = 0;
@@ -98,9 +96,6 @@ export default async function AdminPage() {
     });
   });
 
-  // 🚀 NOVA LÓGICA DE MÉTRICAS (ROBUSTA)
-
-  // 1. Lista de usuários pagantes (que têm ao menos 1 negócio ativo)
   const pagantesList = users.filter((u) => {
     if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false;
     return u.businesses.some(
@@ -108,9 +103,9 @@ export default async function AdminPage() {
     );
   });
 
-  // 🎯 2. Cálculo de Faturamento (Bruto e Líquido Real)
-  let faturamentoBruto = 0;
-  let faturamentoLiquido = 0;
+  // 🎯 A MATEMÁTICA DE CEO: Cálculo do MRR (Receita Recorrente Mensal)
+  let mrrBruto = 0;
+  let mrrLiquido = 0;
 
   users.forEach((u) => {
     if (u.isBanned || u.email?.toLowerCase() === adminEmail) return;
@@ -118,32 +113,30 @@ export default async function AdminPage() {
     const temAfiliado = !!(u.affiliateId || u.affiliate);
 
     u.businesses.forEach((biz) => {
-      // Analisa apenas lojas ativas
       if (biz.isActive && biz.expiresAt && new Date(biz.expiresAt) > agora) {
-        let valorPlano = 39.9;
-        let comissaoPlano = 10.0;
+        let valorMrr = 39.9;
+        let comissaoMrr = 10.0;
 
+        // Dilui os planos maiores para achar a métrica mensal real
         if (biz.planType === "yearly") {
-          valorPlano = 358.8;
-          comissaoPlano = 120.0;
+          valorMrr = 358.8 / 12; // R$ 29,90/mês
+          comissaoMrr = 120.0 / 12; // R$ 10,00/mês
         } else if (biz.planType === "quarterly") {
-          valorPlano = 104.7;
-          comissaoPlano = 30.0;
+          valorMrr = 104.7 / 3; // R$ 34,90/mês
+          comissaoMrr = 30.0 / 3; // R$ 10,00/mês
         }
 
-        faturamentoBruto += valorPlano;
+        mrrBruto += valorMrr;
 
-        // 🛡️ CIRURGIA AQUI: Subtrai o valor EXATO da comissão combinada
         if (temAfiliado) {
-          faturamentoLiquido += valorPlano - comissaoPlano;
+          mrrLiquido += valorMrr - comissaoMrr;
         } else {
-          faturamentoLiquido += valorPlano;
+          mrrLiquido += valorMrr;
         }
       }
     });
   });
 
-  // 3. Mantemos o cálculo apenas para exibir no Card de "Comissões a Pagar" no Dashboard
   const totalComissoesDevidas = allCommissions
     .filter((c) => c.status === CommissionStatus.AVAILABLE)
     .reduce((acc, c) => acc + c.amount, 0);
@@ -156,8 +149,8 @@ export default async function AdminPage() {
     flaggedComments,
     businessOwnerMap: Object.fromEntries(businessOwnerMap),
     metricas: {
-      faturamentoBruto,
-      faturamentoLiquido,
+      mrrBruto,
+      mrrLiquido,
       totalComissoesDevidas,
       totalPagantes,
     },

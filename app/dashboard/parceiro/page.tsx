@@ -52,9 +52,10 @@ export default function AffiliateDashboard() {
 
     if (data?.commissions) {
       data.commissions.forEach((c: any) => {
-        if (c.payerId === data.affiliate.id) return;
+        if (c.userId === data.affiliate.id) return;
 
         if (c.status === CommissionStatus.AVAILABLE) disponivel += c.amount;
+        // ...
         if (c.status === CommissionStatus.PENDING) pendente += c.amount;
         if (c.status === CommissionStatus.PAID) pago += c.amount;
       });

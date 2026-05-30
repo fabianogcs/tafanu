@@ -199,17 +199,22 @@ export async function POST(request: Request) {
         ]);
 
         if (transactionAmount > 0) {
+          // 🚀 CIRURGIA DE RECORRÊNCIA: Adiciona o Mês/Ano para a trava anti-duplicidade liberar a renovação do próximo ciclo
+          const dataAtual = new Date();
+          const mesAno = `${dataAtual.getMonth() + 1}/${dataAtual.getFullYear()}`;
+
           const descricaoPlano =
             planType === "monthly"
               ? "Mensal"
               : planType === "quarterly"
                 ? "Trimestral"
                 : "Anual";
+
           await generateCommission(
             userId,
             transactionAmount,
-            `Assinatura ${descricaoPlano} - Negócio ID: ${businessId}`,
-            planType, // 🚀 ENVIANDO A CHAVE MESTRA: "monthly", "quarterly" ou "yearly"
+            `Assinatura ${descricaoPlano} (${mesAno}) - Negócio ID: ${businessId}`,
+            planType,
           );
         }
 

@@ -743,14 +743,14 @@ export default function BusinessEditor({
                   <RefreshCcw size={18} />
                 </button>
 
-                {/* 🚀 BOTÃO DE EXCLUSÃO FATAL - APARECE SÓ PARA ADMIN/AFILIADO */}
-                {(userRole === "ADMIN" || userRole === "AFILIADO") && (
+                {/* 🚀 BOTÃO DE EXCLUSÃO FATAL - APARECE SÓ PARA ADMIN */}
+                {userRole === "ADMIN" && (
                   <button
                     onClick={(e) => {
                       e.preventDefault();
                       handleDeleteAction();
                     }}
-                    title="Exclusão Definitiva do Banco (Apenas Admin/Afiliado)"
+                    title="Exclusão Definitiva do Banco (Apenas Admin)"
                     className="p-3 text-rose-400 hover:text-rose-600 transition-all shadow-sm bg-white rounded-xl border border-rose-200 hover:bg-rose-50"
                   >
                     <Trash2 size={18} />

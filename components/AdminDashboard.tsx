@@ -74,8 +74,8 @@ type AdminData = {
   flaggedComments: any[];
   businessOwnerMap: Record<string, string>;
   metricas: {
-    faturamentoBruto: number;
-    faturamentoLiquido: number;
+    mrrBruto: number; // 🚀 NOME ATUALIZADO
+    mrrLiquido: number; // 🚀 NOME ATUALIZADO
     totalComissoesDevidas: number;
     totalPagantes: number;
   };
@@ -683,19 +683,19 @@ export default function AdminDashboard({
             <div className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
-                  label="Lucro Líquido"
-                  value={formatMoney(data.metricas.faturamentoLiquido)}
+                  label="MRR Líquido"
+                  value={formatMoney(data.metricas.mrrLiquido)}
                   icon={<TrendingUp size={18} />}
                   color="emerald"
                 />
                 <MetricCard
-                  label="Faturamento Bruto"
-                  value={formatMoney(data.metricas.faturamentoBruto)}
+                  label="MRR Bruto"
+                  value={formatMoney(data.metricas.mrrBruto)}
                   icon={<Wallet size={18} />}
                   color="blue"
                 />
                 <MetricCard
-                  label="Comissões a Pagar"
+                  label="Comissões P/ Pagar"
                   value={formatMoney(data.metricas.totalComissoesDevidas)}
                   icon={<Clock size={18} />}
                   color="amber"
