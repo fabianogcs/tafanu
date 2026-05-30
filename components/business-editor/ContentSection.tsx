@@ -8,13 +8,13 @@ import {
   HelpCircle,
   Video,
   Camera,
-  GripVertical, // 🚀 NOVO: O Ícone de Arrastar (Drag Handle)
+  GripVertical,
+  Loader2,
 } from "lucide-react";
-import { UploadButton as UTButton } from "@uploadthing/react";
-import { OurFileRouter } from "@/app/api/uploadthing/core";
+import { uploadFiles } from "@/lib/uploadthing"; // 🚀 Importação da função pura
 import { compressImage } from "@/lib/compressImage";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useRef } from "react"; // 🚀 Adicionado useRef
 
 interface ContentSectionProps {
   mediaFeed: { type: "image" | "video"; url: string }[];
@@ -37,11 +37,67 @@ export function ContentSection({
   faqs,
   setFaqs,
 }: ContentSectionProps) {
-  // Limite estrito de 12 imagens. Os vídeos não entram nessa conta!
   const imageCount = mediaFeed.filter((m) => m.type === "image").length;
 
-  // 🚀 O MOTOR DE ARRASTAR E SOLTAR (DRAG & DROP)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // 🚀 ESTADO E REF DE CARREGAMENTO DA GALERIA
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🚀 O NOVO MOTOR DE UPLOAD NATIVO
+  const handleGalleryUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Limpa o input para permitir subir a mesma foto em sequência se necessário
+    e.target.value = "";
+
+    setIsUploadingGallery(true);
+    toast.loading("Preparando imagens...", { id: "upload-gallery" });
+
+    try {
+      // 1. Comprime todas as fotos
+      const compressedFiles = await Promise.all(
+        files.map(async (file) => await compressImage(file)),
+      );
+
+      toast.loading("Enviando para a nuvem...", { id: "upload-gallery" });
+
+      // 2. Sobe as fotos blindadas com a função pura
+      const res = await uploadFiles("imageUploader", {
+        files: compressedFiles,
+      });
+
+      if (res && res.length > 0) {
+        const newImages = res.map((r) => ({
+          type: "image",
+          url: r.url || r.ufsUrl,
+        }));
+
+        setMediaFeed((prev: any) => {
+          const currentImagesCount = prev.filter(
+            (m: any) => m.type === "image",
+          ).length;
+          const allowedCount = 12 - currentImagesCount;
+          const imagesToAdd = newImages.slice(0, allowedCount);
+          return [...prev, ...imagesToAdd];
+        });
+
+        toast.success("Fotos adicionadas com sucesso!", {
+          id: "upload-gallery",
+        });
+      }
+    } catch (error: any) {
+      toast.error("Falha no upload. Verifique a internet e tente novamente.", {
+        id: "upload-gallery",
+      });
+    } finally {
+      setIsUploadingGallery(false);
+    }
+  };
 
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
@@ -53,7 +109,7 @@ export function ContentSection({
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Necessário para permitir soltar o item
+    e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
 
@@ -67,7 +123,6 @@ export function ContentSection({
     const newFeed = [...mediaFeed];
     const draggedItem = newFeed[draggedIndex];
 
-    // Remove do lugar antigo e coloca no novo lugar
     newFeed.splice(draggedIndex, 1);
     newFeed.splice(targetIndex, 0, draggedItem);
 
@@ -173,70 +228,54 @@ export function ContentSection({
           ))}
         </div>
 
-        {/* 🚀 BOTÕES DE AÇÃO (UPLOAD DE FOTO E ADD VÍDEO) */}
+        {/* 🚀 BOTÕES DE AÇÃO COM NOVO UX RESPONSIVO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
           {imageCount < 12 ? (
-            <div className="h-14 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl flex items-center justify-center relative transition-all group overflow-hidden hover:border-indigo-400 cursor-pointer">
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 gap-2">
-                <Camera
-                  size={16}
-                  className="text-indigo-500"
-                  strokeWidth={2.5}
-                />
-                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-                  Fazer Upload de Fotos
-                </span>
+            <div
+              onClick={() =>
+                !isUploadingGallery && fileInputRef.current?.click()
+              }
+              className={`h-14 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl flex items-center justify-center relative transition-all group overflow-hidden cursor-pointer ${
+                isUploadingGallery
+                  ? "opacity-70 pointer-events-none"
+                  : "hover:border-indigo-400"
+              }`}
+            >
+              <div className="flex items-center justify-center pointer-events-none z-10 gap-2">
+                {isUploadingGallery ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="text-indigo-500 animate-spin"
+                      strokeWidth={2.5}
+                    />
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                      Enviando Fotos...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Camera
+                      size={16}
+                      className="text-indigo-500"
+                      strokeWidth={2.5}
+                    />
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                      Fazer Upload de Fotos
+                    </span>
+                  </>
+                )}
               </div>
-              <div className="opacity-0 w-full h-full absolute inset-0 cursor-pointer scale-150">
-                <UTButton<OurFileRouter, "imageUploader">
-                  endpoint="imageUploader"
-                  onBeforeUploadBegin={async (files) => {
-                    toast.loading("Preparando e otimizando imagens...", {
-                      id: "compress",
-                    });
-                    try {
-                      const compressed = await Promise.all(
-                        files.map(async (file) => await compressImage(file)),
-                      );
-                      // Não mostramos mensagem de sucesso aqui, porque o upload acabou de COMEÇAR.
-                      // Só dispensamos o loading.
-                      toast.dismiss("compress");
-                      return compressed;
-                    } catch (e) {
-                      toast.dismiss("compress");
-                      toast.error(
-                        "Erro ao preparar as imagens. Tente fotos menores.",
-                      );
-                      throw e; // Interrompe o fluxo para o UploadThing não subir arquivo quebrado
-                    }
-                  }}
-                  onClientUploadComplete={(res) => {
-                    if (res && res.length > 0) {
-                      const newImages = res.map((r) => ({
-                        type: "image",
-                        url: r.url,
-                      }));
-                      setMediaFeed((prev: any) => {
-                        const currentImagesCount = prev.filter(
-                          (m: any) => m.type === "image",
-                        ).length;
-                        const allowedCount = 12 - currentImagesCount;
-                        const imagesToAdd = newImages.slice(0, allowedCount);
-                        return [...prev, ...imagesToAdd];
-                      });
-                      toast.success("Fotos adicionadas à vitrine!");
-                    }
-                  }}
-                  onUploadError={(error) => {
-                    toast.dismiss("compress"); // Garante que limpa o loading
-                    console.error("UploadThing Error:", error);
-                    // 🚀 Mensagem amigável para o cliente, em vez do erro cru do servidor
-                    toast.error(
-                      "Falha no upload. O arquivo pode ser muito grande ou a rede falhou.",
-                    );
-                  }}
-                />
-              </div>
+
+              {/* O INPUT NATIVO INVISÍVEL */}
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleGalleryUpload}
+                className="hidden"
+              />
             </div>
           ) : (
             <div className="h-14 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest">

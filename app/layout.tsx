@@ -3,6 +3,9 @@ import type { Metadata, Viewport } from "next"; // ✅ Adicionado Viewport aqui
 import "@/app/globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { auth } from "@/auth";
 import PasswordAlert from "@/components/PasswordAlert";
 import { Providers } from "@/components/Providers";
@@ -115,7 +118,7 @@ export default async function RootLayout({
             `,
           }}
         />
-
+        <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
         {/* 3. ESTRUTURA VISUAL */}
         <Providers>
           <PwaListener />

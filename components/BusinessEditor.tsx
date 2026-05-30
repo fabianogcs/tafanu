@@ -7,7 +7,7 @@ import MobilePreview from "@/components/MobilePreview";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUploadThing } from "@/lib/uploadthing";
+import { uploadFiles } from "@/lib/uploadthing";
 import { AddressSection } from "./business-editor/AddressSection";
 import { SegmentationSection } from "./business-editor/SegmentationSection";
 import { ContentSection } from "./business-editor/ContentSection";
@@ -89,19 +89,8 @@ export default function BusinessEditor({
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { startUpload, isUploading: isUploadingLogo } = useUploadThing(
-    "logoUploader",
-    {
-      onClientUploadComplete: (res) => {
-        if (!res || res.length === 0) return;
-        setProfileImage(res[0].ufsUrl);
-        toast.success("Logo recortada e atualizada com sucesso!");
-      },
-      onUploadError: (error) => {
-        toast.error(`Erro ao subir imagem: ${error.message}`);
-      },
-    },
-  );
+  // 🚀 1. Estado controlado manualmente (sem depender do hook do UploadThing)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -116,11 +105,40 @@ export default function BusinessEditor({
     e.target.value = "";
   };
 
-  const handleCropComplete = async (croppedFile: File) => {
+  const handleCropComplete = async (croppedFile: File | Blob) => {
+    // O modal é fechado aqui, mas a função pura abaixo não será afetada!
     if (rawImageSrc) URL.revokeObjectURL(rawImageSrc);
     setRawImageSrc(null);
-    const compressedFile = await compressImage(croppedFile);
-    await startUpload([compressedFile]);
+
+    setIsUploadingLogo(true);
+
+    try {
+      // Recriamos o arquivo garantindo a integridade dos dados
+      const safeFile = new File([croppedFile], "logo-recortada.jpg", {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+
+      // 🚀 2. A MÁGICA: Usamos a função pura 'uploadFiles'.
+      // Ela vai até a nuvem e volta, independentemente do React.
+      const res = await uploadFiles("logoUploader", {
+        files: [safeFile],
+      });
+
+      if (res && res.length > 0) {
+        setProfileImage(res[0].url || res[0].ufsUrl);
+        toast.success("Logo atualizada com sucesso!");
+      } else {
+        toast.error("O servidor falhou em processar a imagem.");
+      }
+    } catch (error: any) {
+      toast.error(
+        `Erro ao subir imagem: ${error?.message || "Erro desconhecido"}`,
+      );
+    } finally {
+      // Destrava o botão com 100% de garantia
+      setIsUploadingLogo(false);
+    }
   };
 
   const [name, setName] = useState(safeBusiness.name);

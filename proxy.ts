@@ -91,6 +91,7 @@ export default auth(async (req) => {
     pathname.startsWith("/anunciar") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhook") || // 🚀 Webhook permanece público aqui para o Next.js não pedir login
+    pathname.startsWith("/api/uploadthing") ||
     pathname.startsWith("/_next") ||
     pathname === "/manifest.json" ||
     pathname === "/sw.js" ||

@@ -67,22 +67,13 @@ export default function MediaForm({
         {gallery.length < 12 /* 🚀 ATUALIZADO PARA 12 */ ? (
           <UploadDropzone
             endpoint="imageUploader"
-            onBeforeUploadBegin={async (files) => {
-              return await Promise.all(
-                files.map(async (file) => {
-                  return await compressImage(file);
-                }),
-              );
-            }}
             onClientUploadComplete={(res) => {
               const newPhotos = res.map((r) => r.url || r.ufsUrl);
-              setGallery((prev) =>
-                [...prev, ...newPhotos].slice(0, 12),
-              ); /* 🚀 ATUALIZADO PARA 12 */
-              toast.success("Fotos enviadas e comprimidas!");
+              setGallery((prev) => [...prev, ...newPhotos].slice(0, 12));
+              toast.success("Fotos enviadas com sucesso!");
             }}
             onUploadError={(error: Error) => {
-              toast.error("Erro: Verifique se a foto tem menos de 6MB.");
+              toast.error(`Erro ao enviar: ${error.message}`);
             }}
             className="ut-label:text-indigo-500 ut-button:bg-indigo-600 ut-button:hover:bg-indigo-700 border-dashed border-2 border-slate-200 bg-slate-50 rounded-[2rem] p-8 transition-all hover:bg-slate-100/50 ut-allowed-content:text-[10px] ut-allowed-content:uppercase ut-allowed-content:font-bold"
           />
