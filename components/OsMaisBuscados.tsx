@@ -1,16 +1,42 @@
+"use client";
+
 import Link from "next/link";
 import { TrendingUp, MapPin, ArrowUpRight } from "lucide-react";
+import { useState } from "react";
+
+// 🚀 O COLETE À PROVA DE BALAS PARA FOTOS DELETADAS OU EM CACHE
+function SmartLogo({ biz }: { biz: any }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (biz.imageUrl && !imgError) {
+    return (
+      <img
+        src={biz.imageUrl}
+        alt={biz.name}
+        onError={() => setImgError(true)} // 🛡️ Se a foto não existir mais, ativa o escudo!
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+    );
+  }
+
+  // Fallback: Gradiente azul com as iniciais
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-[#023059] to-blue-800 flex items-center justify-center text-white font-black text-[14px] md:text-2xl">
+      {biz.name.substring(0, 2).toUpperCase()}
+    </div>
+  );
+}
 
 export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
   // 🚀 O CALÇO INVISÍVEL: Se o banco estiver zerado, ele não mostra lojas,
   // mas mantém a distância correta para a Vitrine não bater no teto!
   if (!businesses || businesses.length === 0) {
-    return <div className="w-full pt-24 md:pt-40 lg:pt-[220px]" />;
+    return <div className="w-full pt-24 md:pt-40 lg:pt-24" />; // 🚀 Trocou lg:pt-[220px] por lg:pt-24
   }
 
   return (
-    /* 🚀 Reduzimos o "pb" (padding-bottom) para ele não empurrar a Vitrine pra tão longe */
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 md:mt-40 lg:mt-[220px] pt-10 pb-4 md:pt-16 md:pb-8 animate-in fade-in duration-700 delay-400">
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 md:mt-40 lg:mt-24 pt-10 pb-4 md:pt-16 md:pb-8 animate-in fade-in duration-700 delay-400">
+      {" "}
       {/* CABEÇALHO DA SESSÃO */}
       <div className="flex items-center gap-3 md:gap-4 mb-8 md:mb-10">
         <div className="bg-orange-100 p-2.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm">
@@ -25,7 +51,6 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
           </p>
         </div>
       </div>
-
       {/* GRID DE CARTÕES SÓLIDA */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         {businesses.map((biz) => (
@@ -37,17 +62,8 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
             <div className="flex justify-between items-start mb-4 md:mb-6">
               <div className="w-14 h-14 md:w-20 md:h-20 bg-white rounded-xl md:rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm group-hover:shadow-md group-hover:border-[#F28705]/30 transition-all duration-300 p-0.5">
                 <div className="w-full h-full rounded-[10px] md:rounded-[14px] overflow-hidden bg-slate-50 relative">
-                  {biz.imageUrl ? (
-                    <img
-                      src={biz.imageUrl}
-                      alt={biz.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#023059] to-blue-800 flex items-center justify-center text-white font-black text-[14px] md:text-2xl">
-                      {biz.name.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  {/* 🚀 O COMPONENTE INTELIGENTE ENTRA AQUI */}
+                  <SmartLogo biz={biz} />
                 </div>
               </div>
 

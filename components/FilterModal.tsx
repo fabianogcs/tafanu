@@ -354,6 +354,10 @@ export default function FilterModal({
                           <button
                             key={cat}
                             onClick={() => {
+                              // 🚀 TRAVA ANTI-FANTASMA: Se ele mudou de categoria, apagamos os nichos antigos!
+                              if (draftCategory !== cat) {
+                                setDraftSubs([]);
+                              }
                               setDraftCategory(cat);
                               setTempCat(cat);
                               setCatStep("sub");

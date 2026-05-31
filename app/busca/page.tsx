@@ -485,8 +485,16 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   const filterMap: Record<string, Set<string>> = {};
   categoriesData.forEach((item) => {
+    if (!item.category) return; // 🛡️ Protege contra categoria vazia
+
     if (!filterMap[item.category]) filterMap[item.category] = new Set();
-    item.subcategory.forEach((sub) => filterMap[item.category].add(sub));
+
+    // 🛡️ O COLETE À PROVA DE BALAS: Só roda o forEach se o subcategory for realmente um array válido
+    if (item.subcategory && Array.isArray(item.subcategory)) {
+      item.subcategory.forEach((sub) => {
+        if (sub) filterMap[item.category].add(sub);
+      });
+    }
   });
 
   const orderedFilterMap: Record<string, string[]> = {};
