@@ -18,6 +18,7 @@ import {
   Target,
   QrCode,
   Mail,
+  Edit3,
 } from "lucide-react";
 import { CommissionStatus } from "@prisma/client";
 
@@ -450,14 +451,26 @@ export default function AffiliateDashboard() {
                       </div>
 
                       {business && (
-                        <Link
-                          href={`/site/${business.slug}`}
-                          target="_blank"
-                          title="Ver loja"
-                          className="h-10 w-10 shrink-0 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center hover:bg-[#023059] hover:text-white transition-all border border-gray-200"
-                        >
-                          <ExternalLink size={16} />
-                        </Link>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* 🚀 NOVO BOTÃO: Entrar no modo Agência (Editar Loja do Cliente) */}
+                          <Link
+                            href={`/dashboard/editar/${business.slug}`}
+                            title="Editar Loja (Modo Agência)"
+                            className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm"
+                          >
+                            <Edit3 size={16} />
+                          </Link>
+
+                          {/* Botão original de Ver Loja (Externa) */}
+                          <Link
+                            href={`/site/${business.slug}`}
+                            target="_blank"
+                            title="Ver loja"
+                            className="h-10 w-10 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center hover:bg-[#023059] hover:text-white transition-all border border-gray-200"
+                          >
+                            <ExternalLink size={16} />
+                          </Link>
+                        </div>
                       )}
                     </div>
 

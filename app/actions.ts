@@ -652,12 +652,17 @@ export async function updateFullBusiness(slug: string, payload: any) {
         longitude: true,
         imageUrl: true,
         gallery: true,
+        user: { select: { affiliateId: true } }, // 🚀 A Chave Mestra do Parceiro
       },
     });
-    // 🚀 CORREÇÃO SÊNIOR 1: A Chave Mestra do Admin!
     if (!old) return { error: "Negócio não encontrado." };
-    if (old.userId !== user.id && user.role !== "ADMIN")
-      return { error: "Acesso Negado." };
+
+    const isOwner = old.userId === user.id;
+    const isAdmin = user.role === "ADMIN";
+    const isSponsor =
+      user.role === "AFILIADO" && old.user.affiliateId === user.id;
+
+    if (!isOwner && !isAdmin && !isSponsor) return { error: "Acesso Negado." };
 
     const validatedFields = businessSchema.safeParse(payload);
     if (!validatedFields.success) return { error: "Verifique os dados." };
@@ -837,11 +842,21 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
     // 1. Busca o negócio atual e traz o mediaFeed junto
     const business = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true, gallery: true, mediaFeed: true },
+      select: {
+        id: true,
+        userId: true,
+        gallery: true,
+        mediaFeed: true,
+        user: { select: { affiliateId: true } }, // 🚀 A Chave Mestra do Parceiro
+      },
     });
 
-    // 🛡️ Trava de segurança: apenas dono ou ADMIN podem editar
-    if (!business || (business.userId !== user.id && user.role !== "ADMIN")) {
+    const isOwner = business?.userId === user.id;
+    const isAdmin = user.role === "ADMIN";
+    const isSponsor =
+      user.role === "AFILIADO" && business?.user.affiliateId === user.id;
+
+    if (!business || (!isOwner && !isAdmin && !isSponsor)) {
       return { error: "Negócio não encontrado ou permissão negada." };
     }
 
@@ -897,9 +912,20 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
   try {
     const b = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true },
+      select: {
+        id: true,
+        userId: true,
+        user: { select: { affiliateId: true } }, // 🚀 A Chave Mestra do Parceiro
+      },
     });
-    if (!b || b.userId !== userId) return { error: "Negado." };
+
+    const isOwner = b?.userId === user.id;
+    const isAdmin = user.role === "ADMIN";
+    const isSponsor =
+      user.role === "AFILIADO" && b?.user.affiliateId === user.id;
+
+    if (!b || (!isOwner && !isAdmin && !isSponsor)) return { error: "Negado." };
+
     await db.businessHour.deleteMany({ where: { businessId: b.id } });
     await db.businessHour.createMany({
       data: hours.map((h) => ({ businessId: b.id, ...h })),
@@ -962,14 +988,23 @@ export async function resetBusiness(slug: string) {
   try {
     const business = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true },
+      select: {
+        id: true,
+        userId: true,
+        user: { select: { affiliateId: true } }, // 🚀 A Chave Mestra do Parceiro
+      },
     });
 
     if (!business) return { error: "Loja não encontrada." };
 
-    if (business.userId !== user.id && user.role !== "ADMIN") {
+    const isOwner = business.userId === user.id;
+    const isAdmin = user.role === "ADMIN";
+    const isSponsor =
+      user.role === "AFILIADO" && business.user.affiliateId === user.id;
+
+    if (!isOwner && !isAdmin && !isSponsor) {
       return { error: "Acesso Negado." };
-    }
+    } // Apaga as fotos antigas do servidor!
 
     // Apaga as fotos antigas do servidor!
     await cleanStorageFiles(slug);
@@ -1246,6 +1281,22 @@ export async function registerClickEvent(
   const columnToIncrement = columnMap[upperEvent];
 
   try {
+    // 🛡️ TRAVA ANTI-BOT (Evita que hackers inflem os relatórios com cliques falsos)
+    const cookieStore = await cookies();
+    const cookieName = `click_${businessId}_${upperEvent}`;
+    const hasClicked = cookieStore.get(cookieName);
+
+    if (hasClicked) {
+      return { success: true, ignored: true }; // Ignora silenciosamente para não alertar o bot
+    }
+
+    // Marca que a pessoa já clicou neste botão específico hoje (Dura 1 hora)
+    cookieStore.set(cookieName, "true", {
+      maxAge: 3600,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
     // 3. TRANSAÇÃO MÁGICA: Faz duas coisas ao mesmo tempo.
     // Se uma falhar, ele cancela a outra para não dar erro nos gráficos depois.
     await db.$transaction([
@@ -1509,6 +1560,24 @@ export async function sendPasswordResetEmail(formData: FormData) {
   // Por segurança, se o usuário não existe, não damos erro, apenas fingimos que enviamos.
   if (!existingUser) {
     return { success: true };
+  }
+
+  // 🛡️ TRAVA ANTI-SPAM DE E-MAIL (Protege seu bolso no Resend)
+  // Verifica se já enviamos um e-mail para este cara nos últimos 2 minutos
+  const tokenExistente = await db.passwordResetToken.findFirst({
+    where: { email },
+    orderBy: { expires: "desc" },
+  });
+
+  if (tokenExistente) {
+    // Como o token dura 60 min, se ele vai expirar em MAIS de 58 min, significa que foi criado há menos de 2 min.
+    const tempoRestanteMs =
+      new Date(tokenExistente.expires).getTime() - new Date().getTime();
+    if (tempoRestanteMs > 58 * 60 * 1000) {
+      return {
+        error: "Aguarde alguns minutos antes de solicitar um novo e-mail.",
+      };
+    }
   }
 
   // Gera um token simples e data de expiração (1 hora)

@@ -27,15 +27,19 @@ export default auth(async (req) => {
   const pathname = nextUrl.pathname;
 
   // =====================================================================
-  // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING REFORÇADO (Auth e Busca Pública)
+  // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING REFORÇADO E AMPLIADO
   // =====================================================================
   if (ratelimit) {
-    // 🚀 CIRURGIA: Removemos o webhook da verificação do Upstash.
-    // O Webhook do Mercado Pago tem a sua própria proteção militar (HMAC / validateSignature).
+    // O Webhook do MP já tem HMAC, não precisa de Upstash.
     const isApiAuthRoute = pathname.startsWith("/api/auth");
     const isSearchRoute = pathname.startsWith("/busca");
+    const isSensitivePage =
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/esqueci-senha") ||
+      pathname.startsWith("/nova-senha");
 
-    if (isApiAuthRoute || isSearchRoute) {
+    // Abrangemos o escudo para proteger contra Brute Force nas telas visuais
+    if (isApiAuthRoute || isSearchRoute || isSensitivePage) {
       const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
       const { success } = await ratelimit.limit(ip);
 
@@ -46,9 +50,10 @@ export default auth(async (req) => {
             { status: 429, headers: { "Content-Type": "application/json" } },
           );
         }
-
+        // Se bater o limite nas páginas visuais, manda pra uma URL com parâmetro de erro para o frontend exibir o Toast
+        const fallbackUrl = isSearchRoute ? "/busca" : "/login";
         return NextResponse.redirect(
-          new URL("/busca?error=TooManyRequests", nextUrl),
+          new URL(`${fallbackUrl}?error=RateLimited`, nextUrl),
         );
       }
     }

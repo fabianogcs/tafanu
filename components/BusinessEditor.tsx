@@ -164,8 +164,19 @@ export default function BusinessEditor({
 
   const [profileImage, setProfileImage] = useState<string>(
     safeBusiness.imageUrl,
-  );
-  const [categoria, setCategoria] = useState(safeBusiness.category);
+  ); // 🚀 FORÇA A SEGMENTAÇÃO A NASCER VAZIA SE FOR NOVA OU PADRÃO
+
+  const [categoria, setCategoria] = useState(() => {
+    if (
+      isNew ||
+      !safeBusiness.category ||
+      safeBusiness.category.toLowerCase() === "geral"
+    ) {
+      return "";
+    }
+    return safeBusiness.category;
+  });
+
   const [selectedSubs, setSelectedSubs] = useState<string[]>(
     safeBusiness.subcategory,
   );
@@ -464,6 +475,37 @@ export default function BusinessEditor({
       return;
     }
 
+    // 🚀 VALIDAÇÃO DE SEGMENTAÇÃO BLINDADA (IGNORA O PADRÃO "GERAL")
+    if (
+      !categoria ||
+      categoria.trim() === "" ||
+      categoria.toLowerCase() === "geral"
+    ) {
+      toast.error(
+        "Por favor, escolha uma Segmentação (Ramo Principal) para o seu anúncio.",
+        {
+          id: "erro-categoria-vazia",
+        },
+      );
+      document
+        .getElementById("segmentation-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    } // 🚀 VALIDAÇÃO DE NICHO (SUBCATEGORIA)
+
+    if (!selectedSubs || selectedSubs.length === 0) {
+      toast.error(
+        "Por favor, escolha pelo menos 1 Nicho dentro da sua segmentação.",
+        {
+          id: "erro-subcategoria-vazia",
+        },
+      );
+      document
+        .getElementById("segmentation-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     if (!isNew && slug !== safeBusiness.slug) {
       const isGhostOriginal =
         /^vitrine-[a-z0-9]{5}-\d{13}$/i.test(safeBusiness.slug) ||
@@ -730,7 +772,6 @@ export default function BusinessEditor({
                 >
                   <Eye size={18} />
                 </button>
-
                 {/* 🚀 BOTÃO DE RESET (A VASSOURA) */}
                 <button
                   onClick={(e) => {
@@ -742,7 +783,6 @@ export default function BusinessEditor({
                 >
                   <RefreshCcw size={18} />
                 </button>
-
                 {/* 🚀 BOTÃO DE EXCLUSÃO FATAL - APARECE SÓ PARA ADMIN */}
                 {userRole === "ADMIN" && (
                   <button
@@ -801,17 +841,20 @@ export default function BusinessEditor({
             filteredThemeKeys={filteredThemeKeys}
           />
 
-          <SegmentationSection
-            categoria={categoria}
-            setCategoria={setCategoria}
-            selectedSubs={selectedSubs}
-            setSelectedSubs={setSelectedSubs}
-            keywords={keywords}
-            setKeywords={setKeywords}
-            tagInput={tagInput}
-            setTagInput={setTagInput}
-            categoryKeys={categoryKeys}
-          />
+          {/* 🚀 ÂNCORA DE SCROLL PARA ERRO DE VALIDAÇÃO */}
+          <div id="segmentation-section">
+            <SegmentationSection
+              categoria={categoria}
+              setCategoria={setCategoria}
+              selectedSubs={selectedSubs}
+              setSelectedSubs={setSelectedSubs}
+              keywords={keywords}
+              setKeywords={setKeywords}
+              tagInput={tagInput}
+              setTagInput={setTagInput}
+              categoryKeys={categoryKeys}
+            />
+          </div>
 
           <ContentSection
             mediaFeed={mediaFeed}

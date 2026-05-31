@@ -16,11 +16,13 @@ export default async function EditBusinessPage({
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
 
+  // 🚀 BUSCA O NEGÓCIO E DESCOBRE QUEM É O AFILIADO-PAI DO DONO
   const business = await db.business.findUnique({
     where: { slug },
     include: {
       hours: true,
       _count: { select: { favorites: true } },
+      user: { select: { affiliateId: true } }, // ⬅️ A Chave do Cofre
     },
   });
 
@@ -32,13 +34,12 @@ export default async function EditBusinessPage({
     (!!adminEmail &&
       session.user.email?.toLowerCase() === adminEmail.toLowerCase());
 
-  // 🚀 Permite a edição se for dono, admin, afiliado OU assinante
+  // 🚀 LÓGICA DE ACESSO TRIPLA (Dono, Admin ou Afiliado-Pai)
   const isOwner = business.userId === userId;
-  const isProRole = ["ADMIN", "AFILIADO", "ASSINANTE"].includes(
-    session.user.role as string,
-  );
+  const isSponsorAffiliate =
+    session.user.role === "AFILIADO" && business.user.affiliateId === userId;
 
-  if (!isOwner && !isAdmin && !isProRole) {
+  if (!isOwner && !isAdmin && !isSponsorAffiliate) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="bg-white p-10 rounded-[40px] shadow-xl border border-rose-100 text-center">
@@ -49,7 +50,7 @@ export default async function EditBusinessPage({
             Acesso Restrito
           </h2>
           <p className="text-slate-400 font-medium text-sm mt-2">
-            Este negócio pertence a outra conta.
+            Este negócio pertence a outra conta e você não é o gerente dela.
           </p>
           <Link
             href="/dashboard"
@@ -79,12 +80,19 @@ export default async function EditBusinessPage({
             Voltar ao Painel
           </Link>
 
-          {/* 🛡️ Salvo: Aviso discreto para quando o Admin está editando a loja de um cliente */}
-          {isAdmin && business.userId !== userId && (
-            <div className="bg-amber-100 text-amber-700 px-4 py-2 text-[10px] font-black uppercase rounded-xl tracking-widest flex items-center gap-2 shadow-sm border border-amber-200">
-              Modo Suporte Ativado
-            </div>
-          )}
+          {/* 🛡️ Avisos Visuais de Moderação/Agência */}
+          <div className="flex gap-2">
+            {isAdmin && !isOwner && (
+              <div className="bg-amber-100 text-amber-700 px-4 py-2 text-[10px] font-black uppercase rounded-xl tracking-widest flex items-center gap-2 shadow-sm border border-amber-200">
+                Modo Suporte (Admin)
+              </div>
+            )}
+            {isSponsorAffiliate && !isOwner && (
+              <div className="bg-purple-100 text-purple-700 px-4 py-2 text-[10px] font-black uppercase rounded-xl tracking-widest flex items-center gap-2 shadow-sm border border-purple-200">
+                Modo Agência (Parceiro)
+              </div>
+            )}
+          </div>
         </div>
 
         {/* COMPONENTE DO EDITOR (Agora ele reina absoluto na tela) */}
