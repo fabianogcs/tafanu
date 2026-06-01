@@ -351,9 +351,10 @@ export default function LuxeLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
-    "all",
-  );
+  // 🚀 O filtro inteligente começa nulo
+  const [userMediaFilter, setUserMediaFilter] = useState<
+    "photos" | "motion" | null
+  >(null);
 
   const footerTriggerRef = useRef(null);
   const isFooterVisible = useInView(footerTriggerRef, {
@@ -433,6 +434,17 @@ export default function LuxeLayout({
       .filter((item: any) => item.type === "image")
       .map((item: any) => item.url);
   }, [cleanFeed]);
+
+  // ==========================================
+  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL
+  // ==========================================
+  const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
+  const hasVideos = cleanFeed.some((item: any) =>
+    ["video", "video_v", "video_h"].includes(item.type),
+  );
+  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
+  const activeMediaFilter =
+    userMediaFilter || (hasPhotos ? "photos" : "motion");
 
   const safeSetIndex = useCallback(
     (next: number) => {
@@ -614,71 +626,56 @@ export default function LuxeLayout({
       </header>
 
       {/* ==========================================
-          🚀 THE MASTER RUNWAY (Vitrine Unificada Padronizada)
+          🚀 THE MASTER RUNWAY (GALERIA INTELIGENTE)
           ========================================== */}
       <section className="w-full max-w-7xl mx-auto px-0 md:px-12 pt-20 md:pt-32 relative z-20">
-        {cleanFeed.length > 0 &&
-          (() => {
-            // A Lógica do Filtro atuando no Feed
-            const filteredFeed = cleanFeed.filter((item: any) => {
-              if (mediaFilter === "all") return true;
-              if (mediaFilter === "photos") return item.type === "image";
-              if (mediaFilter === "motion")
-                return (
-                  item.type === "video" ||
-                  item.type === "video_v" ||
-                  item.type === "video_h"
-                );
-              return true;
-            });
+        {cleanFeed.length > 0 && (
+          <div className="w-full mb-12 md:mb-24">
+            <div className="flex flex-col items-center text-center mb-8 px-4">
+              <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight opacity-90 flex items-center gap-4 mb-8">
+                <Sparkles
+                  className={`w-6 h-6 md:w-8 md:h-8 ${primary}`}
+                  strokeWidth={1.5}
+                />
+                The Collection
+              </h2>
 
-            if (filteredFeed.length === 0) return null;
-
-            return (
-              <div className="w-full mb-12 md:mb-24">
-                <div className="flex flex-col items-center text-center mb-8 px-4">
-                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight opacity-90 flex items-center gap-4 mb-8">
-                    <Sparkles
-                      className={`w-6 h-6 md:w-8 md:h-8 ${primary}`}
-                      strokeWidth={1.5}
-                    />
-                    The Collection
-                  </h2>
-
-                  <div className="flex items-center p-1 bg-current/5 border border-current/10 rounded-full backdrop-blur-md">
-                    <button
-                      onClick={() => setMediaFilter("all")}
-                      className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? bgAction : "text-current/50 hover:text-current"}`}
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={() => setMediaFilter("photos")}
-                      className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? bgAction : "text-current/50 hover:text-current"}`}
-                    >
-                      Photos
-                    </button>
-                    <button
-                      onClick={() => setMediaFilter("motion")}
-                      className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? bgAction : "text-current/50 hover:text-current"}`}
-                    >
-                      Motion
-                    </button>
-                  </div>
+              {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS DE MÍDIA */}
+              {hasPhotos && hasVideos && (
+                <div className="flex items-center p-1 bg-current/5 border border-current/10 rounded-full backdrop-blur-md">
+                  <button
+                    onClick={() => setUserMediaFilter("photos")}
+                    className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? bgAction : "text-current/50 hover:text-current"}`}
+                  >
+                    Fotos
+                  </button>
+                  <button
+                    onClick={() => setUserMediaFilter("motion")}
+                    className={`px-5 md:px-6 py-2.5 rounded-full text-[9px] md:text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? bgAction : "text-current/50 hover:text-current"}`}
+                  >
+                    Vídeos
+                  </button>
                 </div>
+              )}
+            </div>
 
-                <div className="w-full">
-                  <MasterRunway
-                    key={mediaFilter}
-                    feed={filteredFeed}
-                    setSelectedIndex={setSelectedIndex}
-                    themeBorder={border}
-                    isLight={isLight}
-                  />
-                </div>
-              </div>
-            );
-          })()}
+            <div className="w-full">
+              <MasterRunway
+                key={activeMediaFilter}
+                feed={cleanFeed.filter((item: any) => {
+                  if (activeMediaFilter === "photos")
+                    return item.type === "image";
+                  if (activeMediaFilter === "motion")
+                    return ["video", "video_v", "video_h"].includes(item.type);
+                  return true;
+                })}
+                setSelectedIndex={setSelectedIndex}
+                themeBorder={border}
+                isLight={isLight}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       <main className="w-full flex flex-col items-center relative z-10">

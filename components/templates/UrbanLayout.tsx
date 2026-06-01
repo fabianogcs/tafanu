@@ -299,9 +299,10 @@ export default function UrbanLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
-    "all",
-  );
+  // 🚀 O filtro inteligente começa nulo
+  const [userMediaFilter, setUserMediaFilter] = useState<
+    "photos" | "motion" | null
+  >(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const footerTriggerRef = useRef(null);
@@ -405,6 +406,17 @@ export default function UrbanLayout({
       .filter((item: any) => item.type === "image")
       .map((item: any) => item.url);
   }, [cleanFeed]);
+
+  // ==========================================
+  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL
+  // ==========================================
+  const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
+  const hasVideos = cleanFeed.some((item: any) =>
+    ["video", "video_v", "video_h"].includes(item.type),
+  );
+  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
+  const activeMediaFilter =
+    userMediaFilter || (hasPhotos ? "photos" : "motion");
 
   const safeSetIndex = useCallback(
     (next: number) => {
@@ -647,13 +659,13 @@ export default function UrbanLayout({
               </section>
             )}
 
-            {/* 🚀 THE MASTER RUNWAY (Mídia Unificada URBAN) */}
+            {/* 🚀 THE MASTER RUNWAY (Mídia Unificada URBAN INTELIGENTE) */}
             {cleanFeed.length > 0 &&
               (() => {
                 const filteredFeed = cleanFeed.filter((item: any) => {
-                  if (mediaFilter === "all") return true;
-                  if (mediaFilter === "photos") return item.type === "image";
-                  if (mediaFilter === "motion")
+                  if (activeMediaFilter === "photos")
+                    return item.type === "image";
+                  if (activeMediaFilter === "motion")
                     return (
                       item.type === "video" ||
                       item.type === "video_v" ||
@@ -667,6 +679,7 @@ export default function UrbanLayout({
                 return (
                   <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
+                      {/* O título original é mantido intacto */}
                       <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center gap-3">
                         <Camera
                           className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
@@ -675,33 +688,29 @@ export default function UrbanLayout({
                         Catálogo Visual
                       </h2>
 
-                      {/* Capsula Switch (Urban Style) */}
-                      <div
-                        className={`flex items-center p-1 ${cardBg} border ${border} rounded-full ${shadow}`}
-                      >
-                        <button
-                          onClick={() => setMediaFilter("all")}
-                          className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                      {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS (sem a aba ALL) */}
+                      {hasPhotos && hasVideos && (
+                        <div
+                          className={`flex items-center p-1 ${cardBg} border ${border} rounded-full ${shadow}`}
                         >
-                          All
-                        </button>
-                        <button
-                          onClick={() => setMediaFilter("photos")}
-                          className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
-                        >
-                          Photos
-                        </button>
-                        <button
-                          onClick={() => setMediaFilter("motion")}
-                          className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
-                        >
-                          Motion
-                        </button>
-                      </div>
+                          <button
+                            onClick={() => setUserMediaFilter("photos")}
+                            className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                          >
+                            Photos
+                          </button>
+                          <button
+                            onClick={() => setUserMediaFilter("motion")}
+                            className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                          >
+                            Motion
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <MasterRunway
-                      key={mediaFilter}
+                      key={activeMediaFilter}
                       feed={filteredFeed}
                       setSelectedIndex={setSelectedIndex}
                       cardBg={cardBg}
@@ -711,7 +720,6 @@ export default function UrbanLayout({
                   </section>
                 );
               })()}
-
             {/* FAQ */}
             {hasFaqs && (
               <section className="space-y-6 pt-6">

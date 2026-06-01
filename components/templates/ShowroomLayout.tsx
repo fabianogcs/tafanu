@@ -325,6 +325,10 @@ export default function ShowroomLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  // 🚀 O filtro inteligente começa nulo
+  const [userMediaFilter, setUserMediaFilter] = useState<
+    "photos" | "motion" | null
+  >(null);
   const footerTriggerRef = useRef(null);
   const isFooterVisible = useInView(footerTriggerRef, {
     margin: "0px 0px 50px 0px",
@@ -403,6 +407,17 @@ export default function ShowroomLayout({
       .filter((item: any) => item.type === "image")
       .map((item: any) => item.url);
   }, [cleanFeed]);
+
+  // ==========================================
+  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL E TÍTULO
+  // ==========================================
+  const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
+  const hasVideos = cleanFeed.some((item: any) =>
+    ["video", "video_v", "video_h"].includes(item.type),
+  );
+  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
+  const activeMediaFilter =
+    userMediaFilter || (hasPhotos ? "photos" : "motion");
 
   const safeSetIndex = useCallback(
     (next: number) => {
@@ -595,17 +610,45 @@ export default function ShowroomLayout({
             <div
               className={`p-6 pb-2 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
             >
-              <h2 className="text-base font-bold mb-2 flex items-center gap-2 opacity-90">
-                Fotos e Vídeos
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                {/* 🚀 TÍTULO FIXO E CLEAN */}
+                <h2 className="text-base font-bold flex items-center gap-2 opacity-90">
+                  Galeria
+                </h2>
+
+                {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS */}
+                {hasPhotos && hasVideos && (
+                  <div className="flex items-center p-0.5 bg-black/5 rounded-full">
+                    <button
+                      onClick={() => setUserMediaFilter("photos")}
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeMediaFilter === "photos" ? "bg-white shadow-sm" : "opacity-50 hover:opacity-100"}`}
+                    >
+                      Fotos
+                    </button>
+                    <button
+                      onClick={() => setUserMediaFilter("motion")}
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeMediaFilter === "motion" ? "bg-white shadow-sm" : "opacity-50 hover:opacity-100"}`}
+                    >
+                      Vídeos
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <MasterRunway
-                feed={cleanFeed}
+                key={activeMediaFilter}
+                feed={cleanFeed.filter((item: any) => {
+                  if (activeMediaFilter === "photos")
+                    return item.type === "image";
+                  if (activeMediaFilter === "motion")
+                    return ["video", "video_v", "video_h"].includes(item.type);
+                  return true;
+                })}
                 setSelectedIndex={setSelectedIndex}
                 theme={theme}
               />
             </div>
           )}
-
           {hasFeatures && (
             <div
               className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}

@@ -342,9 +342,10 @@ export default function ComercialLayout({
 
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [mediaFilter, setMediaFilter] = useState<"all" | "photos" | "motion">(
-    "all",
-  );
+  // 🚀 O filtro agora começa nulo para a IA decidir o que mostrar depois
+  const [userMediaFilter, setUserMediaFilter] = useState<
+    "photos" | "motion" | null
+  >(null);
 
   const footerTriggerRef = useRef<HTMLDivElement | null>(null);
   const isFooterVisible = useInView(footerTriggerRef, {
@@ -394,6 +395,17 @@ export default function ComercialLayout({
       .filter((item: any) => item.type === "image")
       .map((item: any) => item.url);
   }, [cleanFeed]);
+
+  // ==========================================
+  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL
+  // ==========================================
+  const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
+  const hasVideos = cleanFeed.some((item: any) =>
+    ["video", "video_v", "video_h"].includes(item.type),
+  );
+  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
+  const activeMediaFilter =
+    userMediaFilter || (hasPhotos ? "photos" : "motion");
 
   const salesChannels = [
     {
@@ -654,7 +666,7 @@ export default function ComercialLayout({
                 </section>
               )}
 
-              {/* GALERIA E VÍDEOS */}
+              {/* GALERIA E VÍDEOS INTELIGENTE */}
               {cleanFeed.length > 0 && (
                 <section className="w-full pt-4">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
@@ -665,48 +677,39 @@ export default function ComercialLayout({
                         <Camera size={20} />
                       </div>
                       <h2 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-40">
-                        {" "}
-                        Catálogo Visual{" "}
+                        Catálogo Visual
                       </h2>
                     </div>
 
-                    <div
-                      className={`flex items-center p-1.5 ${theme.cardBg} border ${theme.border} rounded-full shadow-sm`}
-                    >
-                      <button
-                        onClick={() => setMediaFilter("all")}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${mediaFilter === "all" ? `${theme.bgAction} shadow-md` : "opacity-50 hover:opacity-100"}`}
+                    {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS DE MÍDIA */}
+                    {hasPhotos && hasVideos && (
+                      <div
+                        className={`flex items-center p-1.5 ${theme.cardBg} border ${theme.border} rounded-full shadow-sm`}
                       >
-                        {" "}
-                        All{" "}
-                      </button>
-                      <button
-                        onClick={() => setMediaFilter("photos")}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${mediaFilter === "photos" ? `${theme.bgAction} shadow-md` : "opacity-50 hover:opacity-100"}`}
-                      >
-                        {" "}
-                        Photos{" "}
-                      </button>
-                      <button
-                        onClick={() => setMediaFilter("motion")}
-                        className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${mediaFilter === "motion" ? `${theme.bgAction} shadow-md` : "opacity-50 hover:opacity-100"}`}
-                      >
-                        {" "}
-                        Motion{" "}
-                      </button>
-                    </div>
+                        <button
+                          onClick={() => setUserMediaFilter("photos")}
+                          className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? `${theme.bgAction} shadow-md text-white` : "opacity-50 hover:opacity-100"}`}
+                        >
+                          Fotos
+                        </button>
+                        <button
+                          onClick={() => setUserMediaFilter("motion")}
+                          className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? `${theme.bgAction} shadow-md text-white` : "opacity-50 hover:opacity-100"}`}
+                        >
+                          Vídeos
+                        </button>
+                      </div>
+                    )}
                   </div>
+
                   <MasterRunway
-                    key={mediaFilter}
+                    key={activeMediaFilter}
                     feed={cleanFeed.filter((item: any) => {
-                      if (mediaFilter === "all") return true;
-                      if (mediaFilter === "photos")
+                      if (activeMediaFilter === "photos")
                         return item.type === "image";
-                      if (mediaFilter === "motion")
-                        return (
-                          item.type === "video" ||
-                          item.type === "video_v" ||
-                          item.type === "video_h"
+                      if (activeMediaFilter === "motion")
+                        return ["video", "video_v", "video_h"].includes(
+                          item.type,
                         );
                       return true;
                     })}

@@ -39,7 +39,6 @@ export default function PrivacidadePage() {
               de Dados (LGPD - Lei nº 13.709/2018).
             </p>
           </section>
-
           {/* 1. DADOS COLETADOS */}
           <section>
             <div className="flex items-center gap-2 mb-3 text-tafanu-blue">
@@ -61,6 +60,14 @@ export default function PrivacidadePage() {
                 <strong>Dados de Navegação:</strong> Endereço IP, tipo de
                 navegador, páginas visitadas e tempo de permanência (coletados
                 via Vercel Analytics e Meta Pixel).
+              </li>
+              {/* 🚀 NOVA CLÁUSULA DE GPS ADICIONADA AQUI */}
+              <li>
+                <strong>Dados de Localização (GPS):</strong> Quando autorizado
+                expressamente por você no navegador, utilizamos sua localização
+                em tempo real exclusivamente para exibir negócios em um raio de
+                até 30km. Essas coordenadas não são armazenadas em nosso banco
+                de dados.
               </li>
             </ul>
           </section>

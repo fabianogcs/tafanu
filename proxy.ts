@@ -91,6 +91,7 @@ export default auth(async (req) => {
     pathname.startsWith("/verificar-email") ||
     pathname.startsWith("/sobre") ||
     pathname.startsWith("/termos") ||
+    pathname.startsWith("/privacidade") ||
     pathname.startsWith("/busca") ||
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||

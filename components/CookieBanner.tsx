@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Cookie, X } from "lucide-react";
-import Link from "next/link"; // 🚀 Adicionado para navegação
+import Link from "next/link";
 
 export default function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
@@ -15,9 +15,16 @@ export default function CookieBanner() {
   }, []);
 
   const acceptCookies = () => {
-    localStorage.setItem("tafanu-cookie-consent", "true");
+    localStorage.setItem("tafanu-cookie-consent", "accepted");
     // 🚀 O GATILHO MÁGICO: Avisa o MetaPixel que a porteira foi liberada!
     window.dispatchEvent(new Event("cookie-consent-accepted"));
+    setIsVisible(false);
+  };
+
+  const rejectCookies = () => {
+    // 🛡️ Grava que o usuário recusou, assim o banner não volta a incomodar,
+    // mas NÃO dispara o evento do MetaPixel.
+    localStorage.setItem("tafanu-cookie-consent", "rejected");
     setIsVisible(false);
   };
 
@@ -37,7 +44,6 @@ export default function CookieBanner() {
           <p className="text-slate-300 text-xs md:text-sm font-medium leading-relaxed">
             Usamos cookies para personalizar sua experiência. Ao clicar em
             Aceitar, você concorda com a nossa{" "}
-            {/* 🚀 O link jurídico vital foi adicionado aqui */}
             <Link
               href="/privacidade"
               target="_blank"
@@ -50,6 +56,14 @@ export default function CookieBanner() {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto flex-shrink-0 mt-2 md:mt-0">
+          {/* 🛡️ NOVO BOTÃO: RECUSAR */}
+          <button
+            onClick={rejectCookies}
+            className="flex-1 md:flex-none bg-transparent border border-slate-600 hover:border-slate-400 text-slate-300 font-bold px-4 md:px-6 py-3 md:py-3.5 rounded-xl transition-all uppercase text-[10px] md:text-xs tracking-widest whitespace-nowrap"
+          >
+            Recusar
+          </button>
+
           <button
             onClick={acceptCookies}
             className="flex-1 md:flex-none bg-tafanu-action hover:bg-emerald-400 text-[#050B14] font-black px-6 md:px-10 py-3 md:py-3.5 rounded-xl transition-all uppercase text-[10px] md:text-xs tracking-widest whitespace-nowrap"
@@ -59,7 +73,7 @@ export default function CookieBanner() {
 
           <button
             onClick={() => setIsVisible(false)}
-            className="p-3 text-slate-400 hover:text-white transition-colors rounded-xl hover:bg-white/5"
+            className="p-3 text-slate-400 hover:text-white transition-colors rounded-xl hover:bg-white/5 hidden md:block"
             aria-label="Fechar aviso"
           >
             <X size={20} />
