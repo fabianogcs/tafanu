@@ -16,19 +16,37 @@
 body {
   background-color: var(--color-tafanu-light);
   color: var(--color-tafanu-blue);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Deixamos o Next.js e o Tailwind controlarem a font-family via layout.tsx */
 }
-/* Garante que o main não tenha fundo forçado */
+
+/* ========================================================= */
+/* 🛡️ BLINDAGEM VISUAL: Remove o contorno "fantasma" branco/cinza 
+   que o navegador joga nos componentes durante o clique ou load */
+/* ========================================================= */
+*:focus {
+  outline: none !important;
+}
+
+*:focus-visible {
+  /* Se o usuário navegar pelo TECLADO, mostramos um contorno laranja elegante */
+  outline: 2px solid #f28705;
+  outline-offset: 2px;
+}
+
+/* ========================================================= */
+/* CURATIVOS DE EMERGÊNCIA (Tente evitar !important no futuro) */
+/* ========================================================= */
 main {
   background-color: transparent !important;
 }
 
-/* Remove qualquer margem extra que possa estar criando o espaço branco */
 .report-container {
   background: none !important;
 }
-/* 🚀 MATA O FANTASMA DO CHROME: 
-   Garante fundo claro (slate-50) e texto escuro (slate-900) no autocompletar */
+
+/* ========================================================= */
+/* 🚀 MATA O FANTASMA DO AUTOCOMPLETAR DO CHROME */
+/* ========================================================= */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
