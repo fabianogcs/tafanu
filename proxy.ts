@@ -15,7 +15,7 @@ if (
   });
   ratelimit = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(30, "1 m"),
+    limiter: Ratelimit.slidingWindow(100, "1 m"),
   });
 }
 

@@ -2915,7 +2915,7 @@ export const getTrendingBusinesses = unstable_cache(
     }
   },
   ["trending-businesses-hybrid-v1"],
-  { revalidate: 3600 }, // ⏱️ 1 hora de cache (O site fica vivo e quente!)
+  { revalidate: 1 }, // ⏱️ 1 hora de cache (O site fica vivo e quente!)
 );
 
 // ==============================================================================

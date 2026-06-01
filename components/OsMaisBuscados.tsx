@@ -2,27 +2,53 @@
 
 import Link from "next/link";
 import { TrendingUp, MapPin, ArrowUpRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react"; // 🚀 Adicionamos useRef e useEffect
 
-// 🚀 O COLETE À PROVA DE BALAS PARA FOTOS DELETADAS OU EM CACHE
+// 🚀 O COLETE À PROVA DE BALAS DEFINITIVO (Design Elegante e Proposital)
 function SmartLogo({ biz }: { biz: any }) {
   const [imgError, setImgError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  if (biz.imageUrl && !imgError) {
-    return (
-      <img
-        src={biz.imageUrl}
-        alt={biz.name}
-        onError={() => setImgError(true)} // 🛡️ Se a foto não existir mais, ativa o escudo!
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-      />
-    );
+  useEffect(() => {
+    if (imgRef.current) {
+      if (imgRef.current.complete) {
+        if (imgRef.current.naturalWidth === 0) {
+          setImgError(true);
+        } else {
+          setIsLoaded(true);
+        }
+      }
+    }
+  }, [biz.imageUrl]);
+
+  // 🎨 DESIGN PREMIUM: Apenas a primeira letra, usando o laranja oficial do site
+  const renderInitials = () => (
+    <div className="w-full h-full bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center text-[#F28705] font-black text-2xl md:text-4xl select-none">
+      {biz.name.charAt(0).toUpperCase()}
+    </div>
+  );
+
+  if (!biz.imageUrl || imgError) {
+    return renderInitials();
   }
 
-  // Fallback: Gradiente azul com as iniciais
   return (
-    <div className="w-full h-full bg-gradient-to-br from-[#023059] to-blue-800 flex items-center justify-center text-white font-black text-[14px] md:text-2xl">
-      {biz.name.substring(0, 2).toUpperCase()}
+    <div className="w-full h-full relative">
+      {/* CAMADA 1 (Fundo Elegante): O monograma laranja que o usuário vê instantaneamente */}
+      <div className="absolute inset-0 z-0">{renderInitials()}</div>
+
+      {/* CAMADA 2 (Frente): A imagem revela-se com um fade-in suave parecendo um efeito proposital */}
+      <img
+        ref={imgRef}
+        src={biz.imageUrl}
+        alt={biz.name}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setImgError(true)}
+        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-in-out z-10 ${
+          isLoaded ? "opacity-100" : "opacity-0"
+        }`}
+      />
     </div>
   );
 }
