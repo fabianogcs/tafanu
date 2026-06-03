@@ -59,10 +59,24 @@ export function ContentSection({
     toast.loading("Preparando imagens...", { id: "upload-gallery" });
 
     try {
-      // 1. Comprime todas as fotos
-      const compressedFiles = await Promise.all(
-        files.map(async (file) => await compressImage(file)),
-      );
+      // ========================================================
+      // 🚀 AQUI COMEÇA A MUDANÇA: Fila Síncrona Blindada
+      // ========================================================
+      const compressedFiles = [];
+
+      for (const file of files) {
+        try {
+          // Processa uma por uma, aguardando terminar antes de ir para a próxima
+          const compressed = await compressImage(file);
+          compressedFiles.push(compressed);
+        } catch (error) {
+          console.error("Falha ao comprimir imagem, enviando original", error);
+          compressedFiles.push(file); // Fallback de segurança
+        }
+      }
+      // ========================================================
+      // 🚀 FIM DA MUDANÇA
+      // ========================================================
 
       toast.loading("Enviando para a nuvem...", { id: "upload-gallery" });
 
@@ -70,6 +84,8 @@ export function ContentSection({
       const res = await uploadFiles("imageUploader", {
         files: compressedFiles,
       });
+
+      // ... (O RESTANTE DA SUA FUNÇÃO CONTINUA EXATAMENTE IGUAL)
 
       if (res && res.length > 0) {
         const newImages = res.map((r) => ({

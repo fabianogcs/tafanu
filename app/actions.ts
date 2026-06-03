@@ -7,12 +7,11 @@ import { EventType, Role, LayoutType, PlanType, Prisma } from "@prisma/client";
 import { hash, compare } from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath, unstable_cache } from "next/cache";
-import { cpf } from "cpf-cnpj-validator";
 import { auth, signIn, signOut } from "@/auth";
 import { Resend } from "resend";
 import crypto from "crypto";
 import { MercadoPagoConfig, PreApproval } from "mercadopago"; // 👈 NOVO IMPORT AQUI
-import { normalizeText } from "@/lib/normalize"; // 👈 NOVO IMPORT
+import { normalizeText, isCpfOrCnpjValid } from "@/lib/normalize";
 import { CommissionStatus } from "@prisma/client";
 
 type BusinessInput = z.infer<typeof businessSchema>;
@@ -200,11 +199,13 @@ export async function registerUser(formData: FormData) {
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) return { error: "Este e-mail já está cadastrado." };
 
-    // 3. VALIDAÇÃO DE DOCUMENTO (CPF)
+    // 3. VALIDAÇÃO UNIVERSAL DE DOCUMENTO (NOVO CNPJ E CPF)
     let cleanDocument = null;
     if (rawDocument) {
-      cleanDocument = rawDocument.replace(/\D/g, "");
-      if (!cpf.isValid(cleanDocument)) return { error: "CPF inválido." };
+      // 🚀 Agora preservamos letras maiúsculas e números
+      cleanDocument = rawDocument.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      if (!isCpfOrCnpjValid(cleanDocument))
+        return { error: "CPF ou CNPJ inválido." };
     }
 
     const hashedPassword = await hash(password, 10);
@@ -391,7 +392,10 @@ export async function updateUserProfile(formData: FormData) {
     const updateData: any = {
       name: validatedData.name,
       phone: validatedData.phone.replace(/\D/g, ""),
-      document: validatedData.document.replace(/\D/g, ""),
+      // 🚀 A blindagem alfanumérica garantindo a integridade do banco:
+      document: validatedData.document
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase(),
     };
 
     // 2. LÓGICA DE VÍNCULO DE AFILIADO (SÓ ACONTECE UMA VEZ)

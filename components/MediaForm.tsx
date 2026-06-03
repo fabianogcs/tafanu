@@ -64,9 +64,34 @@ export default function MediaForm({
           </span>
         </div>
 
-        {gallery.length < 12 /* 🚀 ATUALIZADO PARA 12 */ ? (
+        {gallery.length < 12 ? (
           <UploadDropzone
             endpoint="imageUploader"
+            // 🛡️ NOVO: Intercepta os arquivos antes de subir
+            onBeforeUploadBegin={async (files) => {
+              toast.info(
+                "Otimizando imagens... isso pode levar alguns segundos.",
+              );
+
+              const compressedFiles = [];
+
+              // 🛡️ A Fila Segura: Processa uma imagem por vez (for...of) em vez de Promise.all
+              // Isso garante que celulares antigos com pouca RAM não travem.
+              for (const file of files) {
+                try {
+                  const compressed = await compressImage(file);
+                  compressedFiles.push(compressed);
+                } catch (error) {
+                  console.error(
+                    "Falha ao comprimir imagem, enviando original",
+                    error,
+                  );
+                  compressedFiles.push(file); // Fallback de segurança
+                }
+              }
+
+              return compressedFiles;
+            }}
             onClientUploadComplete={(res) => {
               const newPhotos = res.map((r) => r.url || r.ufsUrl);
               setGallery((prev) => [...prev, ...newPhotos].slice(0, 12));
@@ -80,7 +105,7 @@ export default function MediaForm({
         ) : (
           <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-center">
             <p className="text-amber-700 text-xs font-bold uppercase tracking-tight">
-              Limite de 12 fotos atingido. {/* 🚀 ATUALIZADO PARA 12 */}
+              Limite de 12 fotos atingido.
             </p>
           </div>
         )}

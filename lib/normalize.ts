@@ -151,3 +151,61 @@ export const normalizeText = (text: string | null | undefined): string => {
     .replace(/\s+/g, " ") // Garante que não fiquem espaços duplos
     .trim();
 };
+
+// --- 3. VALIDADOR UNIVERSAL (CPF E CNPJ ALFANUMÉRICO 2026) ---
+export function isCpfOrCnpjValid(doc: string): boolean {
+  // Remove formatação e garante que qualquer letra inserida fique maiúscula
+  const cleanDoc = (doc || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+  // Se estiver vazio, não valida
+  if (!cleanDoc) return false;
+
+  // 🛡️ VALIDAÇÃO DE CPF (11 Dígitos Numéricos)
+  if (cleanDoc.length === 11) {
+    if (/[A-Z]/.test(cleanDoc)) return false; // CPF não tem letra
+    if (/^(\d)\1{10}$/.test(cleanDoc)) return false; // Bloqueia 111.111.111-11
+
+    let sum = 0;
+    let rest;
+    for (let i = 1; i <= 9; i++)
+      sum += parseInt(cleanDoc.substring(i - 1, i)) * (11 - i);
+    rest = (sum * 10) % 11;
+    if (rest === 10 || rest === 11) rest = 0;
+    if (rest !== parseInt(cleanDoc.substring(9, 10))) return false;
+
+    sum = 0;
+    for (let i = 1; i <= 10; i++)
+      sum += parseInt(cleanDoc.substring(i - 1, i)) * (12 - i);
+    rest = (sum * 10) % 11;
+    if (rest === 10 || rest === 11) rest = 0;
+    if (rest !== parseInt(cleanDoc.substring(10, 11))) return false;
+
+    return true;
+  }
+
+  // 🛡️ VALIDAÇÃO NOVO CNPJ ALFANUMÉRICO (14 Dígitos)
+  if (cleanDoc.length === 14) {
+    const calcDigit = (cnpjStr: string, weights: number[]) => {
+      let sum = 0;
+      for (let i = 0; i < weights.length; i++) {
+        const char = cnpjStr[i];
+        // Converte letras para números usando a tabela ASCII (Ex: A=17, B=18, C=19)
+        const val =
+          char.charCodeAt(0) >= 65 ? char.charCodeAt(0) - 48 : parseInt(char);
+        sum += val * weights[i];
+      }
+      const rest = sum % 11;
+      return rest < 2 ? 0 : 11 - rest;
+    };
+
+    const weight1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const weight2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+
+    const dig1 = calcDigit(cleanDoc, weight1);
+    const dig2 = calcDigit(cleanDoc.substring(0, 12) + dig1, weight2);
+
+    return cleanDoc.endsWith(`${dig1}${dig2}`);
+  }
+
+  return false;
+}

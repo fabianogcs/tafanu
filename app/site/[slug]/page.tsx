@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { businessThemes } from "@/lib/themes";
 import { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 // IMPORTAÇÃO DO MAESTRO DE TEMPLATES
 import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
@@ -301,21 +302,20 @@ export default async function BusinessPage({
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <ViewCounter businessId={business.id} />
 
-      {/* SCRIPT DE SEGURANÇA: Garante que o navegador atualize o manifesto ao entrar aqui */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            if (window.location.search.indexOf('utm_source=pwa') === -1) {
-               if ('serviceWorker' in navigator) {
-                  navigator.serviceWorker.getRegistrations().then(function(regs) {
-                    for(let reg of regs) reg.unregister();
-                  });
-               }
-            }
-          `,
-        }}
-      />
-      {/* 🚀 SEO AVANÇADO: SCHEMA MARKUP PARA O GOOGLE (LocalBusiness) */}
+      {/* SCRIPT DE SEGURANÇA: Aqui o next/script funciona perfeitamente (usando children em vez de dangerouslySetInnerHTML) */}
+      <Script id="pwa-cleanup-script" strategy="afterInteractive">
+        {`
+          if (window.location.search.indexOf('utm_source=pwa') === -1) {
+             if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                  for(let reg of regs) reg.unregister();
+                });
+             }
+          }
+        `}
+      </Script>
+
+      {/* 🚀 SEO AVANÇADO: Para JSON-LD, a recomendação oficial do Next.js é a tag HTML nativa! */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

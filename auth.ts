@@ -64,8 +64,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (trigger === "update" && session) return { ...token, ...session };
 
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
+        token.id = user.id as string;
+        token.role = user.role; // Se essa linha também ficar vermelha, use: user.role as string;
       } else if (!token.id && token.sub) {
         token.id = token.sub;
       }

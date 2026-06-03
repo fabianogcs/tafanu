@@ -1,26 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image"; // 🚀 Importação do Image do Next.js
 import { TrendingUp, MapPin, ArrowUpRight } from "lucide-react";
-import { useState, useRef, useEffect } from "react"; // 🚀 Adicionamos useRef e useEffect
+import { useState } from "react";
 
 // 🚀 O COLETE À PROVA DE BALAS DEFINITIVO (Design Elegante e Proposital)
 function SmartLogo({ biz }: { biz: any }) {
   const [imgError, setImgError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    if (imgRef.current) {
-      if (imgRef.current.complete) {
-        if (imgRef.current.naturalWidth === 0) {
-          setImgError(true);
-        } else {
-          setIsLoaded(true);
-        }
-      }
-    }
-  }, [biz.imageUrl]);
 
   // 🎨 DESIGN PREMIUM: Apenas a primeira letra, usando o laranja oficial do site
   const renderInitials = () => (
@@ -38,14 +26,15 @@ function SmartLogo({ biz }: { biz: any }) {
       {/* CAMADA 1 (Fundo Elegante): O monograma laranja que o usuário vê instantaneamente */}
       <div className="absolute inset-0 z-0">{renderInitials()}</div>
 
-      {/* CAMADA 2 (Frente): A imagem revela-se com um fade-in suave parecendo um efeito proposital */}
-      <img
-        ref={imgRef}
+      {/* CAMADA 2 (Frente): O <Image> do Next.js super otimizado */}
+      <Image
         src={biz.imageUrl}
         alt={biz.name}
+        fill
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         onLoad={() => setIsLoaded(true)}
         onError={() => setImgError(true)}
-        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-in-out z-10 ${
+        className={`object-cover group-hover:scale-105 transition-all duration-700 ease-in-out z-10 ${
           isLoaded ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -57,7 +46,7 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
   // 🚀 O CALÇO INVISÍVEL: Se o banco estiver zerado, ele não mostra lojas,
   // mas mantém a distância correta para a Vitrine não bater no teto!
   if (!businesses || businesses.length === 0) {
-    return <div className="w-full pt-24 md:pt-40 lg:pt-24" />; // 🚀 Trocou lg:pt-[220px] por lg:pt-24
+    return <div className="w-full pt-24 md:pt-40 lg:pt-24" />;
   }
 
   return (

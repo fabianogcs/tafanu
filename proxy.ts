@@ -130,31 +130,32 @@ export default auth(async (req) => {
     const donoEmail = process.env.ADMIN_EMAIL?.toLowerCase() || "";
     const isDono = emailSessao === donoEmail;
 
+    // 1. Regra de Negócio: Quem é considerado "PRO"?
+    const isPro = isAssinante || isAfiliado || isAdmin || isDono;
+
+    // 2. Rotas liberadas para TODOS (inclusive Visitantes logados)
     if (
-      pathname === "/dashboard" ||
-      pathname.startsWith("/dashboard/editar") ||
-      pathname.startsWith("/dashboard/perfil") ||
-      pathname.startsWith("/dashboard/novo") ||
-      pathname.startsWith("/dashboard/funil")
+      pathname === "/dashboard" || // A tela inicial do dash pode ser livre
+      pathname.startsWith("/dashboard/favoritos") || // Todo mundo pode salvar lojas
+      pathname.startsWith("/dashboard/parceiro") // A página para se tornar afiliado
     ) {
       return NextResponse.next();
     }
 
-    const isPro =
-      isAssinante ||
-      isAfiliado ||
-      isAdmin ||
-      isDono ||
-      pathname.startsWith("/dashboard/parceiro");
-
-    if (pathname.startsWith("/dashboard/favoritos")) {
+    // 3. Rotas Protegidas (Exclusivas para PRO)
+    if (
+      pathname.startsWith("/dashboard/perfil") || // 🚀 AGORA O PERFIL É SÓ PARA PRO!
+      pathname.startsWith("/dashboard/editar") ||
+      pathname.startsWith("/dashboard/novo") ||
+      pathname.startsWith("/dashboard/funil")
+    ) {
+      if (!isPro) {
+        return NextResponse.redirect(new URL("/checkout", nextUrl));
+      }
       return NextResponse.next();
     }
 
-    if (pathname.startsWith("/dashboard/parceiro")) {
-      return NextResponse.next();
-    }
-
+    // Fallback: se for uma sub-rota do dashboard não mapeada acima e não for PRO
     if (!isPro) {
       return NextResponse.redirect(new URL("/checkout", nextUrl));
     }

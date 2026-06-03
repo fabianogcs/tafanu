@@ -77,7 +77,11 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
             </div>
           </div>
 
-          <div className="relative">
+          <div
+            className="relative"
+            role="tablist"
+            aria-label="Categorias de Lojas"
+          >
             {/* 🚀 ADICIONADO pr-8 e lg:pr-0: Dá espaço no final do scroll mobile para não cortar seco */}
             <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 no-scrollbar snap-x relative z-10 pr-8 lg:pr-0">
               {data.map((item) => {
@@ -85,6 +89,8 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
                 return (
                   <button
                     key={item.category}
+                    role="tab" // 🚀 Acessibilidade: Define como aba
+                    aria-selected={isActive} // 🚀 Acessibilidade: Avisa se está ativa
                     onClick={() => setActiveTab(item.category)}
                     className={`snap-start shrink-0 flex items-center justify-between px-5 py-4 rounded-[1rem] font-black text-[11px] md:text-sm uppercase tracking-widest transition-all duration-300 relative ${
                       isActive
@@ -127,6 +133,7 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className="flex-1 flex flex-col"
+                role="tabpanel" // 🚀 Acessibilidade: Painel associado à aba
               >
                 {/* Título da Categoria Ativa */}
                 <div className="mb-6 md:mb-8 pb-4 border-b border-slate-100">
@@ -147,7 +154,9 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
                     return (
                       <Link
                         key={sub}
-                        href={`/busca?modo=online&subcategory=${encodeURIComponent(sub)}`}
+                        href={`/busca?modo=online&subcategory=${encodeURIComponent(
+                          sub,
+                        )}`}
                         onClick={() => setIsNavigating(sub)}
                         className="group flex items-center justify-between gap-3 bg-white border border-slate-200 px-4 md:px-5 py-3 rounded-xl hover:border-emerald-300 hover:bg-emerald-50/30 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95"
                       >
