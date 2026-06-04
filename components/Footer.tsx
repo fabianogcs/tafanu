@@ -7,8 +7,9 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-tafanu-blue text-white border-t border-gray-800 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <footer className="bg-tafanu-blue text-white border-t border-gray-800 mt-auto flex flex-col">
+      {/* Container Principal das Colunas */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           {/* BLOCO 1: Marca */}
           <div>
@@ -37,7 +38,6 @@ export default function Footer() {
             >
               Termos de Uso
             </Link>
-            {/* 🚀 O LINK DA PRIVACIDADE FOI INSERIDO AQUI */}
             <Link
               href="/privacidade"
               target="_blank"
@@ -64,7 +64,6 @@ export default function Footer() {
           <div className="flex flex-col space-y-3">
             <h3 className="font-bold text-gray-200 mb-1">Fale Conosco</h3>
 
-            {/* E-mail Profissional */}
             <a
               href="mailto:contato@tafanu.com.br"
               className="text-gray-400 hover:text-tafanu-action transition-colors text-sm flex items-center justify-center md:justify-start gap-2"
@@ -73,7 +72,6 @@ export default function Footer() {
               contato@tafanu.com.br
             </a>
 
-            {/* Atendimento via WhatsApp */}
             <a
               href="https://wa.me/5514991406618"
               target="_blank"
@@ -83,11 +81,23 @@ export default function Footer() {
               <MessageCircle size={16} className="text-tafanu-action" />
               Falar com Atendimento
             </a>
+          </div>
+        </div>
+      </div>
 
-            <div className="pt-4 text-gray-600 text-xs">
-              <p>&copy; {currentYear} TAFANU.</p>
-              <p>O seu guia oficial</p>
-            </div>
+      {/* BLOCO 4: Barra Legal e CNPJ (Fundo mais escuro para contrastar) */}
+      <div className="border-t border-gray-800 bg-black/20 w-full mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row items-center justify-between text-xs text-gray-500">
+          <div className="text-center md:text-left mb-3 md:mb-0 space-y-1">
+            <p>&copy; {currentYear} TAFANU. Todos os direitos reservados.</p>
+            <p>O seu guia oficial de negócios.</p>
+          </div>
+
+          <div className="text-center md:text-right space-y-1">
+            <p className="font-medium text-gray-400">
+              TAFANU - CNPJ: 63.648.641/0001-77
+            </p>
+            <p>São Paulo, SP - Brasil</p>
           </div>
         </div>
       </div>
