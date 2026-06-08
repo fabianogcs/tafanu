@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "./auth.config";
-import { compareSync } from "bcrypt-ts";
+import { compareSync } from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // 1. Tiramos o "as any" aqui (O PrismaAdapter agora será reconhecido)

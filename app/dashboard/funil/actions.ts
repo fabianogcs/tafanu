@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { hashSync } from "bcrypt-ts";
+import { hashSync } from "bcryptjs";
 import { auth } from "@/auth";
 
 export async function moverEtapaFunil(businessId: string, novaEtapa: number) {
