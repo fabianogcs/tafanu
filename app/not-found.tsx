@@ -32,7 +32,7 @@ export default function NotFound() {
           mudado ou o perfil não exista mais.
         </p>
 
-        {/* BOTÕES COM O ESTILO DO TAFANU */}
+        {/* BOTÕES DE SAÍDA SEGURA */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/"
@@ -49,21 +49,6 @@ export default function NotFound() {
             <ArrowLeft size={18} />
             Voltar Página
           </button>
-        </div>
-
-        {/* TAGS DE AJUDA RÁPIDA (Como no Hero) */}
-        <div className="mt-12 pt-8 border-t border-white/10">
-          <p className="text-xs text-gray-500 uppercase tracking-widest mb-4 font-bold">
-            Tente buscar de novo:
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href="/busca"
-              className="px-4 py-2 bg-white/5 rounded-full border border-white/10 text-gray-400 hover:text-tafanu-action transition-colors text-sm"
-            >
-              🔍 Ver todos os anúncios
-            </Link>
-          </div>
         </div>
       </div>
     </div>

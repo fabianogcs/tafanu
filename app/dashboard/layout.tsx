@@ -16,7 +16,7 @@ import {
 import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
 import SessionRefresher from "@/components/SessionRefresher";
-import EditableUserName from "@/components/EditableUserName";
+
 import FloatingSupportButton from "@/components/FloatingSupportButton"; // 🚀 NOVO IMPORT
 
 export default async function DashboardLayout({
@@ -118,10 +118,10 @@ export default async function DashboardLayout({
                     ? "Membro Premium"
                     : "Visitante"}
             </p>
-            <EditableUserName
-              initialName={displayName}
-              canEdit={currentRole === "VISITANTE"}
-            />
+            {/* 🚀 COMPONENTE LIMPO: Nome fixo e elegante */}
+            <h2 className="text-xl font-black uppercase tracking-tighter truncate">
+              {displayName}
+            </h2>
           </div>
           {isLocked && (
             <div className="mt-2 flex items-center gap-2 text-red-400 animate-pulse">
@@ -164,6 +164,15 @@ export default async function DashboardLayout({
                 <span className="text-sm font-semibold">Favoritos</span>
               </Link>
 
+              {/* 🚀 MOVIDO PARA CIMA: Agora visitantes e PROs veem este botão */}
+              <Link
+                href="/dashboard/perfil"
+                className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-2xl transition-all"
+              >
+                <User size={20} />
+                <span className="text-sm font-semibold">Meus Dados</span>
+              </Link>
+
               {isPro && (
                 <>
                   <div className="my-2 border-t border-white/5 mx-4 hidden md:block opacity-50"></div>
@@ -178,6 +187,8 @@ export default async function DashboardLayout({
                     </span>
                   </Link>
 
+                  {/* ... Links do Funil Admin ... */}
+
                   {(isAdmin || isAfiliado) && (
                     <>
                       <Link
@@ -189,14 +200,6 @@ export default async function DashboardLayout({
                       </Link>
                     </>
                   )}
-
-                  <Link
-                    href="/dashboard/perfil"
-                    className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
-                  >
-                    <User size={20} />
-                    <span className="text-sm">Meus Dados</span>
-                  </Link>
 
                   {isAfiliado && (
                     <Link

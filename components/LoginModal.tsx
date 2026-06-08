@@ -107,7 +107,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
           // 🚀 NAVEGAÇÃO SEGURA: Atualiza a árvore do Next.js e força o redirect absoluto
           router.refresh();
-          window.location.href = getDestination(role);
+          const destino = getDestination(role);
+          const destinoSeguro = destino?.startsWith("/") ? destino : "/";
+          window.location.href = destinoSeguro;
         }
       } else {
         const registerResult = await registerUser(formData);
@@ -139,7 +141,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             onClose();
 
             router.refresh();
-            window.location.href = getDestination(role);
+            const destino = getDestination(role);
+            const destinoSeguro = destino?.startsWith("/") ? destino : "/";
+            window.location.href = destinoSeguro;
           }
         }
       }

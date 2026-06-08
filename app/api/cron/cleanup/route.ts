@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { runSystemGhostCleanup } from "@/app/actions";
 
+// 🚀 PROTEÇÃO ANTI-TIMEOUT: Garante que a Vercel dê tempo suficiente (60s) para a faxina rodar
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   // 🛡️ A PORTA DE AÇO: Verifica se quem está batendo tem a chave secreta da Vercel
   const authHeader = request.headers.get("authorization");

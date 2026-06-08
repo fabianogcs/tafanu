@@ -129,7 +129,9 @@ export default function LoginPage() {
         // Busca a sessão recém-criada para saber o cargo antes de redirecionar
         const session = await getSession();
         const role = session?.user?.role as string | undefined;
-        window.location.assign(getDestination(role));
+        const destino = getDestination(role);
+        const destinoSeguro = destino?.startsWith("/") ? destino : "/";
+        window.location.assign(destinoSeguro);
       }
     } else {
       const registerResult = await registerUser(formData);
@@ -158,7 +160,9 @@ export default function LoginPage() {
           setTimeout(async () => {
             const session = await getSession();
             const role = session?.user?.role as string | undefined;
-            window.location.assign(getDestination(role));
+            const destino = getDestination(role);
+            const destinoSeguro = destino?.startsWith("/") ? destino : "/";
+            window.location.assign(destinoSeguro);
           }, 500);
         }
       }

@@ -14,7 +14,6 @@ import { MercadoPagoConfig, PreApproval } from "mercadopago"; // 👈 NOVO IMPOR
 import { normalizeText, isCpfOrCnpjValid } from "@/lib/normalize";
 import { CommissionStatus } from "@prisma/client";
 
-type BusinessInput = z.infer<typeof businessSchema>;
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
@@ -25,15 +24,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ==============================================================================
 // 1. HELPERS INTERNOS (Proteção e Utilidades)
 // ==============================================================================
-function safeParseArray(data: any) {
-  if (typeof data !== "string") return [];
-  try {
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function cleanSocialLink(url: string) {
   if (!url) return "";
@@ -1072,6 +1062,7 @@ async function executeCoreCleanup() {
           { expiresAt: { lt: trintaDiasAtras } },
         ],
       },
+      take: 30, // 🚀 PROTEÇÃO ANTI-TIMEOUT: Processa no máximo 30 lojas por vez
       // 🚀 INJEÇÃO 1: Pedimos para o Prisma trazer o mediaFeed junto
       select: { id: true, imageUrl: true, gallery: true, mediaFeed: true },
     });
@@ -1331,6 +1322,12 @@ export async function createReport(
   reason: string,
   details: string,
 ) {
+  // 🛡️ TRAVA DE SEGURANÇA: Exige login e barra bots
+  const user = await getSafeUser();
+  if (!user) {
+    return { error: "Você precisa estar logado para denunciar." };
+  }
+
   try {
     const b = await db.business.findUnique({
       where: { slug: businessSlug },
@@ -2766,28 +2763,7 @@ export async function approveComment(commentId: string) {
     return { success: false, error: "Erro interno ao processar a aprovação." };
   }
 }
-// ✏️ FUNÇÃO RÁPIDA PARA VISITANTES TROCAREM DE NOME
-export async function updateUserNameInline(newName: string) {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Não autorizado." };
 
-  if (!newName || newName.trim().length < 3) {
-    return { error: "O nome deve ter pelo menos 3 letras." };
-  }
-
-  try {
-    await db.user.update({
-      where: { id: session.user.id },
-      data: { name: newName.trim() },
-    });
-
-    revalidatePath("/dashboard", "layout");
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao atualizar nome:", error);
-    return { error: "Erro ao salvar o nome." };
-  }
-}
 export async function getOnlineMarketplaceMetadata() {
   try {
     const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);

@@ -1,6 +1,7 @@
 import { Toaster } from "sonner";
 import type { Metadata, Viewport } from "next"; // ✅ Adicionado Viewport aqui
 import "@/app/globals.css";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
@@ -92,7 +93,8 @@ export default async function RootLayout({
         </Suspense>
 
         {/* 2. SCRIPT DE CONTROLE PWA E SERVICE WORKER */}
-        <script
+        <Script
+          id="pwa-control"
           dangerouslySetInnerHTML={{
             __html: `
               const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;

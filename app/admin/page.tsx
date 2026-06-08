@@ -4,7 +4,15 @@ import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
 import { CommissionStatus } from "@prisma/client";
 
-export default async function AdminPage() {
+// 🚀 Adicionamos o "searchParams" para a página saber se você está buscando alguém
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params?.q || ""; // Pega o que você digitou lá no painel
+
   const session = await auth();
 
   if (!session?.user?.email) {
@@ -32,6 +40,17 @@ export default async function AdminPage() {
   const [usersData, reports, flaggedComments, allCommissions] =
     await Promise.all([
       db.user.findMany({
+        // 🚀 SE TIVER BUSCA: Procura no banco todo. SE NÃO: Traz só os 1000 mais recentes.
+        where: q
+          ? {
+              OR: [
+                { name: { contains: q, mode: "insensitive" as const } },
+                { email: { contains: q, mode: "insensitive" as const } },
+                { document: { contains: q } },
+              ],
+            }
+          : {},
+        take: q ? 100 : 1000,
         include: {
           businesses: {
             include: {

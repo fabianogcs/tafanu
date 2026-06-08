@@ -8,7 +8,7 @@ import {
   useCallback,
 } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AdminModals from "./AdminModals";
 import {
   Users,
@@ -89,13 +89,16 @@ export default function AdminDashboard({
   adminEmail?: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams(); // 🚀 NOVO
   const [isPending, startTransition] = useTransition();
   const [mainTab, setMainTab] = useState<
     "overview" | "users" | "affiliates" | "security"
   >("overview");
   const [subTab, setSubTab] = useState("subscribers");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    searchParams.get("q") || "",
+  );
 
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
@@ -120,9 +123,23 @@ export default function AdminDashboard({
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+
+      // 🚀 A CONEXÃO COM O SERVIDOR: Atualiza a URL invisivelmente!
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchTerm.length > 2) {
+        params.set("q", searchTerm); // Se digitou mais de 2 letras, avisa o servidor
+      } else {
+        params.delete("q"); // Se apagou, volta para os 1000 recentes
+      }
+
+      // O "{ scroll: false }" garante que a tela não pisque nem role pra cima
+      router.replace(`/admin?${params.toString()}`, { scroll: false });
+    }, 500); // 500ms para dar tempo de você terminar de digitar
+
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, searchParams, router]);
 
   const loadPayouts = useCallback(async () => {
     const res = await getAffiliatePayouts();

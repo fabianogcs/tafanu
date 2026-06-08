@@ -137,14 +137,14 @@ export default auth(async (req) => {
     if (
       pathname === "/dashboard" || // A tela inicial do dash pode ser livre
       pathname.startsWith("/dashboard/favoritos") || // Todo mundo pode salvar lojas
-      pathname.startsWith("/dashboard/parceiro") // A página para se tornar afiliado
+      pathname.startsWith("/dashboard/parceiro") || // A página para se tornar afiliado
+      pathname.startsWith("/dashboard/perfil") // 🚀 LIBERADO: Visitantes podem editar dados e quebra o loop do assinante
     ) {
       return NextResponse.next();
     }
 
     // 3. Rotas Protegidas (Exclusivas para PRO)
     if (
-      pathname.startsWith("/dashboard/perfil") || // 🚀 AGORA O PERFIL É SÓ PARA PRO!
       pathname.startsWith("/dashboard/editar") ||
       pathname.startsWith("/dashboard/novo") ||
       pathname.startsWith("/dashboard/funil")
