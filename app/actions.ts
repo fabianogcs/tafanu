@@ -560,6 +560,7 @@ export async function createBusiness(payload: any) {
           latitude: coords.lat,
           longitude: coords.lng,
           imageUrl: payload.imageUrl || "",
+          coverImage: payload.coverImage || "",
           mediaFeed: payload.mediaFeed || [],
           gallery: (payload.mediaFeed || [])
             .filter((m: any) => m.type === "image")
@@ -645,8 +646,9 @@ export async function updateFullBusiness(slug: string, payload: any) {
         latitude: true,
         longitude: true,
         imageUrl: true,
+        coverImage: true,
         gallery: true,
-        user: { select: { affiliateId: true } }, // 🚀 A Chave Mestra do Parceiro
+        user: { select: { affiliateId: true } },
       },
     });
     if (!old) return { error: "Negócio não encontrado." };
@@ -700,6 +702,11 @@ export async function updateFullBusiness(slug: string, payload: any) {
     // Se a logo antiga existe e mudou, vai para o lixo
     if (old.imageUrl && old.imageUrl !== payload.imageUrl) {
       linksParaDeletar.push(old.imageUrl);
+    }
+
+    // Se a capa antiga existe e mudou, vai para o lixo
+    if (old.coverImage && old.coverImage !== payload.coverImage) {
+      linksParaDeletar.push(old.coverImage);
     }
 
     // Se fotos da galeria antiga não estão na nova, vão para o lixo
@@ -757,8 +764,9 @@ export async function updateFullBusiness(slug: string, payload: any) {
         tiktok: cleanSocialLink(validatedData.tiktok || ""),
 
         // 🚀 AQUI ESTÃO OS DESAPARECIDOS!
-        imageUrl: payload.imageUrl || "", // Garante que a logo salva
-        website: payload.website || "", // O Seu Site de volta!
+        imageUrl: payload.imageUrl || "",
+        coverImage: payload.coverImage || "",
+        website: payload.website || "",
         features: payload.features || [], // Os seus Destaques de volta!
         published: payload.published, // O botão Online/Pausado de volta!
         hasDelivery: payload.hasDelivery || false,
@@ -803,13 +811,16 @@ export async function updateFullBusiness(slug: string, payload: any) {
       }
     }
 
-    revalidatePath("/busca");
-    revalidatePath("/dashboard");
-    revalidatePath(`/site/${slug}`);
+    // 🚀 A MARRETA DO CACHE: Adicionamos "layout" e mapeamos a tela de edição
+    revalidatePath("/busca", "page");
+    revalidatePath("/dashboard", "layout");
+    revalidatePath(`/site/${slug}`, "page");
+    revalidatePath(`/dashboard/editar/${slug}`, "page");
 
-    // Se o link mudou, revalida o novo também
+    // Se o link mudou, revalida as rotas novas também
     if (validatedData.slug !== slug) {
-      revalidatePath(`/site/${validatedData.slug}`);
+      revalidatePath(`/site/${validatedData.slug}`, "page");
+      revalidatePath(`/dashboard/editar/${validatedData.slug}`, "page");
     }
 
     return { success: true, newSlug: validatedData.slug };
@@ -1012,6 +1023,7 @@ export async function resetBusiness(slug: string) {
         data: {
           description: "",
           imageUrl: "",
+          coverImage: "",
           gallery: [],
           videos: [],
           mediaFeed: [],
@@ -1126,13 +1138,18 @@ export async function runSystemGhostCleanup() {
 async function cleanStorageFiles(slug: string) {
   const business = await db.business.findUnique({
     where: { slug },
-    // 🚀 AJUSTE 1: Pedimos para o banco trazer o mediaFeed também
-    select: { imageUrl: true, gallery: true, mediaFeed: true },
+    select: {
+      imageUrl: true,
+      coverImage: true,
+      gallery: true,
+      mediaFeed: true,
+    },
   });
   if (!business) return;
 
   const filesToDelete: string[] = [];
   if (business.imageUrl) filesToDelete.push(business.imageUrl);
+  if (business.coverImage) filesToDelete.push(business.coverImage);
   if (business.gallery && business.gallery.length > 0) {
     filesToDelete.push(...(business.gallery as string[]));
   }
@@ -2976,6 +2993,7 @@ export async function transferBusinessToUser(
 
           // Mídia
           imageUrl: vitrinePronta.imageUrl,
+          coverImage: vitrinePronta.coverImage,
           gallery: vitrinePronta.gallery,
           videos: vitrinePronta.videos,
           mediaFeed: vitrinePronta.mediaFeed as any,

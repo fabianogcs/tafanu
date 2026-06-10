@@ -11,11 +11,12 @@ interface LayoutSwitcherProps {
   theme: any;
   realHours: any;
   fullAddress: string;
-  isLoggedIn: boolean; // ⬅️ Adicionado
-  isFavorited: boolean; // ⬅️ Adicionado
+  isLoggedIn: boolean;
+  isFavorited: boolean;
   emailVerified: boolean;
   currentUserId: string;
   isAdmin: boolean;
+  isOpen?: boolean;
 }
 
 export default function MainLayoutSwitcher({
@@ -23,18 +24,18 @@ export default function MainLayoutSwitcher({
   theme,
   realHours,
   fullAddress,
-  isLoggedIn, // ⬅️ Adicionado
-  isFavorited, // ⬅️ Adicionado
+  isLoggedIn,
+  isFavorited,
   emailVerified,
   currentUserId,
   isAdmin,
+  isOpen = false,
 }: LayoutSwitcherProps) {
   // --- REDE DE PROTEÇÃO ---
   const safeTheme =
     business && businessThemes[business.theme]
       ? businessThemes[business.theme]
-      : // 👇 AGORA O SEU PADRÃO É O NORDIC 👇
-        businessThemes.showroom_nordic;
+      : businessThemes.showroom_clean; // ✅ Trocado por um tema que existe no banco!
 
   // TRAVA DE SEGURANÇA: Só barra se não houver os dados do business
   if (!business) {
@@ -56,11 +57,12 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn} // ⬅️ Repassando
-          isFavorited={isFavorited} // ⬅️ Repassando
+          isLoggedIn={isLoggedIn}
+          isFavorited={isFavorited}
           emailVerified={emailVerified}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          isOpen={isOpen}
         />
       );
 
@@ -72,11 +74,12 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn} // ⬅️ Repassando
-          isFavorited={isFavorited} // ⬅️ Repassando
+          isLoggedIn={isLoggedIn}
+          isFavorited={isFavorited}
           emailVerified={emailVerified}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          isOpen={isOpen}
         />
       );
 
@@ -87,11 +90,12 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn} // ⬅️ Repassando
-          isFavorited={isFavorited} // ⬅️ Repassando
+          isLoggedIn={isLoggedIn}
+          isFavorited={isFavorited}
           emailVerified={emailVerified}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          isOpen={isOpen}
         />
       );
 
@@ -102,11 +106,12 @@ export default function MainLayoutSwitcher({
           theme={safeTheme}
           realHours={realHours}
           fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn} // ⬅️ Repassando
-          isFavorited={isFavorited} // ⬅️ Repassando
+          isLoggedIn={isLoggedIn}
+          isFavorited={isFavorited}
           emailVerified={emailVerified}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          isOpen={isOpen}
         />
       );
 
@@ -122,6 +127,7 @@ export default function MainLayoutSwitcher({
           emailVerified={emailVerified}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          isOpen={isOpen}
         />
       );
   }

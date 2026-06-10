@@ -78,8 +78,11 @@ export default function FavoriteButton({
           handleToggle();
         }}
         disabled={loading}
-        className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-black/5 rounded-full transition-all relative overflow-hidden ${
-          liked ? "text-rose-500" : "text-slate-700"
+        // w-full h-full para ele preencher o espaço, e text-current para puxar a cor da div pai
+        className={`w-full h-full flex items-center justify-center rounded-full transition-all relative overflow-hidden outline-none ${
+          liked
+            ? "text-rose-500"
+            : "text-current hover:text-rose-400 opacity-80 hover:opacity-100"
         }`}
       >
         <AnimatePresence mode="wait">

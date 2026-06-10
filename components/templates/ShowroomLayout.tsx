@@ -5,14 +5,11 @@ import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Share2,
-  X,
   Instagram,
   Facebook,
   Globe,
   PhoneCall,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
   MessageCircle,
   Clock,
   CheckCircle2,
@@ -20,209 +17,26 @@ import {
   Plus,
   Navigation,
   Info,
+  ChevronRight,
 } from "lucide-react";
+import {
+  TikTokIcon,
+  MeliIcon,
+  ShopeeIcon,
+  IfoodIcon,
+  SheinIcon,
+  handleShare,
+  formatPhoneNumber,
+  formatExternalLink,
+  MasterRunway,
+  TemplateLightbox,
+} from "./shared";
 import * as Actions from "@/app/actions";
-import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-
-// ==========================================
-// 1. ÍCONES
-// ==========================================
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
-  </svg>
-);
-
-const MeliIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-  </svg>
-);
-
-const ShopeeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.5 8H17V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H4.5v13c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V8zM9 6c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9V6zm6 5c0 1.1-.9 2-2 2s-2-.9-2-2H9c0 2.21 1.79 4 4 4s4-1.79 4-4h-2z" />
-  </svg>
-);
-
-const IfoodIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5c-2.5 0-4.5-1.5-4.5-3.5h2c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2h2c0 2-2 3.5-4.5 3.5zm-2-6c-.83 0-1.5-.67-1.5-1.5S8.17 7.5 9 7.5s1.5.67 1.5 1.5S9.83 10.5 9 10.5zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 7.5 15 7.5s1.5.67 1.5 1.5S15.83 10.5 15 10.5z" />
-  </svg>
-);
-
-const SheinIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-
-// ==========================================
-// 2. COMPONENTES DE MÍDIA
-// ==========================================
-const VideoEmbed = ({ url }: { url: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  let embedUrl = "";
-  let isInstagram = false;
-
-  try {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.includes("youtu.be/")
-        ? url.split("youtu.be/")[1]?.split("?")[0]
-        : url.includes("shorts/")
-          ? url.split("shorts/")[1]?.split("?")[0]
-          : new URL(url).searchParams.get("v");
-      if (videoId)
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
-    } else if (url.includes("instagram.com")) {
-      isInstagram = true;
-      // Para o Instagram, guardamos a URL original para abrir externamente
-      embedUrl = url;
-    } else if (url.includes("tiktok.com")) {
-      const videoId = url.split("/video/")[1]?.split("?")[0];
-      if (videoId) embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-    }
-  } catch (e) {}
-
-  if (!embedUrl) return null;
-
-  // 🚀 SE FOR INSTAGRAM: Renderiza um LINK com o visual do Showroom!
-  if (isInstagram) {
-    return (
-      <a
-        href={embedUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Assistir vídeo no Instagram"
-        className="w-full h-full bg-gradient-to-br from-pink-600 via-purple-600 to-orange-500 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-300"
-      >
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
-        <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md group-hover:scale-110 group-hover:bg-white/30 transition-all shadow-xl relative z-10">
-          <Instagram className="w-7 h-7 text-white" strokeWidth={1.5} />
-        </div>
-        <span className="relative z-10 text-white mt-4 font-bold text-[10px] uppercase tracking-widest group-hover:text-white transition-colors duration-300">
-          Abrir
-        </span>
-      </a>
-    );
-  }
-
-  // 🚀 SE FOR YOUTUBE/TIKTOK: Mantém a fachada Showroom original
-  if (!isLoaded) {
-    return (
-      <button
-        aria-label="Carregar e reproduzir vídeo"
-        onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-[#111] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-300"
-      >
-        <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md group-hover:scale-110 group-hover:bg-white/20 transition-all shadow-xl">
-          <div className="w-0 h-0 border-y-[10px] border-y-transparent border-l-[16px] border-l-white ml-1"></div>
-        </div>
-      </button>
-    );
-  }
-
-  return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-2xl">
-      <iframe
-        src={embedUrl}
-        className="w-full h-full border-0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        scrolling="no"
-      />
-    </div>
-  );
-};
-
-// Galeria (MasterRunway) Otimizada e com setas no Desktop
-const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Função de Scroll Lateral
-  const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({
-        left: dir === "left" ? -300 : 300,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const arrowClass = `hidden lg:flex absolute top-[40%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center bg-white/80 backdrop-blur-md border border-black/10 rounded-full shadow-lg opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 hover:bg-white text-slate-800`;
-
-  return (
-    <div className="relative group/runway w-full mt-4">
-      {/* Setas (Visíveis apenas em Desktop no hover) */}
-      <button
-        aria-label="Rolar para a esquerda"
-        onClick={() => scroll("left")}
-        className={`${arrowClass} -left-5`}
-      >
-        <ChevronLeft size={24} />
-      </button>
-
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-3 overflow-x-auto snap-x no-scrollbar pb-4 scroll-smooth px-1"
-      >
-        {feed.map((item: any, i: number) => {
-          const cardBaseClasses = `shrink-0 snap-center w-[140px] sm:w-[180px] md:w-[220px] aspect-square rounded-2xl overflow-hidden relative border ${theme.border} bg-black/5 shadow-sm transition-transform duration-300 hover:-translate-y-1 group`;
-
-          if (item.type === "image") {
-            return (
-              <motion.div
-                key={`img-${i}`}
-                onClick={() => setSelectedIndex(item.lightboxIndex)}
-                className={`${cardBaseClasses} cursor-pointer`}
-                role="button"
-                tabIndex={0}
-              >
-                <Image
-                  src={item.url}
-                  alt="Vitrine"
-                  fill
-                  quality={60}
-                  sizes="(max-width: 768px) 160px, 280px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Plus size={32} className="text-white drop-shadow-md" />
-                </div>
-              </motion.div>
-            );
-          }
-          if (
-            item.type === "video" ||
-            item.type === "video_v" ||
-            item.type === "video_h"
-          ) {
-            return (
-              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
-                <VideoEmbed url={item.url} />
-              </div>
-            );
-          }
-          return null;
-        })}
-      </div>
-
-      <button
-        aria-label="Rolar para a direita"
-        onClick={() => scroll("right")}
-        className={`${arrowClass} -right-5`}
-      >
-        <ChevronRight size={24} />
-      </button>
-    </div>
-  );
-};
 
 const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -262,42 +76,6 @@ const AccordionItem = ({ q, a, theme }: any) => {
 };
 
 // ==========================================
-// 3. UTILITÁRIOS
-// ==========================================
-const handleShare = async (businessName: string) => {
-  const url = typeof window !== "undefined" ? window.location.href : "";
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: businessName,
-        text: `Confira o perfil de ${businessName}:`,
-        url,
-      });
-      return;
-    } catch (err) {}
-  }
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copiado!");
-  }
-};
-
-const formatPhoneNumber = (phone: string) => {
-  const cleaned = (phone || "").replace(/\D/g, "");
-  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-  if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-  const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-  if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-  return phone;
-};
-
-const formatExternalLink = (url: string) => {
-  if (!url) return "";
-  const clean = url.trim();
-  return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
-};
-
-// ==========================================
 // 4. LAYOUT PRINCIPAL (Google Meu Negócio Style)
 // ==========================================
 export default function ShowroomLayout({
@@ -310,6 +88,7 @@ export default function ShowroomLayout({
   emailVerified,
   currentUserId,
   isAdmin,
+  isOpen,
 }: any) {
   const {
     business,
@@ -451,7 +230,14 @@ export default function ShowroomLayout({
   );
 
   useEffect(() => {
-    document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
+    if (selectedIndex !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [selectedIndex]);
 
   const addressPartsForMap = [
@@ -476,7 +262,20 @@ export default function ShowroomLayout({
       className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
     >
       {/* --- CAPA E TOPO (ESTILO GMB) --- */}
-      <div className={`w-full h-40 md:h-56 ${theme.bgHero} relative`}>
+      <div
+        className={`w-full h-40 md:h-56 ${theme.bgHero} relative overflow-hidden`}
+      >
+        {business.coverImage && (
+          <Image
+            src={business.coverImage}
+            alt={`Capa de ${business.name}`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 z-20">
           <button
             onClick={() => handleShare(business.name)}
@@ -519,6 +318,17 @@ export default function ShowroomLayout({
               <span className="text-sm font-medium opacity-70">
                 {business.urban_tag || business.city || "Negócio Local"}
               </span>
+              {safeHours.length > 0 && (
+                <span
+                  className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
+                    isOpen
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-rose-100 text-rose-600"
+                  }`}
+                >
+                  {isOpen ? "● Aberto" : "● Fechado"}
+                </span>
+              )}
 
               {/* Lógica Corrigida para evitar frase duplicada! */}
               {business.comercial_badge &&
@@ -645,7 +455,9 @@ export default function ShowroomLayout({
                   return true;
                 })}
                 setSelectedIndex={setSelectedIndex}
-                theme={theme}
+                variant="showroom"
+                themeBorder={theme.border}
+                cardBg={theme.cardBg}
               />
             </div>
           )}
@@ -901,82 +713,12 @@ export default function ShowroomLayout({
         </motion.button>
       )}
 
-      {/* LIGHTBOX */}
-      <AnimatePresence>
-        {selectedIndex !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center"
-            onClick={() => setSelectedIndex(null)}
-          >
-            <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[210]">
-              <X size={32} />
-            </button>
-            <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4 pt-10">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex - 1);
-                }}
-                className="hidden md:flex absolute left-8 w-14 h-14 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
-              >
-                <ChevronLeft size={28} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex + 1);
-                }}
-                className="hidden md:flex absolute right-8 w-14 h-14 items-center justify-center bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220]"
-              >
-                <ChevronRight size={28} />
-              </button>
-              {lightboxImages[selectedIndex] && (
-                <motion.img
-                  key={selectedIndex}
-                  src={lightboxImages[selectedIndex]}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.2}
-                  onDragEnd={(e, info) => {
-                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                    else if (info.offset.x < -80)
-                      safeSetIndex(selectedIndex + 1);
-                  }}
-                  className="max-w-full max-h-[70vh] object-contain cursor-grab active:cursor-grabbing rounded-lg shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </div>
-            <div
-              className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-6 pb-6 overflow-x-auto no-scrollbar snap-x"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {lightboxImages.map((img: string, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-300 snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-105 opacity-100" : "opacity-40 hover:opacity-100"}`}
-                >
-                  <Image
-                    src={img || "/og-default.png"}
-                    alt="Thumbnail"
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <TemplateLightbox
+        images={lightboxImages}
+        selectedIndex={selectedIndex}
+        onClose={() => setSelectedIndex(null)}
+        onNavigate={safeSetIndex}
+      />
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {

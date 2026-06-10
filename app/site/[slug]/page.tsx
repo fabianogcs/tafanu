@@ -11,6 +11,29 @@ import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
+// 🚀 NOVA FUNÇÃO DE GERAÇÃO ESTÁTICA PARA SEO (SSG)
+export async function generateStaticParams() {
+  const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+  try {
+    const businesses = await db.business.findMany({
+      where: {
+        isActive: true,
+        published: true,
+        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+      },
+      select: { slug: true },
+      take: 200, // Começamos com 200 para garantir que o Build na Vercel seja rápido e gratuito
+    });
+
+    return businesses.map((b) => ({ slug: b.slug }));
+  } catch (error) {
+    // Se o banco falhar durante o build, ele retorna um array vazio para não quebrar o deploy
+    console.error("Erro ao gerar rotas estáticas:", error);
+    return [];
+  }
+}
+
 // --- 0. VIEWPORT DINÂMICO ---
 export async function generateViewport({
   params,
@@ -148,27 +171,84 @@ export default async function BusinessPage({
   const session = await auth();
   const userId = session?.user?.id || null;
 
-  // 1. BUSCA O NEGÓCIO + DADOS DO DONO E O USUÁRIO LOGADO AO MESMO TEMPO
   const [business, loggedUser] = await Promise.all([
     db.business.findUnique({
       where: { slug },
-      include: {
-        user: { select: { role: true } }, // 🚀 CORREÇÃO 1: Tiramos o expiresAt daqui!
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        theme: true,
+        layout: true,
+        category: true,
+        subcategory: true,
+        keywords: true,
+        imageUrl: true,
+        coverImage: true,
+        urban_tag: true,
+        luxe_quote: true,
+        comercial_badge: true,
+        showroom_collection: true,
+        features: true,
+        faqs: true,
+        mediaFeed: true,
+        gallery: true,
+        videos: true,
+        address: true,
+        number: true,
+        complement: true,
+        cep: true,
+        neighborhood: true,
+        city: true,
+        state: true,
+        latitude: true,
+        longitude: true,
+        whatsapp: true,
+        phone: true,
+        website: true,
+        instagram: true,
+        facebook: true,
+        tiktok: true,
+        shopee: true,
+        mercadoLivre: true,
+        shein: true,
+        ifood: true,
+        hasDelivery: true,
+        published: true,
+        isActive: true,
+        expiresAt: true,
+        userId: true,
+        user: { select: { role: true } },
         hours: true,
         favorites: userId ? { where: { userId } } : false,
-        _count: { select: { favorites: true } },
         comments: {
           where: { parentId: null },
-          include: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            isFlagged: true,
+            userId: true,
+            businessId: true,
+            parentId: true,
             user: { select: { name: true, image: true, role: true } },
             replies: {
-              include: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                isFlagged: true,
+                userId: true,
+                businessId: true,
+                parentId: true,
                 user: { select: { name: true, image: true, role: true } },
               },
               orderBy: { createdAt: "asc" },
             },
           },
           orderBy: { createdAt: "desc" },
+          take: 50,
         },
       },
     }),
@@ -179,7 +259,6 @@ export default async function BusinessPage({
         })
       : null,
   ]);
-
   // 2. TRAVA DE SEGURANÇA: Se não existe
   if (!business) return notFound();
 
@@ -355,6 +434,7 @@ export default async function BusinessPage({
         emailVerified={loggedUser ? !!loggedUser.emailVerified : false}
         currentUserId={userId || ""}
         isAdmin={isVisitorAdmin}
+        isOpen={isOpen}
       />
     </div>
   );

@@ -7,277 +7,33 @@ import {
   Instagram,
   Facebook,
   Globe,
-  X,
   Share2,
   Phone,
   Clock,
-  ChevronLeft,
-  ChevronRight,
   MessageCircle,
   Plus,
   Minus,
   Sparkles,
+  ChevronRight,
 } from "lucide-react";
+import {
+  TikTokIcon,
+  MeliIcon,
+  ShopeeIcon,
+  IfoodIcon,
+  SheinIcon,
+  handleShare,
+  formatPhoneNumber,
+  formatExternalLink,
+  MasterRunway,
+  TemplateLightbox,
+} from "./shared";
 import * as Actions from "@/app/actions";
-import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-
-// --- HELPERS E ÍCONES ---
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
-  </svg>
-);
-
-const MeliIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-  </svg>
-);
-
-const ShopeeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.5 8H17V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H4.5v13c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V8zM9 6c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9V6zm6 5c0 1.1-.9 2-2 2s-2-.9-2-2H9c0 2.21 1.79 4 4 4s4-1.79 4-4h-2z" />
-  </svg>
-);
-
-const IfoodIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5c-2.5 0-4.5-1.5-4.5-3.5h2c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2h2c0 2-2 3.5-4.5 3.5zm-2-6c-.83 0-1.5-.67-1.5-1.5S8.17 7.5 9 7.5s1.5.67 1.5 1.5S9.83 10.5 9 10.5zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 7.5 15 7.5s1.5.67 1.5 1.5S15.83 10.5 15 10.5z" />
-  </svg>
-);
-
-const SheinIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-
-// --- 🚀 MOTOR DE VÍDEOS (LUXE EDITION) ---
-const VideoEmbed = ({ url, primary }: { url: string; primary?: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  let embedUrl = "";
-  let isInstagram = false;
-
-  try {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.includes("youtu.be/")
-        ? url.split("youtu.be/")[1]?.split("?")[0]
-        : url.includes("shorts/")
-          ? url.split("shorts/")[1]?.split("?")[0]
-          : new URL(url).searchParams.get("v");
-      if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
-      }
-    } else if (url.includes("instagram.com")) {
-      isInstagram = true;
-      // Mantém a URL original intacta para abrir em nova aba
-      embedUrl = url;
-    } else if (url.includes("tiktok.com")) {
-      const videoId = url.split("/video/")[1]?.split("?")[0];
-      if (videoId) {
-        embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-      }
-    }
-  } catch (e) {}
-
-  if (!embedUrl) return null;
-
-  const glowColor = primary ? primary.replace("text-", "bg-") : "bg-white";
-
-  // 🚀 SE FOR INSTAGRAM: Botão luxuoso (Com tom mais fechado e elegante)
-  if (isInstagram) {
-    return (
-      <a
-        href={embedUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Ver no Instagram"
-        className="w-full h-full bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group shadow-lg"
-      >
-        {/* O Segredo: Uma camada preta de 60% por cima para "fechar" o tom da cor */}
-        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors duration-700" />
-
-        {/* Ícone do Instagram em botão de Vidro (Mais fosco e discreto) */}
-        <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center backdrop-blur-md bg-white/10 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-          <Instagram
-            className="w-7 h-7 md:w-8 md:h-8 text-white/90 drop-shadow-md"
-            strokeWidth={1.5}
-          />
-        </div>
-
-        {/* 🚀 O texto atualizado aqui! */}
-        <span className="relative z-20 text-white/60 text-[8px] md:text-[10px] mt-6 md:mt-8 font-serif italic tracking-[0.3em] uppercase group-hover:text-white transition-colors duration-500 drop-shadow-md text-center px-4">
-          Instagram Experience
-        </span>
-      </a>
-    );
-  }
-
-  // 🚀 SE FOR YOUTUBE/TIKTOK: FACHADA DE LUXO ORIGINAL
-  if (!isLoaded) {
-    return (
-      <button
-        aria-label="Carregar e reproduzir vídeo"
-        onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-[#0a0a0a] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] md:rounded-[2rem] cursor-pointer group"
-      >
-        <div
-          className={`absolute inset-0 opacity-20 ${glowColor} blur-[80px] group-hover:opacity-40 transition-opacity duration-1000`}
-        />
-        <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center backdrop-blur-xl bg-white/10 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-          <div className="w-0 h-0 border-y-[8px] md:border-y-[10px] border-y-transparent border-l-[12px] md:border-l-[16px] border-l-white ml-1 md:ml-2 opacity-90 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-        <span className="relative z-20 text-white/60 text-[8px] md:text-[10px] mt-6 md:mt-8 font-serif italic tracking-[0.4em] uppercase group-hover:text-white transition-colors duration-500">
-          Experience
-        </span>
-      </button>
-    );
-  }
-
-  // O VÍDEO REAL
-  return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto">
-      <iframe
-        src={embedUrl}
-        title="Vídeo de demonstração do negócio"
-        aria-label="Reprodutor de vídeo"
-        className="w-full h-full border-0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        scrolling="no"
-      />
-    </div>
-  );
-};
-
-// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Tamanho Refinado e Margens Ajustadas)
-const MasterRunway = ({
-  feed,
-  setSelectedIndex,
-  themeBorder,
-  isLight,
-}: any) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current)
-      scrollRef.current.scrollBy({
-        left: dir === "left" ? -320 : 320,
-        behavior: "smooth",
-      });
-  };
-  const arrowClass = `hidden md:flex absolute top-[50%] -translate-y-1/2 z-20 w-14 h-14 items-center justify-center rounded-full opacity-0 group-hover/runway:opacity-100 transition-all duration-500 hover:scale-105 bg-current/5 border ${themeBorder} text-current backdrop-blur-md shadow-2xl hover:bg-current/10`;
-
-  return (
-    <div className="relative group/runway w-full">
-      {/* Setas jogadas para fora no desktop para não cobrir o card */}
-      <button
-        aria-label="Rolar galeria para a esquerda"
-        onClick={() => scroll("left")}
-        className={`${arrowClass} -left-4 lg:-left-8`}
-      >
-        <ChevronLeft size={28} strokeWidth={1.5} />
-      </button>
-
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-4 md:gap-6 overflow-x-auto snap-x no-scrollbar pb-10 md:pb-16 pt-4 scroll-smooth px-6 md:px-2 lg:px-0"
-      >
-        {feed.map((item: any, i: number) => {
-          // 🚀 PADRÃO DE TAMANHO REDUZIDO E ELEGANTE (Instagram se adapta automaticamente)
-          const cardBaseClasses = `shrink-0 snap-center w-[200px] sm:w-[240px] md:w-[280px] lg:w-[320px] aspect-[4/5] relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] shadow-[0_15px_35px_-15px_rgba(0,0,0,0.3)] border-[0.5px] ${themeBorder} transition-all duration-700 hover:-translate-y-2 group bg-black/5`;
-
-          if (item.type === "image") {
-            return (
-              <motion.div
-                key={`img-${i}`}
-                onClick={() => setSelectedIndex(item.lightboxIndex)}
-                className={`${cardBaseClasses} cursor-pointer`}
-                role="button"
-                tabIndex={0}
-                aria-label="Abrir imagem em tela cheia"
-              >
-                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
-                <Image
-                  src={item.url || "/og-default.png"}
-                  alt="Showcase"
-                  fill
-                  quality={60}
-                  sizes="(max-width: 768px) 250px, 350px"
-                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-                  <Plus
-                    size={48}
-                    className="text-white drop-shadow-2xl scale-50 group-hover:scale-100 transition-transform duration-500"
-                    strokeWidth={1}
-                  />
-                </div>
-              </motion.div>
-            );
-          }
-
-          // Se for VÍDEO (Youtube, Reels, Tiktok), usa a exata mesma caixa e proporção
-          if (
-            item.type === "video" ||
-            item.type === "video_v" ||
-            item.type === "video_h"
-          ) {
-            return (
-              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
-                <VideoEmbed url={item.url} />
-              </div>
-            );
-          }
-
-          return null;
-        })}
-      </div>
-
-      <button
-        aria-label="Rolar galeria para a direita"
-        onClick={() => scroll("right")}
-        className={`${arrowClass} -right-4 lg:-right-8`}
-      >
-        <ChevronRight size={28} strokeWidth={1.5} />
-      </button>
-    </div>
-  );
-};
-
-const handleShare = async (name: string) => {
-  const url = typeof window !== "undefined" ? window.location.href : "";
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: name, text: `Experience ${name}:`, url });
-      return;
-    } catch (err) {}
-  }
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard.");
-  }
-};
-
-const formatPhoneNumber = (phone?: string | null) => {
-  const cleaned = (phone || "").replace(/\D/g, "");
-  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-  if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-  const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-  if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-  return phone || "";
-};
-
-const formatExternalLink = (url: string) => {
-  if (!url) return "";
-  const clean = url.trim();
-  return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
-};
 
 // --- ACORDEÃO LUXO ---
 const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
@@ -335,6 +91,7 @@ export default function LuxeLayout({
   emailVerified,
   currentUserId,
   isAdmin,
+  isOpen,
 }: any) {
   const {
     business,
@@ -345,7 +102,6 @@ export default function LuxeLayout({
     hasFeatures,
     hasHours,
     hasAddress,
-    hasGallery,
     hasDescription,
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
@@ -362,7 +118,9 @@ export default function LuxeLayout({
   });
 
   const theme =
-    propTheme || businessThemes[business?.theme] || businessThemes["luxe_rose"];
+    propTheme ||
+    businessThemes[business?.theme] ||
+    businessThemes["luxe_blush"];
 
   const isLight = ![
     "#0b090a",
@@ -512,7 +270,14 @@ export default function LuxeLayout({
   );
 
   useEffect(() => {
-    document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
+    if (selectedIndex !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [selectedIndex]);
 
   const mapDestination =
@@ -536,10 +301,21 @@ export default function LuxeLayout({
       />
 
       <header
-        className={`relative w-full pt-16 pb-10 md:pt-32 md:pb-24 px-4 md:px-8 flex flex-col items-center justify-center ${bgHero} shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)] overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] z-30 min-h-[50vh] md:min-h-[70vh]`}
+        className={`relative w-full pt-16 pb-10 md:pt-32 md:pb-24 px-4 md:px-8 flex flex-col items-center justify-center ${bgHero} shadow-[0_20px_50px_-20px_rgba(0,0,0,0.4)] overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] z-30 min-h-[50vh] md:min-h-[70vh] text-white`}
       >
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50 mix-blend-overlay">
-          <div className="absolute -top-[50%] -left-[20%] w-[100%] h-[100%] rounded-full bg-white/20 blur-[120px]" />
+        {business.coverImage && (
+          <Image
+            src={business.coverImage}
+            alt={`Capa de ${business.name}`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        )}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute -top-[50%] -left-[20%] w-[100%] h-[100%] rounded-full bg-white/10 blur-[120px]" />
           <div className="absolute -bottom-[50%] -right-[20%] w-[100%] h-[100%] rounded-full bg-black/40 blur-[120px]" />
         </div>
 
@@ -569,13 +345,33 @@ export default function LuxeLayout({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
-            className="mb-5 md:mb-8 w-full px-2 flex justify-center"
+            className="mb-5 md:mb-8 w-full px-2 flex flex-col items-center justify-center gap-3"
           >
-            <span
-              className={`inline-block max-w-[95%] text-[9px] md:text-xs font-sans font-bold tracking-[0.2em] md:tracking-[0.4em] uppercase text-current/90 drop-shadow-sm bg-current/5 px-5 py-3 rounded-2xl md:rounded-full border border-current/10 leading-relaxed text-balance`}
-            >
-              {business.urban_tag || business.city || "Boutique"}
-            </span>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <span
+                className={`inline-block max-w-[95%] text-[9px] md:text-xs font-sans font-bold tracking-[0.2em] md:tracking-[0.4em] uppercase text-current/90 drop-shadow-sm bg-current/5 px-5 py-3 rounded-2xl md:rounded-full border border-current/10 leading-relaxed text-balance`}
+              >
+                {business.urban_tag || business.city || "Boutique"}
+              </span>
+
+              {/* O Pinguinho Minimalista ON/OFF (Sem bordas grosseiras para combinar com o Luxe) */}
+              {realHours.length > 0 && (
+                <span
+                  className={`flex items-center gap-2 px-4 py-3 rounded-full text-[9px] md:text-xs font-black tracking-widest uppercase bg-current/5 border border-current/10 backdrop-blur-md shadow-sm ${
+                    isOpen ? "text-emerald-500" : "text-rose-500"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isOpen
+                        ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                        : "bg-rose-500"
+                    }`}
+                  />
+                  {isOpen ? "Aberto Agora" : "Fechado"}
+                </span>
+              )}
+            </div>
           </motion.div>
 
           <motion.h1
@@ -637,7 +433,7 @@ export default function LuxeLayout({
                   className={`w-6 h-6 md:w-8 md:h-8 ${primary}`}
                   strokeWidth={1.5}
                 />
-                The Collection
+                {business.showroom_collection || "The Collection"}
               </h2>
 
               {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS DE MÍDIA */}
@@ -670,8 +466,8 @@ export default function LuxeLayout({
                   return true;
                 })}
                 setSelectedIndex={setSelectedIndex}
+                variant="luxe"
                 themeBorder={border}
-                isLight={isLight}
               />
             </div>
           </div>
@@ -1088,92 +884,12 @@ export default function LuxeLayout({
         </motion.button>
       )}
 
-      {/* LIGHTBOX (Apenas Imagens) */}
-      <AnimatePresence>
-        {selectedIndex !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center"
-            onClick={() => setSelectedIndex(null)}
-          >
-            <button
-              aria-label="Fechar galeria"
-              className="absolute top-8 right-8 text-white/40 hover:text-white transition-all z-[230]"
-            >
-              <X size={40} strokeWidth={1} />
-            </button>
-            <div className="flex-grow flex items-center justify-center relative w-full px-4 pt-10">
-              <button
-                aria-label="Imagem anterior"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex - 1);
-                }}
-                className="hidden md:flex absolute left-12 w-16 h-16 items-center justify-center bg-transparent rounded-full text-white/30 hover:text-white border border-white/10 hover:border-white/30 transition-all z-[220]"
-              >
-                <ChevronLeft size={40} strokeWidth={1} />
-              </button>
-              <button
-                aria-label="Próxima imagem"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex + 1);
-                }}
-                className="hidden md:flex absolute right-12 w-16 h-16 items-center justify-center bg-transparent rounded-full text-white/30 hover:text-white border border-white/10 hover:border-white/30 transition-all z-[220]"
-              >
-                <ChevronRight size={40} strokeWidth={1} />
-              </button>
-              {lightboxImages[selectedIndex] && (
-                <motion.img
-                  key={selectedIndex}
-                  src={lightboxImages[selectedIndex]}
-                  loading="eager"
-                  decoding="async"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.1}
-                  onDragEnd={(e, info) => {
-                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                    else if (info.offset.x < -80)
-                      safeSetIndex(selectedIndex + 1);
-                  }}
-                  className={`max-w-full max-h-[80vh] object-contain shadow-2xl cursor-grab active:cursor-grabbing rounded-lg z-[210]`}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </div>
-            <div
-              className="h-32 w-full flex items-center justify-start md:justify-center gap-6 px-10 pb-8 overflow-x-auto no-scrollbar snap-x"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {lightboxImages.map((img: string, idx: number) => (
-                <button
-                  key={idx}
-                  aria-label={`Ver miniatura ${idx + 1}`}
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-20 overflow-hidden transition-all snap-center rounded-lg ${selectedIndex === idx ? "opacity-100 ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-30 hover:opacity-100"}`}
-                >
-                  {/* ✅ MINIATURAS OTIMIZADAS */}
-                  <Image
-                    src={img}
-                    alt="Thumb"
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      <TemplateLightbox
+        images={lightboxImages}
+        selectedIndex={selectedIndex}
+        onClose={() => setSelectedIndex(null)}
+        onNavigate={safeSetIndex}
+      />
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;

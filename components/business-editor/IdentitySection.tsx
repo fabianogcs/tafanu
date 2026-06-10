@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { layoutInfo } from "./constants";
 import { businessThemes } from "@/lib/themes";
+import { CoverImageSection } from "./CoverImageSection";
 
 interface IdentitySectionProps {
   name: string;
@@ -28,6 +29,8 @@ interface IdentitySectionProps {
   safeBusinessSlug: string;
   profileImage: string;
   setProfileImage: (val: string) => void;
+  coverImage: string;
+  setCoverImage: (val: string) => void;
   isUploadingLogo: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -53,6 +56,8 @@ export function IdentitySection({
   safeBusinessSlug,
   profileImage,
   setProfileImage,
+  coverImage,
+  setCoverImage,
   isUploadingLogo,
   fileInputRef,
   handleFileChange,
@@ -97,10 +102,19 @@ export function IdentitySection({
           </div>
         )}
 
-        {/* FOTO DE PERFIL (Empurrado um pouco para baixo se tiver o alerta) */}
-        <div
-          className={`relative w-32 h-32 md:w-36 md:h-36 mb-4 group ${isGhostBusiness ? "mt-12" : ""}`}
-        >
+        {/* FOTO DE CAPA */}
+        <div className="w-full px-6 md:px-10 pt-6">
+          <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest text-left">
+            Foto de Capa
+          </p>
+          <CoverImageSection
+            coverImage={coverImage}
+            setCoverImage={setCoverImage}
+          />
+        </div>
+
+        {/* FOTO DE PERFIL */}
+        <div className={`relative w-32 h-32 md:w-36 md:h-36 mb-4 group mt-8`}>
           <div
             className="w-full h-full rounded-full bg-slate-50 border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center relative cursor-pointer"
             onClick={() => !isUploadingLogo && fileInputRef.current?.click()}

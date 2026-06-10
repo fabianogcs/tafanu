@@ -85,10 +85,10 @@ model Business {
   name                String
   slug                String         @unique
   description         String?        @db.Text
- theme      String         @default("showroom_nordic")
-  layout     LayoutType     @default(showroom)
+  theme               String         @default("showroom_clean")
+  layout              LayoutType     @default(showroom)
   category            String
- subcategory         String[]       @default([])
+  subcategory         String[]       @default([])
   keywords            String[]       @default([])
   
   // Contadores Desnormalizados (Performance)
@@ -106,8 +106,9 @@ model Business {
   views               Int            @default(0) // Centralizado aqui
 
 // Mídia
-  imageUrl            String?        @db.Text 
-  gallery             String[]       @default([])
+ imageUrl            String?        @db.Text
+ coverImage          String?        @db.Text
+ gallery             String[]       @default([])
   videos              String[]       @default([]) // 🚀 NOVO: Gaveta para os links de vídeos (YouTube/Insta/TikTok)
   mediaFeed           Json[]         @default([])
 

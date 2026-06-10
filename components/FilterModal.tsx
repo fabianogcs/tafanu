@@ -80,9 +80,9 @@ export default function FilterModal({
   }, [isOpen, searchParams, currentSort]);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "unset";
+    document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     };
   }, [isOpen]);
 

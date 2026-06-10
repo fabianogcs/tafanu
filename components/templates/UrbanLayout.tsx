@@ -7,272 +7,36 @@ import {
   Instagram,
   Facebook,
   Globe,
-  X,
   MessageCircle,
   Share2,
   Phone,
   MapPin,
   Clock,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Camera,
-  Video,
   Sparkles,
   Plus,
   HelpCircle,
-  Store,
 } from "lucide-react";
+import {
+  TikTokIcon,
+  MeliIcon,
+  ShopeeIcon,
+  IfoodIcon,
+  SheinIcon,
+  handleShare,
+  formatPhoneNumber,
+  formatExternalLink,
+  MasterRunway,
+  TemplateLightbox,
+} from "./shared";
 import * as Actions from "@/app/actions";
-import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-
-// --- HELPERS E ÍCONES ---
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
-  </svg>
-);
-
-const MeliIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-  </svg>
-);
-
-const ShopeeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.5 8H17V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H4.5v13c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V8zM9 6c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9V6zm6 5c0 1.1-.9 2-2 2s-2-.9-2-2H9c0 2.21 1.79 4 4 4s4-1.79 4-4h-2z" />
-  </svg>
-);
-
-const IfoodIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5c-2.5 0-4.5-1.5-4.5-3.5h2c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2h2c0 2-2 3.5-4.5 3.5zm-2-6c-.83 0-1.5-.67-1.5-1.5S8.17 7.5 9 7.5s1.5.67 1.5 1.5S9.83 10.5 9 10.5zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 7.5 15 7.5s1.5.67 1.5 1.5S15.83 10.5 15 10.5z" />
-  </svg>
-);
-
-const SheinIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-
-// --- 🚀 MOTOR DE VÍDEOS (URBAN MODERN EDITION) ---
-const VideoEmbed = ({ url }: { url: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  let embedUrl = "";
-  let isInstagram = false;
-
-  try {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.includes("youtu.be/")
-        ? url.split("youtu.be/")[1]?.split("?")[0]
-        : url.includes("shorts/")
-          ? url.split("shorts/")[1]?.split("?")[0]
-          : new URL(url).searchParams.get("v");
-      if (videoId) {
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
-      }
-    } else if (url.includes("instagram.com")) {
-      isInstagram = true;
-      // Para o Instagram, guardamos a URL original para abrir em nova aba
-      embedUrl = url;
-    } else if (url.includes("tiktok.com")) {
-      const videoId = url.split("/video/")[1]?.split("?")[0];
-      if (videoId) {
-        embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-      }
-    }
-  } catch (e) {}
-
-  if (!embedUrl) return null;
-
-  // 🚀 SE FOR INSTAGRAM: Renderiza um LINK com a cara do Instagram!
-  if (isInstagram) {
-    return (
-      <a
-        href={embedUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Assistir vídeo no Instagram"
-        className="w-full h-full bg-gradient-to-br from-pink-600 via-purple-600 to-orange-500 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-500"
-      >
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
-
-        {/* Ícone do Instagram Gigante no lugar do Play */}
-        <div className="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_0_30px_rgba(255,255,255,0.2)] group-hover:scale-110 group-hover:bg-white/30 transition-all duration-500">
-          <Instagram
-            className="w-8 h-8 md:w-10 md:h-10 text-white"
-            strokeWidth={1.5}
-          />
-        </div>
-
-        <span className="relative z-10 text-white mt-6 md:mt-8 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500 text-center px-4">
-          Ver no Instagram
-        </span>
-      </a>
-    );
-  }
-
-  // 🚀 SE FOR YOUTUBE/TIKTOK: FACHADA MODERNA URBAN STYLE
-  if (!isLoaded) {
-    return (
-      <button
-        aria-label="Carregar e reproduzir vídeo"
-        onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-gradient-to-br from-slate-900 via-black to-slate-900 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem] cursor-pointer group border border-white/10 hover:border-white/30 transition-all duration-500"
-      >
-        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-500" />
-        <div className="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] group-hover:scale-110 group-hover:bg-white/20 group-hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all duration-500">
-          <div className="w-0 h-0 border-y-[10px] md:border-y-[12px] border-y-transparent border-l-[16px] md:border-l-[20px] border-l-white ml-2 opacity-90 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-        <span className="relative z-10 text-white/50 text-[10px] md:text-xs mt-6 md:mt-8 font-bold uppercase tracking-[0.3em] group-hover:text-white transition-colors duration-500">
-          Reproduzir
-        </span>
-      </button>
-    );
-  }
-
-  // O VÍDEO REAL CARREGADO (YouTube/TikTok)
-  return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[1.5rem]">
-      <iframe
-        src={embedUrl}
-        title="Vídeo de demonstração do negócio"
-        aria-label="Reprodutor de vídeo"
-        className="w-full h-full border-0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        scrolling="no"
-      />
-    </div>
-  );
-};
-
-// 🚀 COMPONENTE MÁGICO: THE MASTER RUNWAY (Mosaico Misto com Cartões Padronizados Urban)
-const MasterRunway = ({
-  feed,
-  setSelectedIndex,
-  cardBg,
-  border,
-  shadow,
-}: any) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current)
-      scrollRef.current.scrollBy({
-        left: dir === "left" ? -300 : 300,
-        behavior: "smooth",
-      });
-  };
-  const arrowClass = `hidden md:flex absolute top-[50%] -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full shadow-md opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-105 bg-white text-slate-800 border border-slate-200`;
-
-  return (
-    <div className="relative group/runway w-full">
-      <button
-        aria-label="Rolar galeria para a esquerda"
-        onClick={() => scroll("left")}
-        className={`${arrowClass} -left-4 lg:-left-6`}
-      >
-        <ChevronLeft size={20} />
-      </button>
-
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-4 overflow-x-auto snap-x no-scrollbar pb-6 pt-2 scroll-smooth px-1"
-      >
-        {feed.map((item: any, i: number) => {
-          // 🚀 PADRÃO DE TAMANHO ABSOLUTO URBAN (4:5)
-          const cardBaseClasses = `shrink-0 snap-center w-[180px] sm:w-[220px] md:w-[240px] lg:w-[260px] xl:w-[280px] aspect-[4/5] ${cardBg} overflow-hidden relative border ${border} rounded-[1.5rem] ${shadow} hover:shadow-md transition-all duration-300 cursor-pointer group`;
-
-          if (item.type === "image") {
-            return (
-              <motion.div
-                key={`img-${i}`}
-                onClick={() => setSelectedIndex(item.lightboxIndex)}
-                whileHover={{ scale: 1.02 }}
-                className={`${cardBaseClasses}`}
-                role="button"
-                tabIndex={0}
-                aria-label="Abrir imagem em tela cheia"
-              >
-                {/* ✅ TAG IMAGE OTIMIZADA PARA O CATÁLOGO */}
-                <Image
-                  src={item.url || "/og-default.png"}
-                  alt="Foto da vitrine do negócio"
-                  fill
-                  quality={60}
-                  sizes="(max-width: 768px) 250px, 350px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Plus size={32} className="text-white" />
-                </div>
-              </motion.div>
-            );
-          }
-
-          if (
-            item.type === "video" ||
-            item.type === "video_v" ||
-            item.type === "video_h"
-          ) {
-            return (
-              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
-                <VideoEmbed url={item.url} />
-              </div>
-            );
-          }
-
-          return null;
-        })}
-      </div>
-
-      <button
-        aria-label="Rolar galeria para a direita"
-        onClick={() => scroll("right")}
-        className={`${arrowClass} -right-4 lg:-right-6`}
-      >
-        <ChevronRight size={20} />
-      </button>
-    </div>
-  );
-};
-
-const handleShare = async (name: string) => {
-  const url = typeof window !== "undefined" ? window.location.href : "";
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: name, text: `Confira ${name}:`, url });
-      return;
-    } catch (err) {}
-  }
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copiado com sucesso!");
-  }
-};
-
-const formatPhoneNumber = (phone?: string | null) => {
-  const cleaned = (phone || "").replace(/\D/g, "");
-  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-  if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-  const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-  if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-  return phone || "";
-};
-
-const formatExternalLink = (url: string) => {
-  if (!url) return "";
-  const clean = url.trim();
-  return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
-};
 
 export default function UrbanLayout({
   business: rawBusiness,
@@ -450,7 +214,14 @@ export default function UrbanLayout({
   );
 
   useEffect(() => {
-    document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
+    if (selectedIndex !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [selectedIndex]);
 
   if (!theme) return null;
@@ -461,11 +232,21 @@ export default function UrbanLayout({
     >
       {/* --- HEADER LANDING PAGE (NOVA ORDEM MOBILE & DESKTOP) --- */}
       <header
-        className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20`}
+        className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20 overflow-hidden text-white`}
       >
+        {business.coverImage && (
+          <Image
+            src={business.coverImage}
+            alt={`Capa de ${business.name}`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover rounded-b-[2.5rem] md:rounded-b-[4rem]"
+          />
+        )}
         <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] pointer-events-none">
-          <div className="absolute -top-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-white/20 blur-[80px] mix-blend-overlay" />
-          <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-black/10 blur-[80px] mix-blend-overlay" />
+          <div className="absolute -top-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-black/30 blur-[80px]" />
+          <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-black/20 blur-[80px]" />
         </div>
 
         <div className="w-full max-w-7xl mx-auto flex justify-end relative z-30 mb-8 md:mb-16">
@@ -628,7 +409,22 @@ export default function UrbanLayout({
                 })}
               </div>
             )}
-
+            {/* Sobre — visível no scroll para quem não leu o hero */}
+            {hasDescription && !business.imageUrl && (
+              <section
+                className={`p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
+              >
+                <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 mb-4 flex items-center gap-3">
+                  <span
+                    className={`w-2 h-6 md:h-8 rounded-full ${theme.bgAction} shrink-0`}
+                  />
+                  Sobre a empresa
+                </h2>
+                <p className="text-sm md:text-base leading-relaxed opacity-70 whitespace-pre-line">
+                  {business.description}
+                </p>
+              </section>
+            )}
             {/* Destaques */}
             {hasFeatures && (
               <section className="space-y-6">
@@ -713,9 +509,10 @@ export default function UrbanLayout({
                       key={activeMediaFilter}
                       feed={filteredFeed}
                       setSelectedIndex={setSelectedIndex}
+                      variant="urban"
+                      themeBorder={border}
                       cardBg={cardBg}
-                      border={border}
-                      shadow={shadow}
+                      cardShadow={shadow}
                     />
                   </section>
                 );
@@ -966,92 +763,6 @@ export default function UrbanLayout({
           />
         </motion.button>
       )}
-
-      {/* LIGHTBOX DE ALTA PERFORMANCE (APENAS PARA FOTOS) */}
-      <AnimatePresence>
-        {selectedIndex !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center"
-            onClick={() => setSelectedIndex(null)}
-          >
-            <button
-              aria-label="Fechar galeria"
-              className="absolute top-8 right-8 text-white/50 hover:text-white hover:scale-110 transition-all z-[230]"
-            >
-              <X size={40} strokeWidth={2} />
-            </button>
-            <div className="flex-grow flex items-center justify-center relative w-full px-4 pt-10">
-              <button
-                aria-label="Imagem anterior"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex - 1);
-                }}
-                className="hidden md:flex absolute left-12 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md"
-              >
-                <ChevronLeft size={32} strokeWidth={2} />
-              </button>
-              <button
-                aria-label="Próxima imagem"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex + 1);
-                }}
-                className="hidden md:flex absolute right-12 w-16 h-16 items-center justify-center bg-white/5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-all z-[220] backdrop-blur-md"
-              >
-                <ChevronRight size={32} strokeWidth={2} />
-              </button>
-              {lightboxImages[selectedIndex] && (
-                <motion.img
-                  key={selectedIndex}
-                  src={lightboxImages[selectedIndex]}
-                  loading="eager"
-                  decoding="async"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.2}
-                  onDragEnd={(e, info) => {
-                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                    else if (info.offset.x < -80)
-                      safeSetIndex(selectedIndex + 1);
-                  }}
-                  className={`max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl cursor-grab active:cursor-grabbing z-[210]`}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </div>
-            <div
-              className="h-32 w-full flex items-center justify-start md:justify-center gap-4 px-10 pb-8 overflow-x-auto no-scrollbar snap-x"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {lightboxImages.map((img: string, idx: number) => (
-                <button
-                  key={idx}
-                  aria-label={`Ver miniatura ${idx + 1}`}
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all snap-center ${selectedIndex === idx ? "ring-2 ring-white scale-110 opacity-100 shadow-xl" : "opacity-30 hover:opacity-100"}`}
-                >
-                  {/* ✅ MINIATURAS OTIMIZADAS */}
-                  <Image
-                    src={img || "/og-default.png"}
-                    alt="Thumb"
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {

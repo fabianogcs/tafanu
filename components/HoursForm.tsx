@@ -3,11 +3,13 @@
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
+import type { BusinessHour } from "./business-editor/types";
+
 interface HoursFormProps {
-  businessSlug: string;
-  initialHours: any[];
+  businessSlug?: string;
+  initialHours: BusinessHour[];
   hideSaveButton?: boolean;
-  onHoursChange?: (hours: any[]) => void;
+  onHoursChange?: (hours: BusinessHour[]) => void;
 }
 
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];

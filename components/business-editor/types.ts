@@ -1,8 +1,8 @@
 export type BusinessHour = {
-  day: string;
-  open: string;
-  close: string;
-  closed?: boolean;
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
 };
 
 export interface SocialLinks {

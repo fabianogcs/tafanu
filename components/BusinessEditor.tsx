@@ -164,7 +164,11 @@ export default function BusinessEditor({
 
   const [profileImage, setProfileImage] = useState<string>(
     safeBusiness.imageUrl,
-  ); // 🚀 FORÇA A SEGMENTAÇÃO A NASCER VAZIA SE FOR NOVA OU PADRÃO
+  );
+  const [coverImage, setCoverImage] = useState<string>(
+    safeBusiness.coverImage || "",
+  );
+  // 🚀 FORÇA A SEGMENTAÇÃO A NASCER VAZIA SE FOR NOVA OU PADRÃO
 
   const [categoria, setCategoria] = useState(() => {
     if (
@@ -256,6 +260,7 @@ export default function BusinessEditor({
       slug !== safeBusiness.slug ||
       isPublished !== safeBusiness.published ||
       profileImage !== safeBusiness.imageUrl ||
+      coverImage !== (safeBusiness.coverImage || "") ||
       categoria !== safeBusiness.category ||
       hasDelivery !== (safeBusiness.hasDelivery || false) ||
       selectedTheme !== safeBusiness.theme ||
@@ -313,6 +318,7 @@ export default function BusinessEditor({
     slug,
     isPublished,
     profileImage,
+    coverImage,
     categoria,
     selectedTheme,
     selectedLayout,
@@ -401,6 +407,7 @@ export default function BusinessEditor({
         complement: safeBusiness.complement || "",
       });
       setHasDelivery(safeBusiness.hasDelivery || false);
+      setCoverImage(safeBusiness.coverImage || "");
       hasInitialized.current = true;
     }
   }, [safeBusiness, isNew]);
@@ -594,6 +601,7 @@ export default function BusinessEditor({
           (m: any) => typeof m.url === "string" && m.url.trim() !== "",
         ),
         imageUrl: profileImage,
+        coverImage: coverImage,
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
       };
@@ -656,8 +664,6 @@ export default function BusinessEditor({
 
           return;
         }
-
-        await updateBusinessHours(business.slug, businessHours);
 
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
@@ -829,6 +835,8 @@ export default function BusinessEditor({
             safeBusinessSlug={safeBusiness.slug}
             profileImage={profileImage}
             setProfileImage={setProfileImage}
+            coverImage={coverImage}
+            setCoverImage={setCoverImage}
             isUploadingLogo={isUploadingLogo}
             fileInputRef={fileInputRef}
             handleFileChange={handleFileChange}
@@ -1022,6 +1030,7 @@ export default function BusinessEditor({
               name={name}
               description={description}
               profileImage={profileImage}
+              coverImage={coverImage}
               gallery={mockGallery}
               layoutLabel={currentLayoutData.label}
               comercial_badge={layoutText}
@@ -1043,6 +1052,7 @@ export default function BusinessEditor({
               name={name}
               description={description}
               profileImage={profileImage}
+              coverImage={coverImage}
               gallery={mockGallery}
               layoutLabel={currentLayoutData.label}
               comercial_badge={layoutText}

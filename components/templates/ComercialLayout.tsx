@@ -5,14 +5,11 @@ import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Share2,
-  X,
   Instagram,
   Facebook,
   Globe,
   PhoneCall,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
   Camera,
   MessageCircle,
   Clock,
@@ -23,215 +20,26 @@ import {
   ShieldCheck,
   Quote,
   Navigation,
+  ChevronRight,
 } from "lucide-react";
+import {
+  TikTokIcon,
+  MeliIcon,
+  ShopeeIcon,
+  IfoodIcon,
+  SheinIcon,
+  handleShare,
+  formatPhoneNumber,
+  formatExternalLink,
+  MasterRunway,
+  TemplateLightbox,
+} from "./shared";
 import * as Actions from "@/app/actions";
-import { toast } from "sonner";
 import ReportModal from "@/components/ReportModal";
 import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-
-// ==========================================
-// 1. ÍCONES E SVGs
-// ==========================================
-const TikTokIcon = ({
-  className,
-  color,
-}: {
-  className?: string;
-  color?: string;
-}) => (
-  <svg className={className} viewBox="0 0 24 24" fill={color || "currentColor"}>
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47V18.5a6.5 6.5 0 0 1-11.41 4.28 6.5 6.5 0 0 1 4.41-10.74c.15-.02.3-.02.45-.02V16a2.5 2.5 0 1 0 2.5 2.5V0l.18.02Z" />
-  </svg>
-);
-
-const MeliIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M14.5 9.5L12 12l-2.5-2.5L7 12l5 5 5-5-2.5-2.5z" />
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-  </svg>
-);
-
-const ShopeeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.5 8H17V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H4.5v13c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V8zM9 6c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9V6zm6 5c0 1.1-.9 2-2 2s-2-.9-2-2H9c0 2.21 1.79 4 4 4s4-1.79 4-4h-2z" />
-  </svg>
-);
-
-const IfoodIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5c-2.5 0-4.5-1.5-4.5-3.5h2c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2h2c0 2-2 3.5-4.5 3.5zm-2-6c-.83 0-1.5-.67-1.5-1.5S8.17 7.5 9 7.5s1.5.67 1.5 1.5S9.83 10.5 9 10.5zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 7.5 15 7.5s1.5.67 1.5 1.5S15.83 10.5 15 10.5z" />
-  </svg>
-);
-
-const SheinIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-
-// ==========================================
-// 2. COMPONENTES MODULARES
-// ==========================================
-const VideoEmbed = ({ url }: { url: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  let embedUrl = "";
-  let isInstagram = false;
-
-  try {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.includes("youtu.be/")
-        ? url.split("youtu.be/")[1]?.split("?")[0]
-        : url.includes("shorts/")
-          ? url.split("shorts/")[1]?.split("?")[0]
-          : new URL(url).searchParams.get("v");
-      if (videoId)
-        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
-    } else if (url.includes("instagram.com")) {
-      isInstagram = true;
-      // Mantém a URL intacta para abrir em nova aba
-      embedUrl = url;
-    } else if (url.includes("tiktok.com")) {
-      const videoId = url.split("/video/")[1]?.split("?")[0];
-      if (videoId) embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
-    }
-  } catch (e) {}
-
-  if (!embedUrl) return null;
-
-  // 🚀 SE FOR INSTAGRAM: Botão com a identidade visual do ComercialLayout
-  if (isInstagram) {
-    return (
-      <a
-        href={embedUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Ver no Instagram"
-        className="w-full h-full bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2.5rem] cursor-pointer group shadow-lg"
-      >
-        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors duration-700" />
-
-        <div className="relative z-20 w-16 h-16 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] group-hover:scale-110 group-hover:bg-white/20 transition-all duration-700">
-          <Instagram
-            className="w-7 h-7 text-white/90 drop-shadow-md"
-            strokeWidth={1.5}
-          />
-        </div>
-
-        {/* Repare na tipografia: font-black uppercase em vez do itálico */}
-        <span className="relative z-20 text-white/60 text-[10px] mt-6 font-black uppercase tracking-[0.2em] group-hover:text-white transition-colors duration-500 drop-shadow-md text-center px-4">
-          Instagram Experience
-        </span>
-      </a>
-    );
-  }
-
-  // 🚀 SE FOR YOUTUBE/TIKTOK: FACHADA COMERCIAL ORIGINAL
-  if (!isLoaded) {
-    return (
-      <button
-        aria-label="Carregar e reproduzir vídeo"
-        onClick={() => setIsLoaded(true)}
-        className="w-full h-full bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2.5rem] cursor-pointer group border border-white/10"
-      >
-        <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] group-hover:scale-110 group-hover:bg-white/30 transition-all">
-          <div className="w-0 h-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white ml-2"></div>
-        </div>
-      </button>
-    );
-  }
-
-  // O VÍDEO REAL
-  return (
-    <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative overflow-hidden pointer-events-auto rounded-[2.5rem]">
-      <iframe
-        src={embedUrl}
-        title="Vídeo de demonstração do negócio"
-        aria-label="Reprodutor de vídeo"
-        className="w-full h-full border-0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        scrolling="no"
-      />
-    </div>
-  );
-};
-
-const MasterRunway = ({ feed, setSelectedIndex, theme }: any) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current)
-      scrollRef.current.scrollBy({
-        left: dir === "left" ? -350 : 350,
-        behavior: "smooth",
-      });
-  };
-  const arrowClass = `hidden lg:flex absolute top-[50%] -translate-y-1/2 z-20 w-12 h-12 items-center justify-center bg-white/90 backdrop-blur-md border border-black/10 rounded-full shadow-xl opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 text-slate-800`;
-
-  return (
-    <div className="relative group/runway w-full mt-6">
-      <button
-        aria-label="Esquerda"
-        onClick={() => scroll("left")}
-        className={`${arrowClass} -left-6`}
-      >
-        <ChevronLeft size={28} />
-      </button>
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-4 md:gap-6 overflow-x-auto snap-x no-scrollbar pb-8 pt-2 scroll-smooth px-1"
-      >
-        {feed.map((item: any, i: number) => {
-          const cardBaseClasses = `shrink-0 snap-center w-[200px] sm:w-[240px] md:w-[280px] lg:w-[320px] aspect-[4/5] rounded-[2.5rem] overflow-hidden relative border ${theme.border} bg-white shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl group`;
-          if (item.type === "image") {
-            return (
-              <motion.div
-                key={`img-${i}`}
-                onClick={() => setSelectedIndex(item.lightboxIndex)}
-                className={`${cardBaseClasses} cursor-pointer`}
-                role="button"
-                tabIndex={0}
-              >
-                <Image
-                  src={item.url || "/og-default.png"}
-                  alt="Vitrine"
-                  fill
-                  quality={60}
-                  sizes="(max-width: 768px) 250px, 350px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                  <Plus size={36} className="text-white drop-shadow-lg" />
-                </div>
-              </motion.div>
-            );
-          }
-          if (
-            item.type === "video" ||
-            item.type === "video_v" ||
-            item.type === "video_h"
-          ) {
-            return (
-              <div key={`vid-${i}`} className={`${cardBaseClasses}`}>
-                <VideoEmbed url={item.url} />
-              </div>
-            );
-          }
-          return null;
-        })}
-      </div>
-      <button
-        aria-label="Direita"
-        onClick={() => scroll("right")}
-        className={`${arrowClass} -right-6`}
-      >
-        <ChevronRight size={28} />
-      </button>
-    </div>
-  );
-};
 
 const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -276,42 +84,6 @@ const AccordionItem = ({ q, a, theme }: any) => {
 };
 
 // ==========================================
-// 3. UTILITÁRIOS
-// ==========================================
-const handleShare = async (businessName: string) => {
-  const url = typeof window !== "undefined" ? window.location.href : "";
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: businessName,
-        text: `Confira o perfil de ${businessName} no Tafanu:`,
-        url,
-      });
-      return;
-    } catch (err) {}
-  }
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copiado!");
-  }
-};
-
-const formatPhoneNumber = (phone: string) => {
-  const cleaned = (phone || "").replace(/\D/g, "");
-  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-  if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-  const matchFixo = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-  if (matchFixo) return `(${matchFixo[1]}) ${matchFixo[2]}-${matchFixo[3]}`;
-  return phone;
-};
-
-const formatExternalLink = (url: string) => {
-  if (!url) return "";
-  const clean = url.trim();
-  return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
-};
-
-// ==========================================
 // 4. LAYOUT PRINCIPAL (COMERCIAL LUXE)
 // ==========================================
 export default function ComercialLayout({
@@ -324,6 +96,7 @@ export default function ComercialLayout({
   emailVerified,
   currentUserId,
   isAdmin,
+  isOpen,
 }: any) {
   const {
     business,
@@ -475,7 +248,14 @@ export default function ComercialLayout({
   );
 
   useEffect(() => {
-    document.body.style.overflow = selectedIndex !== null ? "hidden" : "unset";
+    if (selectedIndex !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [selectedIndex]);
 
   const addressPartsForMap = [
@@ -503,19 +283,27 @@ export default function ComercialLayout({
       <div
         className={`relative w-full h-56 md:h-72 ${theme.bgHero || "bg-slate-200"} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-sm overflow-hidden`}
       >
-        {/* Padrão/Brilho sutil no fundo da capa */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent mix-blend-overlay" />
-        <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl opacity-30" />
+        {business.coverImage && (
+          <Image
+            src={business.coverImage}
+            alt={`Capa de ${business.name}`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
-        {/* Botões de Partilha e Favorito no topo */}
-        <div className="absolute top-4 right-4 md:top-6 md:right-8 z-20 flex gap-2">
+        {/* Botões de Partilha e Favorito no topo - Alta visibilidade */}
+        <div className="absolute top-4 right-4 md:top-6 md:right-8 z-20 flex items-center gap-3">
           <button
             onClick={() => handleShare(business.name)}
-            className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-white shadow-lg hover:bg-white/40 transition-all"
+            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md rounded-full border border-black/5 text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white hover:scale-105 transition-all"
           >
-            <Share2 size={18} />
+            <Share2 size={20} strokeWidth={2} />
           </button>
-          <div className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-white shadow-lg hover:bg-white/40 transition-all">
+          <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md rounded-full border border-black/5 text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white hover:scale-105 transition-all cursor-pointer">
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -525,12 +313,15 @@ export default function ComercialLayout({
           </div>
         </div>
       </div>
-
-      <header className="relative w-full max-w-6xl mx-auto px-6 -mt-20 md:-mt-24 z-10 flex flex-col items-center md:items-start text-center md:text-left mb-8">
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 w-full">
-          {/* Avatar Flutuante Premium */}
+      <header
+        className={`relative w-full max-w-6xl mx-auto px-6 -mt-20 md:-mt-24 z-10 flex flex-col items-start text-left mb-8`}
+      >
+        <div className="flex flex-col md:flex-row items-start gap-6 w-full">
+          {/* Avatar Flutuante Premium - Puxa a borda do tema para dar harmonia */}
           {business.imageUrl && (
-            <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-[2.5rem] border-[6px] md:border-[8px] border-white/90 backdrop-blur-md shadow-2xl overflow-hidden bg-white shrink-0">
+            <div
+              className={`relative w-36 h-36 md:w-44 md:h-44 rounded-[2.5rem] border-[6px] md:border-[8px] ${theme.border} backdrop-blur-md shadow-2xl overflow-hidden ${theme.cardBg} shrink-0`}
+            >
               <Image
                 src={business.imageUrl || "/og-default.png"}
                 alt={`Logotipo ${business.name}`}
@@ -541,26 +332,47 @@ export default function ComercialLayout({
               />
             </div>
           )}
-          <div className="flex flex-col items-center md:items-start pt-4 md:pt-0">
+          {/* pt-32 empurra o texto para baixo apenas no desktop */}
+          <div className="flex flex-col items-start pt-4 md:pt-32">
             {/* Evitando Duplicação de Badge e Urban Tag */}
             {business.comercial_badge &&
               business.comercial_badge !== business.urban_tag && (
                 <span
-                  className={`${theme.bgAction} px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest text-white shadow-md inline-block mb-3`}
+                  className={`${theme.bgAction} px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest shadow-md inline-block mb-3`}
                 >
                   {business.comercial_badge}
                 </span>
               )}
             <h1
-              className={`text-4xl md:text-5xl lg:text-6xl font-black italic tracking-tight leading-none drop-shadow-sm`}
+              className={`text-4xl md:text-5xl lg:text-6xl font-black italic tracking-tight leading-none drop-shadow-sm ${theme.textColor}`}
             >
               {business.name}
             </h1>
-            {business.urban_tag && (
-              <span className="mt-2 text-sm font-bold uppercase tracking-widest opacity-60">
-                {business.urban_tag}
-              </span>
-            )}
+            <div className="flex items-center gap-3 mt-2 flex-wrap justify-start">
+              {business.urban_tag && (
+                <span
+                  className={`text-sm font-bold uppercase tracking-widest ${theme.primary}`}
+                >
+                  {business.urban_tag}
+                </span>
+              )}
+              {realHours.length > 0 && (
+                <span
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
+                    isOpen
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                    }`}
+                  />
+                  {isOpen ? "ON" : "OFF"}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -622,17 +434,19 @@ export default function ComercialLayout({
                     >
                       <Quote size={20} />
                     </div>
-                    <h2 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-40">
-                      {" "}
-                      Nossa História{" "}
+                    <h2
+                      className={`text-sm md:text-lg font-black uppercase tracking-widest opacity-60 ${theme.primary}`}
+                    >
+                      Nossa História
                     </h2>
                   </div>
-                  <p className="text-lg md:text-2xl font-medium leading-relaxed opacity-90 break-words whitespace-pre-line text-slate-700">
+                  <p
+                    className={`text-lg md:text-2xl font-medium leading-relaxed opacity-90 break-words whitespace-pre-line ${theme.textColor}`}
+                  >
                     {business.description}
                   </p>
                 </section>
               )}
-
               {/* DESTAQUES */}
               {hasFeatures && (
                 <section className="space-y-6">
@@ -714,7 +528,9 @@ export default function ComercialLayout({
                       return true;
                     })}
                     setSelectedIndex={setSelectedIndex}
-                    theme={theme}
+                    variant="comercial"
+                    themeBorder={theme.border}
+                    cardBg={theme.cardBg}
                   />
                 </section>
               )}
@@ -1069,86 +885,12 @@ export default function ComercialLayout({
         </motion.button>
       )}
 
-      {/* --- LIGHTBOX OTIMIZADO --- */}
-      <AnimatePresence>
-        {selectedIndex !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex flex-col bg-black/95 backdrop-blur-xl"
-            onClick={() => setSelectedIndex(null)}
-          >
-            <button
-              aria-label="Fechar galeria"
-              className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center text-white/50 hover:text-white z-[210] hover:bg-white/10 rounded-full transition-all"
-            >
-              <X size={32} />
-            </button>
-            <div className="flex-grow flex items-center justify-center relative overflow-hidden px-4 pt-10">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex - 1);
-                }}
-                className="hidden md:flex absolute left-8 w-14 h-14 items-center justify-center bg-white/5 border border-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220] backdrop-blur-md"
-              >
-                <ChevronLeft size={32} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  safeSetIndex(selectedIndex + 1);
-                }}
-                className="hidden md:flex absolute right-8 w-14 h-14 items-center justify-center bg-white/5 border border-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[220] backdrop-blur-md"
-              >
-                <ChevronRight size={32} />
-              </button>
-              {lightboxImages[selectedIndex] && (
-                <motion.img
-                  key={selectedIndex}
-                  src={lightboxImages[selectedIndex]}
-                  loading="eager"
-                  decoding="async"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.2}
-                  onDragEnd={(e, info) => {
-                    if (info.offset.x > 80) safeSetIndex(selectedIndex - 1);
-                    else if (info.offset.x < -80)
-                      safeSetIndex(selectedIndex + 1);
-                  }}
-                  className="max-w-full max-h-[60vh] md:max-h-[75vh] object-contain shadow-2xl rounded-2xl pointer-events-auto cursor-grab active:cursor-grabbing"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </div>
-            <div
-              className="h-32 w-full flex items-center justify-start md:justify-center gap-3 px-6 pb-6 overflow-x-auto no-scrollbar pointer-events-auto snap-x"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {lightboxImages.map((img: string, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 snap-center ${selectedIndex === idx ? "border-white scale-110 shadow-lg" : "border-transparent opacity-40 hover:opacity-100"}`}
-                >
-                  <Image
-                    src={img || "/og-default.png"}
-                    alt="Thumbnail"
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <TemplateLightbox
+        images={lightboxImages}
+        selectedIndex={selectedIndex}
+        onClose={() => setSelectedIndex(null)}
+        onNavigate={safeSetIndex}
+      />
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {

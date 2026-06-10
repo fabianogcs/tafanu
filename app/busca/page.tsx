@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import Link from "next/link";
 import { normalizeText } from "@/lib/normalize";
 import { unstable_cache } from "next/cache";
+import { SearchX } from "lucide-react";
 
 const PAGE_SIZE = 12;
 const STOPWORDS = ["na", "no", "em", "de", "do", "da", "com", "para", "o", "a"];
@@ -811,10 +812,18 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
           <div className="lg:col-span-3">
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
               {paginatedResults.length === 0 ? (
-                <div className="col-span-full py-20 text-center opacity-50 font-bold text-gray-400">
-                  {isOnlineMode
-                    ? "Nenhuma loja online encontrada para esta categoria."
-                    : "Nenhum resultado encontrado."}
+                <div className="col-span-full flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-4">
+                  <div className="bg-gray-50 p-6 rounded-full mb-6">
+                    <SearchX size={48} className="text-gray-300" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-black text-slate-800 mb-3 tracking-tight">
+                    Estamos mapeando novos negócios!
+                  </h3>
+                  <p className="text-gray-500 text-base md:text-lg max-w-lg leading-relaxed">
+                    {isOnlineMode
+                      ? "Ainda não temos lojas com delivery ou venda online cadastradas para esta busca. Nossa vitrine cresce todos os dias, volte em breve!"
+                      : "Ainda não temos exatamente o que você procura. Nossa vitrine está em rápida expansão e novos comércios locais chegam ao Tafanu todos os dias!"}
+                  </p>
                 </div>
               ) : (
                 paginatedResults.map((item) => (
