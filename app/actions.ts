@@ -766,6 +766,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         // 🚀 AQUI ESTÃO OS DESAPARECIDOS!
         imageUrl: payload.imageUrl || "",
         coverImage: payload.coverImage || "",
+        catalogPdf: payload.catalogPdf || null, // 🚀 NOVO CAMPO: Salva o PDF no banco de dados!
         website: payload.website || "",
         features: payload.features || [], // Os seus Destaques de volta!
         published: payload.published, // O botão Online/Pausado de volta!
@@ -1141,6 +1142,7 @@ async function cleanStorageFiles(slug: string) {
     select: {
       imageUrl: true,
       coverImage: true,
+      catalogPdf: true, // 🚀 AVISAMOS SOBRE O PDF AQUI
       gallery: true,
       mediaFeed: true,
     },
@@ -1150,6 +1152,7 @@ async function cleanStorageFiles(slug: string) {
   const filesToDelete: string[] = [];
   if (business.imageUrl) filesToDelete.push(business.imageUrl);
   if (business.coverImage) filesToDelete.push(business.coverImage);
+  if (business.catalogPdf) filesToDelete.push(business.catalogPdf); // 🚀 APAGA O PDF AQUI
   if (business.gallery && business.gallery.length > 0) {
     filesToDelete.push(...(business.gallery as string[]));
   }
@@ -1699,8 +1702,10 @@ export async function runGarbageCollector() {
     const businesses = await db.business.findMany({
       select: {
         imageUrl: true,
+        coverImage: true, // 🚀 SALVANDO A CAPA DO LIXO!
+        catalogPdf: true,
         gallery: true,
-        mediaFeed: true, // 🚀 PROTEGE AS IMAGENS DA PASSARELA NOVA
+        mediaFeed: true,
       },
     });
 
@@ -1714,7 +1719,8 @@ export async function runGarbageCollector() {
       };
 
       add(b.imageUrl);
-
+      add(b.coverImage); // 🚀 AVISANDO O ROBÔ QUE A CAPA É VÁLIDA!
+      add(b.catalogPdf);
       // Procura na galeria antiga
       if (b.gallery && Array.isArray(b.gallery)) {
         b.gallery.forEach((img) => add(img));

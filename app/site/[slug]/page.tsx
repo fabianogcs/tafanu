@@ -186,6 +186,7 @@ export default async function BusinessPage({
         keywords: true,
         imageUrl: true,
         coverImage: true,
+        catalogPdf: true, // 🚀 AQUI! Agora o Prisma puxa o PDF do banco de dados para a tela!
         urban_tag: true,
         luxe_quote: true,
         comercial_badge: true,

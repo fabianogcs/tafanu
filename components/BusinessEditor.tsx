@@ -29,9 +29,9 @@ import {
   updateBusinessHours,
   createBusiness,
   deleteBusiness,
-  resetBusiness, // 🚀 NOVA FUNÇÃO!
+  resetBusiness,
 } from "@/app/actions";
-import { RefreshCcw } from "lucide-react"; // 🚀 NOVO ÍCONE ADICIONADO!
+import { RefreshCcw } from "lucide-react";
 import HoursForm from "@/components/HoursForm";
 import { motion, AnimatePresence } from "framer-motion";
 import { businessThemes } from "@/lib/themes";
@@ -40,7 +40,7 @@ import {
   onlyNumbers,
   toSlug,
   cleanHandle,
-  cleanSocialHandle, // 🚀 NOVA FUNÇÃO IMPORTADA AQUI!
+  cleanSocialHandle,
   formatPhoneNumber,
   normalizeText,
 } from "@/lib/normalize";
@@ -89,7 +89,6 @@ export default function BusinessEditor({
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 🚀 1. Estado controlado manualmente (sem depender do hook do UploadThing)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,21 +105,16 @@ export default function BusinessEditor({
   };
 
   const handleCropComplete = async (croppedFile: File | Blob) => {
-    // O modal é fechado aqui, mas a função pura abaixo não será afetada!
     if (rawImageSrc) URL.revokeObjectURL(rawImageSrc);
     setRawImageSrc(null);
-
     setIsUploadingLogo(true);
 
     try {
-      // Recriamos o arquivo garantindo a integridade dos dados
       const safeFile = new File([croppedFile], "logo-recortada.jpg", {
         type: "image/jpeg",
         lastModified: Date.now(),
       });
 
-      // 🚀 2. A MÁGICA: Usamos a função pura 'uploadFiles'.
-      // Ela vai até a nuvem e volta, independentemente do React.
       const res = await uploadFiles("logoUploader", {
         files: [safeFile],
       });
@@ -136,7 +130,6 @@ export default function BusinessEditor({
         `Erro ao subir imagem: ${error?.message || "Erro desconhecido"}`,
       );
     } finally {
-      // Destrava o botão com 100% de garantia
       setIsUploadingLogo(false);
     }
   };
@@ -149,7 +142,7 @@ export default function BusinessEditor({
 
   const [mediaFeed, setMediaFeed] = useState<any[]>(() => {
     if (safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0) {
-      return safeBusiness.mediaFeed;
+      return JSON.parse(JSON.stringify(safeBusiness.mediaFeed));
     }
     const oldGallery = (safeBusiness.gallery || []).map((url: string) => ({
       type: "image",
@@ -168,7 +161,11 @@ export default function BusinessEditor({
   const [coverImage, setCoverImage] = useState<string>(
     safeBusiness.coverImage || "",
   );
-  // 🚀 FORÇA A SEGMENTAÇÃO A NASCER VAZIA SE FOR NOVA OU PADRÃO
+
+  // 🚀 ADICIONADO: ESTADO DO PDF AQUI
+  const [catalogPdf, setCatalogPdf] = useState<string | null>(
+    safeBusiness.catalogPdf || null,
+  );
 
   const [categoria, setCategoria] = useState(() => {
     if (
@@ -212,12 +209,15 @@ export default function BusinessEditor({
       "",
   );
 
-  const [features, setFeatures] = useState<string[]>(safeBusiness.features);
+  const [features, setFeatures] = useState<string[]>(
+    safeBusiness.features || [],
+  );
+
   const [faqs, setFaqs] = useState<{ q: string; a: string }[]>(
-    safeBusiness.faqs,
+    safeBusiness.faqs ? JSON.parse(JSON.stringify(safeBusiness.faqs)) : [],
   );
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>(
-    safeBusiness.hours,
+    safeBusiness.hours ? JSON.parse(JSON.stringify(safeBusiness.hours)) : [],
   );
 
   const [addressData, setAddressData] = useState({
@@ -255,43 +255,61 @@ export default function BusinessEditor({
       safeBusiness.comercial_badge ||
       "";
 
+    const initialCategory =
+      !safeBusiness.category || safeBusiness.category.toLowerCase() === "geral"
+        ? ""
+        : safeBusiness.category;
+
+    const initialLayout = layoutInfo[
+      safeBusiness.layout === "influencer" ? "urban" : safeBusiness.layout
+    ]
+      ? safeBusiness.layout === "influencer"
+        ? "urban"
+        : safeBusiness.layout
+      : "urban";
+
+    const safeMediaFeed =
+      safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0
+        ? safeBusiness.mediaFeed
+        : [
+            ...(safeBusiness.gallery || []).map((url: string) => ({
+              type: "image",
+              url,
+            })),
+            ...(safeBusiness.videos || []).map((url: string) => ({
+              type: "video",
+              url,
+            })),
+          ];
+
     const isBasicDifferent =
       name !== safeBusiness.name ||
       slug !== safeBusiness.slug ||
       isPublished !== safeBusiness.published ||
       profileImage !== safeBusiness.imageUrl ||
       coverImage !== (safeBusiness.coverImage || "") ||
-      categoria !== safeBusiness.category ||
+      catalogPdf !== (safeBusiness.catalogPdf || null) || // 🚀 ADICIONADO AQUI
+      categoria !== initialCategory ||
       hasDelivery !== (safeBusiness.hasDelivery || false) ||
       selectedTheme !== safeBusiness.theme ||
-      selectedLayout !==
-        (layoutInfo[
-          safeBusiness.layout === "influencer" ? "urban" : safeBusiness.layout
-        ]
-          ? safeBusiness.layout === "influencer"
-            ? "urban"
-            : safeBusiness.layout
-          : "urban") ||
+      selectedLayout !== initialLayout ||
       description !== safeBusiness.description ||
       layoutText !== initialLayoutText ||
-      whatsapp !== formatPhoneNumber(safeBusiness.whatsapp) ||
-      phone !== formatPhoneNumber(safeBusiness.phone);
+      whatsapp !== formatPhoneNumber(safeBusiness.whatsapp || "") ||
+      phone !== formatPhoneNumber(safeBusiness.phone || "");
 
     const isArraysDifferent =
-      !isDeepEqual(mediaFeed, safeBusiness.mediaFeed || []) ||
-      !isDeepEqual(selectedSubs, safeBusiness.subcategory) ||
-      !isDeepEqual(keywords, safeBusiness.keywords) ||
-      !isDeepEqual(features, safeBusiness.features) ||
-      !isDeepEqual(faqs, safeBusiness.faqs) ||
-      !isDeepEqual(businessHours, safeBusiness.hours);
+      !isDeepEqual(mediaFeed, safeMediaFeed) ||
+      !isDeepEqual(selectedSubs, safeBusiness.subcategory || []) ||
+      !isDeepEqual(keywords, safeBusiness.keywords || []) ||
+      !isDeepEqual(features, safeBusiness.features || []) ||
+      !isDeepEqual(faqs, safeBusiness.faqs || []) ||
+      !isDeepEqual(businessHours, safeBusiness.hours || []);
 
     const isSocialsDifferent =
-      socials.instagram !==
-        cleanHandle(safeBusiness.instagram, /.*instagram\.com\//) ||
-      socials.tiktok !==
-        cleanHandle(safeBusiness.tiktok, /.*tiktok\.com\/@?/) ||
-      socials.facebook !==
-        cleanHandle(safeBusiness.facebook, /.*facebook\.com\//) ||
+      socials.instagram !== cleanSocialHandle(safeBusiness.instagram) ||
+      socials.tiktok !== cleanSocialHandle(safeBusiness.tiktok) ||
+      socials.facebook !== cleanSocialHandle(safeBusiness.facebook) ||
       socials.shopee !== (safeBusiness.shopee || "") ||
       socials.ifood !== (safeBusiness.ifood || "") ||
       socials.mercadoLivre !== (safeBusiness.mercadoLivre || "") ||
@@ -319,6 +337,7 @@ export default function BusinessEditor({
     isPublished,
     profileImage,
     coverImage,
+    catalogPdf, // 🚀 ADICIONADO AQUI
     categoria,
     selectedTheme,
     selectedLayout,
@@ -336,7 +355,7 @@ export default function BusinessEditor({
     addressData,
     isNew,
     safeBusiness,
-    hasDelivery, // 🚀 Mantido aqui
+    hasDelivery,
   ]);
 
   const filteredThemeKeys = useMemo(() => {
@@ -380,7 +399,7 @@ export default function BusinessEditor({
       setSlug(safeBusiness.slug);
       setMediaFeed(
         safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0
-          ? safeBusiness.mediaFeed
+          ? JSON.parse(JSON.stringify(safeBusiness.mediaFeed))
           : [
               ...(safeBusiness.gallery || []).map((url: string) => ({
                 type: "image",
@@ -393,9 +412,62 @@ export default function BusinessEditor({
             ],
       );
       setProfileImage(safeBusiness.imageUrl);
+      setCoverImage(safeBusiness.coverImage || "");
+      setCatalogPdf(safeBusiness.catalogPdf || null); // 🚀 ADICIONADO AQUI
       setIsPublished(safeBusiness.published);
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
+
+      setCategoria(
+        !safeBusiness.category ||
+          safeBusiness.category.toLowerCase() === "geral"
+          ? ""
+          : safeBusiness.category,
+      );
+
+      setSelectedSubs(
+        safeBusiness.subcategory ? [...safeBusiness.subcategory] : [],
+      );
+      setKeywords(safeBusiness.keywords ? [...safeBusiness.keywords] : []);
+
+      const initialLayout = layoutInfo[
+        safeBusiness.layout === "influencer" ? "urban" : safeBusiness.layout
+      ]
+        ? safeBusiness.layout === "influencer"
+          ? "urban"
+          : safeBusiness.layout
+        : "urban";
+      setSelectedLayout(initialLayout);
+      setSelectedTheme(safeBusiness.theme);
+      setDescription(safeBusiness.description);
+      setLayoutText(
+        safeBusiness.urban_tag ||
+          safeBusiness.luxe_quote ||
+          safeBusiness.showroom_collection ||
+          safeBusiness.comercial_badge ||
+          "",
+      );
+
+      setFeatures(safeBusiness.features ? [...safeBusiness.features] : []);
+      setFaqs(
+        safeBusiness.faqs ? JSON.parse(JSON.stringify(safeBusiness.faqs)) : [],
+      );
+      setBusinessHours(
+        safeBusiness.hours
+          ? JSON.parse(JSON.stringify(safeBusiness.hours))
+          : [],
+      );
+
+      setSocials({
+        instagram: cleanSocialHandle(safeBusiness.instagram),
+        facebook: cleanSocialHandle(safeBusiness.facebook),
+        tiktok: cleanSocialHandle(safeBusiness.tiktok),
+        website: safeBusiness.website || "",
+        shopee: safeBusiness.shopee || "",
+        mercadoLivre: safeBusiness.mercadoLivre || "",
+        shein: safeBusiness.shein || "",
+        ifood: safeBusiness.ifood || "",
+      });
 
       setAddressData({
         address: safeBusiness.address || "",
@@ -406,15 +478,14 @@ export default function BusinessEditor({
         number: safeBusiness.number || "",
         complement: safeBusiness.complement || "",
       });
+
       setHasDelivery(safeBusiness.hasDelivery || false);
-      setCoverImage(safeBusiness.coverImage || "");
       hasInitialized.current = true;
     }
   }, [safeBusiness, isNew]);
 
   const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
-  // 💣 EXCLUSÃO FATAL (Apenas Admin e Afiliados)
   const handleDeleteAction = async () => {
     const confirmDelete = window.confirm(
       "⚠️ ATENÇÃO: Tem certeza que deseja excluir esta vitrine PERMANENTEMENTE?\n\nIsso apagará todos os dados do banco e cancelará assinaturas vinculadas.",
@@ -439,7 +510,6 @@ export default function BusinessEditor({
     }
   };
 
-  // 🧹 VASSOURA / RESET (Para Assinantes e Suporte)
   const handleResetAction = async () => {
     const confirmReset = window.confirm(
       "⚠️ ATENÇÃO: Isso apagará todas as fotos, vídeos e textos desta vitrine para você recomeçar.\n\nO nome do negócio e o seu link atual serão mantidos. Deseja continuar?",
@@ -452,7 +522,7 @@ export default function BusinessEditor({
       const res = await resetBusiness(safeBusiness.slug);
       if (res.success) {
         toast.success(res.message);
-        window.location.reload(); // Recarrega a página para o editor vir limpo!
+        window.location.reload();
       } else {
         toast.error(res.error || "Erro ao resetar.");
       }
@@ -482,7 +552,6 @@ export default function BusinessEditor({
       return;
     }
 
-    // 🚀 VALIDAÇÃO DE SEGMENTAÇÃO BLINDADA (IGNORA O PADRÃO "GERAL")
     if (
       !categoria ||
       categoria.trim() === "" ||
@@ -498,7 +567,7 @@ export default function BusinessEditor({
         .getElementById("segmentation-section")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
-    } // 🚀 VALIDAÇÃO DE NICHO (SUBCATEGORIA)
+    }
 
     if (!selectedSubs || selectedSubs.length === 0) {
       toast.error(
@@ -560,7 +629,6 @@ export default function BusinessEditor({
         complement: addressData.complement,
         whatsapp: onlyNumbers(whatsapp),
         phone: onlyNumbers(phone),
-        // 🚀 O dado já vem 100% limpo da tela, então é só montar a URL oficial!
         instagram: socials.instagram
           ? `https://instagram.com/${socials.instagram}`
           : "",
@@ -568,33 +636,22 @@ export default function BusinessEditor({
           ? `https://facebook.com/${socials.facebook}`
           : "",
         tiktok: socials.tiktok ? `https://tiktok.com/@${socials.tiktok}` : "",
-        shopee: socials.shopee
-          ? socials.shopee.startsWith("http")
-            ? socials.shopee
-            : `https://${socials.shopee}`
+        shopee: socials.shopee?.trim()
+          ? `https://${socials.shopee.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
-        mercadoLivre: socials.mercadoLivre
-          ? socials.mercadoLivre.startsWith("http")
-            ? socials.mercadoLivre
-            : `https://${socials.mercadoLivre}`
+        mercadoLivre: socials.mercadoLivre?.trim()
+          ? `https://${socials.mercadoLivre.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
-        shein: socials.shein
-          ? socials.shein.startsWith("http")
-            ? socials.shein
-            : `https://${socials.shein}`
+        shein: socials.shein?.trim()
+          ? `https://${socials.shein.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
-        ifood: socials.ifood
-          ? socials.ifood.startsWith("http")
-            ? socials.ifood
-            : `https://${socials.ifood}`
+        ifood: socials.ifood?.trim()
+          ? `https://${socials.ifood.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
-        website: socials.website
-          ? socials.website.startsWith("http")
-            ? socials.website
-            : `https://${socials.website}`
+        website: socials.website?.trim()
+          ? `https://${socials.website.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
 
-        // 🚀 CORREÇÃO AQUI 1: ENVIAR PARA O BANCO DE DADOS
         hasDelivery: hasDelivery,
 
         mediaFeed: mediaFeed.filter(
@@ -602,6 +659,7 @@ export default function BusinessEditor({
         ),
         imageUrl: profileImage,
         coverImage: coverImage,
+        catalogPdf: catalogPdf, // 🚀 ADICIONADO AQUI
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
       };
@@ -745,13 +803,11 @@ export default function BusinessEditor({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* 🚀 BOTÃO ONLINE/OFFLINE (Movido para fora, agora aparece sempre!) */}
             <button
               type="button"
               onClick={() => {
                 const newStatus = !isPublished;
                 setIsPublished(newStatus);
-                // 🛡️ Se for novo, só muda a cor do botão. Se já existir, salva na hora no banco!
                 if (!isNew) {
                   handleUpdate(newStatus);
                 }
@@ -767,7 +823,6 @@ export default function BusinessEditor({
               {isPublished ? "Online" : "Pausado"}
             </button>
 
-            {/* Os botões de Olhinho, Vassoura e Lixeira continuam escondidos em lojas novas */}
             {!isNew && (
               <>
                 <button
@@ -778,7 +833,6 @@ export default function BusinessEditor({
                 >
                   <Eye size={18} />
                 </button>
-                {/* 🚀 BOTÃO DE RESET (A VASSOURA) */}
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -789,7 +843,6 @@ export default function BusinessEditor({
                 >
                   <RefreshCcw size={18} />
                 </button>
-                {/* 🚀 BOTÃO DE EXCLUSÃO FATAL - APARECE SÓ PARA ADMIN */}
                 {userRole === "ADMIN" && (
                   <button
                     onClick={(e) => {
@@ -849,7 +902,6 @@ export default function BusinessEditor({
             filteredThemeKeys={filteredThemeKeys}
           />
 
-          {/* 🚀 ÂNCORA DE SCROLL PARA ERRO DE VALIDAÇÃO */}
           <div id="segmentation-section">
             <SegmentationSection
               categoria={categoria}
@@ -873,6 +925,8 @@ export default function BusinessEditor({
             setFeatures={setFeatures}
             faqs={faqs}
             setFaqs={setFaqs}
+            catalogPdf={catalogPdf} // 🚀 ADICIONADO AQUI
+            setCatalogPdf={setCatalogPdf} // 🚀 ADICIONADO AQUI
           />
         </div>
 
@@ -893,7 +947,6 @@ export default function BusinessEditor({
               setWhatsapp={setWhatsapp}
               phone={phone}
               setPhone={setPhone}
-              // 🚀 CORREÇÃO AQUI 2: ENTREGAR AS VARIÁVEIS PRO FILHO NÃO DAR ERRO
               hasDelivery={hasDelivery}
               setHasDelivery={setHasDelivery}
             />
@@ -920,18 +973,14 @@ export default function BusinessEditor({
           </div>
         </div>
         <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-30 gap-3 pointer-events-none px-4">
-                   {" "}
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg relative">
-                       {" "}
             <AnimatePresence mode="wait">
               {showOfflineWarning && !isLoading ? (
                 <motion.div
                   key="warning-card"
-                  // 🚀 1. Removi o y: 20 para ele não afundar na tela
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  // 🚀 2. Adicionei o 'origin-bottom' no final do className
                   className="w-full bg-white border-2 border-rose-200 p-6 md:p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center text-center gap-4 origin-bottom"
                 >
                   <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-[-10px]">
@@ -1015,11 +1064,6 @@ export default function BusinessEditor({
             }}
           />
         )}
-        {/* ============================================================== */}
-        {/* WIDGETS FLUTUANTES (DESCOLADOS DA TELA - POSIÇÃO FIXA MÁXIMA)  */}
-        {/* ============================================================== */}
-
-        {/* 🖥️ PREVIEW DESKTOP (BEM À DIREITA DA TELA) */}
         <div className="hidden lg:flex fixed bottom-8 right-6 2xl:right-16 origin-bottom-right scale-[0.55] hover:scale-[0.85] transition-all duration-500 z-50 flex-col items-center gap-4 bg-white/70 backdrop-blur-2xl p-5 rounded-[3.5rem] shadow-2xl border border-white/80">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white px-4 py-2 rounded-full shadow-sm">
             Visualização Real
@@ -1041,7 +1085,6 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        {/* 📱 PREVIEW MOBILE (CANTO SUPERIOR ESQUERDO, ABAIXO DO NAV) */}
         <div className="flex lg:hidden fixed top-64 left-2 origin-top-left scale-[0.35] active:scale-[0.85] transition-all duration-500 z-50 bg-white/80 backdrop-blur-md p-3 rounded-[3.5rem] shadow-2xl shadow-black/10 border border-slate-200 cursor-pointer group">
           <div className="absolute top-10 -right-10 whitespace-nowrap bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-full opacity-0 animate-bounce group-hover:opacity-100 transition-opacity pointer-events-none">
             VER PREVIEW

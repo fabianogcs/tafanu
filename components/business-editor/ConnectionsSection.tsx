@@ -125,8 +125,8 @@ export function ConnectionsSection({
             icon: <Globe size={20} />,
             color: "bg-indigo-500 text-white",
             label: "Website Oficial",
-            prefix: "https://",
-            isSocial: false, // Sites não entram na limpeza de arroba, aceitam o link todo
+            prefix: "", // 🚀 REMOVEMOS O PREFIXO FALSO VISUAL!
+            isSocial: false,
           },
         ].map((social) => (
           <label

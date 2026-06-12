@@ -106,10 +106,11 @@ model Business {
   views               Int            @default(0) // Centralizado aqui
 
 // Mídia
- imageUrl            String?        @db.Text
- coverImage          String?        @db.Text
- gallery             String[]       @default([])
-  videos              String[]       @default([]) // 🚀 NOVO: Gaveta para os links de vídeos (YouTube/Insta/TikTok)
+  imageUrl            String?        @db.Text
+  coverImage          String?        @db.Text
+  catalogPdf          String?        @db.Text 
+  gallery             String[]       @default([])
+  videos              String[]       @default([]) 
   mediaFeed           Json[]         @default([])
 
   // Tags e Conteúdo Extra

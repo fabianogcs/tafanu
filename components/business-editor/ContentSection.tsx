@@ -25,6 +25,8 @@ interface ContentSectionProps {
   setFeatures: (val: string[]) => void;
   faqs: { q: string; a: string }[];
   setFaqs: (val: { q: string; a: string }[]) => void;
+  catalogPdf: string | null; // 🚀 NOVO
+  setCatalogPdf: (val: string | null) => void; // 🚀 NOVO
 }
 
 export function ContentSection({
@@ -36,6 +38,8 @@ export function ContentSection({
   setFeatures,
   faqs,
   setFaqs,
+  catalogPdf, // 🚀 NOVO
+  setCatalogPdf, // 🚀 NOVO
 }: ContentSectionProps) {
   const imageCount = mediaFeed.filter((m) => m.type === "image").length;
 
@@ -181,6 +185,82 @@ export function ContentSection({
           <span className="text-indigo-500">Clique e arraste</span> para
           organizar a ordem exata na passarela.
         </p>
+
+        {/* =========================================================
+            🚀 NOVO: UPLOAD DE CATÁLOGO/CARDÁPIO (PDF)
+            ========================================================= */}
+        <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+              <ListChecks size={16} className="text-emerald-500" /> Cardápio /
+              Catálogo Digital (PDF)
+            </h3>
+          </div>
+
+          {catalogPdf ? (
+            <div className="w-full h-14 border border-emerald-200 bg-emerald-50 rounded-xl flex items-center justify-between px-6">
+              <span className="text-xs font-bold text-emerald-700 truncate mr-4">
+                Catálogo Anexado ✅
+              </span>
+
+              {/* Botões de Ação Agrupados e Protegidos */}
+              <div className="flex items-center gap-4 shrink-0">
+                <button
+                  onClick={() => setCatalogPdf(null)}
+                  className="text-[9px] font-bold text-rose-500 uppercase tracking-widest hover:text-rose-600"
+                >
+                  Remover
+                </button>
+                <a
+                  href={catalogPdf}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 underline"
+                >
+                  Visualizar
+                </a>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                onClick={() => document.getElementById("pdf-upload")?.click()}
+                className="w-full h-14 border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50 transition-colors group"
+              >
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest group-hover:text-emerald-700">
+                  Anexar Arquivo PDF (Max 8MB)
+                </span>
+              </div>
+              <input
+                id="pdf-upload"
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  toast.loading("Enviando PDF...", { id: "upload-pdf" });
+                  try {
+                    const res = await uploadFiles("pdfUploader", {
+                      files: [file],
+                    });
+                    if (res && res[0]) {
+                      setCatalogPdf(res[0].url || res[0].ufsUrl);
+                      toast.success("Catálogo enviado com sucesso!", {
+                        id: "upload-pdf",
+                      });
+                    }
+                  } catch (err) {
+                    toast.error("Erro ao enviar arquivo. O limite é 8MB.", {
+                      id: "upload-pdf",
+                    });
+                  }
+                }}
+              />
+            </>
+          )}
+        </div>
 
         {/* 🚀 LISTAGEM DRAG & DROP FÍSICA */}
         <div className="space-y-3">

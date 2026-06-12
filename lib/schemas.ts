@@ -63,6 +63,7 @@ export const businessSchema = z.object({
   hasDelivery: z.boolean().optional().default(false),
 
   // --- Mídia ---
+  catalogPdf: z.string().optional().nullable().or(z.literal("")), // 🚀 NOVO CAMPO: PDF
   imageUrl: z.string().optional().or(z.literal("")),
   gallery: z
     .array(z.string().url())

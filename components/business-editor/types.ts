@@ -24,3 +24,8 @@ export interface AddressData {
   state: string;
   number: string;
 }
+
+// 🚀 NOVO TIPO: Adicionado para o TypeScript reconhecer o campo de PDF
+export interface ContentData {
+  catalogPdf?: string | null;
+}

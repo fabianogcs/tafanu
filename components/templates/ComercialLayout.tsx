@@ -241,7 +241,11 @@ export default function ComercialLayout({
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } catch (e) {
       } finally {
-        window.location.href = targetUrl;
+        if (type === "whatsapp") {
+          window.open(targetUrl, "_blank", "noopener,noreferrer");
+        } else {
+          window.location.href = targetUrl;
+        }
       }
     },
     [business.id, business.name, business.whatsapp, business.phone],
