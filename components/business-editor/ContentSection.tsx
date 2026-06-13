@@ -48,6 +48,7 @@ export function ContentSection({
   // 🚀 ESTADO E REF DE CARREGAMENTO DA GALERIA
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null); // 🚀 NOVO REF PARA O PDF
 
   // 🚀 O NOVO MOTOR DE UPLOAD NATIVO
   const handleGalleryUpload = async (
@@ -222,9 +223,9 @@ export function ContentSection({
               </div>
             </div>
           ) : (
-            <>
+         <>
               <div
-                onClick={() => document.getElementById("pdf-upload")?.click()}
+                onClick={() => pdfInputRef.current?.click()}
                 className="w-full h-14 border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50 transition-colors group"
               >
                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest group-hover:text-emerald-700">
@@ -232,13 +233,16 @@ export function ContentSection({
                 </span>
               </div>
               <input
-                id="pdf-upload"
+                ref={pdfInputRef}
                 type="file"
                 accept="application/pdf"
                 className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+
+                  // 🚀 O PULO DO GATO: Limpa a memória do input para ele não travar mais!
+                  e.target.value = "";
 
                   toast.loading("Enviando PDF...", { id: "upload-pdf" });
                   try {
@@ -251,8 +255,9 @@ export function ContentSection({
                         id: "upload-pdf",
                       });
                     }
-                  } catch (err) {
-                    toast.error("Erro ao enviar arquivo. O limite é 8MB.", {
+                  } catch (err: any) {
+                    // Agora mostra o erro REAL que o servidor mandar
+                    toast.error(err.message || "Erro ao enviar arquivo.", {
                       id: "upload-pdf",
                     });
                   }

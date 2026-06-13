@@ -18,6 +18,7 @@ import {
   Navigation,
   Info,
   ChevronRight,
+  Layout, // 🚀 ÍCONE DE MENU ADICIONADO AQUI!
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -104,6 +105,7 @@ export default function ShowroomLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -229,8 +231,8 @@ export default function ShowroomLayout({
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
-  useEffect(() => {
-    if (selectedIndex !== null) {
+ useEffect(() => {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -238,7 +240,7 @@ export default function ShowroomLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex]);
+  }, [selectedIndex, isPdfModalOpen]); // 🚀 TRAVA A TELA PRO PDF
 
   const addressPartsForMap = [
     business.address,
@@ -275,7 +277,10 @@ export default function ShowroomLayout({
             className="object-cover"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        {/* 🚀 OVERLAY DE ALTO CONTRASTE (Garante leitura em qualquer foto) */}
+        <div className="absolute inset-0 pointer-events-none bg-black/20" />
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+        
         <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 z-20">
           <button
             onClick={() => handleShare(business.name)}
@@ -318,15 +323,21 @@ export default function ShowroomLayout({
               <span className="text-sm font-medium opacity-70">
                 {business.urban_tag || business.city || "Negócio Local"}
               </span>
+              {/* 🚀 BADGE ON/OFF COM ANIMAÇÃO */}
               {safeHours.length > 0 && (
                 <span
-                  className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
+                  className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
                     isOpen
                       ? "bg-emerald-100 text-emerald-700"
                       : "bg-rose-100 text-rose-600"
                   }`}
                 >
-                  {isOpen ? "● Aberto" : "● Fechado"}
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                    }`}
+                  />
+                  {isOpen ? "Aberto" : "Fechado"}
                 </span>
               )}
 
@@ -348,6 +359,24 @@ export default function ShowroomLayout({
 
         {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
         <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
+          
+          {/* 🚀 BOTÃO DO CATÁLOGO INTEGRADO AOS ÍCONES REDONDOS */}
+          {rawBusiness.catalogPdf && (
+            <button
+              onClick={() => setIsPdfModalOpen(true)}
+              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
+            >
+              <div
+                className={`w-12 h-12 rounded-full border ${theme.border} ${theme.bgAction} text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}
+              >
+                <Layout size={20} />
+              </div>
+              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
+                Menu
+              </span>
+            </button>
+          )}
+
           {hasWhatsapp && (
             <button
               onClick={() => handleTrackLead("whatsapp")}
@@ -719,6 +748,41 @@ export default function ShowroomLayout({
         onClose={() => setSelectedIndex(null)}
         onNavigate={safeSetIndex}
       />
+
+      {/* ==========================================
+          🚀 MODAL DE PDF (CARDÁPIO/CATÁLOGO)
+          ========================================== */}
+      <AnimatePresence>
+        {isPdfModalOpen && rawBusiness.catalogPdf && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
+          >
+            <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
+              <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
+                  Visualização de Documento
+                </span>
+                <button
+                  onClick={() => setIsPdfModalOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-slate-200 hover:bg-rose-500 hover:text-white rounded-full transition-colors text-slate-500"
+                >
+                  <Plus className="rotate-45" size={20} strokeWidth={2} />
+                </button>
+              </div>
+              <div className="flex-1 w-full bg-slate-200/50">
+                <iframe
+                  src={`${rawBusiness.catalogPdf}#toolbar=0`}
+                  className="w-full h-full border-none"
+                  title="Catálogo PDF"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {

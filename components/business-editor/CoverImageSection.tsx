@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { ImagePlus, Trash2, Loader2, Check, X, ZoomIn } from "lucide-react";
 import { uploadFiles } from "@/lib/uploadthing";
@@ -10,17 +10,18 @@ import Cropper from "react-easy-crop";
 import getCroppedImg from "@/lib/cropImage";
 
 // -----------------------------------------------------------------------
-// Modal de recorte dedicado à capa (aspect 16/9, shape rectangle)
-// Separado do ImageCropperModal original que usa 1:1 para o logo
+// Modal Inteligente de Recorte de Capa
 // -----------------------------------------------------------------------
 function CoverCropperModal({
   imageSrc,
   onCropComplete,
   onClose,
+  aspectRatio, // 🚀 RECEBE A PROPORÇÃO EXATA DO LAYOUT
 }: {
   imageSrc: string;
   onCropComplete: (file: File) => void;
   onClose: () => void;
+  aspectRatio: number;
 }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -50,22 +51,26 @@ function CoverCropperModal({
 
   return (
     <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-      <div className="relative w-full max-w-2xl h-[45vw] max-h-[360px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+      <div className="relative w-full max-w-2xl h-[50vh] max-h-[400px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
         <Cropper
           image={imageSrc}
           crop={crop}
           zoom={zoom}
-          aspect={16 / 9}
+          aspect={aspectRatio} // 🚀 PROPORÇÃO DINÂMICA DO LAYOUT
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onCropComplete={onCropCompleteEvent}
           cropShape="rect"
           showGrid={true}
+          objectFit="contain" // 🚀 Garante que a foto comece inteira na tela
+          minZoom={0.5} // 🚀 Libera o zoom para afastar (diminuir) a foto
+          restrictPosition={false} // 🚀 Permite afastar a foto das bordas (cria margens pretas)
         />
       </div>
 
-      <p className="text-white/40 text-[10px] uppercase tracking-widest mt-4 font-bold">
-        Arraste para reposicionar • Proporção 16:9
+      <p className="text-white/60 text-[10px] uppercase tracking-widest mt-4 font-bold text-center">
+        O quadro de corte já está no tamanho exato do seu Template.<br/>
+        Use a barra abaixo para aumentar ou <span className="text-white">diminuir</span> a foto.
       </p>
 
       <div className="w-full max-w-2xl mt-4 flex items-center gap-4 bg-white/5 p-4 rounded-2xl">
@@ -73,9 +78,9 @@ function CoverCropperModal({
         <input
           type="range"
           value={zoom}
-          min={1}
+          min={0.5} // 🚀 PERMITE AFASTAR A FOTO
           max={3}
-          step={0.1}
+          step={0.05}
           aria-label="Zoom da capa"
           onChange={(e) => setZoom(Number(e.target.value))}
           className="w-full accent-indigo-500 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer"
@@ -114,15 +119,33 @@ function CoverCropperModal({
 interface CoverImageSectionProps {
   coverImage: string;
   setCoverImage: (val: string) => void;
+  selectedLayout?: string; // 🚀 INJEÇÃO DO LAYOUT
 }
 
 export function CoverImageSection({
   coverImage,
   setCoverImage,
+  selectedLayout = "urban", // Começa com o padrão
 }: CoverImageSectionProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🚀 O MOTOR DE INTELIGÊNCIA WYSIWYG
+  // Decide a proporção do modal e a aparência do botão no painel!
+  const layoutConfig = useMemo(() => {
+    switch (selectedLayout) {
+      case "editorial": // Luxe Layout (Retrato)
+        return { aspect: 3 / 4, css: "w-full max-w-[280px] mx-auto rounded-[2rem]" };
+      case "businessList": // Comercial Layout (Faixa Fina)
+      case "showroom": // Showroom Layout (Faixa Fina)
+        return { aspect: 21 / 9, css: "w-full rounded-[1.5rem]" };
+      case "urban":
+      case "influencer": // Urban Layout (Padrão/Largo)
+      default:
+        return { aspect: 16 / 9, css: "w-full rounded-[2rem]" };
+    }
+  }, [selectedLayout]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -167,11 +190,13 @@ export function CoverImageSection({
     [rawImageSrc, setCoverImage],
   );
 
-  return (
-    <div className="w-full">
+ return (
+    <div className="w-full flex flex-col justify-center">
       <div
-        className={`relative w-full h-40 md:h-52 rounded-[2rem] overflow-hidden border-2 border-dashed transition-all cursor-pointer group
+        className={`relative overflow-hidden border-2 border-dashed transition-all cursor-pointer group 
+          ${layoutConfig.css} 
           ${coverImage ? "border-transparent" : "border-slate-200 hover:border-indigo-300 bg-slate-50"}`}
+        style={{ aspectRatio: layoutConfig.aspect }} // 🚀 CSS INLINE À PROVA DE FALHAS DO TAILWIND
         onClick={() => !isUploading && fileInputRef.current?.click()}
       >
         {coverImage && (
@@ -198,18 +223,18 @@ export function CoverImageSection({
           ) : coverImage ? (
             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-2">
               <ImagePlus size={28} className="text-white drop-shadow-md" />
-              <span className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-md">
+              <span className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-md text-center px-4">
                 Trocar Capa
               </span>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2 text-slate-400 group-hover:text-indigo-400 transition-colors">
+            <div className="flex flex-col items-center gap-2 text-slate-400 group-hover:text-indigo-400 transition-colors text-center px-4">
               <ImagePlus size={28} />
               <span className="text-[10px] font-black uppercase tracking-widest">
                 Adicionar Foto de Capa
               </span>
               <span className="text-[9px] font-medium opacity-60">
-                Proporção 16:9 • Recomendado: 1200 × 675px • Máx 8MB
+                A proporção é ajustada automaticamente para o seu template
               </span>
             </div>
           )}
@@ -231,7 +256,7 @@ export function CoverImageSection({
             e.stopPropagation();
             setCoverImage("");
           }}
-          className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-lg text-[9px] font-black uppercase hover:bg-rose-100 transition-colors border border-rose-100"
+          className="mt-4 flex items-center justify-center w-max mx-auto gap-1.5 px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-[9px] font-black uppercase hover:bg-rose-100 transition-colors border border-rose-100"
         >
           <Trash2 size={12} /> Remover Capa
         </button>
@@ -240,6 +265,7 @@ export function CoverImageSection({
       {rawImageSrc && (
         <CoverCropperModal
           imageSrc={rawImageSrc}
+          aspectRatio={layoutConfig.aspect} // 🚀 PASSA A PROPORÇÃO PARA O MODAL
           onCropComplete={handleCropComplete}
           onClose={() => {
             if (rawImageSrc) URL.revokeObjectURL(rawImageSrc);

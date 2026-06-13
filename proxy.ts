@@ -32,24 +32,27 @@ export default auth(async (req) => {
   if (ratelimit) {
     // O Webhook do MP já tem HMAC, não precisa de Upstash.
     const isApiAuthRoute = pathname.startsWith("/api/auth");
+    const isUploadRoute = pathname.startsWith("/api/uploadthing"); // 🚀 NOVO ESCUDO AQUI
     const isSearchRoute = pathname.startsWith("/busca");
     const isSensitivePage =
       pathname.startsWith("/login") ||
       pathname.startsWith("/esqueci-senha") ||
       pathname.startsWith("/nova-senha");
 
-    // Abrangemos o escudo para proteger contra Brute Force nas telas visuais
-    if (isApiAuthRoute || isSearchRoute || isSensitivePage) {
+    // Abrangemos o escudo para proteger rotas de custo (Upload e Busca) e senhas (Brute Force)
+    if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) { // 🚀 UPLOAD ADICIONADO NO IF
       const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
       const { success } = await ratelimit.limit(ip);
 
-      if (!success) {
-        if (isApiAuthRoute) {
+    if (!success) {
+        // Se bater o limite nas APIs JSON (UploadThing ou Auth)
+        if (isApiAuthRoute || isUploadRoute) {
           return new NextResponse(
-            JSON.stringify({ error: "Too many requests. Please slow down." }),
+            JSON.stringify({ error: "Limite de tentativas excedido. Aguarde 1 minuto." }),
             { status: 429, headers: { "Content-Type": "application/json" } },
           );
         }
+        
         // Se bater o limite nas páginas visuais, manda pra uma URL com parâmetro de erro para o frontend exibir o Toast
         const fallbackUrl = isSearchRoute ? "/busca" : "/login";
         return NextResponse.redirect(

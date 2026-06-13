@@ -115,6 +115,7 @@ export default function ComercialLayout({
 
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
   // 🚀 O filtro agora começa nulo para a IA decidir o que mostrar depois
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -251,8 +252,8 @@ export default function ComercialLayout({
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
-  useEffect(() => {
-    if (selectedIndex !== null) {
+ useEffect(() => {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -260,7 +261,7 @@ export default function ComercialLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex]);
+  }, [selectedIndex, isPdfModalOpen]); // 🚀 TRAVA A TELA QUANDO O PDF ABRIR
 
   const addressPartsForMap = [
     business.address,
@@ -360,7 +361,7 @@ export default function ComercialLayout({
                   {business.urban_tag}
                 </span>
               )}
-              {realHours.length > 0 && (
+            {realHours.length > 0 && (
                 <span
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
                     isOpen
@@ -377,9 +378,27 @@ export default function ComercialLayout({
                 </span>
               )}
             </div>
-          </div>
+</div>
         </div>
       </header>
+
+ {/* 🚀 BOTÃO DO CATÁLOGO ESTÁTICO COM DEGRADÊ PREMIUM (SEM ATRASO DE ANIMAÇÃO) */}
+      {rawBusiness.catalogPdf && (
+        <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
+          <button
+            onClick={() => setIsPdfModalOpen(true)}
+            className={`relative overflow-hidden flex w-full md:w-[320px] justify-center items-center gap-3 px-8 py-4 rounded-full text-[11px] md:text-xs font-black tracking-[0.2em] uppercase text-white ${theme.bgAction} shadow-md border border-white/20 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95`}
+          >
+            {/* Máscara de Degradê Translúcido para dar o efeito "Estilizado/3D" */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/20 pointer-events-none" />
+            
+            <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
+              Explorar Menu 
+              <ChevronRight size={16} strokeWidth={2} />
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* --- MENU TABS (Glassmorphism e z-20 para não conflitar com a Navbar) --- */}
       <div className="sticky top-6 z-20 px-4 mb-10 flex justify-center">
@@ -895,6 +914,46 @@ export default function ComercialLayout({
         onClose={() => setSelectedIndex(null)}
         onNavigate={safeSetIndex}
       />
+
+      {/* ==========================================
+          🚀 MODAL DE PDF (CARDÁPIO/CATÁLOGO)
+          ========================================== */}
+      <AnimatePresence>
+        {isPdfModalOpen && rawBusiness.catalogPdf && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
+          >
+            <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
+              
+              {/* Barra de Topo com Botão de Fechar */}
+              <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
+                  Visualização de Documento
+                </span>
+                <button
+                  onClick={() => setIsPdfModalOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-slate-200 hover:bg-rose-500 hover:text-white rounded-full transition-colors text-slate-500"
+                >
+                  <Plus className="rotate-45" size={20} strokeWidth={2} />
+                </button>
+              </div>
+
+              {/* O Coração: O Leitor de PDF nativo do navegador */}
+              <div className="flex-1 w-full bg-slate-200/50">
+                <iframe
+                  src={`${rawBusiness.catalogPdf}#toolbar=0`}
+                  className="w-full h-full border-none"
+                  title="Catálogo PDF"
+                />
+              </div>
+
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {

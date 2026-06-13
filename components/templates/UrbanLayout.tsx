@@ -48,6 +48,7 @@ export default function UrbanLayout({
   emailVerified,
   currentUserId,
   isAdmin,
+  isOpen, // 🚀 ADICIONADO AQUI!
 }: any) {
   const {
     business,
@@ -62,7 +63,8 @@ export default function UrbanLayout({
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
 
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+ const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -213,8 +215,8 @@ export default function UrbanLayout({
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
-  useEffect(() => {
-    if (selectedIndex !== null) {
+useEffect(() => {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -222,7 +224,7 @@ export default function UrbanLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex]);
+  }, [selectedIndex, isPdfModalOpen]); // 🚀 TRAVA A TELA PRO PDF
 
   if (!theme) return null;
 
@@ -234,7 +236,7 @@ export default function UrbanLayout({
       <header
         className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20 overflow-hidden text-white`}
       >
-        {business.coverImage && (
+      {business.coverImage && (
           <Image
             src={business.coverImage}
             alt={`Capa de ${business.name}`}
@@ -244,39 +246,54 @@ export default function UrbanLayout({
             className="object-cover rounded-b-[2.5rem] md:rounded-b-[4rem]"
           />
         )}
-        <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] pointer-events-none">
-          <div className="absolute -top-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-black/30 blur-[80px]" />
-          <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-black/20 blur-[80px]" />
-        </div>
+        
+        {/* 🚀 OVERLAY DE ALTO CONTRASTE (Garante leitura em qualquer foto) */}
+        <div className="absolute inset-0 pointer-events-none rounded-b-[2.5rem] md:rounded-b-[4rem] bg-black/40" />
+        <div className="absolute inset-0 pointer-events-none rounded-b-[2.5rem] md:rounded-b-[4rem] bg-gradient-to-b from-black/70 via-transparent to-black/80" />
 
-        <div className="w-full max-w-7xl mx-auto flex justify-end relative z-30 mb-8 md:mb-16">
-          <div className="flex items-center gap-2 bg-white/20 p-1.5 rounded-full backdrop-blur-md border border-white/30 text-white">
+     {/* 🚀 BOTÕES DE COMPARTILHAR E FAVORITAR FIXOS NO CANTO SUPERIOR DIREITO */}
+        <div className="absolute top-4 right-4 md:top-6 md:right-8 z-30">
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/20 rounded-full backdrop-blur-md border border-white/30 text-white shadow-lg">
             <button
-              aria-label="Compartilhar perfil no WhatsApp ou copiar link"
+              aria-label="Compartilhar perfil"
               onClick={() => handleShare(business.name)}
-              className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:bg-white/20"
+              className="flex items-center justify-center transition-transform hover:scale-110"
             >
-              <Share2 className="w-4 h-4" strokeWidth={2} />
+              <Share2 className="w-5 h-5" strokeWidth={1.5} />
             </button>
-            <div className="w-[1px] h-5 bg-white/30" />
-            <FavoriteButton
-              businessId={business.id}
-              isLoggedIn={isLoggedIn}
-              initialIsFavorited={isFavorited}
-              emailVerified={emailVerified}
-            />
+            <div className="w-[1px] h-4 bg-white/30" />
+            <div className="flex items-center justify-center transition-transform hover:scale-110">
+              <FavoriteButton
+                businessId={business.id}
+                isLoggedIn={isLoggedIn}
+                initialIsFavorited={isFavorited}
+                emailVerified={emailVerified}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="relative z-20 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-16">
-          {business.urban_tag && (
+       <div className="relative z-20 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-16">
+          {/* 🚀 BADGE ON/OFF (Mobile - Topo, acima da imagem) */}
+          {realHours.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="md:hidden flex justify-center w-full order-1"
             >
-              <span className="px-5 py-2 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm text-center">
-                {business.urban_tag}
+              <span
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
+                  isOpen
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                    : "bg-rose-500/20 text-rose-400 border-rose-500/30"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isOpen ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                  }`}
+                />
+                {isOpen ? "ON" : "OFF"}
               </span>
             </motion.div>
           )}
@@ -304,27 +321,53 @@ export default function UrbanLayout({
             </motion.div>
           )}
 
-          <div className="flex flex-col items-center md:items-start text-center md:text-left order-3 md:order-1">
-            {business.urban_tag && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="hidden md:block mb-6"
-              >
+      <div className="flex flex-col items-center md:items-start text-center md:text-left order-3 md:order-1 w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="hidden md:flex flex-wrap items-center gap-3 mb-6"
+            >
+              {business.urban_tag && (
                 <span className="px-5 py-2 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm">
                   {business.urban_tag}
                 </span>
-              </motion.div>
-            )}
+              )}
+              {/* 🚀 BADGE ON/OFF (Desktop) */}
+              {realHours.length > 0 && (
+                <span
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
+                    isOpen
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                      : "bg-rose-500/20 text-rose-400 border-rose-500/30"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isOpen ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                    }`}
+                  />
+                  {isOpen ? "ON" : "OFF"}
+                </span>
+              )}
+            </motion.div>
 
-            <motion.h1
+           <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white drop-shadow-md leading-[1.1] mb-4 md:mb-6"
+              className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white drop-shadow-md leading-[1.1] mb-4"
             >
               {business.name}
             </motion.h1>
+
+            {/* 🚀 FRASE DE IMPACTO (Mobile - Abaixo do título) */}
+            {business.urban_tag && (
+              <div className="flex md:hidden justify-center items-center mb-6">
+                <span className="px-5 py-2 rounded-full bg-white/20 text-white text-[10px] font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm text-center">
+                  {business.urban_tag}
+                </span>
+              </div>
+            )}
 
             {hasDescription && (
               <motion.p
@@ -337,18 +380,35 @@ export default function UrbanLayout({
               </motion.p>
             )}
 
-            {hasWhatsapp && (
-              <motion.button
-                aria-label="Entrar em contato via WhatsApp"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                onClick={() => handleTrackLead("whatsapp")}
-                className={`px-8 py-4 bg-white ${theme.primary} rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:scale-105 hover:shadow-2xl transition-all flex items-center gap-3`}
-              >
-                FALE CONOSCO <ChevronRight size={20} strokeWidth={2.5} />
-              </motion.button>
-            )}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
+            >
+              {/* 🚀 BOTÃO DO CATÁLOGO DE PRODUTOS / PDF (Estático Premium) */}
+              {rawBusiness.catalogPdf && (
+                <button
+                  onClick={() => setIsPdfModalOpen(true)}
+                  className="relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white/10 border border-white/20 backdrop-blur-md text-white rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:bg-white/20 transition-all flex items-center justify-center gap-3 active:scale-95"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    Catálogo Visual <ChevronRight size={20} strokeWidth={2.5} />
+                  </span>
+                </button>
+              )}
+
+              {hasWhatsapp && (
+                <button
+                  aria-label="Entrar em contato via WhatsApp"
+                  onClick={() => handleTrackLead("whatsapp")}
+                  className={`w-full sm:w-auto px-8 py-4 bg-white ${theme.primary} rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:scale-105 hover:shadow-2xl transition-all flex items-center justify-center gap-3`}
+                >
+                  FALE CONOSCO <MessageCircle size={20} strokeWidth={2.5} />
+                </button>
+              )}
+            </motion.div>
           </div>
         </div>
       </header>
@@ -763,6 +823,48 @@ export default function UrbanLayout({
           />
         </motion.button>
       )}
+
+    <TemplateLightbox
+        images={lightboxImages}
+        selectedIndex={selectedIndex}
+        onClose={() => setSelectedIndex(null)}
+        onNavigate={safeSetIndex}
+      />
+
+      {/* ==========================================
+          🚀 MODAL DE PDF (CARDÁPIO/CATÁLOGO)
+          ========================================== */}
+      <AnimatePresence>
+        {isPdfModalOpen && rawBusiness.catalogPdf && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
+          >
+            <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
+              <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
+                  Visualização de Documento
+                </span>
+                <button
+                  onClick={() => setIsPdfModalOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-slate-200 hover:bg-rose-500 hover:text-white rounded-full transition-colors text-slate-500"
+                >
+                  <Plus className="rotate-45" size={20} strokeWidth={2} />
+                </button>
+              </div>
+              <div className="flex-1 w-full bg-slate-200/50">
+                <iframe
+                  src={`${rawBusiness.catalogPdf}#toolbar=0`}
+                  className="w-full h-full border-none"
+                  title="Catálogo PDF"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
