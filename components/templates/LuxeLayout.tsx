@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import Image from "next/image"; // ✅ ADICIONE ESTA LINHA AQUI
+import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Instagram,
