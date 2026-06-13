@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import {
-  ExternalLink, // 🚀 ADICIONE AQUI!
+  ExternalLink,
   X,
   UserX,
   User,
