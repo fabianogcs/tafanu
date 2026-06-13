@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { useState } from "react";
-import { Navigation, Loader2, MapPin } from "lucide-react"; // ⬅️ Adicionei o MapPin
+import { Navigation, Loader2, MapPin } from "lucide-react"; 
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LocationTracker() {
