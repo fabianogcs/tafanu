@@ -6,7 +6,7 @@ import { hashSync } from "bcryptjs";
 import { auth } from "@/auth";
 
 export async function moverEtapaFunil(businessId: string, novaEtapa: number) {
-  // 👈 ADICIONE ESTAS 4 LINHAS DE TRAVA:
+ 
   const session = await auth();
   if (
     !session?.user ||
