@@ -127,7 +127,7 @@ export default async function AnunciarPage() {
                 <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-emerald-500/80 shadow-sm"></div>
               </div>
               <div className="absolute left-1/2 -translate-x-1/2 bg-white/5 border border-white/5 rounded-md px-4 py-1 hidden md:block text-[10px] text-white/40 font-mono tracking-widest">
-                tafanu.com.br/editor
+                Editor Tafanu
               </div>
             </div>
 

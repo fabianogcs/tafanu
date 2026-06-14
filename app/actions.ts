@@ -233,9 +233,10 @@ export async function registerUser(formData: FormData) {
       });
     }
 
-    // 5.5 📧 ENVIO DE E-MAIL DE VERIFICAÇÃO (Sua lógica do Resend mantida)
+   // 5.5 📧 ENVIO DE E-MAIL DE VERIFICAÇÃO (Sua lógica do Resend mantida)
     const verificationToken = await generateVerificationToken(email);
-    const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // 🚀 BLINDAGEM DO DOMÍNIO: Se for produção, usa o oficial. Se não, local.
+    const domain = process.env.NODE_ENV === "production" ? "https://tafanu.com.br" : "http://localhost:3000";
     const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
 
     try {
@@ -1643,8 +1644,9 @@ export async function sendPasswordResetEmail(formData: FormData) {
     },
   });
 
-  // Link para a página que você escolheu manter (nova-senha)
-  const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+// Link para a página que você escolheu manter (nova-senha)
+  // 🚀 BLINDAGEM DO DOMÍNIO
+ const domain = process.env.NODE_ENV === "production" ? "https://tafanu.com.br" : "http://localhost:3000";
   const resetLink = `${domain}/nova-senha?token=${token}`;
 
   try {
@@ -2706,10 +2708,11 @@ export async function resendVerificationEmail(email: string) {
     if (!user) return { error: "Usuário não encontrado." };
     if (user.emailVerified) return { error: "Este e-mail já está verificado." };
 
-    // 2. Gera um novo token (usando a função que já criamos)
+   // 2. Gera um novo token (usando a função que já criamos)
     const verificationToken = await generateVerificationToken(email);
 
-    const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // 🚀 BLINDAGEM DO DOMÍNIO
+ const domain = process.env.NODE_ENV === "production" ? "https://tafanu.com.br" : "http://localhost:3000";
     const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
 
     // 3. Dispara o e-mail
