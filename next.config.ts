@@ -23,9 +23,9 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-       {
+    {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(self)", // 🚀 Libera o GPS para o seu próprio site!
+            value: "camera=(), microphone=(self), geolocation=(self)", // 🚀 Libera o microfone também!
           },
         ],
       },
