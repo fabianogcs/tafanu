@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation, Loader2, MapPin } from "lucide-react"; 
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -9,13 +9,21 @@ export default function LocationTracker() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [deviceEnv, setDeviceEnv] = useState({ isPwa: false, isMobile: false });
+
+  // Detecta o ambiente do usuário apenas no client-side
+  useEffect(() => {
+    const isPwa = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setDeviceEnv({ isPwa, isMobile });
+  }, []);
 
   // 🚀 A MÁGICA AQUI: O componente sabe se o GPS já está ligado!
   const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("Seu navegador não suporta geolocalização.");
+      toast.error("Seu dispositivo não suporta geolocalização.");
       return;
     }
 
@@ -49,34 +57,46 @@ export default function LocationTracker() {
         setLoading(false);
 
         let msg = "";
+        let description = "";
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            msg =
-              "Permissão negada! Clique no cadeado na barra de endereços e permita o acesso à localização.";
+            msg = "Localização Bloqueada";
+            
+            // Lógica inteligente de instruções baseada no ambiente
+            if (deviceEnv.isPwa && deviceEnv.isMobile) {
+               description = "Vá nas Configurações do seu celular > Aplicativos > Tafanu > Permissões e ative a Localização.";
+            } else if (deviceEnv.isPwa && !deviceEnv.isMobile) {
+               description = "Vá nas configurações de Privacidade do seu Windows/Mac e permita que o Tafanu acesse sua localização.";
+            } else {
+               description = "Clique no ícone de cadeado (ou informações) ao lado da barra de endereço e permita o GPS.";
+            }
             break;
           case error.POSITION_UNAVAILABLE:
-            msg =
-              "Sinal fraco! Não conseguimos obter sua localização agora. Tente novamente em instantes.";
+            msg = "Sinal fraco ou indisponível";
+            description = "Não conseguimos obter sua localização agora. Verifique se o GPS do aparelho está ligado e tente em instantes.";
             break;
           case error.TIMEOUT:
-            msg =
-              "O tempo acabou! Tente clicar novamente para uma segunda busca mais rápida.";
+            msg = "Busca lenta?";
+            description = "O tempo de busca expirou. Tente clicar novamente para uma segunda busca mais rápida.";
             break;
           default:
-            msg = "Erro ao buscar GPS.";
+            msg = "Erro ao buscar GPS";
+            description = "Ocorreu um erro inesperado ao tentar acessar sua localização.";
         }
 
         if (error.code === error.PERMISSION_DENIED) {
-          toast.error("Localização negada", {
-            description:
-              "Clique no cadeado ao lado da URL e permita o acesso ao GPS.",
-            duration: 5000,
+          toast.error(msg, {
+            description: description,
+            duration: 8000, // Maior duração para dar tempo de ler as instruções
           });
-        } else if (error.code !== error.TIMEOUT) {
-          toast.warning(msg);
+        } else if (error.code === error.TIMEOUT) {
+          toast.info(msg, {
+            description: description,
+          });
         } else {
-          toast.info("Busca lenta?", {
-            description: "Tente clicar novamente para uma segunda tentativa.",
+          toast.warning(msg, {
+             description: description,
           });
         }
       },
