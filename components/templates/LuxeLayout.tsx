@@ -771,7 +771,7 @@ export default function LuxeLayout({
         )}
       </section>
 
-      <main className="w-full flex flex-col items-center relative z-10 px-4 md:px-8 lg:px-12 pb-20 md:pb-32">
+      <main className="w-full flex flex-col items-center relative z-10 px-4 md:px-8 lg:px-12 pb-4">
         <div className="w-full max-w-[1300px] flex flex-col gap-5 md:gap-6 mt-2">
           {/* 🚀 BENTO 1: A ESSÊNCIA (Destaques) */}
           {hasFeatures && (
@@ -1163,17 +1163,20 @@ export default function LuxeLayout({
                     />
                   ))}
                 </div>
-              </motion.div>
+             </motion.div>
             )}
           </div>
         </div>
       </main>
 
+      {/* 🚀 AJUSTE DE ESPAÇAMENTO CIRÚRGICO */}
       <div className={`w-full ${theme.bgPage}`}>
-        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-16">
-          <div className="w-full flex justify-center py-10 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10 mt-6">
+        <div className="max-w-5xl mx-auto px-6 md:px-12 pb-12">
+          {/* Reduzi o py-10 para py-6 e tirei o mt-6 */}
+          <div className="w-full flex justify-center py-6 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10">
             <ReportModal businessSlug={business.slug} />
           </div>
+          {/* As avaliações agora sobem e colam mais perto do botão */}
           <CommentsSection
             businessId={rawBusiness.id}
             businessOwnerId={rawBusiness.userId}

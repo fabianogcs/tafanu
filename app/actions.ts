@@ -647,6 +647,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         longitude: true,
         imageUrl: true,
         coverImage: true,
+        catalogPdf: true,
         gallery: true,
         user: { select: { affiliateId: true } },
       },
@@ -708,7 +709,9 @@ export async function updateFullBusiness(slug: string, payload: any) {
     if (old.coverImage && old.coverImage !== payload.coverImage) {
       linksParaDeletar.push(old.coverImage);
     }
-
+    if (old.catalogPdf && old.catalogPdf !== payload.catalogPdf) {
+      linksParaDeletar.push(old.catalogPdf);
+    }
     // Se fotos da galeria antiga não estão na nova, vão para o lixo
     const galeriaAntiga = (old.gallery as string[]) || [];
     const novaGaleriaUrls = (payload.mediaFeed || [])
@@ -1342,29 +1345,54 @@ export async function createReport(
   reason: string,
   details: string,
 ) {
-  // 🛡️ TRAVA DE SEGURANÇA: Exige login e barra bots
+  // 1. 🛡️ Segurança Primária: Exige login 
   const user = await getSafeUser();
   if (!user) {
     return { error: "Você precisa estar logado para denunciar." };
   }
 
   try {
+    // 2. Resolve o negócio pelo Link
     const b = await db.business.findUnique({
       where: { slug: businessSlug },
       select: { id: true },
     });
     if (!b) return { error: "Perfil não encontrado." };
+
+    // 3. ⏳ TRAVA ANTI-FLOOD E ANTI-DUPLICIDADE
+    // Impede que o mesmo usuário denuncie a MESMA loja nas últimas 24 horas
+    const vinteEQuatroHorasAtras = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const denunciaRecente = await db.report.findFirst({
+      where: {
+        businessId: b.id,
+        reportedBy: user.id, // Verifica se ESSE usuário já denunciou
+        createdAt: { gte: vinteEQuatroHorasAtras },
+      },
+      select: { id: true },
+    });
+
+    if (denunciaRecente) {
+      return { 
+        error: "Você já enviou uma denúncia para este perfil recentemente. Nossa equipe já está analisando." 
+      };
+    }
+
+    // 4. Criação da Denúncia com Auditoria Completa
     await db.report.create({
       data: {
         businessId: b.id,
         reason,
         details: details || "",
         status: "PENDING",
+        reportedBy: user.id, // 🚀 FUNDAMENTAL: Agora você sabe QUEM denunciou!
       },
     });
+
     return { success: true };
   } catch (error) {
-    return { error: "Erro reportar." };
+    console.error("Erro ao reportar:", error);
+    return { error: "Erro interno. Tente novamente mais tarde." };
   }
 }
 
@@ -2069,8 +2097,12 @@ export async function getAffiliateDashboardData() {
           },
           orderBy: { createdAt: "desc" },
         },
-        commissions: {
+       commissions: {
           // Vendas automáticas do Mercado Pago
+          orderBy: { createdAt: "desc" },
+        },
+        withdrawals: {
+          // 🚀 PUXA O HISTÓRICO DE SAQUES DO PARCEIRO
           orderBy: { createdAt: "desc" },
         },
       },
@@ -2080,6 +2112,7 @@ export async function getAffiliateDashboardData() {
 
     return {
       success: true,
+      withdrawals: affiliate.withdrawals, // 🚀 ENVIA PARA O FRONTEND
       affiliate: {
         id: affiliate.id, // 🚀 FALTAVA ISSO: Vital para a trava de auto-compra do afiliado
         name: affiliate.name,
@@ -2202,34 +2235,65 @@ export async function getAffiliatePayouts() {
     return { error: "Erro ao calcular pagamentos." };
   }
 }
-// 2. Registra o pagamento e "Zera" o saldo do parceiro
+// 2. Registra o pagamento, GERA O RECIBO OFICIAL (Withdrawal) e "Zera" o saldo
 export async function markAffiliateAsPaid(affiliateId: string) {
-  const adminId = await requireAdmin(); // Supondo que essa seja sua função de auth
+  const adminId = await requireAdmin();
   if (!adminId) return { error: "Não autorizado." };
 
   try {
-    // 🚀 AGORA SIM O PRISMA VAI ENTENDER!
-    const atualizacao = await db.commission.updateMany({
+    // 1. Busca quais são as comissões EXATAS que estão sendo pagas agora
+    const comissoesDisponiveis = await db.commission.findMany({
       where: {
         affiliateId: affiliateId,
-        status: CommissionStatus.AVAILABLE, // Usando o Enum oficial
+        status: CommissionStatus.AVAILABLE,
       },
-      data: {
-        status: CommissionStatus.PAID, // Usando o Enum oficial
-      },
+      select: { id: true, amount: true },
     });
 
-    if (atualizacao.count === 0) {
-      return {
-        error:
-          "Erro: Nenhuma comissão com status AVAILABLE encontrada no Prisma.",
-      };
+    if (comissoesDisponiveis.length === 0) {
+      return { error: "Nenhuma comissão disponível para pagar." };
     }
 
-    // Atualiza a data do último pagamento no usuário
-    await db.user.update({
+    // 2. Faz a matemática e junta os IDs para carimbar depois
+    const valorTotalDoSaque = comissoesDisponiveis.reduce((acc, c) => acc + c.amount, 0);
+    const idsDasComissoes = comissoesDisponiveis.map(c => c.id);
+
+    // 3. Busca a chave PIX do parceiro (Usa o CPF/CNPJ ou Telefone cadastrado)
+    const parceiro = await db.user.findUnique({
       where: { id: affiliateId },
-      data: { lastPayoutDate: new Date() },
+      select: { document: true, phone: true, email: true }
+    });
+    
+    // Fallback inteligente: se ele não preencheu o documento, usa o telefone ou e-mail
+    const chavePixDoRecibo = parceiro?.document || parceiro?.phone || parceiro?.email || "Chave não informada";
+
+    // 4. 🚀 TRANSAÇÃO ATÔMICA: Cria o Recibo e Carimba as comissões de uma vez só!
+    await db.$transaction(async (tx) => {
+      // A. Cria o recibo do Saque
+      const reciboDeSaque = await tx.withdrawal.create({
+        data: {
+          affiliateId: affiliateId,
+          amount: valorTotalDoSaque,
+          pixKey: chavePixDoRecibo,
+          status: "APPROVED",
+          paidAt: new Date(),
+        }
+      });
+
+      // B. Atualiza as comissões: Muda pra PAID e guarda o ID do Recibo nelas!
+      await tx.commission.updateMany({
+        where: { id: { in: idsDasComissoes } },
+        data: {
+          status: CommissionStatus.PAID,
+          withdrawalId: reciboDeSaque.id, // O VÍNCULO MÁGICO ACONTECE AQUI!
+        }
+      });
+
+      // C. Atualiza a data do último pagamento no perfil do usuário
+      await tx.user.update({
+        where: { id: affiliateId },
+        data: { lastPayoutDate: new Date() },
+      });
     });
 
     revalidatePath("/admin");
@@ -2237,11 +2301,11 @@ export async function markAffiliateAsPaid(affiliateId: string) {
 
     return {
       success: true,
-      message: `Sucesso! ${atualizacao.count} comissão(ões) movida(s) para o Extrato.`,
+      message: `Sucesso! Saque de R$ ${valorTotalDoSaque.toFixed(2)} registrado e recibo gerado.`,
     };
   } catch (error) {
     console.error("Erro crítico ao registrar pagamento:", error);
-    return { error: "Erro interno no banco de dados." };
+    return { error: "Erro interno ao gerar o recibo de pagamento." };
   }
 }
 export async function createSubscription(
@@ -2678,15 +2742,34 @@ export async function addComment(
   parentId?: string,
 ) {
   try {
-    // 🛡️ Segurança: Pega o ID direto da sessão autenticada do servidor
+    // 1. 🛡️ Segurança: Pega o ID direto da sessão autenticada do servidor
     const session = await auth();
     if (!session?.user?.id) {
       return { success: false, error: "Não autorizado." };
     }
 
-    // Define o userId com base em quem está logado
     const userId = session.user.id;
 
+    // 2. ⏳ TRAVA ANTI-FLOOD (Bloqueio de Spam)
+    // Define uma janela de 15 segundos de carência entre comentários
+    const quinzeSegundosAtras = new Date(Date.now() - 15 * 1000);
+
+    const comentarioRecente = await db.comment.findFirst({
+      where: {
+        userId: userId,
+        createdAt: { gte: quinzeSegundosAtras },
+      },
+      select: { id: true }, // Traz apenas o ID para a consulta ser extremamente leve
+    });
+
+    if (comentarioRecente) {
+      return { 
+        success: false, 
+        error: "Calma! Aguarde 15 segundos antes de enviar outra avaliação." 
+      };
+    }
+
+    // 3. Criação do comentário se passou na barreira
     const newComment = await db.comment.create({
       data: {
         content,

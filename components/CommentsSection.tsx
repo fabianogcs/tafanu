@@ -7,7 +7,7 @@ import { addComment, deleteComment, flagComment } from "@/app/actions";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import LoginModal from "@/components/LoginModal"; // ⬅️ IMPORTAÇÃO DO MODAL (ajuste o caminho se necessário)
+import LoginModal from "@/components/LoginModal"; 
 
 interface CommentsSectionProps {
   businessId: string;
@@ -34,7 +34,7 @@ export default function CommentsSection({
   const [isPending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // ⬅️ ESTADO DO MODAL
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); 
 
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
@@ -97,7 +97,7 @@ export default function CommentsSection({
   };
 
   return (
-    <section className="mt-16 w-full max-w-4xl mx-auto">
+    <section className="w-full max-w-4xl mx-auto">
       {/* ⬅️ O MODAL FICA AQUI */}
       <LoginModal
         isOpen={isLoginModalOpen}
@@ -107,7 +107,7 @@ export default function CommentsSection({
       {/* CAMPO DE ENVIO COM HEADER EMBUTIDO */}
       <div
         ref={commentFormRef}
-        className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12"
+        className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12 mt-8"
       >
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-4">
@@ -229,7 +229,8 @@ export default function CommentsSection({
                 <h4 className="font-black text-[13px] md:text-sm text-slate-900 uppercase italic tracking-tight">
                   {comment.user?.name || "Visitante"}
                 </h4>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                {/* 🚀 HYDRATION FIX AQUI */}
+                <span suppressHydrationWarning className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
                   {formatDistanceToNow(new Date(comment.createdAt), {
                     locale: ptBR,
                     addSuffix: true,
@@ -305,7 +306,8 @@ export default function CommentsSection({
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">
+                          {/* 🚀 HYDRATION FIX AQUI TAMBÉM */}
+                          <span suppressHydrationWarning className="text-[8px] font-bold text-slate-400 uppercase">
                             {formatDistanceToNow(new Date(reply.createdAt), {
                               locale: ptBR,
                               addSuffix: true,

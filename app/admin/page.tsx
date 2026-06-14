@@ -4,14 +4,13 @@ import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/AdminDashboard";
 import { CommissionStatus } from "@prisma/client";
 
-// 🚀 Adicionamos o "searchParams" para a página saber se você está buscando alguém
 export default async function AdminPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
   const params = await searchParams;
-  const q = params?.q || ""; // Pega o que você digitou lá no painel
+  const q = params?.q || "";
 
   const session = await auth();
 
@@ -20,13 +19,14 @@ export default async function AdminPage({
   }
 
   const emailSessao = session.user.email.toLowerCase();
+  const adminEmailEnv = process.env.ADMIN_EMAIL?.toLowerCase() || "";
 
+  // 1. AUTENTICAÇÃO BLINDADA
   const usuarioNoBanco = await db.user.findUnique({
     where: { email: emailSessao },
     select: { role: true },
   });
 
-  const adminEmailEnv = process.env.ADMIN_EMAIL?.toLowerCase() || "";
   const isEmailAutorizado = emailSessao === adminEmailEnv;
   const isAdminNoBanco = usuarioNoBanco?.role === "ADMIN";
 
@@ -35,54 +35,87 @@ export default async function AdminPage({
   }
 
   const agora = new Date();
-  const adminEmail = adminEmailEnv;
 
-  const [usersData, reports, flaggedComments, allCommissions] =
-    await Promise.all([
-      db.user.findMany({
-        // 🚀 SE TIVER BUSCA: Procura no banco todo. SE NÃO: Traz só os 1000 mais recentes.
-        where: q
-          ? {
-              OR: [
-                { name: { contains: q, mode: "insensitive" as const } },
-                { email: { contains: q, mode: "insensitive" as const } },
-                { document: { contains: q } },
-              ],
-            }
-          : {},
-        take: q ? 100 : 1000,
-        include: {
-          businesses: {
-            include: {
-              _count: { select: { favorites: true } },
-            },
+  // 2. BUSCAS SEPARADAS: TABELA vs MÉTRICAS
+  // Fazemos tudo em paralelo, mas com consultas otimizadas!
+  const [
+    usersData, 
+    reports, 
+    flaggedComments, 
+    comissoesAgregadas, 
+    lojasAtivasGerais,
+    historicoSaques // 🚀 RECIBOS DE SAQUE
+  ] = await Promise.all([
+    // A. LISTA DE USUÁRIOS (Para a tabela - Limitado para não travar a tela)
+    db.user.findMany({
+      where: q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
+              { document: { contains: q } },
+            ],
+          }
+        : {},
+      take: q ? 100 : 1000,
+      include: {
+        businesses: {
+          include: {
+            _count: { select: { favorites: true } },
           },
-          referrals: { select: { id: true } },
-          affiliate: { select: { id: true, name: true, referralCode: true } },
         },
-        orderBy: { createdAt: "desc" },
-      }),
-      db.report.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { business: { select: { name: true, slug: true } } },
-      }),
-      db.comment.findMany({
-        where: { isFlagged: true },
-        include: {
-          user: { select: { name: true, image: true } },
-          business: { select: { name: true, slug: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      db.commission.findMany({
-        where: {
-          status: { in: [CommissionStatus.AVAILABLE, CommissionStatus.PAID] },
-          amount: { gt: 0 },
-        },
-      }),
-    ]);
+        referrals: { select: { id: true } },
+        affiliate: { select: { id: true, name: true, referralCode: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
 
-  // Prepara os dados para a Tabela
+   // B. RELATÓRIOS E COMENTÁRIOS
+    db.report.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      include: { 
+        business: { select: { name: true, slug: true } },
+        reporter: { select: { id: true, name: true, email: true } } // 🚀 O Prisma faz a mágica aqui!
+      },
+    }),
+    db.comment.findMany({
+      where: { isFlagged: true },
+      include: {
+        user: { select: { name: true, image: true } },
+        business: { select: { name: true, slug: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+
+    // C. 🚀 OTIMIZAÇÃO: Soma o dinheiro das comissões direto no PostgreSQL!
+    db.commission.aggregate({
+      where: { status: CommissionStatus.AVAILABLE },
+      _sum: { amount: true },
+    }),
+
+    // D. 🚀 OTIMIZAÇÃO: Traz de forma levíssima TODAS as lojas ativas para calcular o MRR Global
+    db.business.findMany({
+      where: { 
+        isActive: true, 
+        expiresAt: { gt: agora } 
+      },
+      select: {
+        planType: true,
+        user: {
+          select: { affiliateId: true, isBanned: true, email: true }
+        }
+      }
+    }),
+    
+    // E. 🚀 HISTÓRICO DE SAQUES: Traz os recibos pagos para o Admin
+    db.withdrawal.findMany({
+      include: { affiliate: { select: { name: true, email: true } } },
+      orderBy: { createdAt: "desc" }
+    })
+  ]);
+
+  // 3. PREPARAÇÃO DE DADOS PARA A TABELA (Limitado aos 1000)
   const users = usersData.map((u) => {
     const { password, ...userWithoutPassword } = u;
 
@@ -115,57 +148,44 @@ export default async function AdminPage({
     });
   });
 
-  const pagantesList = users.filter((u) => {
-    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return false;
-    return u.businesses.some(
-      (b) => b.isActive && b.expiresAt && new Date(b.expiresAt) > agora,
-    );
-  });
-
-  // 🎯 A MATEMÁTICA DE CEO: Cálculo do MRR (Receita Recorrente Mensal)
+  // 4. CÁLCULO DAS MÉTRICAS DE CEO (Em cima da base GERAL otimizada)
   let mrrBruto = 0;
   let mrrLiquido = 0;
+  let totalPagantes = 0;
 
-  users.forEach((u) => {
-    if (u.isBanned || u.email?.toLowerCase() === adminEmail) return;
+  lojasAtivasGerais.forEach((loja) => {
+    // Ignora se o usuário foi banido ou se é a conta do próprio Admin
+    if (loja.user?.isBanned || loja.user?.email?.toLowerCase() === adminEmailEnv) return;
 
-    const temAfiliado = !!(u.affiliateId || u.affiliate);
+    totalPagantes += 1;
 
-    u.businesses.forEach((biz) => {
-      if (biz.isActive && biz.expiresAt && new Date(biz.expiresAt) > agora) {
-        let valorMrr = 39.9;
-        let comissaoMrr = 10.0;
+    let valorMrr = 39.9;
+    let comissaoMrr = 10.0;
 
-        // Dilui os planos maiores para achar a métrica mensal real
-        if (biz.planType === "yearly") {
-          valorMrr = 358.8 / 12; // R$ 29,90/mês
-          comissaoMrr = 120.0 / 12; // R$ 10,00/mês
-        } else if (biz.planType === "quarterly") {
-          valorMrr = 104.7 / 3; // R$ 34,90/mês
-          comissaoMrr = 30.0 / 3; // R$ 10,00/mês
-        }
+    if (loja.planType === "yearly") {
+      valorMrr = 358.8 / 12;
+      comissaoMrr = 120.0 / 12;
+    } else if (loja.planType === "quarterly") {
+      valorMrr = 104.7 / 3;
+      comissaoMrr = 30.0 / 3;
+    }
 
-        mrrBruto += valorMrr;
+    mrrBruto += valorMrr;
 
-        if (temAfiliado) {
-          mrrLiquido += valorMrr - comissaoMrr;
-        } else {
-          mrrLiquido += valorMrr;
-        }
-      }
-    });
+    if (loja.user?.affiliateId) {
+      mrrLiquido += valorMrr - comissaoMrr;
+    } else {
+      mrrLiquido += valorMrr;
+    }
   });
 
-  const totalComissoesDevidas = allCommissions
-    .filter((c) => c.status === CommissionStatus.AVAILABLE)
-    .reduce((acc, c) => acc + c.amount, 0);
-
-  const totalPagantes = pagantesList.length;
+  const totalComissoesDevidas = comissoesAgregadas._sum.amount || 0;
 
   const adminData = {
     users,
     reports,
     flaggedComments,
+    historicoSaques, // 🚀 Faltava colocar isso aqui para a tela conseguir ler!
     businessOwnerMap: Object.fromEntries(businessOwnerMap),
     metricas: {
       mrrBruto,

@@ -74,9 +74,10 @@ model User {
   accounts      Account[] 
   sessions      Session[] 
 
-  businesses    Business[] 
+ businesses    Business[] 
   favorites     Favorite[] 
   comments      Comment[]
+  reports       Report[]   // 🚀 ADICIONE ESTA LINHA AQUI!
 }
 
 // --- TABELA DE NEGÓCIOS ---
@@ -215,7 +216,9 @@ model Report {
   createdAt   DateTime @default(now())
   businessId  String
   reportedBy  String?
+  
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reporter    User?    @relation(fields: [reportedBy], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([reportedBy])
@@ -334,6 +337,7 @@ model Commission {
   @@index([affiliateId])
   @@index([status])
   @@index([withdrawalId]) 
+  @@index([userId]) // 🚀 ADICIONADO: Acelera as buscas do Webhook em 100x!
 }
 
 model Withdrawal {
