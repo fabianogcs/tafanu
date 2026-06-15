@@ -210,15 +210,12 @@ export default async function AnunciarPage() {
               className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 opacity-10 rounded-full blur-3xl pointer-events-none"
               aria-hidden="true"
             ></div>
-
             <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter mb-4 text-slate-900 leading-none">
               PLANO <span className="text-emerald-500">TAFANU PRO</span>
             </h2>
-
             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mb-8">
               TESTE GRÁTIS POR 7 DIAS (VÁLIDO NA 1ª ASSINATURA)
             </p>
-
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-10">
               <div className="text-center">
                 <span className="block text-slate-400 font-black text-xs uppercase mb-1">
@@ -232,16 +229,20 @@ export default async function AnunciarPage() {
                 className="hidden md:block w-px h-12 bg-slate-200"
                 aria-hidden="true"
               ></div>
-              <div className="text-center">
+              <div className="text-center flex flex-col items-center">
                 <span className="block text-slate-400 font-black text-xs uppercase mb-1">
                   Após 7 dias
                 </span>
                 <span className="text-5xl font-black text-slate-900 tracking-tighter italic">
-                  R$ 39,90 <span className="text-xl">/mês</span>
+                  R$ 39,90 <span className="text-xl text-slate-500">/mês</span>
                 </span>
+                {/* 🚀 ESTRATÉGIA DE ANCORAGEM (Neuromarketing) */}
+                <div className="mt-2 inline-flex items-center bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-black uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm">
+                  O equivalente a R$ 1,33 por dia
+                </div>
               </div>
-            </div>
-
+            </div>{" "}
+            {/* 🚀 AQUI ESTÁ A DIV QUE FALTAVA PARA FECHAR O BLOCO! */}
             <Link
               href={destination}
               aria-label="Ativar meu teste grátis agora"

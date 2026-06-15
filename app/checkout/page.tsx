@@ -18,7 +18,7 @@ const PLANS = {
     name: "Mensal",
     price: "39,90",
     initialPrice: "0,00", // Continua zero por causa do Trial de 7 dias
-    description: "7 dias grátis na 1ª vez",
+    description: "Equivale a R$ 1,33 por dia",
     footer: "R$ 39,90 / mês após o teste",
     badge: "1ª Assinatura: 7 Dias Grátis",
   },
@@ -163,26 +163,18 @@ export default function CheckoutPage() {
         <div className="lg:col-span-3 flex flex-col gap-4">
           {(Object.keys(PLANS) as PlanType[]).map((key) => {
             const plan = PLANS[key];
-            const isSelected = selectedPlan === key;
             return (
               <button
                 key={key}
-                onClick={() => setSelectedPlan(key)}
-                className={`relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center ${
-                  isSelected
-                    ? "border-emerald-500 bg-[#0D172A] shadow-2xl shadow-emerald-900/20 scale-[1.02] z-10"
-                    : "border-white/5 bg-[#0A1220] opacity-70 hover:opacity-100 hover:border-white/20"
-                }`}
+                onClick={handlePayment} // 🚀 AQUI: O clique no card aciona o pagamento!
+                disabled={isProcessing}
+                className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-500 bg-[#0D172A] shadow-2xl shadow-emerald-900/20 hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group"
               >
-                {isSelected && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-[#050B14] text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-lg">
-                    {plan.badge}
-                  </div>
-                )}
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-[#050B14] text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-lg">
+                  {plan.badge}
+                </div>
 
-                <h3
-                  className={`font-black uppercase italic text-xl ${isSelected ? "text-emerald-500" : "text-slate-400"}`}
-                >
+                <h3 className="font-black uppercase italic text-xl text-emerald-500">
                   {plan.name}
                 </h3>
 
@@ -197,15 +189,14 @@ export default function CheckoutPage() {
                   {plan.description}
                 </p>
 
-                <div
-                  className={`mt-6 w-14 h-8 rounded-xl border-2 flex items-center justify-center transition-colors ${isSelected ? "border-emerald-500 bg-emerald-500" : "border-slate-700 bg-transparent"}`}
-                >
-                  {isSelected && (
-                    <CheckCircle2
-                      size={18}
-                      className="text-[#050B14]"
-                      strokeWidth={3}
-                    />
+                {/* 🚀 O BOTÃO VERDE INJETADO DENTRO DO CARD */}
+                <div className="mt-8 w-full py-4 rounded-xl bg-emerald-500 text-[#050B14] font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg group-hover:bg-emerald-400 transition-colors">
+                  {isProcessing ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      Ativar Plano <CheckCircle2 size={18} strokeWidth={3} />
+                    </>
                   )}
                 </div>
               </button>
@@ -279,7 +270,7 @@ export default function CheckoutPage() {
 
             <p className="text-slate-500 text-[10px] uppercase font-bold mt-6 px-2 leading-relaxed">
               {selectedPlan === "monthly"
-                ? "Cobrança de R$ 39,90 programada para o 8º dia (apenas na sua 1ª assinatura)."
+                ? "Cobrança única mensal de R$ 39,90 programada para o 8º dia. Não existe cobrança diária."
                 : "Você está coberto pela nossa Garantia de 7 Dias. Risco Zero."}
             </p>
           </div>
