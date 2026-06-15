@@ -1,25 +1,26 @@
 "use client";
 
-import { Search, ChevronDown, Loader2, Mic } from "lucide-react"; // ⬅️ Mic adicionado aqui
+import { Search, ChevronDown, Loader2, Mic } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function Hero() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [isListening, setIsListening] = useState(false); // ⬅️ Controle do microfone
+  const [isListening, setIsListening] = useState(false);
 
   const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
     if (e) e.preventDefault();
     setIsSearching(true);
     const params = new URLSearchParams();
-    const finalQuery = voiceQuery || query; // Usa a voz ou o que foi digitado
+    const finalQuery = voiceQuery || query;
     if (finalQuery) params.append("q", finalQuery);
     router.push(`/busca?${params.toString()}`);
   };
 
-  // 🎤 FUNÇÃO DO MICROFONE
+  // 🎤 FUNÇÃO DO MICROFONE (BLINDADA)
   const handleVoiceSearch = () => {
     if (typeof window !== "undefined") {
       const SpeechRecognition =
@@ -27,28 +28,49 @@ export default function Hero() {
         (window as any).webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        alert(
-          "Seu navegador não suporta pesquisa por voz. Tente usar o Google Chrome.",
-        );
+        toast.error("Navegador incompatível", {
+          description:
+            "Pesquisa por voz não suportada. Tente usar o Chrome ou Safari.",
+        });
         return;
       }
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = "pt-BR"; // Focado em português
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = "pt-BR";
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
-      recognition.onstart = () => setIsListening(true);
+        recognition.onstart = () => setIsListening(true);
 
-      recognition.onend = () => setIsListening(false);
+        recognition.onend = () => setIsListening(false);
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setQuery(transcript); // Preenche o campo
-        handleSearch(undefined, transcript); // 🚀 Já faz a busca automático!
-      };
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setQuery(transcript);
+          handleSearch(undefined, transcript);
+        };
 
-      recognition.start();
+        recognition.onerror = (event: any) => {
+          setIsListening(false);
+          if (event.error === "not-allowed") {
+            toast.error("Microfone Bloqueado", {
+              description:
+                "Clique no ícone de cadeado ao lado da URL e permita o uso do microfone.",
+              duration: 8000,
+            });
+          } else {
+            toast.warning("Erro no microfone", {
+              description: `Falha técnica (${event.error}). Tente novamente.`,
+            });
+          }
+        };
+
+        recognition.start();
+      } catch (err) {
+        console.error("Erro ao iniciar o microfone:", err);
+        setIsListening(false);
+      }
     }
   };
 
@@ -131,7 +153,7 @@ export default function Hero() {
             type="submit"
             disabled={isSearching || query.trim() === ""}
             aria-label="Realizar pesquisa"
-            className="bg-tafanu-action hover:bg-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-full px-5 md:px-12 h-10 md:h-14 flex items-center justify-center gap-2 uppercase tracking-[0.1em] text-[10px] md:text-sm shrink-0 shadow-md transform transition-all duration-300 hover:scale-[1.03] active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="bg-tafanu-action hover:bg-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-full px-5 md:px-12 h-10 md:h-14 flex items-center justify-center gap-2 uppercase tracking-[0.1em] text-[10px] md:text-sm shrink-0 shadow-md transform transition-all duration-300 hover:scale-[1.03] active:scale-95 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!shadow-none disabled:!opacity-100 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isSearching ? (
               <Loader2
@@ -159,6 +181,31 @@ export default function Hero() {
           <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-tafanu-action" />
         </button>
       </div>
+
+      {/* 🚀 MODAL DE GRAVAÇÃO DE VOZ AQUI NO FINAL */}
+      {isListening && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050B14]/80 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">
+            <div className="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-6 relative">
+              <div className="absolute inset-0 bg-rose-400 rounded-full animate-ping opacity-20"></div>
+              <Mic className="w-10 h-10 text-rose-500 relative z-10 animate-pulse" />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 uppercase italic mb-2">
+              Ouvindo...
+            </h3>
+            <p className="text-slate-500 text-sm font-medium text-center mb-6">
+              Fale o que você está procurando (ex: "Mecânico", "Pizzaria").
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsListening(false)}
+              className="px-6 py-2 bg-slate-100 text-slate-600 rounded-full text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
