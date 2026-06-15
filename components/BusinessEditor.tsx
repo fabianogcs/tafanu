@@ -90,6 +90,7 @@ export default function BusinessEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -859,9 +860,17 @@ export default function BusinessEditor({
             )}
             <button
               onClick={handleSaveClick}
-              disabled={isLoading || (!hasChanges && !isNew)}
+              disabled={
+                isLoading ||
+                isUploadingLogo ||
+                isUploadingGallery ||
+                (!hasChanges && !isNew)
+              }
               className={`hidden md:flex items-center gap-3 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-sm ${
-                !hasChanges && !isNew && !isLoading
+                isLoading ||
+                isUploadingLogo ||
+                isUploadingGallery ||
+                (!hasChanges && !isNew)
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                   : "bg-slate-900 text-white hover:bg-indigo-600 shadow-xl"
               }`}
@@ -925,8 +934,10 @@ export default function BusinessEditor({
             setFeatures={setFeatures}
             faqs={faqs}
             setFaqs={setFaqs}
-            catalogPdf={catalogPdf} // 🚀 ADICIONADO AQUI
-            setCatalogPdf={setCatalogPdf} // 🚀 ADICIONADO AQUI
+            catalogPdf={catalogPdf}
+            setCatalogPdf={setCatalogPdf}
+            isUploadingGallery={isUploadingGallery}
+            setIsUploadingGallery={setIsUploadingGallery}
           />
         </div>
 
@@ -1028,9 +1039,17 @@ export default function BusinessEditor({
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 20, opacity: 0 }}
                   onClick={handleSaveClick}
-                  disabled={isLoading || (!hasChanges && !isNew)}
+                  disabled={
+                    isLoading ||
+                    isUploadingLogo ||
+                    isUploadingGallery ||
+                    (!hasChanges && !isNew)
+                  }
                   className={`w-full h-14 md:h-20 rounded-[1.8rem] md:rounded-[2.5rem] flex items-center justify-center gap-3 font-black uppercase text-[10px] md:text-xs transition-all tracking-[0.2em] italic pointer-events-auto ${
-                    isLoading || (!hasChanges && !isNew)
+                    isLoading ||
+                    isUploadingLogo ||
+                    isUploadingGallery ||
+                    (!hasChanges && !isNew)
                       ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                       : "bg-slate-900 text-white hover:bg-indigo-600 shadow-2xl active:scale-95"
                   }`}

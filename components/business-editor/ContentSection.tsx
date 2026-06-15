@@ -10,6 +10,8 @@ import {
   Camera,
   GripVertical,
   Loader2,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { uploadFiles } from "@/lib/uploadthing"; // 🚀 Importação da função pura
 import { compressImage } from "@/lib/compressImage";
@@ -25,8 +27,10 @@ interface ContentSectionProps {
   setFeatures: (val: string[]) => void;
   faqs: { q: string; a: string }[];
   setFaqs: (val: { q: string; a: string }[]) => void;
-  catalogPdf: string | null; // 🚀 NOVO
-  setCatalogPdf: (val: string | null) => void; // 🚀 NOVO
+  catalogPdf: string | null;
+  setCatalogPdf: (val: string | null) => void;
+  isUploadingGallery: boolean;
+  setIsUploadingGallery: (val: boolean) => void;
 }
 
 export function ContentSection({
@@ -38,15 +42,17 @@ export function ContentSection({
   setFeatures,
   faqs,
   setFaqs,
-  catalogPdf, // 🚀 NOVO
-  setCatalogPdf, // 🚀 NOVO
+  catalogPdf,
+  setCatalogPdf,
+  isUploadingGallery,
+  setIsUploadingGallery,
 }: ContentSectionProps) {
   const imageCount = mediaFeed.filter((m) => m.type === "image").length;
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // 🚀 ESTADO E REF DE CARREGAMENTO DA GALERIA
-  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  // 🚀 O estado da Galeria agora vem do pai (BusinessEditor)!
+  // A linha "useState(false)" foi removida daqui.
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null); // 🚀 NOVO REF PARA O PDF
 
@@ -95,7 +101,7 @@ export function ContentSection({
       if (res && res.length > 0) {
         const newImages = res.map((r) => ({
           type: "image",
-          url: r.url || r.ufsUrl,
+          url: r.ufsUrl,
         }));
 
         setMediaFeed((prev: any) => {
@@ -165,6 +171,24 @@ export function ContentSection({
     setMediaFeed(newFeed);
   };
 
+  const moveItemUp = (index: number) => {
+    if (index === 0) return;
+    const newFeed = [...mediaFeed];
+    const temp = newFeed[index];
+    newFeed[index] = newFeed[index - 1];
+    newFeed[index - 1] = temp;
+    setMediaFeed(newFeed);
+  };
+
+  const moveItemDown = (index: number) => {
+    if (index === mediaFeed.length - 1) return;
+    const newFeed = [...mediaFeed];
+    const temp = newFeed[index];
+    newFeed[index] = newFeed[index + 1];
+    newFeed[index + 1] = temp;
+    setMediaFeed(newFeed);
+  };
+
   return (
     <div className="space-y-8">
       {/* =========================================================
@@ -223,7 +247,7 @@ export function ContentSection({
               </div>
             </div>
           ) : (
-         <>
+            <>
               <div
                 onClick={() => pdfInputRef.current?.click()}
                 className="w-full h-14 border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50 transition-colors group"
@@ -250,7 +274,7 @@ export function ContentSection({
                       files: [file],
                     });
                     if (res && res[0]) {
-                      setCatalogPdf(res[0].url || res[0].ufsUrl);
+                      setCatalogPdf(res[0].ufsUrl);
                       toast.success("Catálogo enviado com sucesso!", {
                         id: "upload-pdf",
                       });
@@ -283,9 +307,29 @@ export function ContentSection({
                   : "bg-slate-50 border-slate-100 hover:border-slate-200 hover:shadow-sm"
               }`}
             >
-              {/* O Ícone de Arrastar (Handle) */}
-              <div className="p-2 cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 shrink-0">
-                <GripVertical size={20} strokeWidth={2.5} />
+              {/* O Ícone de Arrastar e Controles Mobile */}
+              <div className="flex flex-col items-center justify-center shrink-0 gap-1 bg-white rounded-lg border shadow-sm p-1">
+                <button
+                  type="button"
+                  onClick={() => moveItemUp(i)}
+                  disabled={i === 0}
+                  className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-20 transition-all cursor-pointer"
+                >
+                  <ChevronUp size={18} strokeWidth={3} />
+                </button>
+
+                <div className="hidden md:block cursor-grab active:cursor-grabbing text-slate-300 py-1">
+                  <GripVertical size={16} strokeWidth={2.5} />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => moveItemDown(i)}
+                  disabled={i === mediaFeed.length - 1}
+                  className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-20 transition-all cursor-pointer"
+                >
+                  <ChevronDown size={18} strokeWidth={3} />
+                </button>
               </div>
 
               {/* Preview e Input */}

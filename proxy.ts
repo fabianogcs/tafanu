@@ -40,19 +40,22 @@ export default auth(async (req) => {
       pathname.startsWith("/nova-senha");
 
     // Abrangemos o escudo para proteger rotas de custo (Upload e Busca) e senhas (Brute Force)
-    if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) { // 🚀 UPLOAD ADICIONADO NO IF
+    if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) {
+      // 🚀 UPLOAD ADICIONADO NO IF
       const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
       const { success } = await ratelimit.limit(ip);
 
-    if (!success) {
+      if (!success) {
         // Se bater o limite nas APIs JSON (UploadThing ou Auth)
         if (isApiAuthRoute || isUploadRoute) {
           return new NextResponse(
-            JSON.stringify({ error: "Limite de tentativas excedido. Aguarde 1 minuto." }),
+            JSON.stringify({
+              error: "Limite de tentativas excedido. Aguarde 1 minuto.",
+            }),
             { status: 429, headers: { "Content-Type": "application/json" } },
           );
         }
-        
+
         // Se bater o limite nas páginas visuais, manda pra uma URL com parâmetro de erro para o frontend exibir o Toast
         const fallbackUrl = isSearchRoute ? "/busca" : "/login";
         return NextResponse.redirect(
@@ -103,8 +106,7 @@ export default auth(async (req) => {
     pathname.startsWith("/api/uploadthing") ||
     pathname.startsWith("/_next") ||
     pathname === "/manifest.json" ||
-    pathname === "/sw.js" ||
-    isCheckoutRoute;
+    pathname === "/sw.js";
 
   if (isLoggedIn && pathname.startsWith("/login")) {
     return NextResponse.redirect(new URL("/", nextUrl));
@@ -114,6 +116,13 @@ export default auth(async (req) => {
     if (userRole === "ADMIN" || userRole === "AFILIADO") {
       return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }
+  }
+
+  // 🚀 NOVA TRAVA DO CHECKOUT: Se não tá logado, manda pro login com a intenção certa
+  if (!isLoggedIn && isCheckoutRoute) {
+    return NextResponse.redirect(
+      new URL("/login?callbackUrl=/checkout&intent=assinante", nextUrl),
+    );
   }
 
   if (isPublicRoute && !isDashboardRoute && !isAdminRoute) {

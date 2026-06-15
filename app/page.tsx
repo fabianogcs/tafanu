@@ -18,6 +18,23 @@ export const metadata: Metadata = {
     title: "Tafanu | Conectando você aos melhores negócios",
     description: "Encontre as melhores empresas e profissionais",
     type: "website",
+    url: "https://tafanu.com.br",
+    siteName: "Tafanu",
+    images: [
+      {
+        url: "https://tafanu.com.br/og-default.png", // Sua imagem de compartilhamento
+        width: 1200,
+        height: 630,
+        alt: "Capa do Tafanu",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tafanu | O que você precisa, perto de você",
+    description:
+      "Encontre as melhores empresas e profissionais em poucos segundos.",
+    images: ["https://tafanu.com.br/og-default.png"],
   },
 };
 

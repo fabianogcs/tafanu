@@ -31,9 +31,7 @@ export default async function AnunciarPage() {
   if (userRole === "ASSINANTE") redirect("/dashboard");
   if (userRole === "AFILIADO") redirect("/dashboard");
 
-  const destination = session
-    ? "/checkout"
-    : "/login?callbackUrl=/checkout&intent=assinante";
+  const destination = "/checkout";
 
   // 🚀 SEO AVANÇADO (JSON-LD): Ajustado para focar apenas no MVP Mensal
   const faqSchema = {

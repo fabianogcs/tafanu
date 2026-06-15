@@ -178,6 +178,9 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setIsDragging(false)}
+        // 🚀 A CORREÇÃO: Desliga o arraste 50 milissegundos após ele soltar o botão,
+        // para dar tempo do onClick rodar e entender se foi arraste ou clique real.
+        onMouseUp={() => setTimeout(() => setIsDragging(false), 50)}
         className="flex gap-2.5 md:gap-5 overflow-x-auto pb-6 md:pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-1 md:px-2 cursor-grab active:cursor-grabbing select-none"
       >
         {CATEGORIES_DATA.map((cat) => {
