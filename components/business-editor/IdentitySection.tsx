@@ -102,11 +102,10 @@ export function IdentitySection({
           </div>
         )}
 
-       {/* ==============================================
+        {/* ==============================================
             📸 PAINEL DE MÍDIA COMPACTO (Capa e Logo Lado a Lado)
             ============================================== */}
         <div className="w-full flex flex-row items-start justify-center gap-6 md:gap-12 mt-8 mb-6 px-2">
-          
           {/* COLUNA 1: FOTO DE CAPA */}
           <div className="flex-1 flex flex-col items-center max-w-[160px] md:max-w-[220px]">
             <p className="text-[9px] font-black uppercase text-slate-400 mb-3 tracking-widest text-center">
@@ -115,7 +114,7 @@ export function IdentitySection({
             <CoverImageSection
               coverImage={coverImage}
               setCoverImage={setCoverImage}
-              selectedLayout={selectedLayout} 
+              selectedLayout={selectedLayout}
             />
           </div>
 
@@ -130,17 +129,25 @@ export function IdentitySection({
             <div className="relative w-24 h-24 md:w-32 md:h-32 group">
               <div
                 className="w-full h-full rounded-full bg-slate-50 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center relative cursor-pointer hover:border-indigo-100 transition-colors"
-                onClick={() => !isUploadingLogo && fileInputRef.current?.click()}
+                onClick={() =>
+                  !isUploadingLogo && fileInputRef.current?.click()
+                }
               >
                 {isUploadingLogo ? (
                   <div className="flex flex-col items-center gap-1">
-                    <Loader2 className="animate-spin text-indigo-500" size={20} />
+                    <Loader2
+                      className="animate-spin text-indigo-500"
+                      size={20}
+                    />
                     <span className="text-[7px] font-black uppercase text-indigo-500 tracking-widest">
                       Upload
                     </span>
                   </div>
                 ) : profileImage ? (
-                  <img src={profileImage} className="w-full h-full object-cover" />
+                  <img
+                    src={profileImage}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <Plus
                     size={28}
@@ -168,7 +175,9 @@ export function IdentitySection({
               )}
             </div>
             <p className="text-[8px] font-bold text-slate-400 uppercase mt-4 tracking-widest text-center">
-              Formato 1:1<br/>Máx: 8MB
+              Formato 1:1
+              <br />
+              Máx: 6MB
             </p>
           </div>
         </div>

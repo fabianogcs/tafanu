@@ -6,30 +6,33 @@ import {
   ArrowRight,
   Clock,
   ShieldCheck,
+  Store, // ⬅️ Novo ícone para a loja offline
 } from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { ptBR } from "date-fns/locale";
 
 export default function SubscriptionAlert({ user }: { user: any }) {
-  // 🚀 AJUSTE CIRÚRGICO: Puxando a data e o status do banco!
   const business = user?.businesses?.[0];
   const expirationDateRaw = business?.expiresAt;
   const subscriptionStatus = business?.subscriptionStatus;
 
-  // 1. Se não tem data de expiração na loja, não mostramos nada (Visitante ou Admin)
   if (!expirationDateRaw) return null;
 
   const router = useRouter();
   const now = new Date();
   const expiresAt = new Date(expirationDateRaw);
+
+  // 🚀 A LÓGICA DO TEMPO (Alinhada com o Backend)
   const isPastDueDate = now > expiresAt;
+  const gracePeriodEnd = new Date(expiresAt.getTime() + 48 * 60 * 60 * 1000); // Exatamente 48h depois
+  const isPastGracePeriod = now > gracePeriodEnd;
 
   const expiryDate = format(expiresAt, "dd 'de' MMMM 'de' yyyy", {
     locale: ptBR,
   });
 
-  // 🚀 FASE NOVA: CANCELADO, MAS COM ACESSO GARANTIDO (UX de Ouro)
+  // 1. FASE 1: CANCELADO, MAS COM ACESSO GARANTIDO (O mês já está pago)
   if (
     user.role === "ASSINANTE" &&
     subscriptionStatus === "cancelled" &&
@@ -55,7 +58,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     );
   }
 
-  // 2. FASE 1: ATIVO E NO PRAZO (O aviso verdinho)
+  // 2. FASE 2: ATIVO E NO PRAZO (O aviso verdinho)
   if (
     user.role === "ASSINANTE" &&
     subscriptionStatus !== "cancelled" &&
@@ -75,8 +78,13 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     );
   }
 
-  // 3. FASE 2: CARÊNCIA / PROCESSANDO (O aviso tranquilizador)
-  if (user.role === "ASSINANTE" && isPastDueDate) {
+  // 3. FASE 3: CARÊNCIA / PROCESSANDO (Venceu hoje ou ontem, tá dentro das 48h e NÃO cancelou manual)
+  if (
+    user.role === "ASSINANTE" &&
+    isPastDueDate &&
+    !isPastGracePeriod &&
+    subscriptionStatus !== "cancelled"
+  ) {
     return (
       <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4">
         <div className="flex items-center gap-3">
@@ -88,8 +96,8 @@ export default function SubscriptionAlert({ user }: { user: any }) {
               Processando Renovação...
             </p>
             <p className="text-[10px] font-bold text-amber-600/70 mt-0.5">
-              Aguardando confirmação do Mercado Pago. Seu acesso continua
-              liberado!
+              Aguardando confirmação do Mercado Pago. Seu anúncio continua 100%
+              online nas buscas!
             </p>
           </div>
         </div>
@@ -97,7 +105,40 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     );
   }
 
-  // 4. FASE 3: EXPIRADO DE VERDADE (O aviso vermelhão)
+  // 4. 🚀 NOVA FASE 4: TOLERÂNCIA (Passou de 48h OU o cara já tinha cancelado e venceu)
+  // Ele ainda é Assinante, tem acesso ao painel, MAS a loja sumiu do site!
+  if (
+    user.role === "ASSINANTE" &&
+    isPastDueDate &&
+    (isPastGracePeriod || subscriptionStatus === "cancelled")
+  ) {
+    return (
+      <div className="bg-rose-50 border border-rose-200 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4 animate-in fade-in zoom-in duration-500">
+        <div className="flex items-center gap-4">
+          <div className="bg-rose-500 text-white p-3 rounded-xl animate-bounce">
+            <Store size={22} />
+          </div>
+          <div>
+            <p className="text-sm font-black text-rose-700 uppercase tracking-widest">
+              Sua Vitrine está Offline!
+            </p>
+            <p className="text-xs font-bold text-rose-600/70 mt-1 max-w-md leading-tight">
+              A validade expirou. Sua loja foi ocultada do buscador do Tafanu,
+              mas seus dados continuam salvos aqui.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => router.push("/checkout")}
+          className="w-full md:w-auto bg-rose-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.1em] shadow-lg hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shrink-0"
+        >
+          Reativar Loja Agora <ArrowRight size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  // 5. FASE 5: REBAIXADO DE VERDADE (Visitante / Passou dos 10 dias)
   if (user.role === "VISITANTE" && isPastDueDate) {
     return (
       <div className="bg-rose-600 text-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl shadow-rose-200 relative overflow-hidden mb-10 animate-pulse">
@@ -112,11 +153,10 @@ export default function SubscriptionAlert({ user }: { user: any }) {
             </div>
             <div>
               <h2 className="text-xl font-black uppercase italic tracking-tighter leading-none mb-1">
-                Assinatura Expirada! ⚠️
+                Acesso Expirado! ⚠️
               </h2>
               <p className="text-xs font-bold text-rose-100 uppercase tracking-widest mt-1">
-                Seu anúncio foi <span className="underline">ocultado</span> das
-                buscas no dia {expiryDate}.
+                Você perdeu os recursos do painel PRO.
               </p>
             </div>
           </div>
@@ -125,7 +165,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
             onClick={() => router.push("/checkout")}
             className="w-full md:w-auto bg-white text-rose-600 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-3 shrink-0"
           >
-            Renovar Agora <ArrowRight size={16} />
+            Assinar Novamente <ArrowRight size={16} />
           </button>
         </div>
       </div>

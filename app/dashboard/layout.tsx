@@ -55,11 +55,12 @@ export default async function DashboardLayout({
   const businessExpiresAt = mainBusiness?.expiresAt;
 
   if (isAssinante && businessExpiresAt) {
-    const dataComCarencia = new Date(
-      new Date(businessExpiresAt).getTime() + 48 * 60 * 60 * 1000,
+    // 🚀 CIRURGIA: Alinhando o fantasma com a nossa regra de 10 DIAS de Tolerância!
+    const dataLimiteTolerancia = new Date(
+      new Date(businessExpiresAt).getTime() + 10 * 24 * 60 * 60 * 1000,
     );
 
-    if (new Date() > dataComCarencia) {
+    if (new Date() > dataLimiteTolerancia) {
       await db.$transaction([
         db.user.update({
           where: { id: user.id },
@@ -77,10 +78,11 @@ export default async function DashboardLayout({
 
   let hasValidSubscription = false;
   if (businessExpiresAt) {
-    const dataComCarencia = new Date(
-      new Date(businessExpiresAt).getTime() + 48 * 60 * 60 * 1000,
+    // 🚀 CIRURGIA 2: Mantém o menu "Minha Vitrine" aparecendo na barra lateral durante os 10 dias!
+    const dataLimiteTolerancia = new Date(
+      new Date(businessExpiresAt).getTime() + 10 * 24 * 60 * 60 * 1000,
     );
-    hasValidSubscription = dataComCarencia > new Date();
+    hasValidSubscription = dataLimiteTolerancia > new Date();
   }
 
   const isPro = isAdmin || isAfiliado || (isAssinante && hasValidSubscription);

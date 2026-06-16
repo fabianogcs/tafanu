@@ -4,7 +4,10 @@ import { NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-let ratelimit: Ratelimit | null = null;
+// 🚀 AQUI: Criamos espaços na memória para DOIS Leões de Chácara
+let generalRatelimit: Ratelimit | null = null;
+let uploadRatelimit: Ratelimit | null = null;
+
 if (
   process.env.UPSTASH_REDIS_REST_URL &&
   process.env.UPSTASH_REDIS_REST_TOKEN
@@ -13,9 +16,19 @@ if (
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
-  ratelimit = new Ratelimit({
+
+  // 🛡️ LEÃO 1: Generoso (Busca, Login, Senha) - 100 cliques por minuto
+  generalRatelimit = new Ratelimit({
     redis: redis,
     limiter: Ratelimit.slidingWindow(100, "1 m"),
+    prefix: "ratelimit_general", // O prefixo impede que as contagens se misturem
+  });
+
+  // 🛡️ LEÃO 2: Sufocante (Upload de Mídia) - Apenas 30 envios por minuto
+  uploadRatelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(30, "1 m"),
+    prefix: "ratelimit_upload",
   });
 }
 
@@ -27,36 +40,39 @@ export default auth(async (req) => {
   const pathname = nextUrl.pathname;
 
   // =====================================================================
-  // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING REFORÇADO E AMPLIADO
+  // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING DE DUPLA CAMADA
   // =====================================================================
-  if (ratelimit) {
-    // O Webhook do MP já tem HMAC, não precisa de Upstash.
+  if (generalRatelimit && uploadRatelimit) {
     const isApiAuthRoute = pathname.startsWith("/api/auth");
-    const isUploadRoute = pathname.startsWith("/api/uploadthing"); // 🚀 NOVO ESCUDO AQUI
+    const isUploadRoute = pathname.startsWith("/api/uploadthing");
     const isSearchRoute = pathname.startsWith("/busca");
     const isSensitivePage =
       pathname.startsWith("/login") ||
       pathname.startsWith("/esqueci-senha") ||
       pathname.startsWith("/nova-senha");
 
-    // Abrangemos o escudo para proteger rotas de custo (Upload e Busca) e senhas (Brute Force)
     if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) {
-      // 🚀 UPLOAD ADICIONADO NO IF
       const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-      const { success } = await ratelimit.limit(ip);
+
+      // 🚀 A MÁGICA: Escolhemos o segurança correto dependendo de qual porta o usuário quer entrar
+      const activeRatelimit = isUploadRoute
+        ? uploadRatelimit
+        : generalRatelimit;
+
+      const { success } = await activeRatelimit.limit(ip);
 
       if (!success) {
-        // Se bater o limite nas APIs JSON (UploadThing ou Auth)
         if (isApiAuthRoute || isUploadRoute) {
           return new NextResponse(
             JSON.stringify({
-              error: "Limite de tentativas excedido. Aguarde 1 minuto.",
+              error: isUploadRoute
+                ? "Limite de envios de arquivos excedido. Aguarde 1 minuto."
+                : "Limite de tentativas excedido. Aguarde 1 minuto.",
             }),
             { status: 429, headers: { "Content-Type": "application/json" } },
           );
         }
 
-        // Se bater o limite nas páginas visuais, manda pra uma URL com parâmetro de erro para o frontend exibir o Toast
         const fallbackUrl = isSearchRoute ? "/busca" : "/login";
         return NextResponse.redirect(
           new URL(`${fallbackUrl}?error=RateLimited`, nextUrl),
@@ -102,7 +118,7 @@ export default auth(async (req) => {
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/webhook") || // 🚀 Webhook permanece público aqui para o Next.js não pedir login
+    pathname.startsWith("/api/webhook") ||
     pathname.startsWith("/api/uploadthing") ||
     pathname.startsWith("/_next") ||
     pathname === "/manifest.json" ||
@@ -118,7 +134,6 @@ export default auth(async (req) => {
     }
   }
 
-  // 🚀 NOVA TRAVA DO CHECKOUT: Se não tá logado, manda pro login com a intenção certa
   if (!isLoggedIn && isCheckoutRoute) {
     return NextResponse.redirect(
       new URL("/login?callbackUrl=/checkout&intent=assinante", nextUrl),
@@ -142,20 +157,17 @@ export default auth(async (req) => {
     const donoEmail = process.env.ADMIN_EMAIL?.toLowerCase() || "";
     const isDono = emailSessao === donoEmail;
 
-    // 1. Regra de Negócio: Quem é considerado "PRO"?
     const isPro = isAssinante || isAfiliado || isAdmin || isDono;
 
-    // 2. Rotas liberadas para TODOS (inclusive Visitantes logados)
     if (
-      pathname === "/dashboard" || // A tela inicial do dash pode ser livre
-      pathname.startsWith("/dashboard/favoritos") || // Todo mundo pode salvar lojas
-      pathname.startsWith("/dashboard/parceiro") || // A página para se tornar afiliado
-      pathname.startsWith("/dashboard/perfil") // 🚀 LIBERADO: Visitantes podem editar dados e quebra o loop do assinante
+      pathname === "/dashboard" ||
+      pathname.startsWith("/dashboard/favoritos") ||
+      pathname.startsWith("/dashboard/parceiro") ||
+      pathname.startsWith("/dashboard/perfil")
     ) {
       return NextResponse.next();
     }
 
-    // 3. Rotas Protegidas (Exclusivas para PRO)
     if (
       pathname.startsWith("/dashboard/editar") ||
       pathname.startsWith("/dashboard/novo") ||
@@ -167,7 +179,6 @@ export default auth(async (req) => {
       return NextResponse.next();
     }
 
-    // Fallback: se for uma sub-rota do dashboard não mapeada acima e não for PRO
     if (!isPro) {
       return NextResponse.redirect(new URL("/checkout", nextUrl));
     }

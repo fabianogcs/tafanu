@@ -56,12 +56,47 @@ export function ContentSection({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null); // 🚀 NOVO REF PARA O PDF
 
-  // 🚀 O NOVO MOTOR DE UPLOAD NATIVO
   const handleGalleryUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const files = Array.from(e.target.files || []);
+    let files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    // ========================================================
+    // 🛡️ GRADE DE SEGURANÇA 1: Custo (Limite de Vagas)
+    // ========================================================
+    const currentImagesCount = mediaFeed.filter(
+      (m) => m.type === "image",
+    ).length;
+    const allowedCount = 12 - currentImagesCount;
+
+    if (files.length > allowedCount) {
+      toast.warning(
+        `Sua vitrine só tem mais ${allowedCount} vaga(s). Selecionamos apenas as primeiras.`,
+      );
+      // 🚀 CORTA NA RAIZ! Remove o excesso antes de tentar comprimir ou enviar pra nuvem.
+      files = files.slice(0, allowedCount);
+    }
+
+    if (files.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
+    // ========================================================
+    // 🛡️ GRADE DE SEGURANÇA 2: RAM do Celular (Tamanho Máximo)
+    // ========================================================
+    const MAX_MB_PER_FILE = 15; // 15MB é muito seguro. Bloqueia RAWs gigantes, mas passa iPhones novos.
+    const MAX_BYTES = MAX_MB_PER_FILE * 1024 * 1024;
+
+    const hasGiantFile = files.some((f) => f.size > MAX_BYTES);
+    if (hasGiantFile) {
+      toast.error(
+        `Uma das fotos passa de ${MAX_MB_PER_FILE}MB e pode travar seu celular. Escolha fotos mais leves.`,
+      );
+      e.target.value = ""; // Limpa a memória
+      return; // 🚀 BLOQUEIA TUDO ANTES DE COMEÇAR
+    }
 
     // Limpa o input para permitir subir a mesma foto em sequência se necessário
     e.target.value = "";
@@ -70,14 +105,10 @@ export function ContentSection({
     toast.loading("Preparando imagens...", { id: "upload-gallery" });
 
     try {
-      // ========================================================
-      // 🚀 AQUI COMEÇA A MUDANÇA: Fila Síncrona Blindada
-      // ========================================================
       const compressedFiles = [];
 
       for (const file of files) {
         try {
-          // Processa uma por uma, aguardando terminar antes de ir para a próxima
           const compressed = await compressImage(file);
           compressedFiles.push(compressed);
         } catch (error) {
@@ -85,18 +116,12 @@ export function ContentSection({
           compressedFiles.push(file); // Fallback de segurança
         }
       }
-      // ========================================================
-      // 🚀 FIM DA MUDANÇA
-      // ========================================================
 
       toast.loading("Enviando para a nuvem...", { id: "upload-gallery" });
 
-      // 2. Sobe as fotos blindadas com a função pura
       const res = await uploadFiles("imageUploader", {
         files: compressedFiles,
       });
-
-      // ... (O RESTANTE DA SUA FUNÇÃO CONTINUA EXATAMENTE IGUAL)
 
       if (res && res.length > 0) {
         const newImages = res.map((r) => ({
@@ -105,12 +130,8 @@ export function ContentSection({
         }));
 
         setMediaFeed((prev: any) => {
-          const currentImagesCount = prev.filter(
-            (m: any) => m.type === "image",
-          ).length;
-          const allowedCount = 12 - currentImagesCount;
-          const imagesToAdd = newImages.slice(0, allowedCount);
-          return [...prev, ...imagesToAdd];
+          // Agora não precisa mais do "slice" aqui, porque já garantimos o limite lá em cima!
+          return [...prev, ...newImages];
         });
 
         toast.success("Fotos adicionadas com sucesso!", {

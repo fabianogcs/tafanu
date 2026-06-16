@@ -233,10 +233,13 @@ export async function registerUser(formData: FormData) {
       });
     }
 
-   // 5.5 📧 ENVIO DE E-MAIL DE VERIFICAÇÃO (Sua lógica do Resend mantida)
+    // 5.5 📧 ENVIO DE E-MAIL DE VERIFICAÇÃO (Sua lógica do Resend mantida)
     const verificationToken = await generateVerificationToken(email);
     // 🚀 BLINDAGEM DO DOMÍNIO: Se for produção, usa o oficial. Se não, local.
-    const domain = process.env.NODE_ENV === "production" ? "https://tafanu.com.br" : "http://localhost:3000";
+    const domain =
+      process.env.NODE_ENV === "production"
+        ? "https://tafanu.com.br"
+        : "http://localhost:3000";
     const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
 
     try {
@@ -1066,11 +1069,43 @@ export async function resetBusiness(slug: string) {
   }
 }
 
-// --- 1. O MOTOR DA FAXINA (Lógica pura, sem checar quem chamou) ---
+// --- 1. O MOTOR DA FAXINA (Atualizado: 10 Dias Tolerância + 30 Dias Exclusão) ---
 async function executeCoreCleanup() {
+  // ⏳ Tempo 1: O Rebaixamento (10 dias após o vencimento)
+  const limiteRebaixamento = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+
+  // 🗑️ Tempo 2: A Exclusão Física (30 dias após o vencimento)
   const trintaDiasAtras = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   try {
+    // 🚀 CIRURGIA 1 (CFO/Vendas): O Rebaixamento Tolerante (10 Dias)
+    // Deixa o cara acessar o painel por 10 dias para facilitar a renovação
+    const usuariosVencidos = await db.user.findMany({
+      where: {
+        role: "ASSINANTE",
+        businesses: {
+          some: {}, // Garante que ele tem pelo menos uma loja
+          every: {
+            expiresAt: { lt: limiteRebaixamento }, // O Pulo do Gato: 10 dias!
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    // Se achou clientes que esgotaram os 10 dias, rebaixa para Visitante
+    if (usuariosVencidos.length > 0) {
+      const idsParaRebaixar = usuariosVencidos.map((u) => u.id);
+      await db.user.updateMany({
+        where: { id: { in: idsParaRebaixar } },
+        data: { role: "VISITANTE" },
+      });
+      console.log(
+        `📉 [Faxina] ${idsParaRebaixar.length} usuários rebaixados (Esgotaram os 10 dias).`,
+      );
+    }
+
+    // 🚀 CIRURGIA 2: A Faxina Original (Vai apagar só quem está vencido há mais de 30 dias)
     const ghosts = await db.business.findMany({
       where: {
         user: { role: "VISITANTE" },
@@ -1079,24 +1114,22 @@ async function executeCoreCleanup() {
           { expiresAt: { lt: trintaDiasAtras } },
         ],
       },
-      take: 30, // 🚀 PROTEÇÃO ANTI-TIMEOUT: Processa no máximo 30 lojas por vez
-      // 🚀 INJEÇÃO 1: Pedimos para o Prisma trazer o mediaFeed junto
+      take: 30, // Proteção Anti-Timeout
       select: { id: true, imageUrl: true, gallery: true, mediaFeed: true },
     });
 
-    if (ghosts.length === 0) return { success: true, message: "Banco limpo." };
+    if (ghosts.length === 0)
+      return {
+        success: true,
+        message: "Banco limpo. Ninguém na fila de exclusão.",
+      };
 
     const linksParaDeletar: string[] = [];
     ghosts.forEach((business) => {
-      // 1. Apaga a Logo
       if (business.imageUrl) linksParaDeletar.push(business.imageUrl);
-
-      // 2. Apaga a Galeria Antiga
       if (business.gallery && Array.isArray(business.gallery)) {
         linksParaDeletar.push(...(business.gallery as string[]));
       }
-
-      // 🚀 INJEÇÃO 2: Vasculha o feed novo e pega só o que for imagem
       if (business.mediaFeed && Array.isArray(business.mediaFeed)) {
         business.mediaFeed.forEach((item: any) => {
           if (item && item.type === "image" && item.url) {
@@ -1346,7 +1379,7 @@ export async function createReport(
   reason: string,
   details: string,
 ) {
-  // 1. 🛡️ Segurança Primária: Exige login 
+  // 1. 🛡️ Segurança Primária: Exige login
   const user = await getSafeUser();
   if (!user) {
     return { error: "Você precisa estar logado para denunciar." };
@@ -1363,7 +1396,7 @@ export async function createReport(
     // 3. ⏳ TRAVA ANTI-FLOOD E ANTI-DUPLICIDADE
     // Impede que o mesmo usuário denuncie a MESMA loja nas últimas 24 horas
     const vinteEQuatroHorasAtras = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
+
     const denunciaRecente = await db.report.findFirst({
       where: {
         businessId: b.id,
@@ -1374,8 +1407,9 @@ export async function createReport(
     });
 
     if (denunciaRecente) {
-      return { 
-        error: "Você já enviou uma denúncia para este perfil recentemente. Nossa equipe já está analisando." 
+      return {
+        error:
+          "Você já enviou uma denúncia para este perfil recentemente. Nossa equipe já está analisando.",
       };
     }
 
@@ -1644,9 +1678,12 @@ export async function sendPasswordResetEmail(formData: FormData) {
     },
   });
 
-// Link para a página que você escolheu manter (nova-senha)
+  // Link para a página que você escolheu manter (nova-senha)
   // 🚀 BLINDAGEM DO DOMÍNIO
- const domain = process.env.NODE_ENV === "production" ? "https://tafanu.com.br" : "http://localhost:3000";
+  const domain =
+    process.env.NODE_ENV === "production"
+      ? "https://tafanu.com.br"
+      : "http://localhost:3000";
   const resetLink = `${domain}/nova-senha?token=${token}`;
 
   try {
@@ -2099,7 +2136,7 @@ export async function getAffiliateDashboardData() {
           },
           orderBy: { createdAt: "desc" },
         },
-       commissions: {
+        commissions: {
           // Vendas automáticas do Mercado Pago
           orderBy: { createdAt: "desc" },
         },
@@ -2257,17 +2294,24 @@ export async function markAffiliateAsPaid(affiliateId: string) {
     }
 
     // 2. Faz a matemática e junta os IDs para carimbar depois
-    const valorTotalDoSaque = comissoesDisponiveis.reduce((acc, c) => acc + c.amount, 0);
-    const idsDasComissoes = comissoesDisponiveis.map(c => c.id);
+    const valorTotalDoSaque = comissoesDisponiveis.reduce(
+      (acc, c) => acc + c.amount,
+      0,
+    );
+    const idsDasComissoes = comissoesDisponiveis.map((c) => c.id);
 
     // 3. Busca a chave PIX do parceiro (Usa o CPF/CNPJ ou Telefone cadastrado)
     const parceiro = await db.user.findUnique({
       where: { id: affiliateId },
-      select: { document: true, phone: true, email: true }
+      select: { document: true, phone: true, email: true },
     });
-    
+
     // Fallback inteligente: se ele não preencheu o documento, usa o telefone ou e-mail
-    const chavePixDoRecibo = parceiro?.document || parceiro?.phone || parceiro?.email || "Chave não informada";
+    const chavePixDoRecibo =
+      parceiro?.document ||
+      parceiro?.phone ||
+      parceiro?.email ||
+      "Chave não informada";
 
     // 4. 🚀 TRANSAÇÃO ATÔMICA: Cria o Recibo e Carimba as comissões de uma vez só!
     await db.$transaction(async (tx) => {
@@ -2279,7 +2323,7 @@ export async function markAffiliateAsPaid(affiliateId: string) {
           pixKey: chavePixDoRecibo,
           status: "APPROVED",
           paidAt: new Date(),
-        }
+        },
       });
 
       // B. Atualiza as comissões: Muda pra PAID e guarda o ID do Recibo nelas!
@@ -2288,7 +2332,7 @@ export async function markAffiliateAsPaid(affiliateId: string) {
         data: {
           status: CommissionStatus.PAID,
           withdrawalId: reciboDeSaque.id, // O VÍNCULO MÁGICO ACONTECE AQUI!
-        }
+        },
       });
 
       // C. Atualiza a data do último pagamento no perfil do usuário
@@ -2363,13 +2407,40 @@ export async function createSubscription(
     }
   } else {
     // 🛡️ SEGURANÇA: Se enviou um ID, garante que a loja existe e pertence a ele
-    const targetBusiness = dbUser?.businesses.find(
+    const targetBusinessCheck = dbUser?.businesses.find(
       (b) => b.id === finalBusinessId,
     );
-    if (!targetBusiness) {
+    if (!targetBusinessCheck) {
       return { error: "Negócio não encontrado ou não pertence a você." };
     }
   }
+
+  // =========================================================================
+  // 🚀 AQUI COMEÇA A NOVA BLINDAGEM ANTI-ZUMBI (Com Inteligência Temporal)
+  // =========================================================================
+  const businessToProtect = dbUser?.businesses.find(
+    (b) => b.id === finalBusinessId,
+  );
+
+  if (businessToProtect) {
+    // Verifica se a data de vencimento já ficou no passado (Já venceu?)
+    const isExpired = businessToProtect.expiresAt
+      ? new Date() > new Date(businessToProtect.expiresAt)
+      : false;
+
+    // Se ele já tem uma assinatura ATIVA com o MP e AINDA TEM DIAS DE SOBRA, é proibido criar outra!
+    if (
+      businessToProtect.mpSubscriptionId &&
+      businessToProtect.subscriptionStatus === "active" &&
+      !isExpired // ⬅️ Só bloqueia o pagamento se a conta dele ainda estiver com dias sobrando.
+    ) {
+      return {
+        error:
+          "Você já possui uma assinatura ativa e a renovação é automática! Se deseja alterar o plano, cancele a assinatura atual no seu painel primeiro.",
+      };
+    }
+  }
+  // =========================================================================
 
   // 2. REGRA DO TRIAL (LEÃO DE CHÁCARA): A TRAVA CONTRA O TRIAL INFINITO
   // Se a loja tem um ID do MP OU já saiu do status 'inactive' OU tem data, o trial acaba.
@@ -2708,11 +2779,14 @@ export async function resendVerificationEmail(email: string) {
     if (!user) return { error: "Usuário não encontrado." };
     if (user.emailVerified) return { error: "Este e-mail já está verificado." };
 
-   // 2. Gera um novo token (usando a função que já criamos)
+    // 2. Gera um novo token (usando a função que já criamos)
     const verificationToken = await generateVerificationToken(email);
 
     // 🚀 BLINDAGEM DO DOMÍNIO
- const domain = process.env.NODE_ENV === "production" ? "https://tafanu.com.br" : "http://localhost:3000";
+    const domain =
+      process.env.NODE_ENV === "production"
+        ? "https://tafanu.com.br"
+        : "http://localhost:3000";
     const confirmLink = `${domain}/verificar-email?token=${verificationToken.token}`;
 
     // 3. Dispara o e-mail
@@ -2766,9 +2840,9 @@ export async function addComment(
     });
 
     if (comentarioRecente) {
-      return { 
-        success: false, 
-        error: "Calma! Aguarde 15 segundos antes de enviar outra avaliação." 
+      return {
+        success: false,
+        error: "Calma! Aguarde 15 segundos antes de enviar outra avaliação.",
       };
     }
 

@@ -65,7 +65,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       if (user) {
         token.id = user.id as string;
-        token.role = user.role; // Se essa linha também ficar vermelha, use: user.role as string;
+        // 🚀 BISTURI 1: O Google não apita mais aqui!
+        // Removemos a linha "token.role = user.role" propositalmente.
+        // O cargo agora será buscado exclusivamente do banco de dados abaixo.
       } else if (!token.id && token.sub) {
         token.id = token.sub;
       }
@@ -79,16 +81,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               phone: true,
               document: true,
               password: true,
-              // 🛡️ AQUI: expiresAt REMOVIDO cirurgicamente
+              isBanned: true, // 🚀 BISTURI 2: Trazemos o status de banimento na leitura
             },
           });
 
           if (dbUser) {
+            // 🚀 BISTURI 3: A Bomba Eletromagnética (Crachá Fantasma)
+            // Se o banco acusa banimento, definimos a expiração (exp) do token para 0 (o passado).
+            // O NextAuth automaticamente vai ler isso como "sessão inválida" e vai ejetar o usuário do site no mesmo segundo.
+            if (dbUser.isBanned) {
+              token.exp = 0;
+              return token;
+            }
+
+            // O cargo verdadeiro e soberano vindo do Banco de Dados
             token.role = dbUser.role;
             token.phone = dbUser.phone;
             token.document = dbUser.document;
             token.hasPassword = !!dbUser.password;
-            // 🛡️ AQUI: token.expiresAt REMOVIDO
           }
         } catch (e) {
           /* ignore */
