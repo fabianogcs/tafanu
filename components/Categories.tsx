@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Loader2,
@@ -117,6 +117,21 @@ interface CategoriesProps {
 export default function Categories({ activeCats = [] }: CategoriesProps) {
   const [isNavigating, setIsNavigating] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showArrows, setShowArrows] = useState(false); // 🚀 Novo estado para as setas
+
+  // 🚀 Lógica que calcula se precisa de setas
+  const checkScrollability = () => {
+    if (scrollRef.current) {
+      const { scrollWidth, clientWidth } = scrollRef.current;
+      setShowArrows(scrollWidth > clientWidth);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollability();
+    window.addEventListener("resize", checkScrollability);
+    return () => window.removeEventListener("resize", checkScrollability);
+  }, []);
 
   // 🚀 ESTADOS PARA O ARRASTE DO MOUSE (DRAG TO SCROLL)
   const [isDragging, setIsDragging] = useState(false);
@@ -164,24 +179,31 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
 
   return (
     <section className="w-full max-w-[1400px] mx-auto px-4 md:px-8 relative z-30 -mt-[220px] md:-mt-[280px] lg:-mt-[320px] mb-16 md:mb-24 animate-in fade-in duration-700 delay-500 group">
-      <button
-        onClick={() => scroll("left")}
-        className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 bg-white rounded-full items-center justify-center shadow-xl border border-slate-100 text-slate-400 hover:text-emerald-500 hover:scale-110 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
-        aria-label="Rolar para esquerda"
-      >
-        <ChevronLeft strokeWidth={3} size={20} />
-      </button>
+      {showArrows && (
+        <button
+          onClick={() => scroll("left")}
+          className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 bg-white rounded-full items-center justify-center shadow-xl border border-slate-100 text-slate-400 hover:text-emerald-500 hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+          aria-label="Rolar para esquerda"
+        >
+          <ChevronLeft strokeWidth={3} size={20} />
+        </button>
+      )}
 
-      {/* 🚀 CIRURGIA DE SCROLL: Removido o scroll-smooth e o snap rígido. Adicionado cursor-grab para o mouse. */}
+      {/* 🚀 CIRURGIA DE SCROLL: Eventos e Cursor Condicionais + Aceleração de GPU */}
       <div
         ref={scrollRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setIsDragging(false)}
-        // 🚀 A CORREÇÃO: Desliga o arraste 50 milissegundos após ele soltar o botão,
-        // para dar tempo do onClick rodar e entender se foi arraste ou clique real.
-        onMouseUp={() => setTimeout(() => setIsDragging(false), 50)}
-        className="flex gap-2.5 md:gap-5 overflow-x-auto pb-6 md:pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-1 md:px-2 cursor-grab active:cursor-grabbing select-none"
+        // Só liga o motor de arraste se realmente tiver conteúdo escondido
+        onMouseDown={showArrows ? handleMouseDown : undefined}
+        onMouseMove={showArrows ? handleMouseMove : undefined}
+        onMouseLeave={showArrows ? () => setIsDragging(false) : undefined}
+        onMouseUp={
+          showArrows
+            ? () => setTimeout(() => setIsDragging(false), 50)
+            : undefined
+        }
+        className={`flex gap-4 md:gap-6 overflow-x-auto pb-6 md:pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-2 md:px-4 touch-pan-x overscroll-x-contain will-change-scroll transform-gpu ${
+          showArrows ? "cursor-grab active:cursor-grabbing" : "cursor-default"
+        } ${isDragging ? "[&_*]:pointer-events-none" : ""}`}
       >
         {CATEGORIES_DATA.map((cat) => {
           const isLoading = isNavigating === cat.id;
@@ -192,64 +214,31 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
               <Link
                 href={`/busca?category=${encodeURIComponent(cat.id)}`}
                 onClick={(e) => handleLinkClick(e, cat.id)}
-                draggable={false} // Evita que o navegador tente arrastar o link como imagem
-                /* 🚀 AINDA MAIS COMPACTO: w-[100px] no mobile */
-                className="block relative w-[100px] md:w-[210px] bg-white rounded-2xl md:rounded-[1.75rem] shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 md:hover:-translate-y-2 border border-slate-100 overflow-hidden group/card"
+                draggable={false}
+                className="flex flex-col items-center gap-2 group/card w-[72px] md:w-[90px] shrink-0 outline-none"
               >
-                {/* 1. METADE SUPERIOR */}
-                {/* 🚀 ALTURA REDUZIDA: h-10 no mobile */}
+                {/* 1. A BOLHA (CÍRCULO) - Zero Animação / Máxima Performance */}
                 <div
-                  className={`h-10 md:h-20 w-full bg-gradient-to-br ${cat.bgGradient} relative flex items-center justify-center overflow-hidden`}
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br ${cat.bgGradient} flex items-center justify-center shadow-sm border border-white relative overflow-hidden`}
                 >
                   <Icon
-                    className={`absolute w-14 h-14 md:w-24 md:h-24 opacity-10 -rotate-12 scale-150 ${cat.iconColor}`}
+                    className={`w-7 h-7 md:w-8 md:h-8 ${cat.iconColor} relative z-10`}
+                    strokeWidth={2}
                   />
                 </div>
 
-                {/* 2. CÍRCULO CENTRALIZADO */}
-                {/* 🚀 CÍRCULO MENOR: top-10, w-7 h-7 no mobile */}
-                <div className="absolute top-10 md:top-20 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center shadow-sm border-[2px] md:border-[3px] border-white z-10 group-hover/card:scale-110 transition-transform duration-300">
-                  <div
-                    className={`w-full h-full rounded-full flex items-center justify-center bg-slate-50 ${cat.iconColor}`}
-                  >
-                    <Icon
-                      className="w-3.5 h-3.5 md:w-5 md:h-5"
-                      strokeWidth={2.5}
+                {/* 2. O TEXTO ENXUTO (Corrigido para text-slate-400) */}
+                <div className="h-8 flex items-start justify-center px-1">
+                  {isLoading ? (
+                    <Loader2
+                      size={14}
+                      className="animate-spin text-emerald-500 mt-1"
                     />
-                  </div>
-                </div>
-
-                {/* 3. METADE INFERIOR */}
-                {/* 🚀 TEXTOS DELICADOS E MENOS MARGEM NO MOBILE */}
-                <div className="pt-5 md:pt-10 pb-2 md:pb-5 px-1.5 md:px-3 flex flex-col items-center text-center bg-white pointer-events-none">
-                  <h3 className="font-black text-[7px] md:text-[11px] text-slate-800 uppercase tracking-widest mb-0.5 leading-tight line-clamp-2">
-                    {cat.title}
-                  </h3>
-
-                  <p className="hidden md:block text-[10px] text-slate-500 font-medium mb-3 line-clamp-1 leading-tight">
-                    {cat.desc}
-                  </p>
-
-                  <div className="flex items-center gap-1 md:gap-1.5 mt-1 md:mt-0 text-[6px] md:text-[9px] font-black uppercase tracking-widest text-emerald-600 group-hover/card:text-tafanu-action transition-colors">
-                    {isLoading ? (
-                      <>
-                        <Loader2
-                          size={8}
-                          className="animate-spin md:w-3 md:h-3"
-                        />
-                        <span className="hidden md:inline">CARREGANDO</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="hidden md:inline">EXPLORAR</span>
-                        <ChevronRight
-                          size={8}
-                          strokeWidth={3}
-                          className="md:w-3 md:h-3"
-                        />
-                      </>
-                    )}
-                  </div>
+                  ) : (
+                    <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest text-center line-clamp-2 leading-[1.1] group-hover/card:text-emerald-600 transition-colors">
+                      {cat.title}
+                    </span>
+                  )}
                 </div>
               </Link>
             </div>
@@ -257,13 +246,15 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
         })}
       </div>
 
-      <button
-        onClick={() => scroll("right")}
-        className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 bg-white rounded-full items-center justify-center shadow-xl border border-slate-100 text-slate-400 hover:text-emerald-500 hover:scale-110 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0"
-        aria-label="Rolar para direita"
-      >
-        <ChevronRight strokeWidth={3} size={20} />
-      </button>
+      {showArrows && (
+        <button
+          onClick={() => scroll("right")}
+          className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 bg-white rounded-full items-center justify-center shadow-xl border border-slate-100 text-slate-400 hover:text-emerald-500 hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+          aria-label="Rolar para direita"
+        >
+          <ChevronRight strokeWidth={3} size={20} />
+        </button>
+      )}
     </section>
   );
 }

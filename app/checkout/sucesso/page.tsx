@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import confetti from "canvas-confetti";
-import SessionRefresher from "@/components/SessionRefresher";
 
 export default function SuccessPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -81,7 +80,6 @@ export default function SuccessPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-slate-50">
       {/* 🚀 O Garçom Invisível continua aqui para atualizar o crachá em silêncio! */}
-      <SessionRefresher />
 
       <div className="w-full max-w-xl bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in duration-700">
         {/* HEADER */}
