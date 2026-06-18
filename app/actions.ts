@@ -561,7 +561,10 @@ export async function createBusiness(payload: any) {
           theme: validatedData.theme,
           layout: validatedData.layout as LayoutType, // 🛡️ Blindado igual fizemos na edição!
           category: validatedData.category,
-          subcategory: payload.subcategory || [],
+          // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens enviados via Payload!
+          subcategory: Array.isArray(payload.subcategory)
+            ? payload.subcategory.slice(0, 5)
+            : [],
           description: validatedData.description,
           whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
           phone: (validatedData.phone || "").replace(/\D/g, ""),
@@ -579,25 +582,37 @@ export async function createBusiness(payload: any) {
           longitude: coords.lng,
           imageUrl: payload.imageUrl || "",
           coverImage: payload.coverImage || "",
-          mediaFeed: payload.mediaFeed || [],
-          gallery: (payload.mediaFeed || [])
-            .filter((m: any) => m.type === "image")
-            .map((m: any) => m.url),
-          videos: (payload.mediaFeed || [])
-            .filter((m: any) => m.type === "video")
-            .map((m: any) => m.url),
-          features: payload.features || [],
+          mediaFeed: Array.isArray(payload.mediaFeed)
+            ? payload.mediaFeed.slice(0, 30)
+            : [],
+          gallery: Array.isArray(payload.mediaFeed)
+            ? payload.mediaFeed
+                .filter((m: any) => m.type === "image")
+                .map((m: any) => m.url)
+                .slice(0, 30)
+            : [],
+          videos: Array.isArray(payload.mediaFeed)
+            ? payload.mediaFeed
+                .filter((m: any) => m.type === "video")
+                .map((m: any) => m.url)
+                .slice(0, 5)
+            : [],
+          features: Array.isArray(payload.features)
+            ? payload.features.slice(0, 20)
+            : [],
           keywords: Array.from(
             new Set([
               ...(payload.keywords || []).map((k: string) => normalizeText(k)),
               normalizeText(validatedData.name),
               normalizeText(validatedData.category),
-              ...(payload.subcategory || []).map((s: string) =>
-                normalizeText(s),
-              ),
-              ...(payload.subcategory || []).flatMap((s: string) =>
-                normalizeText(s).split(" "),
-              ),
+              ...(Array.isArray(payload.subcategory)
+                ? payload.subcategory.slice(0, 5)
+                : []
+              ).map((s: string) => normalizeText(s)),
+              ...(Array.isArray(payload.subcategory)
+                ? payload.subcategory.slice(0, 5)
+                : []
+              ).flatMap((s: string) => normalizeText(s).split(" ")),
             ]),
           ).filter(Boolean),
           instagram: cleanSocialLink(validatedData.instagram || ""),
@@ -614,13 +629,13 @@ export async function createBusiness(payload: any) {
           luxe_quote: payload.luxe_quote || "",
           showroom_collection: payload.showroom_collection || "",
           comercial_badge: payload.comercial_badge || "",
-          faqs: payload.faqs || [],
+          faqs: Array.isArray(payload.faqs) ? payload.faqs.slice(0, 15) : [],
         },
       });
 
-      if (payload.hours?.length > 0) {
+      if (Array.isArray(payload.hours) && payload.hours.length > 0) {
         await tx.businessHour.createMany({
-          data: payload.hours.map((h: any) => ({
+          data: payload.hours.slice(0, 7).map((h: any) => ({
             businessId: business.id,
             dayOfWeek: h.dayOfWeek,
             openTime: h.openTime || "09:00",
@@ -753,7 +768,10 @@ export async function updateFullBusiness(slug: string, payload: any) {
         description: validatedData.description,
         address: validatedData.address,
         category: validatedData.category,
-        subcategory: payload.subcategory || [],
+        // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens!
+        subcategory: Array.isArray(payload.subcategory)
+          ? payload.subcategory.slice(0, 5)
+          : [],
         theme: validatedData.theme,
         layout: validatedData.layout as LayoutType, // 🛡️ Tipagem segura do Prisma
         whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
@@ -774,10 +792,14 @@ export async function updateFullBusiness(slug: string, payload: any) {
             ...(payload.keywords || []).map((k: string) => normalizeText(k)),
             normalizeText(validatedData.name),
             normalizeText(validatedData.category),
-            ...(payload.subcategory || []).map((s: string) => normalizeText(s)),
-            ...(payload.subcategory || []).flatMap((s: string) =>
-              normalizeText(s).split(" "),
-            ),
+            ...(Array.isArray(payload.subcategory)
+              ? payload.subcategory.slice(0, 5)
+              : []
+            ).map((s: string) => normalizeText(s)),
+            ...(Array.isArray(payload.subcategory)
+              ? payload.subcategory.slice(0, 5)
+              : []
+            ).flatMap((s: string) => normalizeText(s).split(" ")),
           ]),
         ).filter(Boolean),
         instagram: cleanSocialLink(validatedData.instagram || ""),
@@ -789,7 +811,9 @@ export async function updateFullBusiness(slug: string, payload: any) {
         coverImage: payload.coverImage || "",
         catalogPdf: payload.catalogPdf || null, // 🚀 NOVO CAMPO: Salva o PDF no banco de dados!
         website: payload.website || "",
-        features: payload.features || [], // Os seus Destaques de volta!
+        features: Array.isArray(payload.features)
+          ? payload.features.slice(0, 20)
+          : [], // Os seus Destaques limitados a 20!
         published: payload.published, // O botão Online/Pausado de volta!
         hasDelivery: payload.hasDelivery || false,
         urban_tag: payload.urban_tag || "",
@@ -801,28 +825,36 @@ export async function updateFullBusiness(slug: string, payload: any) {
         mercadoLivre: validatedData.mercadoLivre?.trim() || "",
         shein: validatedData.shein?.trim() || "",
         ifood: validatedData.ifood?.trim() || "",
-        mediaFeed: payload.mediaFeed || [],
-        gallery: (payload.mediaFeed || [])
-          .filter((m: any) => m && m.type === "image" && m.url)
-          .map((m: any) => m.url),
-        videos: (payload.mediaFeed || [])
-          .filter((m: any) => m && m.type === "video" && m.url)
-          .map((m: any) => m.url),
-        faqs: payload.faqs || [],
+        mediaFeed: Array.isArray(payload.mediaFeed)
+          ? payload.mediaFeed.slice(0, 30)
+          : [],
+        gallery: Array.isArray(payload.mediaFeed)
+          ? payload.mediaFeed
+              .filter((m: any) => m && m.type === "image" && m.url)
+              .map((m: any) => m.url)
+              .slice(0, 30)
+          : [],
+        videos: Array.isArray(payload.mediaFeed)
+          ? payload.mediaFeed
+              .filter((m: any) => m && m.type === "video" && m.url)
+              .map((m: any) => m.url)
+              .slice(0, 5)
+          : [],
+        faqs: Array.isArray(payload.faqs) ? payload.faqs.slice(0, 15) : [],
       },
     });
 
-    // 🚀 CORREÇÃO SÊNIOR 2: Atualizando os horários de funcionamento!
+    // 🚀 CORREÇÃO SÊNIOR 2: Atualizando os horários de funcionamento (BLINDADO)!
     if (payload.hours) {
       // Primeiro, apagamos os horários velhos dessa loja
       await db.businessHour.deleteMany({
         where: { businessId: old.id },
       });
 
-      // Depois, criamos os novos se eles existirem
-      if (payload.hours.length > 0) {
+      // Depois, criamos os novos limitados a 7 (uma semana) para evitar injeção de dados infinitos
+      if (Array.isArray(payload.hours) && payload.hours.length > 0) {
         await db.businessHour.createMany({
-          data: payload.hours.map((h: any) => ({
+          data: payload.hours.slice(0, 7).map((h: any) => ({
             businessId: old.id,
             dayOfWeek: h.dayOfWeek,
             openTime: h.openTime || "09:00",
@@ -1734,7 +1766,10 @@ export async function sendPasswordResetEmail(formData: FormData) {
 }
 
 export async function resetPassword(token: string | null, formData: FormData) {
-  if (!token) return { error: "Token inválido ou ausente." };
+  // 🚀 PROTEÇÃO ANTI-INJEÇÃO: O token precisa existir e ser um UUID válido (36 caracteres)
+  if (!token || typeof token !== "string" || token.length !== 36) {
+    return { error: "Link de recuperação inválido ou corrompido." };
+  }
 
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
@@ -2297,11 +2332,12 @@ export async function markAffiliateAsPaid(affiliateId: string) {
         data: { status: "PAID" },
       });
 
-      // B. Se nenhuma linha foi alterada, significa que outro clique/processo já sacou isso milissegundos antes.
-      // Nós abortamos a transação inteira instantaneamente.
-      if (updateResult.count === 0) {
+      // 🚀 B. BLINDAGEM FINANCEIRA (RACE CONDITION):
+      // Garante que o banco sequestrou EXATAMENTE a quantidade de comissões que o valor PIX calculou.
+      // Se outro clique rápido roubou 1 centavo dessa fila, aborta para não pagar a mais.
+      if (updateResult.count !== idsDasComissoes.length) {
         throw new Error(
-          "Comissões já foram sacadas ou não estão mais disponíveis.",
+          "Conflito de requisição detectado. O saque foi cancelado por segurança. Tente novamente.",
         );
       }
 
@@ -2496,7 +2532,11 @@ export async function createSubscription(
   };
 
   const config = planConfigs[planType];
-
+  if (!config) {
+    return {
+      error: "Plano inválido selecionado. Atualize a página e tente novamente.",
+    };
+  }
   try {
     const body = {
       reason: config.reason,
@@ -3195,7 +3235,10 @@ export async function transferBusinessToUser(
       // Passo A: Para o Prisma deixar a Gaveta assumir o Slug (que é único), precisamos colocar um "lixo" no slug antigo
       await tx.business.update({
         where: { id: vitrinePronta.id },
-        data: { slug: `lixo-${Date.now()}` },
+        // 🚀 PREVENÇÃO DE COLISÃO MATEMÁTICA: Date.now + Aleatoriedade
+        data: {
+          slug: `lixo-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+        },
       });
 
       // Passo B: Copia TUDO (exceto IDs e o status de assinatura) da Vitrine Pronta para a Gaveta

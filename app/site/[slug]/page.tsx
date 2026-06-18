@@ -11,28 +11,10 @@ import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
-// 🚀 NOVA FUNÇÃO DE GERAÇÃO ESTÁTICA PARA SEO (SSG)
-export async function generateStaticParams() {
-  const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
-
-  try {
-    const businesses = await db.business.findMany({
-      where: {
-        isActive: true,
-        published: true,
-        OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
-      },
-      select: { slug: true },
-      take: 200, // Começamos com 200 para garantir que o Build na Vercel seja rápido e gratuito
-    });
-
-    return businesses.map((b) => ({ slug: b.slug }));
-  } catch (error) {
-    // Se o banco falhar durante o build, ele retorna um array vazio para não quebrar o deploy
-    console.error("Erro ao gerar rotas estáticas:", error);
-    return [];
-  }
-}
+// 🚀 A VACINA DA VERCEL: Obriga a página a carregar em Tempo Real (Server-Side Rendering puro)
+// Isso resolve imediatamente o erro DYNAMIC_SERVER_USAGE sem quebrar a sua contagem de visualizações ou relógio.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // --- 0. VIEWPORT DINÂMICO ---
 export async function generateViewport({

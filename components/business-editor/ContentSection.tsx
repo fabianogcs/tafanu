@@ -286,6 +286,15 @@ export function ContentSection({
                   const file = e.target.files?.[0];
                   if (!file) return;
 
+                  // 🚀 PROTEÇÃO DE BANDA E MEMÓRIA: Verifica o limite real de 8MB no frontend
+                  if (file.size > 8 * 1024 * 1024) {
+                    toast.error(
+                      "O catálogo é muito pesado. Por favor, comprima seu PDF para no máximo 8MB.",
+                    );
+                    e.target.value = "";
+                    return;
+                  }
+
                   // 🚀 O PULO DO GATO: Limpa a memória do input para ele não travar mais!
                   e.target.value = "";
 

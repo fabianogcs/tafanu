@@ -23,6 +23,7 @@ export interface AddressData {
   city: string;
   state: string;
   number: string;
+  complement?: string; // 🚀 Adicionado para evitar furos de tipagem
 }
 
 // 🚀 NOVO TIPO: Adicionado para o TypeScript reconhecer o campo de PDF
