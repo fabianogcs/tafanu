@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -17,6 +18,24 @@ export function TemplateLightbox({
   onClose,
   onNavigate,
 }: TemplateLightboxProps) {
+  // 🚀 UX PREMIUM: Navegação por Teclado (Esc e Setinhas)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedIndex === null) return;
+
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "ArrowLeft") {
+        onNavigate(selectedIndex - 1);
+      } else if (e.key === "ArrowRight") {
+        onNavigate(selectedIndex + 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedIndex, onClose, onNavigate]);
+
   if (selectedIndex === null) return null;
 
   return (

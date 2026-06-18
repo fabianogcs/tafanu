@@ -50,15 +50,22 @@ export default function AffiliateDashboard() {
     let disponivel = 0;
     let pendente = 0;
     let pago = 0;
+    const agora = new Date();
 
     if (data?.commissions) {
       data.commissions.forEach((c: any) => {
         if (c.userId === data.affiliate.id) return;
 
-        if (c.status === CommissionStatus.AVAILABLE) disponivel += c.amount;
-        // ...
-        if (c.status === CommissionStatus.PENDING) pendente += c.amount;
-        if (c.status === CommissionStatus.PAID) pago += c.amount;
+        if (c.status === "PAID") {
+          pago += c.amount;
+        } else if (c.status === "PENDING" && new Date(c.releaseDate) > agora) {
+          pendente += c.amount;
+        } else if (
+          c.status === "AVAILABLE" ||
+          (c.status === "PENDING" && new Date(c.releaseDate) <= agora)
+        ) {
+          disponivel += c.amount;
+        }
       });
     }
     return { disponivel, pendente, pago };
@@ -360,7 +367,7 @@ export default function AffiliateDashboard() {
             count={listLeads.length}
             color="bg-blue-500"
           />
-         <TabButton
+          <TabButton
             active={activeTab === "vencidos"}
             onClick={() => setActiveTab("vencidos")}
             label="Vencidos / Cancelados"
@@ -378,14 +385,14 @@ export default function AffiliateDashboard() {
           />
         </div>
 
-{/* 3. LISTAGEM DE CLIENTES E SAQUES */}
+        {/* 3. LISTAGEM DE CLIENTES E SAQUES */}
         {activeTab === "saques" ? (
           <div className="bg-white rounded-[2rem] border border-gray-100 shadow-md p-6 md:p-8">
             <h2 className="text-xl font-black text-[#023059] uppercase italic tracking-tighter mb-6 flex items-center gap-2">
               <Wallet className="text-[#F28705]" /> Meus Saques
             </h2>
-            
-            {(!data.withdrawals || data.withdrawals.length === 0) ? (
+
+            {!data.withdrawals || data.withdrawals.length === 0 ? (
               <div className="text-center py-16 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
                 <Banknote size={40} className="mx-auto text-gray-300 mb-3" />
                 <p className="font-black uppercase text-gray-400 text-[10px] tracking-widest">
@@ -395,15 +402,33 @@ export default function AffiliateDashboard() {
             ) : (
               <div className="space-y-4">
                 {data.withdrawals.map((saque: any) => (
-                  <div key={saque.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-white transition-colors hover:shadow-sm">
+                  <div
+                    key={saque.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-white transition-colors hover:shadow-sm"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
                         <CheckCircle2 size={24} />
                       </div>
                       <div>
-                        <p className="font-black text-sm text-[#023059] uppercase">Transferência PIX</p>
+                        <p className="font-black text-sm text-[#023059] uppercase">
+                          Transferência PIX
+                        </p>
                         <p className="text-[11px] font-bold text-gray-400 mt-0.5">
-                          {new Date(saque.paidAt || saque.createdAt).toLocaleDateString("pt-BR", { day: '2-digit', month: 'long', year: 'numeric' })} às {new Date(saque.paidAt || saque.createdAt).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(
+                            saque.paidAt || saque.createdAt,
+                          ).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })}{" "}
+                          às{" "}
+                          {new Date(
+                            saque.paidAt || saque.createdAt,
+                          ).toLocaleTimeString("pt-BR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
                       </div>
                     </div>
@@ -425,18 +450,60 @@ export default function AffiliateDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredList.map((ref: any) => {
                 const business = ref.businesses?.[0];
-                const expDate = business?.expiresAt ? new Date(business.expiresAt) : null;
-                const daysLeft = expDate ? Math.ceil((expDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                const expDate = business?.expiresAt
+                  ? new Date(business.expiresAt)
+                  : null;
+                const daysLeft = expDate
+                  ? Math.ceil(
+                      (expDate.getTime() - hoje.getTime()) /
+                        (1000 * 60 * 60 * 24),
+                    )
+                  : 0;
 
                 return (
-                  <div key={ref.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-md hover:shadow-xl transition-all flex flex-col overflow-hidden group">
-                    <div className={`px-5 py-3 flex justify-between items-center border-b ${
-                      activeTab === "leads" ? "bg-blue-50 border-blue-100" : activeTab === "teste" ? "bg-orange-50 border-orange-100" : activeTab === "vencidos" ? "bg-rose-50 border-rose-100" : activeTab === "pix" ? "bg-purple-50 border-purple-100" : "bg-emerald-50 border-emerald-100"
-                    }`}>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${
-                        activeTab === "leads" ? "text-blue-600" : activeTab === "teste" ? "text-[#F28705]" : activeTab === "vencidos" ? "text-rose-600" : activeTab === "pix" ? "text-purple-600 flex items-center gap-1" : "text-emerald-600"
-                      }`}>
-                        {activeTab === "leads" ? "Falta Assinar" : activeTab === "teste" ? "Faltam " + daysLeft + " dias para faturar" : activeTab === "vencidos" ? "Recuperar Venda" : activeTab === "pix" ? (<><QrCode size={10} /> Pagamento Manual</>) : "Ativo e Rendendo"}
+                  <div
+                    key={ref.id}
+                    className="bg-white rounded-[2rem] border border-gray-100 shadow-md hover:shadow-xl transition-all flex flex-col overflow-hidden group"
+                  >
+                    <div
+                      className={`px-5 py-3 flex justify-between items-center border-b ${
+                        activeTab === "leads"
+                          ? "bg-blue-50 border-blue-100"
+                          : activeTab === "teste"
+                            ? "bg-orange-50 border-orange-100"
+                            : activeTab === "vencidos"
+                              ? "bg-rose-50 border-rose-100"
+                              : activeTab === "pix"
+                                ? "bg-purple-50 border-purple-100"
+                                : "bg-emerald-50 border-emerald-100"
+                      }`}
+                    >
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-widest ${
+                          activeTab === "leads"
+                            ? "text-blue-600"
+                            : activeTab === "teste"
+                              ? "text-[#F28705]"
+                              : activeTab === "vencidos"
+                                ? "text-rose-600"
+                                : activeTab === "pix"
+                                  ? "text-purple-600 flex items-center gap-1"
+                                  : "text-emerald-600"
+                        }`}
+                      >
+                        {activeTab === "leads" ? (
+                          "Falta Assinar"
+                        ) : activeTab === "teste" ? (
+                          "Faltam " + daysLeft + " dias para faturar"
+                        ) : activeTab === "vencidos" ? (
+                          "Recuperar Venda"
+                        ) : activeTab === "pix" ? (
+                          <>
+                            <QrCode size={10} /> PIX - Restam {daysLeft} dias
+                          </>
+                        ) : (
+                          "Ativo e Rendendo"
+                        )}
                       </span>
                     </div>
 
@@ -445,19 +512,34 @@ export default function AffiliateDashboard() {
                         <div className="flex justify-between items-start">
                           <div className="truncate max-w-[80%]">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-black text-[#023059] text-lg uppercase leading-tight truncate">{ref.name || "Sem Nome"}</h3>
+                              <h3 className="font-black text-[#023059] text-lg uppercase leading-tight truncate">
+                                {ref.name || "Sem Nome"}
+                              </h3>
                               {activeTab === "teste" && (
-                                <span className="bg-[#F28705] text-white text-[8px] md:text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0 shadow-sm">Trial 7 Dias</span>
+                                <span className="bg-[#F28705] text-white text-[8px] md:text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0 shadow-sm">
+                                  Trial 7 Dias
+                                </span>
                               )}
                             </div>
-                            <p className="text-[11px] font-bold text-gray-400 mt-1 truncate">{ref.email}</p>
+                            <p className="text-[11px] font-bold text-gray-400 mt-1 truncate">
+                              {ref.email}
+                            </p>
                           </div>
                           {business && (
                             <div className="flex items-center gap-2 shrink-0">
-                              <Link href={`/dashboard/editar/${business.slug}`} title="Editar Loja (Modo Agência)" className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm">
+                              <Link
+                                href={`/dashboard/editar/${business.slug}`}
+                                title="Editar Loja (Modo Agência)"
+                                className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm"
+                              >
                                 <Edit3 size={16} />
                               </Link>
-                              <Link href={`/site/${business.slug}`} target="_blank" title="Ver loja" className="h-10 w-10 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center hover:bg-[#023059] hover:text-white transition-all border border-gray-200">
+                              <Link
+                                href={`/site/${business.slug}`}
+                                target="_blank"
+                                title="Ver loja"
+                                className="h-10 w-10 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center hover:bg-[#023059] hover:text-white transition-all border border-gray-200"
+                              >
                                 <ExternalLink size={16} />
                               </Link>
                             </div>
@@ -466,15 +548,28 @@ export default function AffiliateDashboard() {
 
                         {ref.role === "ASSINANTE" && expDate && (
                           <div className="mt-4 flex flex-col gap-2">
-                            <div className={`flex items-center gap-1.5 w-fit text-[11px] font-black uppercase px-3 py-1.5 rounded-lg border ${
-                              daysLeft <= 0 ? "bg-rose-50 text-rose-600 border-rose-100" : activeTab === "pix" ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-blue-50 text-blue-600 border-blue-100"
-                            }`}>
-                              {daysLeft <= 0 ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
-                              {daysLeft <= 0 ? `Vencido há ${Math.abs(daysLeft)} dias` : `Vence em ${daysLeft} dias`}
+                            <div
+                              className={`flex items-center gap-1.5 w-fit text-[11px] font-black uppercase px-3 py-1.5 rounded-lg border ${
+                                daysLeft <= 0
+                                  ? "bg-rose-50 text-rose-600 border-rose-100"
+                                  : activeTab === "pix"
+                                    ? "bg-purple-50 text-purple-600 border-purple-100"
+                                    : "bg-blue-50 text-blue-600 border-blue-100"
+                              }`}
+                            >
+                              {daysLeft <= 0 ? (
+                                <AlertCircle size={14} />
+                              ) : (
+                                <CheckCircle2 size={14} />
+                              )}
+                              {daysLeft <= 0
+                                ? `Vencido há ${Math.abs(daysLeft)} dias`
+                                : `Vence em ${daysLeft} dias`}
                             </div>
                             {activeTab === "pix" && (
                               <p className="text-[9px] font-bold text-purple-500/70 leading-tight">
-                                *Você deve cobrar este cliente diretamente e repassar a parte da plataforma.
+                                *Você deve cobrar este cliente diretamente e
+                                repassar a parte da plataforma.
                               </p>
                             )}
                           </div>
@@ -482,25 +577,47 @@ export default function AffiliateDashboard() {
 
                         {ref.role === "ASSINANTE" && ref.lastLogin && (
                           <div className="mt-1 flex items-center gap-1.5 w-fit text-[9px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                            <Clock size={10} className="text-blue-400" /> Acessou: {new Date(ref.lastLogin).toLocaleDateString("pt-BR")} às {new Date(ref.lastLogin).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            <Clock size={10} className="text-blue-400" />{" "}
+                            Acessou:{" "}
+                            {new Date(ref.lastLogin).toLocaleDateString(
+                              "pt-BR",
+                            )}{" "}
+                            às{" "}
+                            {new Date(ref.lastLogin).toLocaleTimeString(
+                              "pt-BR",
+                              { hour: "2-digit", minute: "2-digit" },
+                            )}
                           </div>
                         )}
                       </div>
 
                       <div className="flex gap-2 w-full mt-2">
                         <a
-                          href={ref.phone ? `https://wa.me/55${ref.phone.replace(/\D/g, "")}?text=${encodeURIComponent(daysLeft <= 0 ? `Olá ${ref.name?.split(" ")[0]}, sua assinatura na plataforma venceu! Vamos renovar?` : activeTab === "pix" && daysLeft <= 5 ? `Olá ${ref.name?.split(" ")[0]}, passando para lembrar que sua assinatura vence em ${daysLeft} dias. Segue a chave PIX para renovação:` : `Olá ${ref.name?.split(" ")[0]}, tudo bem? Como estão os acessos na sua vitrine?`)}` : "#"}
+                          href={
+                            ref.phone
+                              ? `https://wa.me/55${ref.phone.replace(/\D/g, "")}?text=${encodeURIComponent(daysLeft <= 0 ? `Olá ${ref.name?.split(" ")[0]}, sua assinatura na plataforma venceu! Vamos renovar?` : activeTab === "pix" && daysLeft <= 5 ? `Olá ${ref.name?.split(" ")[0]}, passando para lembrar que sua assinatura vence em ${daysLeft} dias. Segue a chave PIX para renovação:` : `Olá ${ref.name?.split(" ")[0]}, tudo bem? Como estão os acessos na sua vitrine?`)}`
+                              : "#"
+                          }
                           target="_blank"
                           className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${ref.phone ? "bg-[#25D366] text-white shadow-lg hover:bg-[#1ebd57]" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
                           onClick={(e) => {
-                            if (!ref.phone) { e.preventDefault(); toast.error("Este cliente não tem telefone cadastrado."); }
+                            if (!ref.phone) {
+                              e.preventDefault();
+                              toast.error(
+                                "Este cliente não tem telefone cadastrado.",
+                              );
+                            }
                           }}
                         >
                           <MessageCircle size={18} />
                           <span className="hidden sm:inline">WhatsApp</span>
                           <span className="sm:hidden">WPP</span>
                         </a>
-                        <a href={`mailto:${ref.email}?subject=Sua%20Vitrine%20no%20Tafanu`} className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm" title="Enviar E-mail">
+                        <a
+                          href={`mailto:${ref.email}?subject=Sua%20Vitrine%20no%20Tafanu`}
+                          className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"
+                          title="Enviar E-mail"
+                        >
                           <Mail size={18} />
                         </a>
                       </div>

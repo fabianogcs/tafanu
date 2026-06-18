@@ -359,6 +359,23 @@ export default function BusinessEditor({
     hasDelivery,
   ]);
 
+  // =========================================================================
+  // 🚀 A TRAVA ANTI-F5 (Impede o usuário de perder fotos e dados não salvos)
+  // =========================================================================
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Se houver mudanças (hasChanges) e não for um perfil novo vazio
+      if (hasChanges && !isNew) {
+        e.preventDefault();
+        e.returnValue = ""; // Faz o navegador exibir o alerta padrão de "Sair do site?"
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges, isNew]);
+  // =========================================================================
+
   const filteredThemeKeys = useMemo(() => {
     return Object.keys(businessThemes).filter(
       (key) => businessThemes[key].layout === selectedLayout,

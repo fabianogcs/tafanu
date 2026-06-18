@@ -5,8 +5,15 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // 🚀 BLINDAGEM DE CRAWL BUDGET: Impede o Google de gastar tempo em painéis fechados
-      disallow: ["/dashboard/", "/admin/", "/checkout/", "/login", "/api/"],
+      // 🚀 BLINDAGEM SEO: Impede o Google de ler painéis fechados e indexar filtros de busca dinâmicos infinitos
+      disallow: [
+        "/dashboard/",
+        "/admin/",
+        "/checkout/",
+        "/login",
+        "/api/",
+        "/busca?*",
+      ],
     },
     sitemap: "https://tafanu.com.br/sitemap.xml",
   };

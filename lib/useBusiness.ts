@@ -19,7 +19,17 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
 
   // 3. Capacidades (Booleans úteis para o Layout)
   const capabilities = useMemo(() => {
-    const socialPlatforms = ["instagram", "tiktok", "facebook", "website"];
+    // 🚀 ADICIONADOS OS CANAIS DE VENDA (Shopee, iFood, etc.)
+    const socialPlatforms = [
+      "instagram",
+      "tiktok",
+      "facebook",
+      "website",
+      "shopee",
+      "mercadoLivre",
+      "shein",
+      "ifood",
+    ];
 
     return {
       hasWhatsapp: business.whatsapp.trim() !== "",

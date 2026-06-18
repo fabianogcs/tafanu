@@ -5,9 +5,11 @@ import { CommissionStatus } from "@prisma/client";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  // 🛡️ CORREÇÃO 1: Protege o cron com token secreto
-  const secret = request.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
+  // 🛡️ A PORTA DE AÇO DUPLA (Blindada)
+  const authHeader = request.headers.get("authorization");
+  const envSecret = process.env.CRON_SECRET;
+
+  if (!envSecret || authHeader !== `Bearer ${envSecret}`) {
     return new NextResponse("Não autorizado", { status: 401 });
   }
 

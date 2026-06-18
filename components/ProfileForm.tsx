@@ -23,18 +23,14 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function ProfileForm({ user }: { user: any }) {
+export default function ProfileForm({
+  user,
+  affiliateCode,
+}: {
+  user: any;
+  affiliateCode?: string;
+}) {
   const router = useRouter();
-
-  // --- 1. LÓGICA DE AFILIADOS (NOVO) ---
-  const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user.affiliateId) {
-      const savedRef = localStorage.getItem("tafanu_affiliate_ref");
-      if (savedRef) setAffiliateCode(savedRef);
-    }
-  }, [user.affiliateId]);
 
   // --- 2. ESTADOS ORIGINAIS (PRESERVADOS) ---
   const [isSaving, setIsSaving] = useState(false);
@@ -45,6 +41,9 @@ export default function ProfileForm({ user }: { user: any }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // --- 👁️ ESTADOS DOS OLHINHOS DA PRIVACIDADE (NOVO) ---
+  const [hidePhone, setHidePhone] = useState(true);
+  const [hideDoc, setHideDoc] = useState(true);
 
   // --- 3. MÁSCARAS ORIGINAIS (PRESERVADAS) ---
   const maskPhone = (v: string) => {
@@ -216,30 +215,47 @@ export default function ProfileForm({ user }: { user: any }) {
                   required
                 />
               </div>
+              {/* INPUT WHATSAPP SEGURO */}
               <div className="space-y-2">
                 <label
                   className={`text-[10px] font-black uppercase tracking-widest ml-1 flex items-center gap-1 ${!user.phone ? "text-[#F28705]" : "text-gray-400"}`}
                 >
-                  {/* 🚀 LABEL ALTERADA */}
                   <Smartphone size={12} /> WhatsApp Pessoal:{" "}
-                  {user.role === "ASSINANTE" && "*"}{" "}
+                  {user.role === "ASSINANTE" && "*"}
                   {!user.phone && (
                     <span className="ml-2 animate-pulse">(Obrigatório)</span>
                   )}
                 </label>
-                <input
-                  name="phone"
-                  defaultValue={maskPhone(user.phone || "")}
-                  onChange={(e) => (e.target.value = maskPhone(e.target.value))}
-                  placeholder="(00) 00000-0000"
-                  className={`w-full p-5 border rounded-3xl outline-none focus:ring-4 font-bold text-[#023059] shadow-sm transition-all ${!user.phone ? "bg-orange-50 border-orange-100 focus:ring-[#F28705]/20" : "bg-white border-gray-100 focus:ring-indigo-50"}`}
-                  required={user.role === "ASSINANTE"}
-                />
+                <div className="relative">
+                  <input
+                    name="phone"
+                    type="text"
+                    style={
+                      {
+                        WebkitTextSecurity: hidePhone ? "disc" : "none",
+                      } as React.CSSProperties
+                    }
+                    defaultValue={maskPhone(user.phone || "")}
+                    onChange={(e) =>
+                      (e.target.value = maskPhone(e.target.value))
+                    }
+                    placeholder="(00) 00000-0000"
+                    className={`w-full p-5 pr-12 border rounded-3xl outline-none focus:ring-4 font-bold text-[#023059] shadow-sm transition-all ${!user.phone ? "bg-orange-50 border-orange-100 focus:ring-[#F28705]/20" : "bg-white border-gray-100 focus:ring-indigo-50"}`}
+                    required={user.role === "ASSINANTE"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setHidePhone(!hidePhone)}
+                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#023059] transition-colors focus:outline-none"
+                  >
+                    {hidePhone ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* SEÇÃO 2: DOCUMENTAÇÃO */}
+          {/* SEÇÃO 2: DOCUMENTAÇÃO SEGURO */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
               <ShieldAlert size={18} className="text-[#F28705]" />
@@ -255,24 +271,37 @@ export default function ProfileForm({ user }: { user: any }) {
                   <FileText size={12} /> CPF ou CNPJ{" "}
                   {user.role === "ASSINANTE" && "*"}
                 </label>
-                {/* 🚀 INPUT DO CPF AGORA FICA TRAVADO SE JÁ EXISTIR NO BANCO */}
-                <input
-                  name="document"
-                  defaultValue={maskDoc(user.document || "")}
-                  onChange={(e) => {
-                    // Impede o onChange visual se já estiver travado
-                    if (!user.document)
-                      e.target.value = maskDoc(e.target.value);
-                  }}
-                  placeholder="000.000.000-00"
-                  className={`w-full p-5 border rounded-3xl outline-none focus:ring-4 font-bold transition-all ${
-                    user.document
-                      ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed shadow-none"
-                      : "bg-white border-gray-100 text-[#023059] focus:ring-indigo-50 shadow-sm"
-                  }`}
-                  required={user.role === "ASSINANTE"}
-                  readOnly={!!user.document}
-                />
+                <div className="relative">
+                  <input
+                    name="document"
+                    type="text"
+                    style={
+                      {
+                        WebkitTextSecurity: hideDoc ? "disc" : "none",
+                      } as React.CSSProperties
+                    }
+                    defaultValue={maskDoc(user.document || "")}
+                    onChange={(e) => {
+                      if (!user.document)
+                        e.target.value = maskDoc(e.target.value);
+                    }}
+                    placeholder="000.000.000-00"
+                    className={`w-full p-5 pr-12 border rounded-3xl outline-none focus:ring-4 font-bold transition-all ${
+                      user.document
+                        ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                        : "bg-white border-gray-100 text-[#023059] focus:ring-indigo-50 shadow-sm"
+                    }`}
+                    required={user.role === "ASSINANTE"}
+                    readOnly={!!user.document}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setHideDoc(!hideDoc)}
+                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-[#023059] transition-colors focus:outline-none"
+                  >
+                    {hideDoc ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2 opacity-60">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-1">

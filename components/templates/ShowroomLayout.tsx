@@ -217,21 +217,30 @@ export default function ShowroomLayout({
       const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
+
       const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
+
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
-        window.location.href = targetUrl;
+        if (type === "whatsapp") {
+          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
+          window.open(targetUrl, "_blank", "noopener,noreferrer");
+        } else {
+          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
+          window.location.href = targetUrl;
+        }
       }
     },
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
- useEffect(() => {
+  useEffect(() => {
     if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -280,7 +289,7 @@ export default function ShowroomLayout({
         {/* 🚀 OVERLAY DE ALTO CONTRASTE (Garante leitura em qualquer foto) */}
         <div className="absolute inset-0 pointer-events-none bg-black/20" />
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/60 via-transparent to-black/60" />
-        
+
         <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 z-20">
           <button
             onClick={() => handleShare(business.name)}
@@ -359,7 +368,6 @@ export default function ShowroomLayout({
 
         {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
         <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
-          
           {/* 🚀 BOTÃO DO CATÁLOGO INTEGRADO AOS ÍCONES REDONDOS */}
           {rawBusiness.catalogPdf && (
             <button

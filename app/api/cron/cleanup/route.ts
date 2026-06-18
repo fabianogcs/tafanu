@@ -5,10 +5,11 @@ import { runSystemGhostCleanup } from "@/app/actions";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  // 🛡️ A PORTA DE AÇO: Verifica se quem está batendo tem a chave secreta da Vercel
+  // 🛡️ A PORTA DE AÇO DUPLA: Verifica se a chave existe no servidor E se a senha confere
   const authHeader = request.headers.get("authorization");
+  const secret = process.env.CRON_SECRET;
 
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json(
       { error: "Acesso Não Autorizado" },
       { status: 401 },

@@ -230,21 +230,25 @@ export default function ComercialLayout({
         type === "whatsapp" ? business.whatsapp : business.phone;
       const cleanNumber = (rawNumber || "").replace(/\D/g, "");
       if (!cleanNumber) return;
-      const formattedNumber = cleanNumber.startsWith("55")
+      const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
+
       const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+
       const targetUrl =
         type === "whatsapp"
-          ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`
+          ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
+
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
-      } catch (e) {
       } finally {
         if (type === "whatsapp") {
+          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         } else {
+          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
           window.location.href = targetUrl;
         }
       }
@@ -252,7 +256,7 @@ export default function ComercialLayout({
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
- useEffect(() => {
+  useEffect(() => {
     if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -361,7 +365,7 @@ export default function ComercialLayout({
                   {business.urban_tag}
                 </span>
               )}
-            {realHours.length > 0 && (
+              {realHours.length > 0 && (
                 <span
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
                     isOpen
@@ -378,11 +382,11 @@ export default function ComercialLayout({
                 </span>
               )}
             </div>
-</div>
+          </div>
         </div>
       </header>
 
- {/* 🚀 BOTÃO DO CATÁLOGO ESTÁTICO COM DEGRADÊ PREMIUM (SEM ATRASO DE ANIMAÇÃO) */}
+      {/* 🚀 BOTÃO DO CATÁLOGO ESTÁTICO COM DEGRADÊ PREMIUM (SEM ATRASO DE ANIMAÇÃO) */}
       {rawBusiness.catalogPdf && (
         <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
           <button
@@ -391,9 +395,9 @@ export default function ComercialLayout({
           >
             {/* Máscara de Degradê Translúcido para dar o efeito "Estilizado/3D" */}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/20 pointer-events-none" />
-            
+
             <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
-              Explorar Menu 
+              Explorar Menu
               <ChevronRight size={16} strokeWidth={2} />
             </span>
           </button>
@@ -927,7 +931,6 @@ export default function ComercialLayout({
             className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
           >
             <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
-              
               {/* Barra de Topo com Botão de Fechar */}
               <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
                 <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
@@ -949,7 +952,6 @@ export default function ComercialLayout({
                   title="Catálogo PDF"
                 />
               </div>
-
             </div>
           </motion.div>
         )}

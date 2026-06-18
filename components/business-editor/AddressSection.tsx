@@ -101,6 +101,9 @@ export function AddressSection({
         <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
           <MapPin size={18} className="text-rose-500" /> Localização
         </h2>
+        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest hidden md:block">
+          (Opcional)
+        </span>
         {(addressData.address || addressData.cep) && (
           <button
             type="button"

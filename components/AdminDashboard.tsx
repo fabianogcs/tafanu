@@ -642,7 +642,7 @@ export default function AdminDashboard({
         {/* TABS NÍVEL 2 - AFFILIATES */}
         {mainTab === "affiliates" && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
-           {[
+            {[
               {
                 key: "affiliates",
                 label: "Parceiros",
@@ -1122,12 +1122,15 @@ export default function AdminDashboard({
                       </div>
                     </div>
                     <div className="flex items-center gap-6 bg-white px-6 py-3 rounded-xl border">
-                      <div className="text-center">
+                      <div className="text-center max-w-[120px]">
                         <p className="text-[9px] font-black text-slate-300 uppercase">
-                          Vendas
+                          Contato
                         </p>
-                        <p className="font-black text-lg text-slate-700">
-                          {p.ativos || "1+"}
+                        <p
+                          className="font-bold text-xs text-slate-600 truncate"
+                          title={p.phone || p.email}
+                        >
+                          {p.phone || p.email}
                         </p>
                       </div>
                       <div className="text-center">
@@ -1158,13 +1161,15 @@ export default function AdminDashboard({
               )}
             </div>
           )}
-{/* HISTÓRICO DE SAQUES GERAL (ADMIN) */}
+          {/* HISTÓRICO DE SAQUES GERAL (ADMIN) */}
           {mainTab === "affiliates" && subTab === "history" && (
             <div className="p-6 space-y-4">
               {!data.historicoSaques || data.historicoSaques.length === 0 ? (
                 <div className="flex flex-col items-center py-20 text-slate-300">
                   <Wallet size={40} className="mb-3" />
-                  <p className="text-[11px] font-black uppercase tracking-widest">Nenhum saque realizado ainda.</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest">
+                    Nenhum saque realizado ainda.
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1179,13 +1184,28 @@ export default function AdminDashboard({
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {data.historicoSaques.map((saque: any) => (
-                        <tr key={saque.id} className="hover:bg-slate-50 transition-colors">
+                        <tr
+                          key={saque.id}
+                          className="hover:bg-slate-50 transition-colors"
+                        >
                           <td className="py-4 text-[11px] font-bold text-slate-500">
-                            {new Date(saque.paidAt || saque.createdAt).toLocaleDateString("pt-BR", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(
+                              saque.paidAt || saque.createdAt,
+                            ).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </td>
                           <td className="py-4">
-                            <p className="text-[12px] font-black uppercase text-slate-700">{saque.affiliate?.name || "Desconhecido"}</p>
-                            <p className="text-[10px] font-medium text-slate-400">{saque.affiliate?.email}</p>
+                            <p className="text-[12px] font-black uppercase text-slate-700">
+                              {saque.affiliate?.name || "Desconhecido"}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-400">
+                              {saque.affiliate?.email}
+                            </p>
                           </td>
                           <td className="py-4 text-emerald-600 font-black">
                             {formatMoney(saque.amount)}
@@ -1227,18 +1247,22 @@ export default function AdminDashboard({
                           "Negócio desconhecido"}
                       </p>
                       <p className="text-[11px] text-slate-500 mt-1">
-                        <span className="font-bold text-slate-700">Motivo:</span> {r.reason}
+                        <span className="font-bold text-slate-700">
+                          Motivo:
+                        </span>{" "}
+                        {r.reason}
                       </p>
                       {r.details && (
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {r.details}
                         </p>
                       )}
-                      
+
                       {/* 🚀 EXIBE QUEM FEZ A DENÚNCIA */}
                       {r.reporter ? (
                         <p className="text-[10px] text-amber-600 mt-2 font-bold bg-amber-50 inline-block px-2 py-1 rounded-md border border-amber-100">
-                          🕵️‍♂️ Denunciado por: {r.reporter.name} ({r.reporter.email})
+                          🕵️‍♂️ Denunciado por: {r.reporter.name} (
+                          {r.reporter.email})
                         </p>
                       ) : (
                         <p className="text-[10px] text-slate-400 mt-2">
@@ -1260,11 +1284,13 @@ export default function AdminDashboard({
                           <ExternalLink size={13} /> Ver Loja
                         </a>
                       )}
-                      
+
                       {/* 🚀 BOTÃO DE BANIR O DENUNCIANTE FALSO (SPAM) */}
                       {r.reporter && (
                         <button
-                          onClick={() => handleBan(r.reporter.id, r.reporter.name)}
+                          onClick={() =>
+                            handleBan(r.reporter.id, r.reporter.name)
+                          }
                           disabled={isPending}
                           className="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1.5 border border-rose-100"
                           title="Banir o usuário que fez a denúncia"

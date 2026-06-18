@@ -6,13 +6,43 @@ import {
   ArrowRight,
   Clock,
   ShieldCheck,
-  Store, // ⬅️ Novo ícone para a loja offline
+  Store,
+  UserPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { ptBR } from "date-fns/locale";
 
 export default function SubscriptionAlert({ user }: { user: any }) {
+  // =========================================================================
+  // 🚀 1. IDENTIFICA SE É CONTA FANTASMA (Conta de Demonstração)
+  // =========================================================================
+  const isTestAccount = user?.email?.toLowerCase().endsWith("@tafanu.com.br");
+
+  if (isTestAccount) {
+    return (
+      <div className="w-full bg-indigo-50 border-2 border-indigo-200 p-6 md:p-8 rounded-[2.5rem] shadow-sm flex flex-col md:flex-row items-center gap-6 mb-8 mt-4 animate-in fade-in zoom-in duration-500">
+        <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shrink-0">
+          <UserPlus size={32} />
+        </div>
+        <div className="flex-1 text-center md:text-left">
+          <h3 className="text-lg font-black uppercase text-indigo-900 tracking-widest mb-1">
+            Modo de Demonstração Ativo
+          </h3>
+          <p className="text-sm font-medium text-indigo-700 leading-relaxed">
+            Você está acessando uma vitrine de teste da plataforma. Para assinar
+            um plano, não perder os acessos e assumir a titularidade oficial:
+            <br className="hidden md:block" />
+            <strong>Crie uma conta com seu e-mail pessoal</strong> e avise o seu
+            consultor para fazermos a transferência (Transplante) da loja para
+            você!
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // =========================================================================
+
   const business = user?.businesses?.[0];
   const expirationDateRaw = business?.expiresAt;
   const subscriptionStatus = business?.subscriptionStatus;
@@ -20,15 +50,16 @@ export default function SubscriptionAlert({ user }: { user: any }) {
   if (!expirationDateRaw) return null;
 
   const router = useRouter();
-  const now = new Date();
-  const expiresAt = new Date(expirationDateRaw);
 
-  // 🚀 A LÓGICA DO TEMPO (Alinhada com o Backend)
+  // 🚀 A LÓGICA DO TEMPO (Blindada contra Fuso Horário usando .getTime())
+  const now = Date.now();
+  const expiresAt = new Date(expirationDateRaw).getTime();
+
   const isPastDueDate = now > expiresAt;
-  const gracePeriodEnd = new Date(expiresAt.getTime() + 48 * 60 * 60 * 1000); // Exatamente 48h depois
+  const gracePeriodEnd = expiresAt + 48 * 60 * 60 * 1000; // Exatamente 48h depois em milissegundos
   const isPastGracePeriod = now > gracePeriodEnd;
 
-  const expiryDate = format(expiresAt, "dd 'de' MMMM 'de' yyyy", {
+  const expiryDate = format(new Date(expiresAt), "dd 'de' MMMM 'de' yyyy", {
     locale: ptBR,
   });
 
@@ -88,7 +119,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
     return (
       <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-amber-500 text-white p-2 rounded-xl animate-pulse">
+          <div className="bg-amber-500 text-white p-2 rounded-xl animate-pulse shrink-0">
             <Clock size={18} />
           </div>
           <div>
@@ -96,26 +127,38 @@ export default function SubscriptionAlert({ user }: { user: any }) {
               Processando Renovação...
             </p>
             <p className="text-[10px] font-bold text-amber-600/70 mt-0.5">
-              Aguardando confirmação do Mercado Pago. Seu anúncio continua 100%
-              online nas buscas!
+              Aguardando o Mercado Pago. Se houver falha, clique no botão ao
+              lado para reativar. Sua vitrine ainda está online nas buscas!
             </p>
           </div>
         </div>
+        {/* 🚀 CIRURGIA: BOTÃO INJETADO AQUI PARA GARANTIR ACESSO IMEDIATO */}
+        <button
+          onClick={() => router.push("/checkout")}
+          className="w-full md:w-auto bg-amber-600 text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.1em] shadow-md hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shrink-0"
+        >
+          Pagar Manualmente <ArrowRight size={14} />
+        </button>
       </div>
     );
   }
 
-  // 4. 🚀 NOVA FASE 4: TOLERÂNCIA (Passou de 48h OU o cara já tinha cancelado e venceu)
-  // Ele ainda é Assinante, tem acesso ao painel, MAS a loja sumiu do site!
+  // 4. 🚀 FASE 4: TOLERÂNCIA (Passou de 48h OU o status da loja é de falha/rejeitado/inativo)
+  // Ampliado para capturar contas ativadas pelo Admin com falha de status!
+  const isSuspiciousStatus =
+    subscriptionStatus === "cancelled" ||
+    subscriptionStatus === "inactive" ||
+    subscriptionStatus === "rejected";
+
   if (
     user.role === "ASSINANTE" &&
     isPastDueDate &&
-    (isPastGracePeriod || subscriptionStatus === "cancelled")
+    (isPastGracePeriod || isSuspiciousStatus)
   ) {
     return (
       <div className="bg-rose-50 border border-rose-200 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between mb-8 shadow-sm gap-4 animate-in fade-in zoom-in duration-500">
         <div className="flex items-center gap-4">
-          <div className="bg-rose-500 text-white p-3 rounded-xl animate-bounce">
+          <div className="bg-rose-500 text-white p-3 rounded-xl animate-bounce shrink-0">
             <Store size={22} />
           </div>
           <div>
@@ -148,7 +191,7 @@ export default function SubscriptionAlert({ user }: { user: any }) {
 
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-5 text-center md:text-left flex-col md:flex-row">
-            <div className="bg-white text-rose-600 p-4 rounded-3xl shadow-lg">
+            <div className="bg-white text-rose-600 p-4 rounded-3xl shadow-lg shrink-0">
               <AlertTriangle size={32} />
             </div>
             <div>

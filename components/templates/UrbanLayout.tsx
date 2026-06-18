@@ -63,7 +63,7 @@ export default function UrbanLayout({
     availableSocials,
   } = useBusiness(rawBusiness, rawHours);
 
- const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
@@ -201,21 +201,30 @@ export default function UrbanLayout({
       const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
+
       const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
+
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
-        window.location.href = targetUrl;
+        if (type === "whatsapp") {
+          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
+          window.open(targetUrl, "_blank", "noopener,noreferrer");
+        } else {
+          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
+          window.location.href = targetUrl;
+        }
       }
     },
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
-useEffect(() => {
+  useEffect(() => {
     if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -236,7 +245,7 @@ useEffect(() => {
       <header
         className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20 overflow-hidden text-white`}
       >
-      {business.coverImage && (
+        {business.coverImage && (
           <Image
             src={business.coverImage}
             alt={`Capa de ${business.name}`}
@@ -246,12 +255,12 @@ useEffect(() => {
             className="object-cover rounded-b-[2.5rem] md:rounded-b-[4rem]"
           />
         )}
-        
+
         {/* 🚀 OVERLAY DE ALTO CONTRASTE (Garante leitura em qualquer foto) */}
         <div className="absolute inset-0 pointer-events-none rounded-b-[2.5rem] md:rounded-b-[4rem] bg-black/40" />
         <div className="absolute inset-0 pointer-events-none rounded-b-[2.5rem] md:rounded-b-[4rem] bg-gradient-to-b from-black/70 via-transparent to-black/80" />
 
-     {/* 🚀 BOTÕES DE COMPARTILHAR E FAVORITAR FIXOS NO CANTO SUPERIOR DIREITO */}
+        {/* 🚀 BOTÕES DE COMPARTILHAR E FAVORITAR FIXOS NO CANTO SUPERIOR DIREITO */}
         <div className="absolute top-4 right-4 md:top-6 md:right-8 z-30">
           <div className="flex items-center gap-3 px-4 py-2 bg-white/20 rounded-full backdrop-blur-md border border-white/30 text-white shadow-lg">
             <button
@@ -273,7 +282,7 @@ useEffect(() => {
           </div>
         </div>
 
-       <div className="relative z-20 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-16">
+        <div className="relative z-20 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-16">
           {/* 🚀 BADGE ON/OFF (Mobile - Topo, acima da imagem) */}
           {realHours.length > 0 && (
             <motion.div
@@ -321,7 +330,7 @@ useEffect(() => {
             </motion.div>
           )}
 
-      <div className="flex flex-col items-center md:items-start text-center md:text-left order-3 md:order-1 w-full">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left order-3 md:order-1 w-full">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -351,7 +360,7 @@ useEffect(() => {
               )}
             </motion.div>
 
-           <motion.h1
+            <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -822,7 +831,7 @@ useEffect(() => {
         </motion.button>
       )}
 
-    <TemplateLightbox
+      <TemplateLightbox
         images={lightboxImages}
         selectedIndex={selectedIndex}
         onClose={() => setSelectedIndex(null)}

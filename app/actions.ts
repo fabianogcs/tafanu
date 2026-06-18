@@ -88,32 +88,31 @@ async function deleteFilesFromUploadThing(fileUrls: string[]) {
 }
 
 async function getCoordinates(address: string, city: string, state: string) {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  // Se faltar algum dado essencial, já cancela
+  if (!apiKey || !address || !city || !state) {
+    console.log(
+      "❌ getCoordinates: Faltando chave de API ou dados de endereço.",
+    );
+    return { lat: null, lng: null };
+  }
+
+  const fullAddress = `${address}, ${city} - ${state}, Brasil`;
+
+  // 🚀 O TIMEOUT ID AGORA FICA ACESSÍVEL EM TODO O ESCOPO
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+
   try {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-
-    // Se faltar algum dado essencial, já cancela
-    if (!apiKey || !address || !city || !state) {
-      console.log(
-        "❌ getCoordinates: Faltando chave de API ou dados de endereço.",
-      );
-      return { lat: null, lng: null };
-    }
-
-    // 🚀 O PULO DO GATO: Monta o endereço completo pro Google não se perder!
-    const fullAddress = `${address}, ${city} - ${state}, Brasil`;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`,
       { signal: controller.signal },
     );
 
-    clearTimeout(timeout);
+    clearTimeout(timeoutId); // Limpa o cronômetro da memória se a requisição deu certo
     const data = await response.json();
 
-    // 🕵️ Deixando um espião aqui para a gente ver o que o Google respondeu
     console.log(`📡 Resposta do Google para "${fullAddress}":`, data.status);
 
     if (data.status === "OK") {
@@ -121,13 +120,13 @@ async function getCoordinates(address: string, city: string, state: string) {
       return { lat: Number(lat), lng: Number(lng) };
     }
 
-    // Se o status não for OK (ex: REQUEST_DENIED ou ZERO_RESULTS), ele avisa o porquê
     console.log(
       "❌ Erro do Google:",
       data.error_message || "Endereço não encontrado",
     );
     return { lat: null, lng: null };
   } catch (error) {
+    clearTimeout(timeoutId); // 🚀 A VACINA SÊNIOR: Garante a limpeza do cronômetro da memória MESMO se houver erro ou rejeição!
     console.error("❌ Erro fatal no getCoordinates:", error);
     return { lat: null, lng: null };
   }
@@ -160,11 +159,18 @@ export async function registerUser(formData: FormData) {
   const password = formData.get("password") as string;
   const rawDocument = formData.get("document") as string;
 
-  // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO ---
+  // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO E DOMÍNIO RESERVADO ---
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!email || !emailRegex.test(email)) {
     return {
       error: "Por favor, insira um e-mail válido (ex: nome@dominio.com).",
+    };
+  }
+
+  // 🚀 BLINDAGEM DO HACKER: Ninguém pode criar conta pública fingindo ser funcionário!
+  if (email.toLowerCase().endsWith("@tafanu.com.br")) {
+    return {
+      error: "Domínio de e-mail reservado para uso interno da equipe.",
     };
   }
 
@@ -383,13 +389,21 @@ export async function updateUserProfile(formData: FormData) {
 
     if (!dbUser) return { error: "Usuário não encontrado." };
 
+    let cleanDocument = null;
+    if (validatedData.document) {
+      cleanDocument = validatedData.document
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+      // 🚀 APLICAÇÃO DA TRAVA TAMBÉM NA EDIÇÃO: Garante que o Admin tenha a chave PIX correta!
+      if (!isCpfOrCnpjValid(cleanDocument)) {
+        return { error: "CPF ou CNPJ inválido." };
+      }
+    }
+
     const updateData: any = {
       name: validatedData.name,
       phone: validatedData.phone.replace(/\D/g, ""),
-      // 🚀 A blindagem alfanumérica garantindo a integridade do banco:
-      document: validatedData.document
-        .replace(/[^a-zA-Z0-9]/g, "")
-        .toUpperCase(),
+      document: cleanDocument,
     };
 
     // 2. LÓGICA DE VÍNCULO DE AFILIADO (SÓ ACONTECE UMA VEZ)
@@ -1219,6 +1233,22 @@ export async function incrementViews(businessId: string) {
       return { success: true, ignored: true };
     }
 
+    // 🚀 COFRE ANTI-BOT: Confere no banco se o mesmo negócio já computou uma view no último minuto
+    // Isso protege o servidor mesmo se o bot simular requisições sem cookies.
+    const umMinutoAtras = new Date(Date.now() - 60 * 1000);
+    const viewRecente = await db.analyticsEvent.findFirst({
+      where: {
+        businessId: businessId,
+        eventType: "VIEW",
+        createdAt: { gte: umMinutoAtras },
+      },
+      select: { id: true },
+    });
+
+    if (viewRecente) {
+      return { success: true, ignored: true };
+    }
+
     // 🚀 ATUALIZAÇÃO SÊNIOR: Fazemos as duas coisas ao mesmo tempo!
     await db.$transaction([
       db.business.update({
@@ -1937,75 +1967,17 @@ export async function promoteToAffiliate(userId: string, code: string) {
 export async function setAffiliateCookie(refCode: string) {
   const cookieStore = await cookies();
 
+  // 🚀 SANITIZAÇÃO DE ELITE: Remove espaços e padroniza em minúsculas para evitar erros de digitação
+  const cleanCode = refCode.trim().toLowerCase();
+
   // 🛡️ Grava de forma segura, com HttpOnly e duração de 7 dias
-  cookieStore.set("tafanu_ref", refCode, {
+  cookieStore.set("tafanu_ref", cleanCode, {
     maxAge: 7 * 24 * 60 * 60, // 7 Dias em segundos
-    httpOnly: true, // 🔒 Proíbe scripts maliciosos de lerem a comissão
+    httpOnly: true, // 🔒 Proíbe scripts maliciosos de lerem o cookie na tela
     secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", // 🚀 VITAL PARA AFILIADOS: Garante que o cookie seja gravado vindo de links externos (Instagram, WhatsApp)
     path: "/",
   });
-}
-export async function generateCommission(
-  userId: string,
-  orderAmount: number,
-  description: string,
-  planType: "monthly" | "quarterly" | "yearly" = "monthly",
-) {
-  try {
-    // 1. Verifica se quem comprou tem um afiliado vinculado
-    const customer = await db.user.findUnique({
-      where: { id: userId },
-      select: { affiliateId: true },
-    });
-
-    if (!customer?.affiliateId) return { success: false };
-
-    // 🚀 LÓGICA DE CAIXA: Mantendo os seus valores para os "Leões"
-    const comissoes = {
-      monthly: 10.0,
-      quarterly: 30.0,
-      yearly: 120.0,
-    };
-
-    const amount = comissoes[planType] || 10.0;
-
-    // Define a data de liberação (7 dias de garantia)
-    const releaseDate = new Date();
-    releaseDate.setDate(releaseDate.getDate() + 7);
-
-    // 🛡️ A BARRAGEM ANTI-DUPLICATA:
-    // Impede que o Webhook do Mercado Pago gere 2 comissões para o mesmo mês se der erro na rede deles
-    const jaExiste = await db.commission.findFirst({
-      where: {
-        userId: userId,
-        description: description,
-        status: { not: "CANCELLED" }, // Ignora as canceladas para caso ele refaça a compra
-      },
-    });
-
-    if (jaExiste) return { success: true, message: "Comissão já registrada." };
-
-    // Salva a comissão como PENDENTE no banco
-    await db.commission.create({
-      data: {
-        affiliateId: customer.affiliateId,
-        userId: userId,
-        amount: amount,
-        orderAmount: orderAmount,
-        status: CommissionStatus.PENDING,
-        description: description,
-        releaseDate: releaseDate,
-      },
-    });
-
-    console.log(
-      `✅ Comissão (RevShare) de R$ ${amount} gerada para o afiliado ${customer.affiliateId}`,
-    );
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao gerar comissão:", error);
-    return { error: "Falha ao registrar comissão no banco." };
-  }
 }
 
 // ==============================================================================
@@ -2313,9 +2285,27 @@ export async function markAffiliateAsPaid(affiliateId: string) {
       parceiro?.email ||
       "Chave não informada";
 
-    // 4. 🚀 TRANSAÇÃO ATÔMICA: Cria o Recibo e Carimba as comissões de uma vez só!
+    // 🚀 A VACINA ANTI-SAQUE DUPLO
     await db.$transaction(async (tx) => {
-      // A. Cria o recibo do Saque
+      // A. Primeiro, tentamos "sequestrar" as comissões disponíveis carimbando-as como PAID
+      // Se 50 cliques chegarem juntos, o banco de dados enfileira e só o 1º consegue alterar o status!
+      const updateResult = await tx.commission.updateMany({
+        where: {
+          id: { in: idsDasComissoes },
+          status: "AVAILABLE", // 🛡️ Trava absoluta: só atualiza se AINDA estiver disponível
+        },
+        data: { status: "PAID" },
+      });
+
+      // B. Se nenhuma linha foi alterada, significa que outro clique/processo já sacou isso milissegundos antes.
+      // Nós abortamos a transação inteira instantaneamente.
+      if (updateResult.count === 0) {
+        throw new Error(
+          "Comissões já foram sacadas ou não estão mais disponíveis.",
+        );
+      }
+
+      // C. Agora que o dinheiro está isolado de forma segura, geramos o Recibo (Withdrawal)
       const reciboDeSaque = await tx.withdrawal.create({
         data: {
           affiliateId: affiliateId,
@@ -2326,16 +2316,13 @@ export async function markAffiliateAsPaid(affiliateId: string) {
         },
       });
 
-      // B. Atualiza as comissões: Muda pra PAID e guarda o ID do Recibo nelas!
+      // D. E vinculamos o ID do recibo nas comissões que acabamos de pagar
       await tx.commission.updateMany({
         where: { id: { in: idsDasComissoes } },
-        data: {
-          status: CommissionStatus.PAID,
-          withdrawalId: reciboDeSaque.id, // O VÍNCULO MÁGICO ACONTECE AQUI!
-        },
+        data: { withdrawalId: reciboDeSaque.id },
       });
 
-      // C. Atualiza a data do último pagamento no perfil do usuário
+      // E. Atualiza a data do último pagamento no perfil do usuário
       await tx.user.update({
         where: { id: affiliateId },
         data: { lastPayoutDate: new Date() },
@@ -2365,6 +2352,17 @@ export async function createSubscription(
     return { error: "Não autorizado." };
   }
 
+  // =========================================================================
+  // 🚀 TRAVA ANTI-PAGAMENTO FANTASMA: Impede a conta de teste de assinar!
+  // =========================================================================
+  if (userEmail.toLowerCase().endsWith("@tafanu.com.br")) {
+    return {
+      error:
+        "Contas de demonstração não geram pagamentos. Crie uma conta com seu e-mail pessoal e contate seu consultor para transferirmos a loja para você!",
+    };
+  }
+  // =========================================================================
+
   // 1. Busca o usuário e os negócios dele para checar a regra do Trial
   const dbUser = await db.user.findUnique({
     where: { id: userId },
@@ -2379,8 +2377,16 @@ export async function createSubscription(
   let finalBusinessId = businessId;
 
   if (!finalBusinessId) {
-    // Tenta pegar a primeira loja que o usuário já tenha
-    const firstBusiness = dbUser?.businesses[0];
+    // 🚀 VACINA DE ALINHAMENTO: Garante que a assinatura trave na loja correta (a mais recente/ativa)
+    const sortedBusinesses = dbUser?.businesses
+      ? [...dbUser.businesses].sort((a, b) => {
+          const dateA = a.expiresAt ? new Date(a.expiresAt).getTime() : 0;
+          const dateB = b.expiresAt ? new Date(b.expiresAt).getTime() : 0;
+          return dateB - dateA; // Ordena da maior expiração para a menor
+        })
+      : [];
+
+    const firstBusiness = sortedBusinesses[0];
 
     if (firstBusiness) {
       finalBusinessId = firstBusiness.id;
@@ -2423,7 +2429,6 @@ export async function createSubscription(
   );
 
   if (businessToProtect) {
-    // Verifica se a data de vencimento já ficou no passado (Já venceu?)
     const isExpired = businessToProtect.expiresAt
       ? new Date() > new Date(businessToProtect.expiresAt)
       : false;
@@ -2432,12 +2437,31 @@ export async function createSubscription(
     if (
       businessToProtect.mpSubscriptionId &&
       businessToProtect.subscriptionStatus === "active" &&
-      !isExpired // ⬅️ Só bloqueia o pagamento se a conta dele ainda estiver com dias sobrando.
+      !isExpired
     ) {
       return {
         error:
           "Você já possui uma assinatura ativa e a renovação é automática! Se deseja alterar o plano, cancele a assinatura atual no seu painel primeiro.",
       };
+    }
+
+    // 🚀 A VACINA ANTI-COBRANÇA DUPLA:
+    // Se a conta já venceu e ele está criando uma nova assinatura manualmente,
+    // nós matamos o contrato antigo no Mercado Pago para evitar que ele tente cobrar de surpresa.
+    if (businessToProtect.mpSubscriptionId && isExpired) {
+      try {
+        console.log(
+          `📡 [Checkout] Cancelando assinatura zumbi antiga: ${businessToProtect.mpSubscriptionId}`,
+        );
+        const preApprovalClient = new PreApproval(client);
+        await preApprovalClient.update({
+          id: businessToProtect.mpSubscriptionId,
+          body: { status: "cancelled" },
+        });
+      } catch (mpCancelError) {
+        // Deixamos passar silencioso para não travar a compra se a assinatura já estiver cancelada lá no MP
+        console.error("⚠️ Erro ao limpar assinatura antiga:", mpCancelError);
+      }
     }
   }
   // =========================================================================
@@ -2520,8 +2544,13 @@ export async function getBusinessExpiration() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
+  // 🚀 CIRURGIA: Obriga o Prisma a pegar a loja que tem a data, ignorando rascunhos!
   const biz = await db.business.findFirst({
-    where: { userId: session.user.id },
+    where: {
+      userId: session.user.id,
+      expiresAt: { not: null },
+    },
+    orderBy: { expiresAt: "desc" },
     select: { expiresAt: true },
   });
 
@@ -2686,13 +2715,19 @@ export async function adminAddExactDaysToBusiness(
     const newDate = new Date(base);
     newDate.setDate(newDate.getDate() + daysToAdd); // Soma os dias precisos
 
-    // 2. Atualiza o negócio com a nova data
+    // 2. Atualiza o negócio com a nova data e amarra o tipo do plano para a métrica do MRR
     await db.business.update({
       where: { id: businessId },
       data: {
         expiresAt: newDate,
-        isActive: true, // Garante que a vitrine volte ao ar, se estivesse caída
+        isActive: true,
         subscriptionStatus: "active",
+        planType:
+          daysToAdd >= 360
+            ? "yearly"
+            : daysToAdd >= 90
+              ? "quarterly"
+              : "monthly", // 🚀 Sincronização inteligente de métricas
       },
     });
 
@@ -2776,8 +2811,29 @@ export async function resendVerificationEmail(email: string) {
       select: { name: true, emailVerified: true },
     });
 
-    if (!user) return { error: "Usuário não encontrado." };
-    if (user.emailVerified) return { error: "Este e-mail já está verificado." };
+    // 🛡️ PREVENÇÃO DE ENUMERAÇÃO (PRIVACIDADE DE DADOS):
+    // Se o usuário não existir ou já for verificado, devolvemos a mesma mensagem de sucesso.
+    // Assim o hacker nunca sabe se o e-mail é real ou não.
+    if (!user || user.emailVerified) {
+      return { success: "Novo link enviado! Verifique sua caixa de entrada." };
+    }
+
+    // 🛡️ VACINA ANTI-SPAM RESEND: Impede disparos repetidos num intervalo de 2 minutos
+    const tokenExistente = await db.verificationToken.findFirst({
+      where: { identifier: email },
+    });
+
+    if (tokenExistente) {
+      const tempoRestanteMs =
+        new Date(tokenExistente.expires).getTime() - new Date().getTime();
+      const limiteDoisMinutosMs = (24 * 60 - 2) * 60 * 1000; // 23 horas e 58 minutos restantes
+      if (tempoRestanteMs > limiteDoisMinutosMs) {
+        return {
+          error:
+            "Aguarde alguns minutos antes de solicitar um novo link de ativação.",
+        };
+      }
+    }
 
     // 2. Gera um novo token (usando a função que já criamos)
     const verificationToken = await generateVerificationToken(email);
@@ -2846,10 +2902,18 @@ export async function addComment(
       };
     }
 
+    // 🚀 BLINDAGEM ANTI-XSS: Neutraliza tags HTML antes de salvar no banco de dados
+    const cleanContent = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#x27;");
+
     // 3. Criação do comentário se passou na barreira
     const newComment = await db.comment.create({
       data: {
-        content,
+        content: cleanContent,
         businessId,
         userId,
         parentId: parentId || null,

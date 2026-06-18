@@ -28,9 +28,11 @@ const handleAuth = async () => {
 };
 
 export const ourFileRouter = {
-  // 1. IMAGENS (Galeria)
+  // 1. IMAGENS (Galeria) - 🛡️ BLINDADO: Apenas formatos seguros, sem SVG!
   imageUploader: f({
-    image: { maxFileSize: "4MB", maxFileCount: 12 },
+    "image/jpeg": { maxFileSize: "4MB", maxFileCount: 12 },
+    "image/png": { maxFileSize: "4MB", maxFileCount: 12 },
+    "image/webp": { maxFileSize: "4MB", maxFileCount: 12 },
   })
     .middleware(handleAuth)
     .onUploadComplete(async ({ metadata, file }) => {
@@ -40,24 +42,28 @@ export const ourFileRouter = {
       return { uploadedBy: metadata.userId };
     }),
 
-  // 2. LOGO (Perfil) e CAPA
+  // 2. LOGO (Perfil) e CAPA - 🛡️ BLINDADO
   logoUploader: f({
-    image: { maxFileSize: "4MB", maxFileCount: 1 },
+    "image/jpeg": { maxFileSize: "4MB", maxFileCount: 1 },
+    "image/png": { maxFileSize: "4MB", maxFileCount: 1 },
+    "image/webp": { maxFileSize: "4MB", maxFileCount: 1 },
   })
     .middleware(handleAuth)
     .onUploadComplete(async ({ metadata, file }) => {
       return { uploadedBy: metadata.userId };
     }),
 
-  // 3. MEDIA (Reserva)
+  // 3. MEDIA (Reserva) - 🛡️ BLINDADO
   mediaUploader: f({
-    image: { maxFileSize: "4MB", maxFileCount: 1 },
+    "image/jpeg": { maxFileSize: "4MB", maxFileCount: 1 },
+    "image/png": { maxFileSize: "4MB", maxFileCount: 1 },
+    "image/webp": { maxFileSize: "4MB", maxFileCount: 1 },
   })
     .middleware(handleAuth)
     .onUploadComplete(async ({ metadata, file }) => {
       return { uploadedBy: metadata.userId };
     }),
-
+  // ... (mantenha o seu pdfUploader intacto abaixo disso)
   // 4. PDF (Catálogo/Cardápio) - ABERTO E SEGURO (O Garbage Collector limpa o lixo!)
   pdfUploader: f({
     pdf: { maxFileSize: "8MB", maxFileCount: 1 },

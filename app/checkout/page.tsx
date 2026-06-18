@@ -63,9 +63,13 @@ export default function CheckoutPage() {
     async function checkStatus() {
       if (status === "loading") return;
 
+      // 🚀 VACINA DO LOOP CEGO: Se o React achar que tá deslogado, confere no servidor antes de ejetar!
       if (status === "unauthenticated") {
-        router.replace("/login");
-        return;
+        const serverSession = await getAuthSession();
+        if (!serverSession) {
+          window.location.href = "/login?callbackUrl=/checkout";
+          return;
+        }
       }
 
       if (hasFetched.current) return;
@@ -86,13 +90,17 @@ export default function CheckoutPage() {
       }
 
       const role = session?.user?.role;
-      const isExpired = expirationDate ? expirationDate < new Date() : false;
+
+      // 🚀 CIRURGIA 1: Avalia o tempo em milissegundos para evitar falhas de Fuso Horário
+      const isPlanoAtivo = expirationDate
+        ? expirationDate.getTime() > Date.now()
+        : false;
 
       if (role === "ADMIN") {
         router.replace("/admin");
       } else if (role === "AFILIADO") {
         router.replace("/dashboard");
-      } else if (role === "ASSINANTE" && !isExpired) {
+      } else if (role === "ASSINANTE" && isPlanoAtivo) {
         router.replace("/dashboard");
       }
     }
@@ -130,14 +138,17 @@ export default function CheckoutPage() {
     }
   };
 
-  const isExpired = expiresAt ? expiresAt < new Date() : false;
+  // 🚀 CIRURGIA 2: Mesma proteção em milissegundos para a barreira visual
+  const isPlanoAtivoRender = expiresAt
+    ? expiresAt.getTime() > Date.now()
+    : false;
 
   if (
     status === "loading" ||
     isLoadingData ||
     session?.user?.role === "ADMIN" ||
     session?.user?.role === "AFILIADO" ||
-    (session?.user?.role === "ASSINANTE" && !isExpired)
+    (session?.user?.role === "ASSINANTE" && isPlanoAtivoRender)
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050B14]">
@@ -204,32 +215,53 @@ export default function CheckoutPage() {
           })}
         </div>
 
-        {/* COLUNA 2: VANTAGENS PRO INCLUSAS */}
+        {/* COLUNA 2: VANTAGENS PRO INCLUSAS (Alta Conversão) */}
         <div className="lg:col-span-5 bg-[#0A1220] rounded-[2rem] p-8 border border-white/5 shadow-xl h-full flex flex-col justify-center">
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
             <Sparkles className="text-emerald-500 w-5 h-5 shrink-0" />
-            Vantagens PRO Inclusas
+            Tudo o que você vai liberar:
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {[
-              "Vitrine Exclusiva 24h",
-              "Monitor de Cliques",
-              "Hub de Redes Sociais",
-              "Venda Direta no WhatsApp",
-              "Motor de Busca Google",
-              "Destaque de Diferenciais",
+              {
+                title: "Vitrine Digital de Alta Conversão",
+                desc: "Seu negócio aberto 24h por dia, com design de luxo e sem taxas por venda.",
+              },
+              {
+                title: "Vendas Diretas no WhatsApp",
+                desc: "Botões de contato rápido para o cliente fechar o pedido direto com você.",
+              },
+              {
+                title: "Prioridade no Radar de Buscas",
+                desc: "Apareça antes dos seus concorrentes quando buscarem pelo seu serviço.",
+              },
+              {
+                title: "Links Rápidos e Redes Sociais",
+                desc: "Reúna seu Instagram, iFood, Shopee e Mapa em um único link oficial.",
+              },
+              {
+                title: "Métricas de Acesso e Cliques",
+                desc: "Acompanhe quantas pessoas viram sua loja e clicaram no seu WhatsApp.",
+              },
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5 transition-colors hover:bg-white/10 hover:border-white/10"
+                className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 transition-colors hover:bg-white/10 hover:border-white/10 group"
               >
-                <CheckCircle2
-                  className="text-emerald-500 shrink-0 w-4 h-4"
-                  strokeWidth={3}
-                />
-                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                  {item}
-                </span>
+                <div className="mt-0.5">
+                  <CheckCircle2
+                    className="text-emerald-500 shrink-0 w-5 h-5 group-hover:scale-110 transition-transform"
+                    strokeWidth={2.5}
+                  />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-black text-white uppercase tracking-wider mb-1">
+                    {item.title}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-400 leading-relaxed">
+                    {item.desc}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -279,299 +311,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-// "use client";
-
-// import { useState, useEffect, useRef } from "react";
-// import { useRouter } from "next/navigation";
-// import { useSession } from "next-auth/react";
-// import { toast } from "sonner";
-// import {
-//   ShieldCheck,
-//   Lock,
-//   ArrowRight,
-//   CheckCircle2,
-//   Loader2,
-//   Sparkles,
-// } from "lucide-react";
-// import {
-//   createSubscription,
-//   getAuthSession,
-//   getBusinessExpiration,
-// } from "@/app/actions";
-// import SessionRefresher from "@/components/SessionRefresher";
-
-// // 🚀 AJUSTES NOS TEXTOS PARA CLAREZA DO TRIAL
-// const PLANS = {
-//   monthly: {
-//     id: "monthly",
-//     name: "Mensal",
-//     price: "39,90",
-//     initialPrice: "0,00", // Continua zero por causa do Trial de 7 dias
-//     description: "7 dias grátis na 1ª vez",
-//     footer: "R$ 39,90 / mês após o teste",
-//     badge: "1ª Assinatura: 7 Dias Grátis",
-//   },
-//   quarterly: {
-//     id: "quarterly",
-//     name: "Trimestral",
-//     price: "104,70",
-//     initialPrice: "104,70", // Cobrado na hora, sem trial
-//     description: "Equivale a R$ 34,90/mês",
-//     footer: "Cobrado a cada 3 meses",
-//     badge: "Plano Seguro - 7 Dias de Garantia",
-//   },
-//   yearly: {
-//     id: "yearly",
-//     name: "Anual",
-//     price: "358,80",
-//     initialPrice: "358,80", // Cobrado na hora, sem trial
-//     description: "Equivale a R$ 29,90/mês",
-//     footer: "Cobrado anualmente",
-//     badge: "SUPER OFERTA - 7 Dias de Garantia",
-//   },
-// } as const;
-
-// type PlanType = keyof typeof PLANS;
-
-// export default function CheckoutPage() {
-//   const router = useRouter();
-//   const { data: session, status, update } = useSession();
-//   const [isProcessing, setIsProcessing] = useState(false);
-//   const [selectedPlan, setSelectedPlan] = useState<PlanType>("monthly");
-
-//   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
-//   const [isLoadingData, setIsLoadingData] = useState(true);
-
-//   const hasFetched = useRef(false);
-
-//   useEffect(() => {
-//     async function checkStatus() {
-//       if (status === "loading") return;
-
-//       if (status === "unauthenticated") {
-//         router.replace("/login");
-//         return;
-//       }
-
-//       // 🚀 TRAVA DO LOOP: Se já buscou uma vez, ignora as próximas!
-//       if (hasFetched.current) return;
-//       hasFetched.current = true;
-
-//       let expirationDate = null;
-
-//       try {
-//         const expiration = await getBusinessExpiration();
-//         if (expiration) {
-//           expirationDate = new Date(expiration);
-//           setExpiresAt(expirationDate);
-//         }
-//       } catch (error) {
-//         console.log("Usuário não possui loja ainda.");
-//       } finally {
-//         setIsLoadingData(false);
-//       }
-
-//       const role = session?.user?.role;
-//       const isExpired = expirationDate ? expirationDate < new Date() : false;
-
-//       // 🚀 CONSERTO AQUI: Redireciona Admins e Afiliados para fora do Checkout
-//       if (role === "ADMIN") {
-//         router.replace("/admin");
-//       } else if (role === "AFILIADO") {
-//         router.replace("/dashboard");
-//       } else if (role === "ASSINANTE" && !isExpired) {
-//         router.replace("/dashboard");
-//       }
-//     }
-
-//     checkStatus();
-//   }, [session, status, router]);
-
-//   const handlePayment = async () => {
-//     setIsProcessing(true);
-//     try {
-//       const serverSession = await getAuthSession();
-
-//       if (!serverSession?.id || !serverSession?.email) {
-//         toast.error("Sessão não encontrada. Faça login novamente.");
-//         setIsProcessing(false);
-//         return;
-//       }
-
-//       const res = await createSubscription(
-//         serverSession.id,
-//         serverSession.email,
-//         "",
-//         selectedPlan,
-//       );
-
-//       if (res.success && res.init_point) {
-//         window.location.href = res.init_point;
-//       } else {
-//         toast.error(res.error || "Erro ao gerar pagamento.");
-//         setIsProcessing(false);
-//       }
-//     } catch (error) {
-//       toast.error("Erro interno. Tente novamente.");
-//       setIsProcessing(false);
-//     }
-//   };
-
-//   const isExpired = expiresAt ? expiresAt < new Date() : false;
-
-//   // 🚀 CONSERTO AQUI: Bloqueia a visão da página para Admins e Afiliados enquanto redireciona
-//   if (
-//     status === "loading" ||
-//     isLoadingData ||
-//     session?.user?.role === "ADMIN" ||
-//     session?.user?.role === "AFILIADO" ||
-//     (session?.user?.role === "ASSINANTE" && !isExpired)
-//   ) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-//         <Loader2 className="animate-spin text-emerald-500" size={40} />
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="bg-slate-50 min-h-screen pb-20 font-sans">
-//       <div className="max-w-6xl mx-auto pt-8 pb-4 px-6 text-center">
-//         <h1 className="text-2xl md:text-4xl lg:text-5xl font-black text-[#050814] tracking-tighter uppercase italic">
-//           Escolha seu plano <span className="text-emerald-500">Tafanu PRO</span>
-//         </h1>
-//         <p className="text-slate-500 font-medium mt-2">
-//           Cancele quando quiser. Sem taxas escondidas.
-//         </p>
-//       </div>
-
-//       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start mt-8">
-//         <div className="lg:col-span-7 space-y-8">
-//           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-//             {(Object.keys(PLANS) as PlanType[]).map((key) => {
-//               const plan = PLANS[key];
-//               const isSelected = selectedPlan === key;
-//               return (
-//                 <button
-//                   key={key}
-//                   onClick={() => setSelectedPlan(key)}
-//                   className={`relative p-6 rounded-[2rem] border-2 text-left transition-all ${
-//                     isSelected
-//                       ? "border-emerald-500 bg-white shadow-xl scale-[1.02] z-10"
-//                       : "border-slate-200 bg-slate-50 opacity-70 hover:opacity-100"
-//                   }`}
-//                 >
-//                   {isSelected && (
-//                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest whitespace-nowrap">
-//                       {plan.badge}
-//                     </div>
-//                   )}
-//                   <div className="flex flex-col h-full justify-between">
-//                     <div>
-//                       <h3
-//                         className={`font-black uppercase italic ${isSelected ? "text-emerald-500" : "text-slate-400"}`}
-//                       >
-//                         {plan.name}
-//                       </h3>
-//                       <div className="flex items-baseline gap-1 mt-2">
-//                         <span className="text-xs font-bold text-slate-400">
-//                           R$
-//                         </span>
-//                         <span className="text-3xl font-black text-slate-900">
-//                           {plan.price}
-//                         </span>
-//                       </div>
-//                       <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase">
-//                         {plan.description}
-//                       </p>
-//                     </div>
-//                     <div
-//                       className={`mt-4 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-emerald-500 bg-emerald-500" : "border-slate-300"}`}
-//                     >
-//                       {isSelected && (
-//                         <CheckCircle2 size={14} className="text-white" />
-//                       )}
-//                     </div>
-//                   </div>
-//                 </button>
-//               );
-//             })}
-//           </div>
-
-//           <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-200 shadow-sm">
-//             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
-//               <Sparkles className="text-emerald-500 w-5 h-5 shrink-0" />{" "}
-//               Vantagens PRO Inclusas
-//             </h2>
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//               {[
-//                 "Site Exclusivo",
-//                 "Métricas",
-//                 "Redes Sociais",
-//                 "Botão WhatsApp",
-//                 "SEO Google",
-//                 "Galeria de Fotos",
-//               ].map((item, i) => (
-//                 <div
-//                   key={i}
-//                   className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100"
-//                 >
-//                   <CheckCircle2
-//                     className="text-emerald-500 shrink-0 w-4 h-4"
-//                     strokeWidth={3}
-//                   />
-//                   <span className="text-[11px] font-black text-slate-700 uppercase">
-//                     {item}
-//                   </span>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="lg:col-span-5">
-//           <div className="bg-[#050814] rounded-[2.5rem] shadow-2xl overflow-hidden text-white border border-white/5 sticky top-12">
-//             <div className="bg-gradient-to-r from-blue-600 to-sky-500 py-3 px-6 flex items-center justify-between">
-//               <span className="text-[10px] font-black uppercase tracking-widest text-white/90">
-//                 Resumo
-//               </span>
-//               <span className="font-bold text-xs">mercado pago</span>
-//             </div>
-//             <div className="p-10 text-center">
-//               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-//                 Total a pagar hoje
-//               </p>
-//               <div className="flex items-start justify-center gap-1">
-//                 <span className="text-xl font-black mt-2 text-emerald-500">
-//                   R$
-//                 </span>
-//                 <span className="text-7xl font-black italic leading-none">
-//                   {PLANS[selectedPlan].initialPrice}
-//                 </span>
-//               </div>
-//               <button
-//                 onClick={handlePayment}
-//                 disabled={isProcessing}
-//                 className="mt-10 group w-full h-20 bg-emerald-500 text-[#050814] rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg disabled:opacity-50"
-//               >
-//                 {isProcessing ? (
-//                   <Loader2 className="animate-spin" size={24} />
-//                 ) : (
-//                   "Ativar Plano"
-//                 )}
-//               </button>
-
-//               {/* 🚀 AVISO EXTRA DE SEGURANÇA ABAIXO DO BOTÃO */}
-//               <p className="text-slate-500 text-[10px] uppercase font-bold mt-6 px-4 leading-relaxed">
-//                 {selectedPlan === "monthly"
-//                   ? "Cobrança de R$ 39,90 programada para o 8º dia (apenas na sua 1ª assinatura)."
-//                   : "Você está coberto pela nossa Garantia de 7 Dias. Risco Zero."}
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

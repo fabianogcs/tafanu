@@ -24,7 +24,7 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
   };
 
   const getWhatsAppLink = (lead: any, etapa: number) => {
-    // Puxa exatamente o telefone e o nome do dono cadastrados no ProfileForm
+    // Puxa exatamente o telefone e o nome do dono
     const phone = lead.user?.phone?.replace(/\D/g, "") || "";
     const name = lead.user?.name?.split(" ")[0] || "Responsável";
     const businessName = lead.name || "seu negócio";
@@ -34,15 +34,15 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
     let msg = "";
 
     if (etapa === 1) {
-      msg = `Olá, ${name}. Tudo bem? Aqui é do Tafanu, a nova plataforma de buscas exclusivas da nossa região.\n\nMapeamos os negócios de maior destaque e selecionamos a *${businessName}* como um dos nossos Perfis Fundadores.\n\nPara facilitar, já estruturamos uma vitrine premium com as suas informações. Como cortesia, ela rodará gratuitamente por 30 dias para você testar.\n\nVeja como ficou: https://tafanu.com.br/site/${slug}\n\n*Seu acesso exclusivo ao painel (para acompanhar visitas em tempo real):*\nLogin: ${email}\nSenha: Por segurança, no seu primeiro acesso, clique em "Esqueci minha senha" para criar sua chave privada.\n\nPoderia apenas clicar no link da loja e me confirmar se os dados estão corretos?`;
+      msg = `Olá, ${name}! Tudo bem? Aqui é do portal Tafanu.\n\nNossa curadoria mapeou os melhores negócios da região e selecionamos a *${businessName}* para ter um Perfil Oficial na nossa plataforma.\n\nNossa equipe já deixou a sua Vitrine Digital 100% pronta e aprovada. Como cortesia por terem sido selecionados, liberamos 30 dias de acesso VIP gratuito.\n\nVeja como ficou incrível: https://tafanu.com.br/site/${slug}\n\nPoderia clicar no link e me confirmar se o botão do seu WhatsApp está certinho?`;
     } else if (etapa === 2) {
-      msg = `Olá, ${name}, tudo bem? Passando rapidamente para confirmar se você conseguiu acessar o painel com o login provisório que enviamos.\n\nJá notamos movimentação de clientes buscando negócios na sua área, e queremos garantir que está tudo certo com seu perfil. Qualquer dúvida sobre o acesso, estou à disposição!`;
+      msg = `Fala, ${name}, tudo bem?\n\nPassando só para avisar que sua vitrine está no ar recebendo visitas! Você conseguiu acessar o seu painel de controle para ver os gráficos?\n\nSeu login é: ${email}\n(Basta clicar em "Esqueci minha senha" para criar sua senha segura).\n\nQualquer dúvida para acessar, me avisa!`;
     } else if (etapa === 3) {
-      msg = `Olá, ${name}, bom dia! Compartilhando uma ótima atualização com você.\n\nAcompanhando nosso sistema hoje, notamos que a página da *${businessName}* já recebeu X visitas de moradores da região e Y cliques diretos para o seu WhatsApp nesta primeira quinzena.\n\nO perfil está performando muito bem! Seguimos à disposição e desejamos excelentes vendas.`;
+      msg = `Olá, ${name}, bom dia!\n\nTrazendo boas notícias: acompanhando seu painel hoje, vi que a página da *${businessName}* já teve [X] visitas e [Y] cliques no seu WhatsApp nos últimos dias!\n\nO perfil está chamando muita atenção. Desejo excelentes vendas pra vocês essa semana! 🚀`;
     } else if (etapa === 4) {
-      msg = `Olá, ${name}! Tudo bem?\n\nO período de cortesia do seu Perfil Fundador encerra na próxima semana. Até o momento, vocês já acumularam [X Favoritos] e [Y Visitas].\n\nPara mantermos esse histórico ativo e a vitrine recebendo clientes diariamente, a manutenção é de apenas R$ 39,90 mensais. Gostaria que eu gerasse o link seguro de assinatura para você assumir a titularidade definitiva da página?`;
+      msg = `Olá, ${name}! Tudo bem?\n\nO seu período de cortesia VIP no Tafanu encerra nos próximos dias. Nesse período, sua vitrine gerou [X] visualizações para a *${businessName}*.\n\nPara não perdermos esse histórico e mantermos sua loja online recebendo clientes todos os dias, o investimento é de apenas R$ 39,90 por mês (sem fidelidade).\n\nPosso gerar o seu link seguro de renovação para mantermos a vitrine no ar?`;
     } else if (etapa === 5) {
-      msg = `Olá, ${name}, tudo bem? Como não tivemos retorno, informo que estamos pausando a vitrine da *${businessName}* no Tafanu hoje.\n\nSeus dados de performance (visitas e favoritos) permanecerão salvos em nosso sistema por mais 7 dias. Caso decidam reativar o perfil e voltar a aparecer nas buscas regionais por R$ 39,90 mensais, basta me avisar por aqui e reativamos imediatamente.\n\nUm abraço e muito sucesso nos negócios!`;
+      msg = `Olá, ${name}, como vai?\n\nComo seu período cortesia encerrou e não tivemos retorno, estou arquivando e pausando a vitrine da *${businessName}* no Tafanu hoje, tudo bem?\n\nSeus gráficos de performance ficarão salvos no banco de dados por mais 7 dias. Caso decidam reativar as buscas e voltar para a plataforma por R$ 39,90 mensais, é só me mandar uma mensagem por aqui.\n\nUm abraço e muito sucesso nos negócios!`;
     }
 
     return `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`;

@@ -256,17 +256,22 @@ export default function LuxeLayout({
       const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
-      const message = `Olá. Gostaria de atendimento via Tafanu para a marca ${business?.name || ""}.`;
+
+      const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
+
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
           : `tel:${cleanNumber}`;
+
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         if (type === "whatsapp") {
+          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         } else {
+          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
           window.location.href = targetUrl;
         }
       }
@@ -1163,7 +1168,7 @@ export default function LuxeLayout({
                     />
                   ))}
                 </div>
-             </motion.div>
+              </motion.div>
             )}
           </div>
         </div>

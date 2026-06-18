@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { PlanType, Role, CommissionStatus } from "@prisma/client";
-import { MercadoPagoConfig, PreApproval } from "mercadopago";
+import { MercadoPagoConfig, PreApproval, Payment } from "mercadopago";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
-import { generateCommission } from "@/app/actions";
+import { generateCommission } from "@/lib/services";
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
@@ -16,6 +16,7 @@ interface MPWebhookBody {
   id?: string | number;
   type?: string;
   entity?: string;
+  action?: string; // ⬅️ INSERIR ESTA LINHA
 }
 
 // 🛡️ FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
@@ -198,26 +199,6 @@ export async function POST(request: Request) {
           }),
         ]);
 
-        if (transactionAmount > 0) {
-          // 🚀 CIRURGIA DE RECORRÊNCIA: Adiciona o Mês/Ano para a trava anti-duplicidade liberar a renovação do próximo ciclo
-          const dataAtual = new Date();
-          const mesAno = `${dataAtual.getMonth() + 1}/${dataAtual.getFullYear()}`;
-
-          const descricaoPlano =
-            planType === "monthly"
-              ? "Mensal"
-              : planType === "quarterly"
-                ? "Trimestral"
-                : "Anual";
-
-          await generateCommission(
-            userId,
-            transactionAmount,
-            `Assinatura ${descricaoPlano} (${mesAno}) - Negócio ID: ${businessId}`,
-            planType,
-          );
-        }
-
         revalidatePath("/", "layout");
         console.log(
           `✅ Sucesso: Negócio ${businessId} PRO (${planType}) até ${expiresAt.toLocaleDateString()}`,
@@ -258,7 +239,87 @@ export async function POST(request: Request) {
         );
       }
     }
+    // ==============================================================================
+    // 🚀 CIRURGIA 3/4 CORRIGIDA: O RECIBO OFICIAL (Seguro e Antiduplicidade)
+    // ==============================================================================
+    // 🛡️ TRAVA 1: Só escuta atualizações de pagamento ou o pagamento em si
+    if (
+      body.type === "payment" ||
+      body.action === "payment.updated" ||
+      body.action === "payment.created"
+    ) {
+      const paymentId = body.data?.id || body.id;
 
+      if (!paymentId) {
+        return new NextResponse("Payment ID ausente", { status: 400 });
+      }
+
+      const paymentClient = new Payment(client);
+      const payment = await paymentClient.get({ id: String(paymentId) });
+
+      // 🛡️ TRAVA 2 (A Mais Importante): Só roda se o pagamento ESTIVER APROVADO
+      if (payment.status === "approved" && payment.external_reference) {
+        // 🛡️ TRAVA 3: Idempotência direta no Banco.
+        // Vamos checar na tabela "Commissions" se já existe UMA comissão gerada
+        // usando exatamente este ID de pagamento do Mercado Pago na descrição.
+        const [userId, businessId] = payment.external_reference.split("___");
+
+        if (userId && businessId) {
+          const comissaoJaExiste = await db.commission.findFirst({
+            where: {
+              userId: userId,
+              description: { contains: `Recibo MP: ${paymentId}` },
+            },
+          });
+
+          if (comissaoJaExiste) {
+            console.log(
+              `[Webhook MP] Ignorando bipes repetidos para o Pagamento ${paymentId}`,
+            );
+            return new NextResponse("Pagamento já gerou comissão", {
+              status: 200,
+            });
+          }
+
+          // Busca o negócio no banco para saber qual era o plano
+          const business = await db.business.findUnique({
+            where: { id: businessId },
+            select: { planType: true },
+          });
+
+          if (business && business.planType) {
+            const transactionAmount = payment.transaction_amount ?? 0;
+            const dataAtual = new Date();
+            const mesAno = `${dataAtual.getMonth() + 1}/${dataAtual.getFullYear()}`;
+
+            const planType = business.planType;
+            const descricaoPlano =
+              planType === "monthly"
+                ? "Mensal"
+                : planType === "quarterly"
+                  ? "Trimestral"
+                  : "Anual";
+
+            // 🏆 O DINHEIRO CAIU! E nós garantimos a injeção do paymentId para nunca duplicar.
+            await generateCommission(
+              userId,
+              transactionAmount,
+              `Assinatura ${descricaoPlano} (${mesAno}) - Loja: ${businessId} - Recibo MP: ${paymentId}`,
+              planType,
+              String(paymentId),
+            );
+
+            console.log(
+              `💰 [Webhook MP] Pagamento aprovado e UNICAMENTE gerado: Loja ${businessId}`,
+            );
+          }
+        }
+      } else {
+        console.log(
+          `ℹ️ [Webhook MP] Pagamento ignorado no afiliado. Status: ${payment?.status}`,
+        );
+      }
+    }
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
     console.error("[Webhook MP] Erro Crítico:", error);

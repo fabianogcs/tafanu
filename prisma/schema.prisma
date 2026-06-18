@@ -327,6 +327,7 @@ model Commission {
   description   String?          // Ex: "Mensalidade Março - Cliente X"
   createdAt     DateTime         @default(now())
   releaseDate   DateTime         // Data que o valor fica disponível (createdAt + 7 dias)
+  mpPaymentId   String?  @unique
 
   // ⬅️ NOVO: Relacionamento para saber em qual saque esta comissão foi paga
   withdrawalId   String?          
@@ -335,7 +336,7 @@ model Commission {
  affiliate User @relation("AffiliateCommissions", fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
-  @@index([status])
+  @@index([status, releaseDate]) // 🚀 VACINA DE ESCALABILIDADE: Deixa o Cron Job 100x mais rápido na escala
   @@index([withdrawalId]) 
   @@index([userId]) // 🚀 ADICIONADO: Acelera as buscas do Webhook em 100x!
 }

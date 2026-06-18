@@ -24,7 +24,6 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -79,14 +78,6 @@ export default function LoginPage() {
     }
   }, [success, intent, callbackUrl]);
 
-  useEffect(() => {
-    // Ele vai lá no "caderninho" (localStorage) e vê se o espião anotou algo
-    const savedRef = localStorage.getItem("tafanu_affiliate_ref");
-    if (savedRef) {
-      setAffiliateCode(savedRef);
-    }
-  }, []);
-
   // --- NOVA FUNÇÃO PARA REENVIAR O E-MAIL ---
   async function handleResendEmail() {
     if (!unverifiedEmail) return;
@@ -112,60 +103,56 @@ export default function LoginPage() {
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    if (isLogin) {
-      const result = await loginUser(formData);
+    try {
+      // 🛡️ TENTATIVA: O código tenta falar com o servidor
+      if (isLogin) {
+        const result = await loginUser(formData);
 
-      if (result?.error) {
-        // 🛡️ AQUI TRATAMOS O ERRO DA TRAVA
-        setLoginError(result.error);
-        if (result.notVerified) {
-          setShowResend(true);
-          setUnverifiedEmail(result.email || (formData.get("email") as string));
-        } else {
-          toast.error(result.error);
-        }
-        setIsLoading(false);
-      } else {
-        // Busca a sessão recém-criada para saber o cargo antes de redirecionar
-        const session = await getSession();
-        const role = session?.user?.role as string | undefined;
-        const destino = getDestination(role);
-        const destinoSeguro = destino?.startsWith("/") ? destino : "/";
-        window.location.assign(destinoSeguro);
-      }
-    } else {
-      const registerResult = await registerUser(formData);
-
-      if (registerResult?.error) {
-        toast.error(registerResult.error);
-        setIsLoading(false);
-        return;
-      }
-
-      if (registerResult?.success) {
-        const loginResult = await loginUser(formData);
-
-        if (loginResult?.error) {
-          // Se deu erro ao logar logo após o cadastro, é porque caiu na trava de verificação (o que é esperado!)
-          toast.success("Conta criada! Verifique seu e-mail para ativar.");
-          setIsLogin(true);
-          // Preenche a caixa de erro para ele já ver o botão de reenvio
-          setLoginError("Verifique sua caixa de entrada para ativar a conta.");
-          setShowResend(true);
-          setUnverifiedEmail(formData.get("email") as string);
+        if (result?.error) {
+          setLoginError(result.error);
+          if (result.notVerified) {
+            setShowResend(true);
+            setUnverifiedEmail(
+              result.email || (formData.get("email") as string),
+            );
+          } else {
+            toast.error(result.error);
+          }
           setIsLoading(false);
-        } else {
-          // Caso você libere o cadastro sem trava no futuro (ex: via Google)
-          toast.success("Conta criada! Redirecionando...");
-          setTimeout(async () => {
-            const session = await getSession();
-            const role = session?.user?.role as string | undefined;
-            const destino = getDestination(role);
-            const destinoSeguro = destino?.startsWith("/") ? destino : "/";
-            window.location.assign(destinoSeguro);
-          }, 500);
+        }
+        // Se der sucesso, não fazemos nada! O NEXT_REDIRECT do servidor (actions.ts) vai forçar a tela a navegar automaticamente e com segurança para o destino correto.
+      } else {
+        const registerResult = await registerUser(formData);
+
+        if (registerResult?.error) {
+          toast.error(registerResult.error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (registerResult?.success) {
+          const loginResult = await loginUser(formData);
+
+          if (loginResult?.error) {
+            toast.success("Conta criada! Verifique seu e-mail para ativar.");
+            setIsLogin(true);
+            setLoginError(
+              "Verifique sua caixa de entrada para ativar a conta.",
+            );
+            setShowResend(true);
+            setUnverifiedEmail(formData.get("email") as string);
+            setIsLoading(false);
+          }
+          // O redirecionamento de sucesso já é feito pelo servidor via NEXT_REDIRECT.
         }
       }
+    } catch (error) {
+      // 🛡️ AMORTECEDOR: Se a internet cair ou o Rate Limit bloquear (Failed to fetch)
+      console.error("Erro de conexão interceptado:", error);
+      setLoginError(
+        "Muitas tentativas ou erro de conexão. Aguarde 1 minuto e tente novamente.",
+      );
+      setIsLoading(false); // ⬅️ Desliga a animação de "carregando"
     }
   }
 
@@ -226,11 +213,6 @@ export default function LoginPage() {
           <form className="space-y-4 lg:space-y-5" onSubmit={handleSubmit}>
             {/* MANTIDO: O BILHETE DO GPS PARA O SERVIDOR */}
             <input type="hidden" name="callbackUrl" value={getDestination()} />
-            <input
-              type="hidden"
-              name="affiliateCode"
-              value={affiliateCode || ""}
-            />
 
             {!isLogin && (
               <div className="space-y-1">

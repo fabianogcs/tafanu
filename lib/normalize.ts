@@ -40,7 +40,15 @@ export const cleanSocialHandle = (url: string = "") => {
   if (handle) {
     handle = handle.replace(/^@+/, "");
   }
-
+  // 🛡️ TRAVA ANTI-DOMÍNIO: Impede que o nome da rede social vire o nome do usuário
+  if (
+    handle === "instagram.com" ||
+    handle === "facebook.com" ||
+    handle === "tiktok.com" ||
+    handle === ""
+  ) {
+    return "";
+  }
   return handle || "";
 };
 
@@ -53,7 +61,13 @@ export const cleanHandle = (url: string = "", regex: RegExp) => {
 // 🚀 ADICIONAMOS ESTA:
 export const formatPhoneNumber = (value: string) => {
   if (!value) return "";
-  const numbers = value.replace(/\D/g, "");
+  let numbers = value.replace(/\D/g, "");
+
+  // 🛡️ TRAVA CÓDIGO DO PAÍS: Se o usuário colou com o "55" na frente, remove o excesso
+  if (numbers.length > 11 && numbers.startsWith("55")) {
+    numbers = numbers.slice(2);
+  }
+
   if (numbers.length <= 11) {
     return numbers
       .replace(/^(\d{2})(\d)/g, "($1) $2")

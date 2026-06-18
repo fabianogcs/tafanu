@@ -37,7 +37,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [showResend, setShowResend] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [isResending, setIsResending] = useState(false);
-  const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -54,8 +53,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   useEffect(() => {
     setMounted(true);
-    const savedRef = localStorage.getItem("tafanu_affiliate_ref");
-    if (savedRef) setAffiliateCode(savedRef);
   }, []);
 
   if (!isOpen || !mounted) return null;
@@ -96,21 +93,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           } else {
             toast.error(result.error);
           }
-          setIsLoading(false); // 🚀 Só para de carregar se der erro local
-        } else {
-          toast.success("Login realizado com sucesso!");
-          const session = await getSession();
-          const role = session?.user?.role as UserRole | undefined;
-
           setIsLoading(false);
-          onClose();
-
-          // 🚀 NAVEGAÇÃO SEGURA: Atualiza a árvore do Next.js e força o redirect absoluto
-          router.refresh();
-          const destino = getDestination(role);
-          const destinoSeguro = destino?.startsWith("/") ? destino : "/";
-          window.location.href = destinoSeguro;
         }
+        // Se der sucesso, o backend dispara o erro NEXT_REDIRECT e o bloco catch abaixo captura e fecha o modal.
       } else {
         const registerResult = await registerUser(formData);
 
@@ -132,19 +117,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             setShowResend(true);
             setUnverifiedEmail(formData.get("email") as string);
             setIsLoading(false);
-          } else {
-            toast.success("Conta criada com sucesso!");
-            const session = await getSession();
-            const role = session?.user?.role as UserRole | undefined;
-
-            setIsLoading(false);
-            onClose();
-
-            router.refresh();
-            const destino = getDestination(role);
-            const destinoSeguro = destino?.startsWith("/") ? destino : "/";
-            window.location.href = destinoSeguro;
           }
+          // Mesma regra: Se loginResult der sucesso, o NEXT_REDIRECT entra em ação e o catch cuida de tudo.
         }
       }
     } catch (error) {
@@ -221,11 +195,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <input type="hidden" name="callbackUrl" value={currentUrl} />
-          <input
-            type="hidden"
-            name="affiliateCode"
-            value={affiliateCode || ""}
-          />
 
           {!isLogin && (
             <div className="space-y-1">

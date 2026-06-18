@@ -69,8 +69,10 @@ function CoverCropperModal({
       </div>
 
       <p className="text-white/60 text-[10px] uppercase tracking-widest mt-4 font-bold text-center">
-        O quadro de corte já está no tamanho exato do seu Template.<br/>
-        Use a barra abaixo para aumentar ou <span className="text-white">diminuir</span> a foto.
+        O quadro de corte já está no tamanho exato do seu Template.
+        <br />
+        Use a barra abaixo para aumentar ou{" "}
+        <span className="text-white">diminuir</span> a foto.
       </p>
 
       <div className="w-full max-w-2xl mt-4 flex items-center gap-4 bg-white/5 p-4 rounded-2xl">
@@ -136,7 +138,10 @@ export function CoverImageSection({
   const layoutConfig = useMemo(() => {
     switch (selectedLayout) {
       case "editorial": // Luxe Layout (Retrato)
-        return { aspect: 3 / 4, css: "w-full max-w-[280px] mx-auto rounded-[2rem]" };
+        return {
+          aspect: 3 / 4,
+          css: "w-full max-w-[280px] mx-auto rounded-[2rem]",
+        };
       case "businessList": // Comercial Layout (Faixa Fina)
       case "showroom": // Showroom Layout (Faixa Fina)
         return { aspect: 21 / 9, css: "w-full rounded-[1.5rem]" };
@@ -190,7 +195,7 @@ export function CoverImageSection({
     [rawImageSrc, setCoverImage],
   );
 
- return (
+  return (
     <div className="w-full flex flex-col justify-center">
       <div
         className={`relative overflow-hidden border-2 border-dashed transition-all cursor-pointer group 
@@ -254,6 +259,8 @@ export function CoverImageSection({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            if (rawImageSrc) URL.revokeObjectURL(rawImageSrc); // 🚀 LIBERTA A RAM
+            setRawImageSrc(null);
             setCoverImage("");
           }}
           className="mt-4 flex items-center justify-center w-max mx-auto gap-1.5 px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-[9px] font-black uppercase hover:bg-rose-100 transition-colors border border-rose-100"

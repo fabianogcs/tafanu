@@ -7,6 +7,7 @@ import { Redis } from "@upstash/redis";
 // 🚀 AQUI: Criamos espaços na memória para DOIS Leões de Chácara
 let generalRatelimit: Ratelimit | null = null;
 let uploadRatelimit: Ratelimit | null = null;
+let authRatelimit: Ratelimit | null = null;
 
 if (
   process.env.UPSTASH_REDIS_REST_URL &&
@@ -17,21 +18,26 @@ if (
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
 
-  // 🛡️ LEÃO 1: Generoso (Busca, Login, Senha) - 100 cliques por minuto
   generalRatelimit = new Ratelimit({
     redis: redis,
     limiter: Ratelimit.slidingWindow(100, "1 m"),
-    prefix: "ratelimit_general", // O prefixo impede que as contagens se misturem
+    prefix: "ratelimit_general",
   });
 
-  // 🛡️ LEÃO 2: Sufocante (Upload de Mídia) - Apenas 30 envios por minuto
   uploadRatelimit = new Ratelimit({
     redis: redis,
     limiter: Ratelimit.slidingWindow(30, "1 m"),
     prefix: "ratelimit_upload",
   });
+
+  authRatelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(5, "1 m"),
+    prefix: "ratelimit_strict_auth",
+  });
 }
 
+// 🚀 O MOTOR OFICIAL DO NEXTAUTH V5 PARA O MIDDLEWARE
 const { auth } = NextAuth(authConfig);
 
 export default auth(async (req) => {
@@ -42,7 +48,7 @@ export default auth(async (req) => {
   // =====================================================================
   // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING DE DUPLA CAMADA
   // =====================================================================
-  if (generalRatelimit && uploadRatelimit) {
+  if (generalRatelimit && uploadRatelimit && authRatelimit) {
     const isApiAuthRoute = pathname.startsWith("/api/auth");
     const isUploadRoute = pathname.startsWith("/api/uploadthing");
     const isSearchRoute = pathname.startsWith("/busca");
@@ -52,12 +58,25 @@ export default auth(async (req) => {
       pathname.startsWith("/nova-senha");
 
     if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) {
-      const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+      // 🚀 BLINDAGEM DE IP: O cabeçalho 'x-real-ip' é assinado e injetado pela própria infraestrutura da Vercel.
+      const ip =
+        req.headers.get("x-real-ip") ??
+        req.headers.get("x-forwarded-for") ??
+        "127.0.0.1";
 
-      // 🚀 A MÁGICA: Escolhemos o segurança correto dependendo de qual porta o usuário quer entrar
+      // 🚀 A MÁGICA DE TRIPLA CAMADA BLINDADA: Só pune severamente tentativas de envio (POST)
+      const isPostRequest = req.method === "POST";
+
       const activeRatelimit = isUploadRoute
         ? uploadRatelimit
-        : generalRatelimit;
+        : (isSensitivePage || isApiAuthRoute) && isPostRequest
+          ? authRatelimit // ⬅️ O limite de 5 por minuto só esmaga envios de formulários/senhas
+          : generalRatelimit; // Carregar páginas (GET) ou checar sessão continua livre com 100 por minuto
+
+      // 🛡️ TRAVA DO TYPESCRIPT: Se por algum motivo de rede o segurança estiver vazio, deixa o usuário passar para o site não cair.
+      if (!activeRatelimit) {
+        return NextResponse.next();
+      }
 
       const { success } = await activeRatelimit.limit(ip);
 
@@ -124,8 +143,21 @@ export default auth(async (req) => {
     pathname === "/manifest.json" ||
     pathname === "/sw.js";
 
+  // 🚀 VACINA DO LOOP: Se um usuário logado cair no /login, respeita o destino dele!
   if (isLoggedIn && pathname.startsWith("/login")) {
-    return NextResponse.redirect(new URL("/", nextUrl));
+    const callback = nextUrl.searchParams.get("callbackUrl");
+    const intent = nextUrl.searchParams.get("intent");
+
+    // Se ele queria ir pro checkout, manda pro checkout
+    if (callback) {
+      return NextResponse.redirect(new URL(callback, nextUrl));
+    }
+    if (intent === "assinante") {
+      return NextResponse.redirect(new URL("/checkout", nextUrl));
+    }
+
+    // Se não tinha destino claro, manda pro painel
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
   if (isLoggedIn && (pathname.startsWith("/anunciar") || isCheckoutRoute)) {

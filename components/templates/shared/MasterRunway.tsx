@@ -50,22 +50,28 @@ export function MasterRunway({
 
   const handleMouseUp = () => {
     setIsDragging(false);
-    // Pequeno atraso para não disparar o onClick caso tenha havido arraste real
+    // Atraso seguro para o onClick
     setTimeout(() => setIsDraggingReal(false), 50);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !scrollRef.current) return;
     e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; // Velocidade do arraste
 
-    // Se andou mais de 5 pixels, consideramos arraste de verdade (não um clique)
+    // 🚀 PERFORMANCE O(1): Evitamos usar variáveis de estado para não "re-renderizar" a galeria a cada milímetro do rato
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Aumentamos levemente a fluidez (2x)
+
     if (Math.abs(walk) > 5) {
       setIsDraggingReal(true);
     }
 
-    scrollRef.current.scrollLeft = scrollLeftPos - walk;
+    // Altera direto no DOM, poupando a CPU do telemóvel/computador
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = scrollLeftPos - walk;
+      }
+    });
   };
   // ------------------------------------------
 
@@ -144,8 +150,9 @@ export function MasterRunway({
                   src={item.url || "/og-default.png"}
                   alt="Vitrine"
                   fill
+                  priority={i < 3} // 🚀 SEO E PERFORMANCE: Carrega as 3 primeiras fotos instantaneamente!
                   quality={100}
-                  draggable={false} // ⬅️ O SEGREDO: Mata o "fantasma" do navegador
+                  draggable={false}
                   sizes="(max-width: 768px) 600px, 800px"
                   className="object-cover transition-transform duration-700 group-hover:scale-105 select-none"
                 />

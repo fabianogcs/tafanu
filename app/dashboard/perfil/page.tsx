@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers"; // 🚀 FERRAMENTA DE LEITURA INSERIDA AQUI
 import { User } from "lucide-react";
 import ProfileForm from "@/components/ProfileForm";
 
@@ -14,6 +15,10 @@ export default async function ProfilePage() {
   });
 
   if (!user) redirect("/login");
+
+  // 🚀 A PONTE DE SEGURANÇA: Lê o cookie invisível do servidor e prepara para o frontend
+  const cookieStore = await cookies();
+  const affiliateCode = cookieStore.get("tafanu_ref")?.value;
 
   // 🚀 A TRAVA FOI REMOVIDA: Visitantes não chegam aqui por causa do Middleware,
   // mas se um Assinante recém-comprado chegar e o crachá ainda estiver atualizando,
@@ -32,7 +37,7 @@ export default async function ProfilePage() {
       </div>
 
       <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
-        <ProfileForm user={user} />
+        <ProfileForm user={user} affiliateCode={affiliateCode} />
       </div>
     </div>
   );
