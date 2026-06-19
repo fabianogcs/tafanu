@@ -19,17 +19,9 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
 
   // 3. Capacidades (Booleans úteis para o Layout)
   const capabilities = useMemo(() => {
-    // 🚀 ADICIONADOS OS CANAIS DE VENDA (Shopee, iFood, etc.)
-    const socialPlatforms = [
-      "instagram",
-      "tiktok",
-      "facebook",
-      "website",
-      "shopee",
-      "mercadoLivre",
-      "shein",
-      "ifood",
-    ];
+    // 🚀 A VACINA DOS GLOBOS:
+    // Separamos as redes sociais reais dos Marketplaces para não dar vazamento na UI.
+    const socialPlatforms = ["instagram", "tiktok", "facebook", "website"];
 
     return {
       hasWhatsapp: business.whatsapp.trim() !== "",
@@ -44,7 +36,7 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
       hasSocials: socialPlatforms.some(
         (s) => typeof business[s] === "string" && business[s].trim() !== "",
       ),
-      // Lista filtrada só com as redes que existem
+      // Lista filtrada SÓ com as redes sociais REAIS
       availableSocials: socialPlatforms.filter(
         (s) => typeof business[s] === "string" && business[s].trim() !== "",
       ),

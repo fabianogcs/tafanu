@@ -14,6 +14,19 @@ export async function moverEtapaFunil(businessId: string, novaEtapa: number) {
     return { success: false, error: "Acesso negado." };
   }
 
+  // 🚀 CIRURGIA: Garante que o Afiliado só tenha poder sobre os próprios leads
+  const business = await db.business.findUnique({
+    where: { id: businessId },
+    select: { user: { select: { affiliateId: true } } },
+  });
+
+  if (
+    session.user.role === "AFILIADO" &&
+    business?.user?.affiliateId !== session.user.id
+  ) {
+    return { success: false, error: "Este lead não pertence a você." };
+  }
+
   try {
     await db.business.update({
       where: { id: businessId },

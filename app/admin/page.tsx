@@ -39,12 +39,12 @@ export default async function AdminPage({
   // 2. BUSCAS SEPARADAS: TABELA vs MÉTRICAS
   // Fazemos tudo em paralelo, mas com consultas otimizadas!
   const [
-    usersData, 
-    reports, 
-    flaggedComments, 
-    comissoesAgregadas, 
+    usersData,
+    reports,
+    flaggedComments,
+    comissoesAgregadas,
     lojasAtivasGerais,
-    historicoSaques // 🚀 RECIBOS DE SAQUE
+    historicoSaques, // 🚀 RECIBOS DE SAQUE
   ] = await Promise.all([
     // A. LISTA DE USUÁRIOS (Para a tabela - Limitado para não travar a tela)
     db.user.findMany({
@@ -58,7 +58,16 @@ export default async function AdminPage({
           }
         : {},
       take: q ? 100 : 1000,
-      include: {
+      // 🚀 CIRURGIA: Usa 'select' explícito para barrar as senhas no nível do banco de dados
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        document: true,
+        isBanned: true,
+        lastLogin: true,
+        createdAt: true,
         businesses: {
           include: {
             _count: { select: { favorites: true } },
@@ -70,13 +79,13 @@ export default async function AdminPage({
       orderBy: { createdAt: "desc" },
     }),
 
-   // B. RELATÓRIOS E COMENTÁRIOS
+    // B. RELATÓRIOS E COMENTÁRIOS
     db.report.findMany({
       where: { status: "PENDING" },
       orderBy: { createdAt: "desc" },
-      include: { 
+      include: {
         business: { select: { name: true, slug: true } },
-        reporter: { select: { id: true, name: true, email: true } } // 🚀 O Prisma faz a mágica aqui!
+        reporter: { select: { id: true, name: true, email: true } }, // 🚀 O Prisma faz a mágica aqui!
       },
     }),
     db.comment.findMany({
@@ -96,28 +105,29 @@ export default async function AdminPage({
 
     // D. 🚀 OTIMIZAÇÃO: Traz de forma levíssima TODAS as lojas ativas para calcular o MRR Global
     db.business.findMany({
-      where: { 
-        isActive: true, 
-        expiresAt: { gt: agora } 
+      where: {
+        isActive: true,
+        expiresAt: { gt: agora },
       },
       select: {
         planType: true,
         user: {
-          select: { affiliateId: true, isBanned: true, email: true }
-        }
-      }
+          select: { affiliateId: true, isBanned: true, email: true },
+        },
+      },
     }),
-    
+
     // E. 🚀 HISTÓRICO DE SAQUES: Traz os recibos pagos para o Admin
     db.withdrawal.findMany({
+      take: 100, // 🚀 CIRURGIA: Trava de memória! Evita que o painel caia por excesso de dados
       include: { affiliate: { select: { name: true, email: true } } },
-      orderBy: { createdAt: "desc" }
-    })
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   // 3. PREPARAÇÃO DE DADOS PARA A TABELA (Limitado aos 1000)
   const users = usersData.map((u) => {
-    const { password, ...userWithoutPassword } = u;
+    // 🚀 CIRURGIA: Linha da senha removida, o banco já entregou os dados limpos!
 
     let totalViews = 0;
     let totalLeads = 0;
@@ -130,7 +140,7 @@ export default async function AdminPage({
     });
 
     return {
-      ...userWithoutPassword,
+      ...u, // 🚀 Repassamos o 'u' inteiro
       referredBy: u.affiliate
         ? `${u.affiliate.name} (${u.affiliate.referralCode})`
         : null,
@@ -155,7 +165,11 @@ export default async function AdminPage({
 
   lojasAtivasGerais.forEach((loja) => {
     // Ignora se o usuário foi banido ou se é a conta do próprio Admin
-    if (loja.user?.isBanned || loja.user?.email?.toLowerCase() === adminEmailEnv) return;
+    if (
+      loja.user?.isBanned ||
+      loja.user?.email?.toLowerCase() === adminEmailEnv
+    )
+      return;
 
     totalPagantes += 1;
 

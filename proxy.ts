@@ -58,11 +58,11 @@ export default auth(async (req) => {
       pathname.startsWith("/nova-senha");
 
     if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) {
-      // 🚀 BLINDAGEM DE IP: O cabeçalho 'x-real-ip' é assinado e injetado pela própria infraestrutura da Vercel.
+      // 🚀 CIRURGIA CORRIGIDA: Lemos o IP sanitizado pela infraestrutura da Vercel, sem irritar o TypeScript
+      const forwardedFor = req.headers.get("x-forwarded-for");
       const ip =
         req.headers.get("x-real-ip") ??
-        req.headers.get("x-forwarded-for") ??
-        "127.0.0.1";
+        (forwardedFor ? forwardedFor.split(",")[0] : "127.0.0.1");
 
       // 🚀 A MÁGICA DE TRIPLA CAMADA BLINDADA: Só pune severamente tentativas de envio (POST)
       const isPostRequest = req.method === "POST";

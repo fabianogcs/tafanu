@@ -34,12 +34,10 @@ export async function generateCommission(
     const releaseDate = new Date();
     releaseDate.setDate(releaseDate.getDate() + 7);
 
-    // 🛡️ A BARRAGEM ANTI-DUPLICATA
-    const jaExiste = await db.commission.findFirst({
+    // 🚀 CIRURGIA: Barragem absoluta usando o ID transacional do gateway de pagamento
+    const jaExiste = await db.commission.findUnique({
       where: {
-        userId: userId,
-        description: description,
-        status: { not: "CANCELLED" },
+        mpPaymentId: String(mpPaymentId),
       },
     });
 

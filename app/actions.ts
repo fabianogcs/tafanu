@@ -1884,17 +1884,35 @@ export async function runGarbageCollector() {
     }
     // ---------------------------
 
-    // 4. Lista arquivos no UploadThing (Pegando os primeiros 500)
-    const utFiles = await utapi.listFiles({ limit: 500 });
+    // 🚀 CIRURGIA DE CUSTO: Varredura com Paginação Total para limpar todo o servidor AWS
     const filesToDelete: string[] = [];
+    let hasMore = true;
+    let currentOffset = 0;
 
-    // 5. Compara
-    utFiles.files.forEach((file) => {
-      // Se a chave do arquivo no servidor NÃO está na nossa lista de válidos
-      if (!validKeys.has(file.key)) {
-        filesToDelete.push(file.key);
+    while (hasMore) {
+      const utFiles = await utapi.listFiles({
+        limit: 500,
+        offset: currentOffset,
+      });
+
+      if (!utFiles || utFiles.files.length === 0) {
+        hasMore = false;
+        break;
       }
-    });
+
+      utFiles.files.forEach((file) => {
+        if (!validKeys.has(file.key)) {
+          filesToDelete.push(file.key);
+        }
+      });
+
+      // Atualiza para a próxima página
+      if (utFiles.hasMore) {
+        currentOffset += 500;
+      } else {
+        hasMore = false;
+      }
+    }
 
     console.log(`🗑️ Lixo identificado: ${filesToDelete.length} arquivos.`);
 

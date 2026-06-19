@@ -10,22 +10,22 @@ const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
 
-// 🛡️ FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
+//  FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
 interface MPWebhookBody {
   data?: { id?: string | number };
   id?: string | number;
   type?: string;
   entity?: string;
-  action?: string; // ⬅️ INSERIR ESTA LINHA
+  action?: string;
 }
 
-// 🛡️ FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
+//  FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
 function validateSignature(request: Request, body: MPWebhookBody) {
   const signature = request.headers.get("x-signature");
   const requestId = request.headers.get("x-request-id");
   const secret = process.env.MP_WEBHOOK_SECRET;
 
-  // 🔸 Ajuste 2: Verifica se a assinatura existe e se tem o formato esperado
+  //  Ajuste 2: Verifica se a assinatura existe e se tem o formato esperado
   if (
     !signature ||
     !secret ||
@@ -265,10 +265,10 @@ export async function POST(request: Request) {
         const [userId, businessId] = payment.external_reference.split("___");
 
         if (userId && businessId) {
-          const comissaoJaExiste = await db.commission.findFirst({
+          // 🚀 CIRURGIA: Busca instantânea usando o campo exato e indexado!
+          const comissaoJaExiste = await db.commission.findUnique({
             where: {
-              userId: userId,
-              description: { contains: `Recibo MP: ${paymentId}` },
+              mpPaymentId: String(paymentId),
             },
           });
 
