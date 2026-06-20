@@ -232,6 +232,7 @@ export default function LoginPage() {
                     name="name"
                     type="text"
                     required
+                    maxLength={100} // 🚀 TRAVA UX
                     autoComplete="name"
                     placeholder="Ex: João Silva"
                     className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold text-slate-900 autofill:shadow-[inset_0_0_0px_1000px_#f8fafc] autofill:[-webkit-text-fill-color:#0f172a]"
@@ -257,6 +258,7 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   required
+                  maxLength={100} // 🚀 TRAVA UX
                   autoComplete="email"
                   inputMode="email"
                   autoCapitalize="none"
@@ -284,6 +286,7 @@ export default function LoginPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   required
+                  maxLength={100} // 🚀 TRAVA UX
                   autoComplete={isLogin ? "current-password" : "new-password"}
                   placeholder="••••••••"
                   className="w-full pl-11 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold text-slate-900 autofill:shadow-[inset_0_0_0px_1000px_#f8fafc] autofill:[-webkit-text-fill-color:#0f172a]"

@@ -159,6 +159,16 @@ export async function registerUser(formData: FormData) {
   const password = formData.get("password") as string;
   const rawDocument = formData.get("document") as string;
 
+  // 🚀 O ESCUDO ANTI-CPU EXHAUSTION (Proteção contra senhas/textos gigantes)
+  if (
+    name?.length > 100 ||
+    email?.length > 100 ||
+    password?.length > 100 ||
+    rawDocument?.length > 30
+  ) {
+    return { error: "Dados excedem o limite máximo de caracteres permitido." };
+  }
+
   // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO E DOMÍNIO RESERVADO ---
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!email || !emailRegex.test(email)) {
@@ -285,6 +295,11 @@ export async function loginUser(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const callbackUrl = formData.get("callbackUrl") as string;
+
+  // 🚀 O ESCUDO ANTI-CPU EXHAUSTION
+  if (email?.length > 100 || password?.length > 100) {
+    return { error: "E-mail ou senha inválidos." }; // Não damos dica para o hacker do porquê falhou
+  }
 
   // 1. Busca o usuário no banco
   let dbUser = await db.user.findUnique({ where: { email } });
@@ -426,6 +441,10 @@ export async function updateUserProfile(formData: FormData) {
         if (!currentPassword) {
           return { error: "Informe a senha atual para criar uma nova." };
         }
+        // 🚀 TRAVA ANTI-CPU EXHAUSTION
+        if (currentPassword.length > 100)
+          return { error: "Senha atual inválida." };
+
         const isPasswordCorrect = await compare(
           currentPassword,
           dbUser.password,
@@ -563,7 +582,7 @@ export async function createBusiness(payload: any) {
           category: validatedData.category,
           // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens enviados via Payload!
           subcategory: Array.isArray(payload.subcategory)
-            ? payload.subcategory.slice(0, 5)
+            ? payload.subcategory.slice(0, 3)
             : [],
           description: validatedData.description,
           whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
@@ -606,11 +625,11 @@ export async function createBusiness(payload: any) {
               normalizeText(validatedData.name),
               normalizeText(validatedData.category),
               ...(Array.isArray(payload.subcategory)
-                ? payload.subcategory.slice(0, 5)
+                ? payload.subcategory.slice(0, 3)
                 : []
               ).map((s: string) => normalizeText(s)),
               ...(Array.isArray(payload.subcategory)
-                ? payload.subcategory.slice(0, 5)
+                ? payload.subcategory.slice(0, 3)
                 : []
               ).flatMap((s: string) => normalizeText(s).split(" ")),
             ]),
@@ -770,7 +789,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         category: validatedData.category,
         // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens!
         subcategory: Array.isArray(payload.subcategory)
-          ? payload.subcategory.slice(0, 5)
+          ? payload.subcategory.slice(0, 3)
           : [],
         theme: validatedData.theme,
         layout: validatedData.layout as LayoutType, // 🛡️ Tipagem segura do Prisma
@@ -793,11 +812,11 @@ export async function updateFullBusiness(slug: string, payload: any) {
             normalizeText(validatedData.name),
             normalizeText(validatedData.category),
             ...(Array.isArray(payload.subcategory)
-              ? payload.subcategory.slice(0, 5)
+              ? payload.subcategory.slice(0, 3)
               : []
             ).map((s: string) => normalizeText(s)),
             ...(Array.isArray(payload.subcategory)
-              ? payload.subcategory.slice(0, 5)
+              ? payload.subcategory.slice(0, 3)
               : []
             ).flatMap((s: string) => normalizeText(s).split(" ")),
           ]),
@@ -894,6 +913,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
 // 7. ATUALIZAÇÃO ESPECÍFICA DE MÍDIA (VÍDEO E GALERIA)
 // ==============================================================================
 export async function updateBusinessMedia(slug: string, gallery: string[]) {
+  if (gallery?.length > 30) return { error: "Limite de mídias excedido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
@@ -965,6 +985,7 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
 }
 
 export async function updateBusinessHours(slug: string, hours: any[]) {
+  if (hours?.length > 7) return { error: "Limite de horários excedido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
   const userId = user.id;
@@ -1017,12 +1038,9 @@ export async function deleteBusiness(slug: string) {
     // A faxina das imagens no UploadThing TEM que ser feita ANTES de apagar no banco!
     await cleanStorageFiles(slug);
 
-    await db.$transaction([
-      db.businessHour.deleteMany({ where: { businessId: business.id } }),
-      db.favorite.deleteMany({ where: { businessId: business.id } }),
-      db.report.deleteMany({ where: { businessId: business.id } }),
-      db.business.delete({ where: { id: business.id } }),
-    ]);
+    // 🚀 EFICIÊNCIA SÊNIOR: O "onDelete: Cascade" do Prisma já faz a mágica no banco!
+    // Apenas um comando resolve tudo, sem sobrecarregar a conexão.
+    await db.business.delete({ where: { id: business.id } });
 
     revalidatePath("/admin");
     revalidatePath("/dashboard");
@@ -1411,6 +1429,21 @@ export async function registerClickEvent(
       secure: process.env.NODE_ENV === "production",
     });
 
+    // 🚀 COFRE ANTI-BOT: Impede que scripts limpadores de cookie inflem o banco
+    const umMinutoAtras = new Date(Date.now() - 60 * 1000);
+    const cliqueRecente = await db.analyticsEvent.findFirst({
+      where: {
+        businessId: businessId,
+        eventType: upperEvent as EventType,
+        createdAt: { gte: umMinutoAtras },
+      },
+      select: { id: true },
+    });
+
+    if (cliqueRecente) {
+      return { success: true, ignored: true };
+    }
+
     // 3. TRANSAÇÃO MÁGICA: Faz duas coisas ao mesmo tempo.
     // Se uma falhar, ele cancela a outra para não dar erro nos gráficos depois.
     await db.$transaction([
@@ -1441,6 +1474,13 @@ export async function createReport(
   reason: string,
   details: string,
 ) {
+  // 🚀 ESCUDO ANTI-BOMBA DE TEXTO: Impede que hackers mandem enciclopédias direto pra API
+  if (reason?.length > 100 || details?.length > 500) {
+    return {
+      error: "Os dados da denúncia excedem o limite de caracteres permitido.",
+    };
+  }
+
   // 1. 🛡️ Segurança Primária: Exige login
   const user = await getSafeUser();
   if (!user) {
@@ -1625,6 +1665,8 @@ export async function adminActivateVisitor(userId: string, daysToAdd: number) {
 }
 
 export async function setInitialPassword(password: string) {
+  if (password?.length > 100)
+    return { error: "A senha excede o limite máximo permitido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
@@ -1697,8 +1739,9 @@ export async function cancelSubscriptionAction() {
 export async function sendPasswordResetEmail(formData: FormData) {
   const email = formData.get("email") as string;
 
-  if (!email) {
-    return { error: "E-mail obrigatório." };
+  // 🚀 ESCUDO ANTI-DDoS DE BANCO DE DADOS
+  if (!email || email.length > 100) {
+    return { error: "E-mail obrigatório ou inválido." };
   }
 
   const existingUser = await db.user.findUnique({ where: { email } });
@@ -1773,6 +1816,11 @@ export async function resetPassword(token: string | null, formData: FormData) {
 
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+
+  // 🚀 ESCUDO ANTI-CPU EXHAUSTION (Bcrypt)
+  if (password?.length > 100 || confirmPassword?.length > 100) {
+    return { error: "A senha excede o limite máximo permitido." };
+  }
 
   if (!password || !confirmPassword) {
     return { error: "Preencha todos os campos." };
@@ -1971,6 +2019,7 @@ export async function getActiveCategories() {
  * Transforma um usuário em AFILIADO e define seu código único de indicação.
  */
 export async function promoteToAffiliate(userId: string, code: string) {
+  if (code?.length > 50) return { error: "Código inválido ou muito longo." };
   // 1. Verificação de segurança: apenas você (Admin) pode rodar isso
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
@@ -2198,6 +2247,7 @@ export async function assignUserToAffiliate(
   userId: string,
   input: string, // Mudamos para 'input' para aceitar o link completo ou só o código
 ) {
+  if (input?.length > 255) return { error: "Link ou código muito longo." };
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Não autorizado." };
 
@@ -2932,6 +2982,17 @@ export async function addComment(
   content: string,
   parentId?: string,
 ) {
+  // 🚀 O ESCUDO ANTI-SPAM DE MEMÓRIA (Limita a 500 letras antes de bater no banco)
+  if (!content || content.trim().length === 0) {
+    return { success: false, error: "O comentário não pode estar vazio." };
+  }
+  if (content.length > 500) {
+    return {
+      success: false,
+      error: "Seu comentário é muito longo. O limite é de 500 caracteres.",
+    };
+  }
+
   try {
     // 1. 🛡️ Segurança: Pega o ID direto da sessão autenticada do servidor
     const session = await auth();
@@ -3210,6 +3271,10 @@ export async function transferBusinessToUser(
   slugDaVitrinePronta: string,
   idDoNovoDono: string,
 ) {
+  // 🚀 ESCUDO ANTI-PRISMA OOM (Out Of Memory)
+  if (slugDaVitrinePronta?.length > 255)
+    return { error: "Link inválido ou muito longo." };
+
   const adminId = await requireAdmin();
   if (!adminId) return { error: "Acesso negado." };
 

@@ -192,6 +192,7 @@ export function IdentitySection({
           <input
             ref={nameRef}
             value={name}
+            maxLength={100} // 🚀 TRAVA UX (Sincronizado com o Back-end)
             onChange={(e) => handleNameChange(e.target.value)}
             className={`w-full text-center bg-transparent text-2xl md:text-3xl font-black outline-none border-b-2 py-2 italic tracking-tighter transition-all ${
               nameError
@@ -220,6 +221,7 @@ export function IdentitySection({
           <input
             ref={slugRef}
             value={slug}
+            maxLength={60} // 🚀 TRAVA UX (Sincronizado com o Back-end)
             onChange={(e) => handleSlugChange(e.target.value)}
             className={`w-full text-center text-sm font-bold font-mono outline-none border-2 py-3 rounded-xl transition-all ${
               slugError
@@ -282,6 +284,7 @@ export function IdentitySection({
           </label>
           <input
             value={layoutText}
+            maxLength={40} // 🚀 TRAVA NATIVA HTML
             onChange={(e) => setLayoutText(e.target.value.slice(0, 40))}
             className="w-full h-12 px-5 rounded-xl bg-white border font-bold text-xs shadow-sm outline-none"
             placeholder={currentLayoutData.placeholder}

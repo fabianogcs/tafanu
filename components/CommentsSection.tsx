@@ -7,7 +7,7 @@ import { addComment, deleteComment, flagComment } from "@/app/actions";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import LoginModal from "@/components/LoginModal"; 
+import LoginModal from "@/components/LoginModal";
 
 interface CommentsSectionProps {
   businessId: string;
@@ -34,7 +34,7 @@ export default function CommentsSection({
   const [isPending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); 
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const [replyingTo, setReplyingTo] = useState<{
     id: string;
@@ -144,17 +144,25 @@ export default function CommentsSection({
                 </div>
               )}
 
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder={
-                  replyingTo
-                    ? "Escreva sua resposta..."
-                    : "Como foi sua experiência?"
-                }
-                className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all min-h-[120px] resize-none"
-                disabled={isSubmitting}
-              />
+              <div className="relative">
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  maxLength={500} // 🚀 BLOQUEIO NATIVO
+                  placeholder={
+                    replyingTo
+                      ? "Escreva sua resposta..."
+                      : "Como foi sua experiência?"
+                  }
+                  className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all min-h-[120px] pb-8 resize-none"
+                  disabled={isSubmitting}
+                />
+                <span
+                  className={`absolute bottom-3 right-5 text-[10px] font-black ${newComment.length >= 500 ? "text-rose-500" : "text-slate-400"}`}
+                >
+                  {newComment.length} / 500
+                </span>
+              </div>
               <div className="flex justify-end">
                 <button
                   type="submit"
@@ -230,7 +238,10 @@ export default function CommentsSection({
                   {comment.user?.name || "Visitante"}
                 </h4>
                 {/* 🚀 HYDRATION FIX AQUI */}
-                <span suppressHydrationWarning className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                <span
+                  suppressHydrationWarning
+                  className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter"
+                >
                   {formatDistanceToNow(new Date(comment.createdAt), {
                     locale: ptBR,
                     addSuffix: true,
@@ -307,7 +318,10 @@ export default function CommentsSection({
 
                         <div className="flex items-center gap-3">
                           {/* 🚀 HYDRATION FIX AQUI TAMBÉM */}
-                          <span suppressHydrationWarning className="text-[8px] font-bold text-slate-400 uppercase">
+                          <span
+                            suppressHydrationWarning
+                            className="text-[8px] font-bold text-slate-400 uppercase"
+                          >
                             {formatDistanceToNow(new Date(reply.createdAt), {
                               locale: ptBR,
                               addSuffix: true,

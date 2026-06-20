@@ -397,7 +397,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   };
 
   const params = await searchParams;
-  const rawQuery = (params.q || "").trim();
+
+  // 🚀 ESCUDO ANTI-CPU EXHAUSTION NA BUSCA: Trunca os parâmetros direto na raiz!
+  // Impede que queries injetadas via URL com 10MB travem o Prisma.
+  const rawQuery = String(params.q || "")
+    .slice(0, 80)
+    .trim();
   let query = normalizeText(rawQuery);
 
   const isOnlineMode = params.modo === "online";
@@ -424,12 +429,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const page = Math.min(Math.max(rawPage, 1), 100);
   const skip = (page - 1) * PAGE_SIZE;
 
-  const category = params.category || "";
-  const subcategoryParam = params.subcategory || "";
+  const category = String(params.category || "").slice(0, 50);
+  const subcategoryParam = String(params.subcategory || "").slice(0, 200);
 
-  const stateFilter = params.state || "";
-  const cityFilter = params.city || "";
-  const neighborhoodFilter = params.neighborhood || "";
+  const stateFilter = String(params.state || "").slice(0, 2);
+  const cityFilter = String(params.city || "").slice(0, 100);
+  const neighborhoodFilter = String(params.neighborhood || "").slice(0, 100);
 
   const statusFilter = isIntentOpen ? "open" : params.status || "all";
   const subcategoryArray = subcategoryParam ? subcategoryParam.split(",") : [];

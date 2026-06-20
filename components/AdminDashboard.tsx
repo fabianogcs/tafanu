@@ -767,6 +767,7 @@ export default function AdminDashboard({
                   />
                   <input
                     type="text"
+                    maxLength={100} // 🚀 TRAVA ANTI-URL GIGANTE
                     placeholder="Buscar nome, e-mail, documento..."
                     className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-2xl outline-none focus:ring-2 ring-emerald-500/20 text-sm font-bold text-slate-800 border border-slate-200 transition-all placeholder:font-medium placeholder:text-slate-400"
                     value={searchTerm}

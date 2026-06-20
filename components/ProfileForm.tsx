@@ -211,6 +211,7 @@ export default function ProfileForm({
                 <input
                   name="name"
                   defaultValue={user.name}
+                  maxLength={100} // 🚀 TRAVA UX
                   className="w-full p-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-[#F28705]/10 font-bold text-[#023059] shadow-sm transition-all"
                   required
                 />

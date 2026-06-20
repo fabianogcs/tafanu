@@ -384,6 +384,7 @@ export function ContentSection({
                     </div>
                     <input
                       value={item.url}
+                      maxLength={1000} // 🚀 TRAVA UX (Limite generoso para URLs longas, mas que bloqueia payloads e base64)
                       onChange={(e) => updateVideoUrl(i, e.target.value)}
                       className="w-full md:flex-1 bg-white p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-rose-500/20"
                       placeholder="Cole o link do YouTube, Instagram ou TikTok aqui..."
@@ -476,13 +477,21 @@ export function ContentSection({
         <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 mb-6">
           <AlignLeft size={16} /> Sobre o Negócio
         </label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value.slice(0, 600))}
-          rows={6}
-          className="w-full bg-slate-50 p-6 rounded-[1.5rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 transition-all"
-          placeholder="Conte sua história e a essência da sua marca..."
-        />
+        <div className="relative">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={600} // 🚀 TRAVA NATIVA DO HTML
+            rows={6}
+            className="w-full bg-slate-50 p-6 rounded-[1.5rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 transition-all pb-8"
+            placeholder="Conte sua história e a essência da sua marca..."
+          />
+          <span
+            className={`absolute bottom-4 right-6 text-[10px] font-black ${description.length >= 600 ? "text-rose-500" : "text-slate-400"}`}
+          >
+            {description.length} / 600
+          </span>
+        </div>
 
         {/* DIFERENCIAIS */}
         <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
@@ -498,6 +507,7 @@ export function ContentSection({
                   n[i] = e.target.value;
                   setFeatures(n);
                 }}
+                maxLength={60} // 🚀 TRAVA UX AQUI
                 className="flex-1 bg-slate-50 p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-indigo-500/20"
                 placeholder="Ex: Wi-fi Grátis, Pet Friendly, Atendimento Exclusivo..."
               />
@@ -511,12 +521,18 @@ export function ContentSection({
               </button>
             </div>
           ))}
-          <button
-            onClick={() => setFeatures([...features, ""])}
-            className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
-          >
-            + Adicionar Diferencial
-          </button>
+          {features.length < 20 ? (
+            <button
+              onClick={() => setFeatures([...features, ""])}
+              className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+            >
+              + Adicionar Diferencial
+            </button>
+          ) : (
+            <div className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Limite de 20 diferenciais atingido
+            </div>
+          )}
         </div>
 
         {/* FAQ */}
@@ -536,6 +552,7 @@ export function ContentSection({
                   n[i].q = e.target.value;
                   setFaqs(n);
                 }}
+                maxLength={100} // 🚀 TRAVA UX AQUI
                 placeholder="Pergunta"
                 className="w-full h-10 px-4 bg-white rounded-lg text-xs font-black border mb-2 outline-none"
               />
@@ -546,6 +563,7 @@ export function ContentSection({
                   n[i].a = e.target.value;
                   setFaqs(n);
                 }}
+                maxLength={500} // 🚀 TRAVA UX AQUI
                 placeholder="Resposta"
                 rows={3}
                 className="w-full p-3 bg-white rounded-lg text-xs border outline-none resize-none"
@@ -558,12 +576,18 @@ export function ContentSection({
               </button>
             </div>
           ))}
-          <button
-            onClick={() => setFaqs([...faqs, { q: "", a: "" }])}
-            className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
-          >
-            + Nova Pergunta
-          </button>
+          {faqs.length < 15 ? (
+            <button
+              onClick={() => setFaqs([...faqs, { q: "", a: "" }])}
+              className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+            >
+              + Nova Pergunta
+            </button>
+          ) : (
+            <div className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Limite de 15 perguntas atingido
+            </div>
+          )}
         </div>
       </div>
     </div>

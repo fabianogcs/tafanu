@@ -159,6 +159,7 @@ export function AddressSection({
           name="number"
           ref={numberInputRef}
           value={addressData.number}
+          maxLength={20} // 🚀 TRAVA UX (Sincronizado com o Back-end)
           onChange={(e) =>
             setAddressData((prev) => ({ ...prev, number: e.target.value }))
           }
@@ -170,6 +171,7 @@ export function AddressSection({
         <input
           name="complement"
           value={addressData.complement}
+          maxLength={100} // 🚀 TRAVA UX (Sincronizado com o Back-end)
           onChange={(e) =>
             setAddressData((prev) => ({ ...prev, complement: e.target.value }))
           }

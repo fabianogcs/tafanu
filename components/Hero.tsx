@@ -130,6 +130,7 @@ export default function Hero() {
               }
               className="w-full h-full !bg-transparent border-none outline-none focus:ring-0 text-slate-800 placeholder-slate-400 font-bold text-sm md:text-lg appearance-none shadow-none"
               value={query}
+              maxLength={80} // 🚀 TRAVA UX (Impede injetar um livro na URL)
               onChange={(e) => setQuery(e.target.value)}
               disabled={isSearching || isListening}
             />

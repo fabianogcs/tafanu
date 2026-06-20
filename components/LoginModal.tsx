@@ -210,6 +210,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   name="name"
                   type="text"
                   required
+                  maxLength={100} // 🚀 TRAVA UX
                   autoComplete="name"
                   placeholder="Nome Completo"
                   className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
@@ -231,6 +232,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 name="email"
                 type="email"
                 required
+                maxLength={100} // 🚀 TRAVA UX
                 autoComplete="email"
                 inputMode="email"
                 autoCapitalize="none"
@@ -254,6 +256,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 name="password"
                 type="password"
                 required
+                maxLength={100} // 🚀 TRAVA UX (Protege contra lentidão na tela)
                 autoComplete={isLogin ? "current-password" : "new-password"}
                 placeholder="••••••••"
                 className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"

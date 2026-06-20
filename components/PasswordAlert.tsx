@@ -123,6 +123,7 @@ export default function PasswordAlert() {
               <div className="relative group">
                 <input
                   type={showPassword ? "text" : "password"}
+                  maxLength={100} // 🚀 TRAVA ANTI-CPU EXHAUSTION
                   placeholder="Nova senha (mín. 6)"
                   className="w-full px-4 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 placeholder-slate-400"
                   value={password}
@@ -142,6 +143,7 @@ export default function PasswordAlert() {
               <div className="relative group">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
+                  maxLength={100} // 🚀 TRAVA ANTI-CPU EXHAUSTION
                   placeholder="Confirme a senha"
                   className="w-full px-4 pr-12 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 placeholder-slate-400"
                   value={confirmPassword}

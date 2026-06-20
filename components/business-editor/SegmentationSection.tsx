@@ -74,10 +74,10 @@ export function SegmentationSection({
       {/* --- SEÇÃO 2: NICHOS (SUBCATEGORIAS) --- */}
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8">
         <div className="text-[9px] font-black uppercase text-slate-400 mb-3 flex tracking-widest justify-between">
-          <span>2. Nichos (Máx 5)</span>
+          <span>2. Nichos (Máx 3)</span>
           <span
             className={
-              selectedSubs.length >= 5 ? "text-rose-500" : "text-indigo-400"
+              selectedSubs.length >= 3 ? "text-rose-500" : "text-indigo-400"
             }
           >
             {selectedSubs.length} Selecionados
@@ -106,8 +106,8 @@ export function SegmentationSection({
                     if (prev.includes(sub)) {
                       return prev.filter((s) => s !== sub);
                     }
-                    // 🚀 A TRAVA: Se não tem e já deu 5, ele bloqueia e não faz nada
-                    if (prev.length >= 5) {
+                    // 🚀 A TRAVA: Se não tem e já deu 3, ele bloqueia e não faz nada
+                    if (prev.length >= 3) {
                       return prev;
                     }
                     // Se tem espaço, ele adiciona
@@ -117,7 +117,7 @@ export function SegmentationSection({
                 className={`px-3 py-2 rounded-lg text-[9px] font-bold uppercase transition-all border ${
                   selectedSubs.includes(sub)
                     ? "bg-indigo-500 text-white border-indigo-500"
-                    : selectedSubs.length >= 5
+                    : selectedSubs.length >= 3
                       ? "bg-slate-100 text-slate-300 border-slate-100 cursor-not-allowed opacity-50"
                       : "bg-white text-slate-500 border-slate-200"
                 }`}
@@ -163,6 +163,7 @@ export function SegmentationSection({
               e.key === "Enter" && (e.preventDefault(), addTag())
             }
             disabled={keywords.length >= 10}
+            maxLength={30} // 🚀 TRAVA DO FRONT-END: Máximo de 30 letras por tag
             className="bg-transparent text-xs font-bold outline-none flex-1 min-w-[120px]"
             placeholder={
               keywords.length >= 10

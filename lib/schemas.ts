@@ -16,10 +16,25 @@ const hourSchema = z.object({
 
 export const businessSchema = z.object({
   // --- Identificação Básica ---
-  name: z.string().min(3, "O nome deve ter pelo menos 3 letras"),
-  slug: z.string().min(3, "O endereço (URL) deve ter pelo menos 3 letras"),
-  description: z.string().optional().or(z.literal("")),
-  category: z.string().min(1, "Selecione uma categoria principal"),
+  // 🚀 BLINDAGEM: Nome não pode ser um livro.
+  name: z
+    .string()
+    .min(3, "O nome deve ter pelo menos 3 letras")
+    .max(100, "O nome é muito longo"),
+
+  // 🚀 BLINDAGEM: Slug (URL) não pode ter mais de 60 caracteres.
+  slug: z
+    .string()
+    .min(3, "O endereço (URL) deve ter pelo menos 3 letras")
+    .max(60, "URL muito longa"),
+
+  // 🚀 BLINDAGEM: Descrição cravada em 600 caracteres (Igual ao HTML).
+  description: z
+    .string()
+    .max(600, "A descrição deve ter no máximo 600 caracteres")
+    .optional()
+    .or(z.literal("")),
+  category: z.string().min(1, "Selecione uma categoria principal").max(50),
 
   // --- Estilo e Layout ---
   theme: z.string().default("carbon"),
@@ -29,23 +44,26 @@ export const businessSchema = z.object({
   published: z.preprocess((val) => val === "true" || val === true, z.boolean()),
 
   // --- Campos de Texto Especial dos Layouts ---
-  urban_tag: z.string().optional().nullable(),
-  luxe_quote: z.string().optional().nullable(),
-  showroom_collection: z.string().optional().nullable(),
-  comercial_badge: z.string().optional().nullable(),
+  // 🚀 BLINDAGEM: O Slogan não pode quebrar o layout da vitrine (Máx 40 caracteres, como no front).
+  urban_tag: z.string().max(40).optional().nullable(),
+  luxe_quote: z.string().max(40).optional().nullable(),
+  showroom_collection: z.string().max(40).optional().nullable(),
+  comercial_badge: z.string().max(40).optional().nullable(),
 
   // --- Localização ---
-  address: z.string().optional().or(z.literal("")),
-  number: z.string().optional().or(z.literal("")),
-  complement: z.string().optional().or(z.literal("")),
-  cep: z.string().optional().or(z.literal("")),
-  neighborhood: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  state: z.string().optional().or(z.literal("")),
+  // 🚀 BLINDAGEM: Endereços não podem ser textos infinitos.
+  address: z.string().max(150).optional().or(z.literal("")),
+  number: z.string().max(20).optional().or(z.literal("")),
+  complement: z.string().max(100).optional().or(z.literal("")),
+  cep: z.string().max(20).optional().or(z.literal("")),
+  neighborhood: z.string().max(100).optional().or(z.literal("")),
+  city: z.string().max(100).optional().or(z.literal("")),
+  state: z.string().max(2).optional().or(z.literal("")), // Estado é sempre a Sigla (SP, RJ, etc)
 
   // --- Contato ---
-  whatsapp: z.string().optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
+  // 🚀 BLINDAGEM: O número máximo de um telefone internacional com formatação.
+  whatsapp: z.string().max(20).optional().or(z.literal("")),
+  phone: z.string().max(20).optional().or(z.literal("")),
 
   // Redes Sociais
   instagram: z.string().max(255).optional().nullable(),
@@ -58,12 +76,16 @@ export const businessSchema = z.object({
   mercadoLivre: z.string().max(255).optional().nullable(),
   shein: z.string().max(255).optional().nullable(),
   ifood: z.string().max(255).optional().nullable(),
-  catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")), // URLs do UploadThing podem ser longas, 1000 é seguro.
-  imageUrl: z.string().optional().or(z.literal("")),
+  catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
+
+  // URLs do UploadThing
+  imageUrl: z.string().max(1000).optional().or(z.literal("")),
+  coverImage: z.string().max(1000).optional().or(z.literal("")), // Adicionado para segurança!
   gallery: z
-    .array(z.string().url())
+    .array(z.string().url().max(1000))
     .max(12, "O limite é de 12 fotos na galeria")
     .default([]),
+
   mediaFeed: z
     .preprocess(
       (val) => {
@@ -76,36 +98,61 @@ export const businessSchema = z.object({
         }
         return val || [];
       },
-      z.array(
-        // 🚀 BLINDAGEM: Trava o formato exato que o banco pode receber
-        z.object({
-          type: z.string(),
-          url: z.string().optional().or(z.literal("")),
-        }),
-      ),
+      z
+        .array(
+          z.object({
+            type: z.string().max(20),
+            url: z.string().max(1000).optional().or(z.literal("")),
+          }),
+        )
+        .max(30), // 🚀 BLINDAGEM: Trava o número máximo de itens no feed no Back-end!
     )
     .default([]),
 
   // --- Listas e Arrays ---
-  videos: z.array(z.string()).default([]), // 🚀 NOVO CAMPO: Lista de links de vídeos
-  subcategory: z.array(z.string()).default([]),
+  videos: z.array(z.string().max(1000)).max(5).default([]),
+  subcategory: z
+    .array(z.string().max(50))
+    .max(3, "O limite é de 3 nichos")
+    .default([]),
+
+  // 🚀 BLINDAGEM CRÍTICA: Palavras-chave agora têm limite de quantidade (10) E limite de caracteres por palavra (30).
   keywords: z
-    .array(z.string())
+    .array(z.string().max(30, "Palavra-chave muito longa"))
     .max(10, "Limite de 10 palavras-chave")
     .default([]),
-  features: z.array(z.string()).default([]),
+
+  // 🚀 BLINDAGEM: Diferenciais limitados em quantidade (20) e tamanho do texto (60 letras).
+  features: z.array(z.string().max(60)).max(20).default([]),
 
   faqs: z
-    .preprocess((val) => {
-      if (typeof val === "string") {
-        try {
-          return JSON.parse(val);
-        } catch {
-          return [];
+    .preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          try {
+            return JSON.parse(val);
+          } catch {
+            return [];
+          }
         }
-      }
-      return val || []; // Se já for lista ou for nada, retorna lista
-    }, z.array(faqSchema))
+        return val || [];
+      },
+      z
+        .array(
+          // 🚀 BLINDAGEM: FAQs com limite de tamanho para a pergunta e resposta!
+          z.object({
+            q: z
+              .string()
+              .min(1)
+              .max(100, "A pergunta deve ter no máximo 100 caracteres"),
+            a: z
+              .string()
+              .min(1)
+              .max(500, "A resposta deve ter no máximo 500 caracteres"),
+          }),
+        )
+        .max(15),
+    ) // Máximo de 15 FAQs por loja
     .default([]),
 
   hours: z
@@ -117,8 +164,8 @@ export const businessSchema = z.object({
           return [];
         }
       }
-      return val || []; // Se já for lista ou for nada, retorna lista
-    }, z.array(hourSchema))
+      return val || [];
+    }, z.array(hourSchema).max(7)) // 7 Dias na semana no máximo!
     .default([]),
 });
 // ==========================================================
@@ -126,20 +173,30 @@ export const businessSchema = z.object({
 // ==========================================================
 export const userProfileSchema = z
   .object({
-    name: z.string().min(3, "O nome deve ter pelo menos 3 letras"),
-    email: z.string().email("E-mail inválido"),
-    phone: z.string().min(10, "Telefone inválido (digite com o DDD)"),
-    document: z.string().min(11, "CPF ou CNPJ inválido"),
+    name: z
+      .string()
+      .min(3, "O nome deve ter pelo menos 3 letras")
+      .max(100, "O nome é muito longo"),
+    email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
+    phone: z
+      .string()
+      .min(10, "Telefone inválido (digite com o DDD)")
+      .max(20, "Telefone muito longo"),
+    document: z
+      .string()
+      .min(11, "CPF ou CNPJ inválido")
+      .max(20, "Documento muito longo"),
 
     // 🔑 Campo da Nova Senha
     newPassword: z
       .string()
       .min(6, "A nova senha deve ter no mínimo 6 dígitos")
+      .max(100, "A senha deve ter no máximo 100 caracteres") // 🚀 PROTEÇÃO ANTI-BCRYPT EXHAUSTION
       .optional()
       .or(z.literal("")),
 
     // 🔄 Campo de Confirmação
-    confirmPassword: z.string().optional().or(z.literal("")),
+    confirmPassword: z.string().max(100).optional().or(z.literal("")),
   })
   // 🛡️ O PULO DO GATO: Compara os dois campos
   .refine((data) => data.newPassword === data.confirmPassword, {

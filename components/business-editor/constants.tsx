@@ -151,7 +151,21 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
   ].sort(),
 };
 
-export const layoutInfo: any = {
+export type LayoutKey =
+  | "urban"
+  | "editorial"
+  | "businessList"
+  | "showroom"
+  | "influencer";
+
+export interface LayoutConfig {
+  label: string;
+  icon: React.ReactNode;
+  field: string;
+  placeholder: string;
+}
+
+export const layoutInfo: Record<string, LayoutConfig> = {
   urban: {
     label: "Urban",
     icon: React.createElement(Zap, { size: 14 }),

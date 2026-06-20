@@ -119,6 +119,7 @@ export default function HoursForm({
                   type="text"
                   inputMode="numeric"
                   value={day.openTime}
+                  maxLength={5} // 🚀 PREVINE ReDoS NA FORMATAÇÃO (Trava a string antes do Regex)
                   onChange={(e) =>
                     handleChange(index, "openTime", e.target.value)
                   }
@@ -130,6 +131,7 @@ export default function HoursForm({
                   type="text"
                   inputMode="numeric"
                   value={day.closeTime}
+                  maxLength={5} // 🚀 PREVINE ReDoS NA FORMATAÇÃO
                   onChange={(e) =>
                     handleChange(index, "closeTime", e.target.value)
                   }

@@ -134,6 +134,7 @@ function NovaSenhaForm() {
               name="password"
               type={showPassword ? "text" : "password"}
               required
+              maxLength={100} // 🚀 ESCUDO DE ENTRADA
               placeholder="••••••••"
               className="w-full pl-11 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold text-slate-700"
             />
@@ -164,6 +165,7 @@ function NovaSenhaForm() {
               name="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               required
+              maxLength={100} // 🚀 ESCUDO DE ENTRADA
               placeholder="••••••••"
               className="w-full pl-11 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-tafanu-blue outline-none transition-all font-bold text-slate-700"
             />

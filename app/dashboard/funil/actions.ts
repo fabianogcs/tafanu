@@ -59,6 +59,20 @@ export async function criarLeadDireto(formData: FormData) {
   const affiliateCode = formData.get("affiliateCode") as string;
   const password = formData.get("password") as string;
 
+  // 🚀 ESCUDO ANTI-DDoS E EXAUSTÃO DE BCRYPT: Bloqueia injeção de dados imensos na API
+  if (
+    email?.length > 100 ||
+    name?.length > 100 ||
+    phone?.length > 20 ||
+    affiliateCode?.length > 50 ||
+    password?.length > 100
+  ) {
+    return {
+      success: false,
+      error: "Dados muito longos. Verifique os campos.",
+    };
+  }
+
   try {
     // 2. CHECAGEM AMIGÁVEL DE E-MAIL:
     // Em vez do banco de dados "crashar", nós verificamos antes e damos um aviso limpo.

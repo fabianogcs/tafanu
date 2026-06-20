@@ -103,13 +103,21 @@ export default function ReportModal({
                 <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1">
                   Mais detalhes (Opcional)
                 </label>
-                {/* FORÇANDO TEXTO PRETO NO TEXTAREA */}
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 outline-none h-28 resize-none focus:ring-2 ring-red-100 transition-all"
-                  placeholder="Explique o que aconteceu..."
-                />
+                {/* FORÇANDO TEXTO PRETO NO TEXTAREA COM TRAVA E CONTADOR */}
+                <div className="relative">
+                  <textarea
+                    value={details}
+                    onChange={(e) => setDetails(e.target.value)}
+                    maxLength={500} // 🚀 TRAVA NATIVA DE UX
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 outline-none h-28 pb-8 resize-none focus:ring-2 ring-red-100 transition-all"
+                    placeholder="Explique o que aconteceu..."
+                  />
+                  <span
+                    className={`absolute bottom-3 right-4 text-[10px] font-black ${details.length >= 500 ? "text-red-500" : "text-slate-400"}`}
+                  >
+                    {details.length} / 500
+                  </span>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2 pt-2">

@@ -150,6 +150,7 @@ export function ConnectionsSection({
                 )}
                 <input
                   value={(socials as any)[social.id]}
+                  maxLength={255} // 🚀 TRAVA UX (Sincronizado com o Back-end)
                   onChange={(e) => {
                     const rawVal = e.target.value;
                     // Se for Rede Social, passa na maquininha.
@@ -263,6 +264,7 @@ export function ConnectionsSection({
                 </span>
                 <input
                   value={(socials as any)[store.key]}
+                  maxLength={255} // 🚀 TRAVA UX (Sincronizado com o Back-end)
                   onChange={(e) =>
                     updateSocial(store.key as any, e.target.value)
                   }

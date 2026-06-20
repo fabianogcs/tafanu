@@ -264,6 +264,7 @@ export default function AdminModals({
                 <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-full md:w-auto">
                   <input
                     type="text"
+                    maxLength={255} // 🚀 TRAVA UX (Protege contra URL ou texto gigante)
                     placeholder={
                       selectedUser.affiliateId
                         ? "Trocar parceiro..."
@@ -302,6 +303,7 @@ export default function AdminModals({
                 <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-emerald-200 w-full md:w-auto shadow-sm">
                   <input
                     type="text"
+                    maxLength={255} // 🚀 TRAVA UX
                     placeholder="Link ou slug da loja..."
                     value={transferSlugInput}
                     onChange={(e) => setTransferSlugInput(e.target.value)}
@@ -707,6 +709,7 @@ export default function AdminModals({
             </div>
             <input
               type="text"
+              maxLength={50} // 🚀 TRAVA UX (Sincronizado perfeitamente com a trava de Back-end)
               placeholder="EX: JOAO-SP"
               className="w-full px-4 py-4 bg-slate-50 rounded-xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center tracking-widest mb-4"
               value={referralCodeInput}

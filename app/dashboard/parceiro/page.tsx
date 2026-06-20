@@ -292,6 +292,7 @@ export default function AffiliateDashboard() {
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            maxLength={100} // 🚀 TRAVA DE UX E PERFORMANCE
             placeholder="Buscar cliente na lista..."
             className="w-full pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-full text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-[#F28705] transition-all text-[#023059]"
           />

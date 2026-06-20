@@ -63,6 +63,7 @@ export default function CriarLeadForm() {
                 type="text"
                 placeholder="nome.da.loja"
                 required
+                maxLength={60}
                 value={emailPrefix}
                 // Se colar algo com @, ele corta e pega só o prefixo
                 onChange={(e) =>
@@ -91,6 +92,7 @@ export default function CriarLeadForm() {
               name="name"
               placeholder="Ex: Barbearia do João"
               required
+              maxLength={100}
               className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
@@ -103,6 +105,7 @@ export default function CriarLeadForm() {
               name="phone"
               placeholder="(11) 99999-9999"
               required
+              maxLength={20}
               className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
@@ -114,6 +117,7 @@ export default function CriarLeadForm() {
             <input
               name="affiliateCode"
               placeholder="Ex: JOAO123"
+              maxLength={50}
               className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>
@@ -126,6 +130,7 @@ export default function CriarLeadForm() {
               name="password"
               defaultValue={senhaProvisoria}
               required
+              maxLength={50}
               className="w-full p-3 rounded-xl border border-gray-200 bg-gray-100 outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-bold text-[#0F172A]"
             />
           </div>

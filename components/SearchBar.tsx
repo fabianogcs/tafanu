@@ -107,6 +107,7 @@ export default function SearchBar({
             placeholder={isListening ? "Ouvindo..." : "Buscar outro negócio..."}
             className="w-full bg-transparent outline-none text-slate-800 placeholder-slate-400 font-bold text-sm md:text-lg truncate disabled:opacity-50"
             value={query}
+            maxLength={80} // 🚀 BLINDAGEM: UX e Segurança (Protege contra URL muito longa)
             onChange={(e) => setQuery(e.target.value)}
             disabled={isSearching || isListening}
           />

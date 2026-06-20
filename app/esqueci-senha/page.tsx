@@ -83,6 +83,7 @@ export default function EsqueciSenhaPage() {
                     name="email"
                     type="email"
                     required
+                    maxLength={100} // 🚀 PROTEGE CONTRA REQUISIÇÕES MONSTRUOSAS
                     placeholder="seu@email.com"
                     className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none transition-all font-bold text-slate-700"
                   />
