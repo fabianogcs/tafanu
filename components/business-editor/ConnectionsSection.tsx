@@ -53,46 +53,45 @@ export function ConnectionsSection({
   return (
     <div className="space-y-8">
       {/* CONTATOS PRINCIPAIS */}
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* WhatsApp */}
-        <div className="flex-1 bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100/50 transition-all focus-within:ring-4 ring-emerald-50 focus-within:border-emerald-200">
-          <label className="text-[9px] font-black uppercase text-emerald-600 mb-2 block tracking-widest">
-            WhatsApp Business
-          </label>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200">
-              <MessageCircle size={20} fill="currentColor" />
-            </div>
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+        {/* WhatsApp (Layout alinhado com as Redes Sociais) */}
+        <label className="flex-1 flex items-center gap-3 p-2 bg-emerald-50/30 rounded-2xl border border-emerald-100 transition-all focus-within:bg-emerald-50 focus-within:ring-4 ring-emerald-100/50 focus-within:border-transparent group cursor-text">
+          <div className="w-12 h-12 shrink-0 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-sm transition-transform group-focus-within:scale-105">
+            <MessageCircle size={22} fill="currentColor" />
+          </div>
+          <div className="flex-1 pr-4">
+            <span className="text-[8px] font-black uppercase text-emerald-600 block mb-0.5">
+              WhatsApp Business
+            </span>
             <input
               value={whatsapp}
               onChange={(e) => setWhatsapp(formatPhoneNumber(e.target.value))}
               placeholder="(00) 00000-0000"
               maxLength={15}
-              className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-emerald-200"
+              className="bg-transparent w-full text-[13px] md:text-sm font-black text-slate-700 outline-none placeholder:font-normal placeholder:text-emerald-300"
             />
           </div>
-        </div>
+        </label>
 
-        {/* Telefone */}
-        <div className="flex-1 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/50 transition-all focus-within:ring-4 ring-indigo-50 focus-within:border-indigo-200">
-          <label className="text-[9px] font-black uppercase text-indigo-600 mb-2 block tracking-widest">
-            Ligações
-          </label>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
-              <PhoneCall size={18} />
-            </div>
+        {/* Telefone (Layout alinhado com as Redes Sociais) */}
+        <label className="flex-1 flex items-center gap-3 p-2 bg-indigo-50/30 rounded-2xl border border-indigo-100 transition-all focus-within:bg-indigo-50 focus-within:ring-4 ring-indigo-100/50 focus-within:border-transparent group cursor-text">
+          <div className="w-12 h-12 shrink-0 bg-indigo-500 text-white rounded-xl flex items-center justify-center shadow-sm transition-transform group-focus-within:scale-105">
+            <PhoneCall size={20} />
+          </div>
+          <div className="flex-1 pr-4">
+            <span className="text-[8px] font-black uppercase text-indigo-600 block mb-0.5">
+              Ligações
+            </span>
             <input
               value={phone}
               onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
               placeholder="(00) 0000-0000"
               maxLength={15}
-              className="bg-transparent w-full text-xl md:text-2xl font-mono font-bold text-slate-800 outline-none placeholder:text-indigo-200"
+              className="bg-transparent w-full text-[13px] md:text-sm font-black text-slate-700 outline-none placeholder:font-normal placeholder:text-indigo-300"
             />
           </div>
-        </div>
+        </label>
       </div>
-
       {/* REDES SOCIAIS (Com Máscara Inteligente) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[

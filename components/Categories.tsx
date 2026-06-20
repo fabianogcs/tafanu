@@ -201,7 +201,7 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
             ? () => setTimeout(() => setIsDragging(false), 50)
             : undefined
         }
-        className={`flex gap-4 md:gap-6 overflow-x-auto pb-6 md:pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-2 md:px-4 touch-pan-x overscroll-x-contain will-change-scroll transform-gpu ${
+        className={`flex gap-4 md:gap-6 overflow-x-auto pb-6 md:pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-2 md:px-4 overscroll-x-contain will-change-scroll transform-gpu ${
           showArrows ? "cursor-grab active:cursor-grabbing" : "cursor-default"
         } ${isDragging ? "[&_*]:pointer-events-none" : ""}`}
       >

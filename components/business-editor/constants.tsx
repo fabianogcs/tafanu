@@ -156,25 +156,25 @@ export const layoutInfo: any = {
     label: "Urban",
     icon: React.createElement(Zap, { size: 14 }),
     field: "urban_tag",
-    placeholder: "@seu.estilo",
+    placeholder: "Slogan Comercial...",
   },
   editorial: {
     label: "Luxe",
     icon: React.createElement(Sparkles, { size: 14 }),
     field: "luxe_quote",
-    placeholder: "Frase elegante...",
+    placeholder: "Slogan Comercial...",
   },
   businessList: {
     label: "Comercial",
     icon: React.createElement(Briefcase, { size: 14 }),
     field: "comercial_badge",
-    placeholder: "Slogan Comercial",
+    placeholder: "Slogan Comercial...",
   },
   showroom: {
     label: "Showroom",
     icon: React.createElement(Camera, { size: 14 }),
     field: "showroom_collection",
-    placeholder: "Coleção Atual",
+    placeholder: "Slogan Comercial...",
   },
 };
 

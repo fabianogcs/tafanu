@@ -6,6 +6,7 @@ import { BusinessHour } from "./business-editor/types";
 import MobilePreview from "@/components/MobilePreview";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { uploadFiles } from "@/lib/uploadthing";
 import { AddressSection } from "./business-editor/AddressSection";
@@ -22,6 +23,8 @@ import {
   Eye,
   Smartphone,
   CheckCircle2,
+  X,
+  Check,
 } from "lucide-react";
 
 import {
@@ -85,6 +88,19 @@ export default function BusinessEditor({
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [showOfflineWarning, setShowOfflineWarning] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+
+  // 🚀 TRAVA DO FUNDO: Impede o scroll da página de trás no mobile
+  useEffect(() => {
+    if (showMobilePreview) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [showMobilePreview]);
 
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1121,27 +1137,121 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        <div className="flex lg:hidden fixed top-64 left-2 origin-top-left scale-[0.35] active:scale-[0.85] transition-all duration-500 z-50 bg-white/80 backdrop-blur-md p-3 rounded-[3.5rem] shadow-2xl shadow-black/10 border border-slate-200 cursor-pointer group">
-          <div className="absolute top-10 -right-10 whitespace-nowrap bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-full opacity-0 animate-bounce group-hover:opacity-100 transition-opacity pointer-events-none">
-            VER PREVIEW
-          </div>
-          <div className="pointer-events-none">
-            <MobilePreview
-              themeKey={selectedTheme}
-              name={name}
-              description={description}
-              profileImage={profileImage}
-              coverImage={coverImage}
-              gallery={mockGallery}
-              layoutLabel={currentLayoutData.label}
-              comercial_badge={layoutText}
-              luxe_quote={layoutText}
-              urban_tag={layoutText}
-              showroom_collection={layoutText}
-            />
-          </div>
-        </div>
+        {/* 🚀 FAB MOBILE - Botão Flutuante (Fica acima da barra de salvar) */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            setShowMobilePreview(true);
+          }}
+          className="flex lg:hidden fixed bottom-28 right-4 z-40 bg-indigo-600 text-white w-14 h-14 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:bg-indigo-700 active:scale-90 transition-all justify-center items-center border-2 border-white/20"
+        >
+          <Eye size={24} />
+        </button>
       </main>
+
+      {/* 🚀 MODAL DO PREVIEW MOBILE (PORTAL PARA SOBREPOR NAVBAR + SCROLL LOCK + TEMAS LATERAIS) */}
+      {isMounted && typeof document !== "undefined"
+        ? createPortal(
+            <AnimatePresence>
+              {showMobilePreview && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-[999999] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center h-[100dvh] w-screen lg:hidden"
+                  onClick={() => setShowMobilePreview(false)}
+                >
+                  {/* Botão Fechar no canto superior direito */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMobilePreview(false);
+                    }}
+                    className="absolute top-6 right-6 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md text-white transition-all active:scale-90 border border-white/10 z-[10000]"
+                  >
+                    <X size={24} />
+                  </button>
+
+                  {/* Título centralizado no topo */}
+                  <div className="absolute top-8 left-0 right-0 flex justify-center pointer-events-none">
+                    <h2 className="text-white font-black uppercase tracking-widest text-[10px] drop-shadow-md flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/10">
+                      <Smartphone size={14} /> Visualização Real
+                    </h2>
+                  </div>
+
+                  {/* CONTAINER PRINCIPAL: Lado a Lado (Celular + Paleta de Cores) */}
+                  <div
+                    className="flex flex-row items-center justify-center w-full mt-8"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* 1. O PREVIEW (Escalado e puxado levemente para a esquerda para caber) */}
+                    <div className="scale-[0.70] sm:scale-[0.75] origin-center pointer-events-none flex-shrink-0 -mr-6 sm:-mr-2 ml-[-1rem]">
+                      <MobilePreview
+                        themeKey={selectedTheme}
+                        name={name}
+                        description={description}
+                        profileImage={profileImage}
+                        coverImage={coverImage}
+                        gallery={mockGallery}
+                        layoutLabel={currentLayoutData.label}
+                        comercial_badge={layoutText}
+                        luxe_quote={layoutText}
+                        urban_tag={layoutText}
+                        showroom_collection={layoutText}
+                      />
+                    </div>
+
+                    {/* 2. O NOVO SELETOR DE TEMAS VERTICAL IDÊNTICO AO IDENTITY SECTION */}
+                    <div className="flex flex-col items-center h-[420px] bg-white rounded-[2rem] py-5 px-2 border border-slate-200 shadow-2xl relative z-50">
+                      <p className="text-slate-400 text-[8px] font-black uppercase tracking-widest text-center mb-4">
+                        Cores
+                      </p>
+
+                      {/* Scroll interno para rolar as bolinhas na vertical */}
+                      <div className="flex flex-col gap-4 overflow-y-auto w-full flex-1 snap-y no-scrollbar items-center justify-start px-1 pb-4">
+                        {filteredThemeKeys.map((key) => {
+                          const isActive = selectedTheme === key;
+                          const themeData = businessThemes[key];
+
+                          return (
+                            <button
+                              key={key}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTheme(key);
+                              }}
+                              // 🚀 MÁGICA AQUI: Mesmas classes do IdentitySection para seleção
+                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full shrink-0 transition-all relative flex items-center justify-center ${
+                                isActive
+                                  ? "ring-2 ring-offset-2 ring-slate-900 scale-90"
+                                  : "hover:scale-110 shadow-sm"
+                              }`}
+                              // 🚀 MÁGICA AQUI: Puxando o previewColor oficial do seu tema
+                              style={{
+                                background: themeData?.previewColor || "#ccc",
+                              }}
+                            >
+                              {/* Mantemos o checkmark para dar destaque de que está selecionado na lateral */}
+                              {isActive && (
+                                <Check
+                                  size={18}
+                                  strokeWidth={3}
+                                  className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                                />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
