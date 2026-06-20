@@ -50,7 +50,7 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
   }
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 md:mt-40 lg:mt-24 pt-10 pb-4 md:pt-16 md:pb-8 animate-in fade-in duration-700 delay-400">
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-24 pt-10 pb-4 md:pt-16 md:pb-8 lg:pt-32 animate-in fade-in duration-700 delay-400">
       {" "}
       {/* CABEÇALHO DA SESSÃO */}
       <div className="flex items-center gap-3 md:gap-4 mb-8 md:mb-10">
