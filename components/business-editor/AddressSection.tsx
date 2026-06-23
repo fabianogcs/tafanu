@@ -74,10 +74,17 @@ export function AddressSection({
 
       setAddressData((prev) => ({
         ...prev,
-        address: data.logradouro || "",
-        neighborhood: data.bairro || "",
-        city: data.localidade || "",
-        state: data.uf || "",
+        // 🚀 OTIMIZAÇÃO: Removemos caracteres especiais que o Google Maps odeia (como símbolos de pontuação repetidos)
+        address: (data.logradouro || "")
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .slice(0, 150),
+        neighborhood: (data.bairro || "")
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .slice(0, 100),
+        city: (data.localidade || "")
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .slice(0, 100),
+        state: (data.uf || "").toUpperCase().slice(0, 2),
       }));
 
       // 🚀 AQUI: Só foca se a trava estiver liberada

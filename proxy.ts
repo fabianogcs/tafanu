@@ -67,11 +67,15 @@ export default auth(async (req) => {
       // 🚀 A MÁGICA DE TRIPLA CAMADA BLINDADA: Só pune severamente tentativas de envio (POST)
       const isPostRequest = req.method === "POST";
 
+      // 🚀 A VACINA CONTRA O "GOLPE DO CLONE" (Race Condition)
+      const isCreationRoute = pathname.startsWith("/dashboard/novo");
+
       const activeRatelimit = isUploadRoute
         ? uploadRatelimit
-        : (isSensitivePage || isApiAuthRoute) && isPostRequest
-          ? authRatelimit // ⬅️ O limite de 5 por minuto só esmaga envios de formulários/senhas
-          : generalRatelimit; // Carregar páginas (GET) ou checar sessão continua livre com 100 por minuto
+        : (isSensitivePage || isApiAuthRoute || isCreationRoute) &&
+            isPostRequest
+          ? authRatelimit // ⬅️ 5 por min: Esmaga Força Bruta, Spam de Cadastro e Cliques Duplos simultâneos!
+          : generalRatelimit; // Carregar páginas (GET) continua livre e rápido
 
       // 🛡️ TRAVA DO TYPESCRIPT: Se por algum motivo de rede o segurança estiver vazio, deixa o usuário passar para o site não cair.
       if (!activeRatelimit) {

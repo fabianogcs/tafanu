@@ -11,6 +11,7 @@ export async function generateCommission(
   description: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
   mpPaymentId: string,
+  businessId: string, // 🚀 NOVO PARÂMETRO EXIGIDO PARA RASTREAR A LOJA
 ) {
   try {
     // 1. Verifica se quem comprou tem um afiliado vinculado
@@ -20,6 +21,14 @@ export async function generateCommission(
     });
 
     if (!customer?.affiliateId) return { success: false };
+
+    // 🛡️ TRAVA ANTI-FRAUDE: Se o afiliado tentar comprar com o próprio link, bloqueia!
+    if (customer.affiliateId === userId) {
+      console.warn(
+        `🚨 [Fraude] Bloqueada tentativa de auto-compra do usuário/afiliado: ${userId}`,
+      );
+      return { success: false, error: "Auto-compra não permitida." };
+    }
 
     // 🚀 LÓGICA DE CAIXA
     const comissoes = {
@@ -43,11 +52,12 @@ export async function generateCommission(
 
     if (jaExiste) return { success: true, message: "Comissão já registrada." };
 
-    // Salva a comissão como PENDENTE no banco
+    // Salva a comissão como PENDENTE no banco, AGORA RASTREANDO A LOJA!
     await db.commission.create({
       data: {
         affiliateId: customer.affiliateId,
         userId: userId,
+        businessId: businessId, // 🚀 SALVA NO BANCO O ID DA LOJA
         amount: amount,
         orderAmount: orderAmount,
         status: CommissionStatus.PENDING,

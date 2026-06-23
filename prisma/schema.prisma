@@ -166,6 +166,7 @@ model Business {
   reports             Report[]
   comments            Comment[]
   analytics           AnalyticsEvent[]
+  commissions         Commission[]
 
   // 🚀 ÍNDICES DE ALTA PERFORMANCE
   @@index([category])
@@ -321,6 +322,8 @@ model Commission {
   id            String           @id @default(cuid())
   affiliateId   String
   userId        String           // Cliente que pagou
+  businessId      String?          // 🚀 NOVO: Rastreio exato da loja que gerou a venda
+  business        Business?        @relation(fields: [businessId], references: [id], onDelete: SetNull)
   amount        Float            // Valor da comissão (ex: 7.98)
   orderAmount   Float            // Valor total da venda (ex: 39.90)
   status        CommissionStatus @default(PENDING)
@@ -339,6 +342,7 @@ model Commission {
   @@index([status, releaseDate]) // 🚀 VACINA DE ESCALABILIDADE: Deixa o Cron Job 100x mais rápido na escala
   @@index([withdrawalId]) 
   @@index([userId]) // 🚀 ADICIONADO: Acelera as buscas do Webhook em 100x!
+  @@index([businessId])            // 🚀 Índice para buscas super rápidas!
 }
 
 model Withdrawal {

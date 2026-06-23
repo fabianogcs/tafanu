@@ -377,17 +377,85 @@ export default function AffiliateDashboard() {
           />
           <div className="w-px h-8 bg-gray-200 mx-1 shrink-0"></div>
           <TabButton
+            active={activeTab === "extrato"}
+            onClick={() => setActiveTab("extrato")}
+            label="Extrato"
+            count={data.commissions?.length || 0}
+            color="bg-emerald-500"
+            icon={<Banknote size={12} />}
+          />
+          <TabButton
             active={activeTab === "saques"}
             onClick={() => setActiveTab("saques")}
-            label="Histórico de Saques"
+            label="Meus Saques"
             count={data.withdrawals?.length || 0}
-            color="bg-emerald-500"
+            color="bg-emerald-600"
             icon={<Wallet size={12} />}
           />
         </div>
 
-        {/* 3. LISTAGEM DE CLIENTES E SAQUES */}
-        {activeTab === "saques" ? (
+        {/* 3. LISTAGEM DE CLIENTES E SAQUES E EXTRATO */}
+        {activeTab === "extrato" ? (
+          <div className="bg-white rounded-[2rem] border border-gray-100 shadow-md p-6 md:p-8">
+            <h2 className="text-xl font-black text-[#023059] uppercase italic tracking-tighter mb-6 flex items-center gap-2">
+              <Banknote className="text-emerald-500" /> Extrato de Comissões
+            </h2>
+
+            {!data.commissions || data.commissions.length === 0 ? (
+              <div className="text-center py-16 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                <Banknote size={40} className="mx-auto text-gray-300 mb-3" />
+                <p className="font-black uppercase text-gray-400 text-[10px] tracking-widest">
+                  Você ainda não possui comissões geradas.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {data.commissions.map((c: any) => (
+                  <div
+                    key={c.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 md:p-5 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${c.status === "PAID" ? "bg-emerald-100 text-emerald-600" : c.status === "AVAILABLE" ? "bg-blue-100 text-blue-600" : c.status === "CANCELLED" ? "bg-rose-100 text-rose-600" : "bg-amber-100 text-amber-600"}`}
+                      >
+                        <Wallet size={20} />
+                      </div>
+                      <div>
+                        <p className="font-black text-sm text-[#023059] uppercase">
+                          {c.business?.name || "Loja Excluída"}
+                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-widest">
+                          Em:{" "}
+                          {new Date(c.createdAt).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p
+                        className={`text-xl font-black italic tracking-tighter ${c.status === "CANCELLED" ? "text-rose-400 line-through" : "text-emerald-500"}`}
+                      >
+                        + {formatMoney(c.amount)}
+                      </p>
+                      <p
+                        className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${c.status === "PAID" ? "text-emerald-500" : c.status === "AVAILABLE" ? "text-blue-500" : c.status === "CANCELLED" ? "text-rose-500" : "text-amber-500"}`}
+                      >
+                        Status:{" "}
+                        {c.status === "PAID"
+                          ? "Já Recebido"
+                          : c.status === "AVAILABLE"
+                            ? "Disponível"
+                            : c.status === "CANCELLED"
+                              ? "Estornado"
+                              : "Pendente (Garantia)"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "saques" ? (
           <div className="bg-white rounded-[2rem] border border-gray-100 shadow-md p-6 md:p-8">
             <h2 className="text-xl font-black text-[#023059] uppercase italic tracking-tighter mb-6 flex items-center gap-2">
               <Wallet className="text-[#F28705]" /> Meus Saques

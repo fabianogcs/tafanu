@@ -72,13 +72,15 @@ type AdminData = {
   users: any[];
   reports: any[];
   flaggedComments: any[];
-  historicoSaques: any[]; // 🚀 ADICIONADO
+  historicoSaques: any[];
   businessOwnerMap: Record<string, string>;
   metricas: {
-    mrrBruto: number; // 🚀 NOME ATUALIZADO
-    mrrLiquido: number; // 🚀 NOME ATUALIZADO
+    mrrBruto: number;
+    mrrLiquido: number;
     totalComissoesDevidas: number;
     totalPagantes: number;
+    globalVencendo: number; // 🚀 AVISAMOS A TELA QUE ISSO EXISTE
+    globalVencidos: number; // 🚀 AVISAMOS A TELA QUE ISSO EXISTE
   };
 };
 
@@ -733,12 +735,16 @@ export default function AdminDashboard({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatBox
                   label="Vencendo (7d)"
-                  value={segments.expiring.length}
+                  value={
+                    data.metricas.globalVencendo ?? segments.expiring.length
+                  } // 🚀 DATA DO BANCO
                   color="amber"
                 />
                 <StatBox
                   label="Vencidos"
-                  value={segments.expired.length}
+                  value={
+                    data.metricas.globalVencidos ?? segments.expired.length
+                  } // 🚀 DATA DO BANCO
                   color="rose"
                 />
                 <StatBox
@@ -1106,59 +1112,90 @@ export default function AdminDashboard({
                   </p>
                 </div>
               ) : (
-                payouts.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex flex-col md:flex-row items-center justify-between gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center">
-                        <Wallet size={22} />
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-800 uppercase">
-                          {p.name}
-                        </p>
-                        <p className="text-[11px] text-slate-400">{p.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6 bg-white px-6 py-3 rounded-xl border">
-                      <div className="text-center max-w-[120px]">
-                        <p className="text-[9px] font-black text-slate-300 uppercase">
-                          Contato
-                        </p>
-                        <p
-                          className="font-bold text-xs text-slate-600 truncate"
-                          title={p.phone || p.email}
-                        >
-                          {p.phone || p.email}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[9px] font-black text-slate-300 uppercase">
-                          A Pagar
-                        </p>
-                        <p className="font-black text-xl text-emerald-600">
-                          {formatMoney(p.valorDevido)}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        handleConfirmPayment(p.id, p.valorDevido, p.name)
-                      }
-                      disabled={isPending}
-                      className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg"
+                payouts.map(
+                  (
+                    p: any, // 🚀 A MÁGICA: Colocamos ": any" aqui
+                  ) => (
+                    <div
+                      key={p.id}
+                      className="flex flex-col gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all"
                     >
-                      {isPending ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={14} />
-                      )}{" "}
-                      Pagar PIX
-                    </button>
-                  </div>
-                ))
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                          <div className="w-12 h-12 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center shrink-0">
+                            <Wallet size={22} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-black text-slate-800 uppercase">
+                              {p.name}
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                              {p.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6 bg-white px-6 py-3 rounded-xl border w-full md:w-auto justify-between md:justify-start">
+                          <div className="text-center max-w-[120px]">
+                            <p className="text-[9px] font-black text-slate-300 uppercase">
+                              Contato
+                            </p>
+                            <p
+                              className="font-bold text-xs text-slate-600 truncate"
+                              title={p.phone || p.email}
+                            >
+                              {p.phone || p.email}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[9px] font-black text-slate-300 uppercase">
+                              A Pagar
+                            </p>
+                            <p className="font-black text-xl text-emerald-600">
+                              {formatMoney(p.valorDevido)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() =>
+                            handleConfirmPayment(p.id, p.valorDevido, p.name)
+                          }
+                          disabled={isPending}
+                          className="px-6 py-3 w-full md:w-auto bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shrink-0"
+                        >
+                          {isPending ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <CheckCircle2 size={14} />
+                          )}{" "}
+                          Pagar PIX
+                        </button>
+                      </div>
+
+                      {/* 🚀 NOVA SEÇÃO: DETALHES DE ORIGEM (De onde veio o dinheiro) */}
+                      <div className="w-full mt-2 pt-4 border-t border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                          Origem das Comissões ({p.comissoesOrigem?.length || 0}{" "}
+                          vendas):
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {p.comissoesOrigem?.map((c: any) => (
+                            <div
+                              key={c.id}
+                              className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2"
+                            >
+                              <span className="text-[11px] font-black text-emerald-600 shrink-0">
+                                + R$ {c.amount.toFixed(2)}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-500 truncate max-w-[150px]">
+                                de: {c.business?.name || "Loja Excluída"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )
               )}
             </div>
           )}

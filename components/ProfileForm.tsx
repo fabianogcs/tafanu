@@ -231,6 +231,7 @@ export default function ProfileForm({
                   <input
                     name="phone"
                     type="text"
+                    maxLength={15}
                     style={
                       {
                         WebkitTextSecurity: hidePhone ? "disc" : "none",
@@ -276,6 +277,7 @@ export default function ProfileForm({
                   <input
                     name="document"
                     type="text"
+                    maxLength={18}
                     style={
                       {
                         WebkitTextSecurity: hideDoc ? "disc" : "none",
@@ -352,6 +354,7 @@ export default function ProfileForm({
                     <input
                       name="currentPassword"
                       type={showCurrentPassword ? "text" : "password"}
+                      maxLength={100}
                       placeholder="Senha de hoje"
                       className="w-full pl-5 pr-12 py-5 bg-gray-50 border border-gray-100 rounded-3xl outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
                     />
@@ -387,6 +390,7 @@ export default function ProfileForm({
                   <input
                     name="newPassword"
                     type={showNewPassword ? "text" : "password"}
+                    maxLength={100}
                     placeholder="Mínimo 6 dígitos"
                     className="w-full pl-5 pr-12 py-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
                   />
@@ -409,6 +413,7 @@ export default function ProfileForm({
                   <input
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
+                    maxLength={100}
                     placeholder="Repita a nova senha"
                     className="w-full pl-5 pr-12 py-5 bg-white border border-gray-100 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-[#023059]"
                   />

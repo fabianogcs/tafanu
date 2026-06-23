@@ -50,23 +50,34 @@ export default function CommentsSection({
       return toast.error("Faça login para comentar!");
     }
     if (!emailVerified) return toast.error("Verifique seu e-mail primeiro!");
-    if (!newComment.trim()) return;
+
+    // 🚀 AVISO CLARO AO USUÁRIO
+    if (!newComment.trim()) {
+      toast.warning("O comentário não pode estar vazio.");
+      return;
+    }
 
     setIsSubmitting(true);
-    const result = await addComment(
-      businessId,
-      newComment.trim(),
-      replyingTo?.id,
-    );
-    setIsSubmitting(false);
+    try {
+      // 🚀 TRATAMENTO DE ERRO PARA NÃO TRAVAR O BOTÃO DE ENVIAR
+      const result = await addComment(
+        businessId,
+        newComment.trim(),
+        replyingTo?.id,
+      );
 
-    if (result.success) {
-      setNewComment("");
-      setReplyingTo(null);
-      toast.success("Comentário publicado!");
-      router.refresh();
-    } else {
-      toast.error(result.error || "Erro ao comentar.");
+      if (result.success) {
+        setNewComment("");
+        setReplyingTo(null);
+        toast.success("Comentário publicado!");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Erro ao comentar.");
+      }
+    } catch (err) {
+      toast.error("Ocorreu um erro interno. Tente novamente.");
+    } finally {
+      setIsSubmitting(false); // 🚀 GARANTE QUE O BOTÃO VOLTE A FUNCIONAR SEMPRE
     }
   };
 

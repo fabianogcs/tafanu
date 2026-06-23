@@ -10,8 +10,18 @@ export default async function ProfilePage() {
   if (!session?.user?.id) redirect("/login");
   const userId = session.user.id;
 
+  // 🚀 ESCUDO ZERO TRUST: Selecionamos a dedo os campos para não vazar a senha (hash) na tela!
   const user = await db.user.findUnique({
     where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      document: true,
+      role: true,
+      affiliateId: true,
+    },
   });
 
   if (!user) redirect("/login");

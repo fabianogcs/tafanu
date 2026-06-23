@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { hashSync } from "bcryptjs";
 import { auth } from "@/auth";
+import { toSlug } from "@/lib/normalize";
 
 export async function moverEtapaFunil(businessId: string, novaEtapa: number) {
   const session = await auth();
@@ -108,8 +109,8 @@ export async function criarLeadDireto(formData: FormData) {
     });
 
     // 3. A BLINDAGEM DO LINK (SLUG):
-    // Usamos a data atual em milissegundos + um código aleatório. É 100% impossível duplicar.
-    const slug = `loja-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const rawSlug = `loja-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const slug = toSlug(rawSlug);
 
     await db.business.create({
       data: {

@@ -25,15 +25,28 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // 1. HELPERS INTERNOS (Proteção e Utilidades)
 // ==============================================================================
 
-function cleanSocialLink(url: string) {
-  if (!url) return "";
-  return url
-    .replace(
-      /https?:\/\/(www\.)?(instagram\.com|tiktok\.com|facebook\.com)\//,
-      "",
-    )
-    .replace(/@/, "")
-    .replace(/\/$/, "");
+// 🚀 BLINDAGEM ANTI-PHISHING (Redes Sociais)
+// Extrai apenas o nome de usuário (mesmo que o hacker mande um link falso) e injeta o domínio oficial.
+function buildSafeSocialLink(
+  url: string,
+  platform: "instagram" | "facebook" | "tiktok",
+) {
+  if (!url || url.trim() === "") return "";
+
+  // Pega só o que vem depois da última barra.
+  // Ex: https://hacker.com/golpe -> vira "golpe"
+  let handle = url.split("/").filter(Boolean).pop() || "";
+
+  // Remove arrobas e espaços
+  handle = handle.replace(/@/g, "").trim();
+
+  if (!handle) return "";
+
+  if (platform === "instagram") return `https://instagram.com/${handle}`;
+  if (platform === "facebook") return `https://facebook.com/${handle}`;
+  if (platform === "tiktok") return `https://tiktok.com/@${handle}`;
+
+  return "";
 }
 
 async function requireAdmin() {
@@ -338,7 +351,20 @@ export async function loginUser(formData: FormData) {
   try {
     let destino = callbackUrl || "/";
 
-    if (!callbackUrl) {
+    // 🛡️ TRAVA ANTI-OPEN REDIRECT: Impede redirecionamentos maliciosos (Phishing) para sites externos
+    if (callbackUrl) {
+      const isRelative =
+        callbackUrl.startsWith("/") && !callbackUrl.startsWith("//");
+      const isOfficialDomain =
+        callbackUrl.startsWith("https://tafanu.com.br") ||
+        callbackUrl.startsWith("http://localhost:3000");
+
+      if (!isRelative && !isOfficialDomain) {
+        destino = "/"; // Link suspeito externo é limpo e resetado para a Home com segurança
+      }
+    }
+
+    if (!callbackUrl || destino === "/") {
       if (dbUser?.role === ("ADMIN" as Role)) destino = "/admin";
       else if (dbUser?.role === ("ASSINANTE" as Role)) destino = "/dashboard";
     }
@@ -634,13 +660,40 @@ export async function createBusiness(payload: any) {
               ).flatMap((s: string) => normalizeText(s).split(" ")),
             ]),
           ).filter(Boolean),
-          instagram: cleanSocialLink(validatedData.instagram || ""),
-          facebook: cleanSocialLink(validatedData.facebook || ""),
-          tiktok: cleanSocialLink(validatedData.tiktok || ""),
-          shopee: validatedData.shopee?.trim() || "",
-          mercadoLivre: validatedData.mercadoLivre?.trim() || "",
-          shein: validatedData.shein?.trim() || "",
-          ifood: validatedData.ifood?.trim() || "",
+          // 🚀 FORÇA O DOMÍNIO OFICIAL NAS REDES SOCIAIS
+          instagram: buildSafeSocialLink(
+            validatedData.instagram || "",
+            "instagram",
+          ),
+          facebook: buildSafeSocialLink(
+            validatedData.facebook || "",
+            "facebook",
+          ),
+          tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
+
+          // 🚀 LISTA BRANCA ESTREITA: O domínio oficial deve ser a raiz do link
+          shopee:
+            validatedData.shopee &&
+            /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
+              ? validatedData.shopee.trim()
+              : "",
+          mercadoLivre:
+            validatedData.mercadoLivre &&
+            /^(https?:\/\/)?(www\.)?mercadolivre\.com/i.test(
+              validatedData.mercadoLivre,
+            )
+              ? validatedData.mercadoLivre.trim()
+              : "",
+          shein:
+            validatedData.shein &&
+            /^(https?:\/\/)?(www\.)?shein\.com/i.test(validatedData.shein)
+              ? validatedData.shein.trim()
+              : "",
+          ifood:
+            validatedData.ifood &&
+            /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
+              ? validatedData.ifood.trim()
+              : "",
           website: payload.website || "",
           published: payload.published ?? false, // 🚀 AGORA ELE OBEDECE A TELA!
           hasDelivery: payload.hasDelivery || false,
@@ -821,29 +874,52 @@ export async function updateFullBusiness(slug: string, payload: any) {
             ).flatMap((s: string) => normalizeText(s).split(" ")),
           ]),
         ).filter(Boolean),
-        instagram: cleanSocialLink(validatedData.instagram || ""),
-        facebook: cleanSocialLink(validatedData.facebook || ""),
-        tiktok: cleanSocialLink(validatedData.tiktok || ""),
+        // 🚀 FORÇA O DOMÍNIO OFICIAL NAS REDES SOCIAIS
+        instagram: buildSafeSocialLink(
+          validatedData.instagram || "",
+          "instagram",
+        ),
+        facebook: buildSafeSocialLink(validatedData.facebook || "", "facebook"),
+        tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
 
         // 🚀 AQUI ESTÃO OS DESAPARECIDOS!
         imageUrl: payload.imageUrl || "",
         coverImage: payload.coverImage || "",
-        catalogPdf: payload.catalogPdf || null, // 🚀 NOVO CAMPO: Salva o PDF no banco de dados!
+        catalogPdf: payload.catalogPdf || null,
         website: payload.website || "",
         features: Array.isArray(payload.features)
           ? payload.features.slice(0, 20)
-          : [], // Os seus Destaques limitados a 20!
-        published: payload.published, // O botão Online/Pausado de volta!
+          : [],
+        published: payload.published,
         hasDelivery: payload.hasDelivery || false,
         urban_tag: payload.urban_tag || "",
         luxe_quote: payload.luxe_quote || "",
         showroom_collection: payload.showroom_collection || "",
         comercial_badge: payload.comercial_badge || "",
 
-        shopee: validatedData.shopee?.trim() || "",
-        mercadoLivre: validatedData.mercadoLivre?.trim() || "",
-        shein: validatedData.shein?.trim() || "",
-        ifood: validatedData.ifood?.trim() || "",
+        // 🚀 LISTA BRANCA ESTREITA: O domínio oficial deve ser a raiz do link
+        shopee:
+          validatedData.shopee &&
+          /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
+            ? validatedData.shopee.trim()
+            : "",
+        mercadoLivre:
+          validatedData.mercadoLivre &&
+          /^(https?:\/\/)?(www\.)?mercadolivre\.com/i.test(
+            validatedData.mercadoLivre,
+          )
+            ? validatedData.mercadoLivre.trim()
+            : "",
+        shein:
+          validatedData.shein &&
+          /^(https?:\/\/)?(www\.)?shein\.com/i.test(validatedData.shein)
+            ? validatedData.shein.trim()
+            : "",
+        ifood:
+          validatedData.ifood &&
+          /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
+            ? validatedData.ifood.trim()
+            : "",
         mediaFeed: Array.isArray(payload.mediaFeed)
           ? payload.mediaFeed.slice(0, 30)
           : [],
@@ -913,6 +989,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
 // 7. ATUALIZAÇÃO ESPECÍFICA DE MÍDIA (VÍDEO E GALERIA)
 // ==============================================================================
 export async function updateBusinessMedia(slug: string, gallery: string[]) {
+  if (!slug || slug.length > 60) return { error: "Link inválido." };
   if (gallery?.length > 30) return { error: "Limite de mídias excedido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
@@ -985,6 +1062,7 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
 }
 
 export async function updateBusinessHours(slug: string, hours: any[]) {
+  if (!slug || slug.length > 60) return { error: "Link inválido." };
   if (hours?.length > 7) return { error: "Limite de horários excedido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
@@ -1008,7 +1086,15 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
 
     await db.businessHour.deleteMany({ where: { businessId: b.id } });
     await db.businessHour.createMany({
-      data: hours.map((h) => ({ businessId: b.id, ...h })),
+      data: hours.slice(0, 7).map((h) => ({
+        businessId: b.id,
+        dayOfWeek: Number(h.dayOfWeek),
+        openTime:
+          typeof h.openTime === "string" ? h.openTime.slice(0, 5) : "09:00",
+        closeTime:
+          typeof h.closeTime === "string" ? h.closeTime.slice(0, 5) : "18:00",
+        isClosed: !!h.isClosed,
+      })),
     });
     revalidatePath(`/site/${slug}`);
     return { success: true };
@@ -1019,6 +1105,7 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
 
 // --- A BOMBA ATÔMICA (Exclui a loja inteira do banco) ---
 export async function deleteBusiness(slug: string) {
+  if (!slug || slug.length > 60) return { error: "Link inválido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
@@ -1059,6 +1146,7 @@ export async function deleteBusiness(slug: string) {
 
 // --- A VASSOURA (Reseta os dados, mas salva o link e assinatura) ---
 export async function resetBusiness(slug: string) {
+  if (!slug || slug.length > 60) return { error: "Link inválido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
@@ -1474,6 +1562,9 @@ export async function createReport(
   reason: string,
   details: string,
 ) {
+  if (!businessSlug || businessSlug.length > 60)
+    return { error: "Link inválido." };
+
   // 🚀 ESCUDO ANTI-BOMBA DE TEXTO: Impede que hackers mandem enciclopédias direto pra API
   if (reason?.length > 100 || details?.length > 500) {
     return {
@@ -2127,6 +2218,7 @@ export async function getAffiliateStats() {
     // 2. CRM DE VENDAS: Busca todos os usuários indicados por ele
     const indicados = await db.user.findMany({
       where: { affiliateId: userId },
+      take: 500, // 🚀 TRAVA ANTI-BOMBA DE MEMÓRIA (Limita a 500 leads recentes na memória)
       select: {
         id: true,
         name: true,
@@ -2179,43 +2271,15 @@ export async function getAffiliateDashboardData() {
   }
 
   try {
-    // 1. Puxa os dados do Afiliado e seus clientes diretos (via affiliateId)
+    // 1. Puxa os dados financeiros do Afiliado (Comissões e Saques)
     const affiliate = await db.user.findUnique({
       where: { id: sessionUser.id },
       include: {
-        referrals: {
-          where: {
-            // 🚀 TRAVA SÊNIOR: Não traz o próprio afiliado na lista de clientes
-            NOT: { id: sessionUser.id },
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            createdAt: true,
-            role: true, // 🚀 MANTÉM O CARGO (ASSINANTE/VISITANTE)
-            lastLogin: true,
-            businesses: {
-              select: {
-                slug: true,
-                isActive: true,
-                planType: true,
-                expiresAt: true,
-                mpSubscriptionId: true,
-                subscriptionStatus: true, // 🚀 FALTAVA ISSO: Vital para a aba "Cancelados"
-                createdAt: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        },
         commissions: {
-          // Vendas automáticas do Mercado Pago
           orderBy: { createdAt: "desc" },
+          include: { business: { select: { name: true, slug: true } } },
         },
         withdrawals: {
-          // 🚀 PUXA O HISTÓRICO DE SAQUES DO PARCEIRO
           orderBy: { createdAt: "desc" },
         },
       },
@@ -2223,15 +2287,64 @@ export async function getAffiliateDashboardData() {
 
     if (!affiliate) return { error: "Parceiro não encontrado." };
 
+    // 2. 🚀 CIRURGIA DE DIVISÃO ATÔMICA: Separa Pagantes de Leads para proteger a RAM e não sumir clientes antigos!
+    const selectCampos = {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      createdAt: true,
+      role: true,
+      lastLogin: true,
+      businesses: {
+        select: {
+          slug: true,
+          isActive: true,
+          planType: true,
+          expiresAt: true,
+          mpSubscriptionId: true,
+          subscriptionStatus: true,
+          createdAt: true,
+        },
+      },
+    };
+
+    // Promise.all executa as duas buscas ao mesmo tempo no banco, economizando tempo
+    const [assinantes, leads] = await Promise.all([
+      db.user.findMany({
+        where: {
+          affiliateId: sessionUser.id,
+          role: "ASSINANTE",
+          NOT: { id: sessionUser.id },
+        },
+        take: 150, // Resguarda 150 vagas imortais para quem está gerando receita
+        select: selectCampos,
+        orderBy: { createdAt: "desc" },
+      }),
+      db.user.findMany({
+        where: {
+          affiliateId: sessionUser.id,
+          role: "VISITANTE",
+          NOT: { id: sessionUser.id },
+        },
+        take: 150, // Limita os curiosos/leads novos para não estourarem a RAM
+        select: selectCampos,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    // Junta as duas listas
+    const combinedClients = [...assinantes, ...leads];
+
     return {
       success: true,
-      withdrawals: affiliate.withdrawals, // 🚀 ENVIA PARA O FRONTEND
+      withdrawals: affiliate.withdrawals,
       affiliate: {
-        id: affiliate.id, // 🚀 FALTAVA ISSO: Vital para a trava de auto-compra do afiliado
+        id: affiliate.id,
         name: affiliate.name,
         referralCode: affiliate.referralCode,
       },
-      clients: affiliate.referrals,
+      clients: combinedClients, // 🚀 Manda a lista combinada e protegida
       commissions: affiliate.commissions,
     };
   } catch (error) {
@@ -2316,7 +2429,7 @@ export async function getAffiliatePayouts() {
 
   try {
     const partners = await db.user.findMany({
-      where: { role: "AFILIADO" as Role }, // 🛡️ Garantindo o Enum do Prisma
+      where: { role: "AFILIADO" as Role },
       select: {
         id: true,
         name: true,
@@ -2324,8 +2437,10 @@ export async function getAffiliatePayouts() {
         phone: true,
         commissions: {
           where: {
-            // 🚀 CORREÇÃO SÊNIOR: O Admin SÓ enxerga o que o Cron Job já liberou!
             status: CommissionStatus.AVAILABLE,
+          },
+          include: {
+            business: { select: { name: true, slug: true } }, // 🚀 PUXA O NOME DA LOJA!
           },
         },
       },
@@ -2340,9 +2455,10 @@ export async function getAffiliatePayouts() {
           email: p.email,
           phone: p.phone,
           valorDevido: valorDevido,
+          comissoesOrigem: p.commissions, // 🚀 MANDA PARA O FRONT
         };
       })
-      .filter((p) => p.valorDevido > 0); // Só mostra quem tem dinheiro pra receber
+      .filter((p) => p.valorDevido > 0);
 
     return { success: true, payouts: payoutData };
   } catch (error) {

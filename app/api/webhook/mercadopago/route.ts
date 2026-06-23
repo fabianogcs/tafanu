@@ -307,6 +307,7 @@ export async function POST(request: Request) {
               `Assinatura ${descricaoPlano} (${mesAno}) - Loja: ${businessId} - Recibo MP: ${paymentId}`,
               planType,
               String(paymentId),
+              businessId, // 🚀 INJEÇÃO DO ID DA LOJA
             );
 
             console.log(

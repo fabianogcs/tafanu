@@ -102,7 +102,6 @@ export default async function AdminPage({
       where: { status: CommissionStatus.AVAILABLE },
       _sum: { amount: true },
     }),
-
     // D. 🚀 OTIMIZAÇÃO: Traz de forma levíssima TODAS as lojas ativas para calcular o MRR Global
     db.business.findMany({
       where: {
@@ -111,6 +110,7 @@ export default async function AdminPage({
       },
       select: {
         planType: true,
+        expiresAt: true, // 🚀 AQUI: Pedimos para o Prisma trazer a data para a matemática funcionar!
         user: {
           select: { affiliateId: true, isBanned: true, email: true },
         },
@@ -162,8 +162,23 @@ export default async function AdminPage({
   let mrrBruto = 0;
   let mrrLiquido = 0;
   let totalPagantes = 0;
+  let vencendo7d = 0; // 🚀 RASTREIO GLOBAL SEGURO
+  const seteDiasDepois = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   lojasAtivasGerais.forEach((loja) => {
+    // Ignora se o usuário foi banido ou se é a conta do próprio Admin
+    if (
+      loja.user?.isBanned ||
+      loja.user?.email?.toLowerCase() === adminEmailEnv
+    )
+      return;
+
+    totalPagantes += 1;
+
+    // 🚀 CONTADOR REAL: Se a loja ativa expira nos próximos 7 dias, conta globalmente
+    if (loja.expiresAt && loja.expiresAt <= seteDiasDepois) {
+      vencendo7d += 1;
+    }
     // Ignora se o usuário foi banido ou se é a conta do próprio Admin
     if (
       loja.user?.isBanned ||
@@ -195,17 +210,27 @@ export default async function AdminPage({
 
   const totalComissoesDevidas = comissoesAgregadas._sum.amount || 0;
 
+  // 🚀 CONTA OS VENCIDOS DIRETO NO POSTGRES (Garante que o Cliente 500 apareça na métrica)
+  const totalVencidosGlobal = await db.business.count({
+    where: {
+      isActive: true,
+      expiresAt: { lte: agora },
+    },
+  });
+
   const adminData = {
     users,
     reports,
     flaggedComments,
-    historicoSaques, // 🚀 Faltava colocar isso aqui para a tela conseguir ler!
+    historicoSaques,
     businessOwnerMap: Object.fromEntries(businessOwnerMap),
     metricas: {
       mrrBruto,
       mrrLiquido,
       totalComissoesDevidas,
       totalPagantes,
+      globalVencendo: vencendo7d,
+      globalVencidos: totalVencidosGlobal,
     },
   };
 

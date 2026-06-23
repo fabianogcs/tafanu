@@ -21,22 +21,34 @@ export function VideoEmbed({
   let isInstagram = false;
 
   try {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.includes("youtu.be/")
-        ? url.split("youtu.be/")[1]?.split("?")[0]
-        : url.includes("shorts/")
-          ? url.split("shorts/")[1]?.split("?")[0]
-          : new URL(url).searchParams.get("v");
+    // 🛡️ A VACINA ANTI-XSS: Força a validação da URL e exige protocolo seguro (https)
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:")
+      return null;
+
+    if (
+      parsedUrl.hostname.includes("youtube.com") ||
+      parsedUrl.hostname.includes("youtu.be")
+    ) {
+      const videoId = parsedUrl.hostname.includes("youtu.be")
+        ? parsedUrl.pathname.slice(1)
+        : parsedUrl.pathname.includes("/shorts/")
+          ? parsedUrl.pathname.split("/shorts/")[1]
+          : parsedUrl.searchParams.get("v");
+
       if (videoId)
         embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`;
-    } else if (url.includes("instagram.com")) {
+    } else if (parsedUrl.hostname.includes("instagram.com")) {
       isInstagram = true;
-      embedUrl = url;
-    } else if (url.includes("tiktok.com")) {
-      const videoId = url.split("/video/")[1]?.split("?")[0];
+      embedUrl = parsedUrl.href; // Agora é 100% seguro
+    } else if (parsedUrl.hostname.includes("tiktok.com")) {
+      const videoId = parsedUrl.pathname.split("/video/")[1];
       if (videoId) embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
     }
-  } catch (e) {}
+  } catch (e) {
+    // Se a URL for inválida (ex: texto solto ou javascript:), ele falha silenciosamente
+    return null;
+  }
 
   if (!embedUrl) return null;
 

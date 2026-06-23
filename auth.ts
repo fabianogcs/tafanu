@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "./auth.config";
-import { compareSync } from "bcryptjs";
+import { compare } from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // 1. Tiramos o "as any" aqui (O PrismaAdapter agora será reconhecido)
@@ -28,7 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // 🚀 TRAVA CRÍTICA DA AUDITORIA: Bloqueia na raiz da API!
         if (user.isBanned) return null;
 
-        const isValid = compareSync(
+        const isValid = await compare(
           credentials.password as string,
           user.password,
         );
@@ -78,8 +78,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             where: { id: token.id as string },
             select: {
               role: true,
-              phone: true,
-              document: true,
               password: true,
               isBanned: true, // 🚀 BISTURI 2: Trazemos o status de banimento na leitura
             },
@@ -96,8 +94,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             // O cargo verdadeiro e soberano vindo do Banco de Dados
             token.role = dbUser.role;
-            token.phone = dbUser.phone;
-            token.document = dbUser.document;
             token.hasPassword = !!dbUser.password;
           }
         } catch (e) {
@@ -111,12 +107,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token && session.user) {
         session.user.id = (token.id || token.sub) as string;
         session.user.role = token.role as string;
-
-        session.user.phone = token.phone as string;
         session.user.hasPassword = token.hasPassword as boolean;
-        session.user.document = token.document as string;
 
-        // 🛡️ AQUI: session.user.expiresAt REMOVIDO
+        // 🛡️ AQUI: session.user.expiresAt, phone e document REMOVIDOS para proteção LGPD
       }
       return session;
     },
