@@ -4,13 +4,13 @@ import { useState } from "react";
 import { MessageCircle, CheckCircle2, RotateCcw, Clock } from "lucide-react";
 import { moverEtapaFunil } from "@/app/dashboard/funil/actions";
 
-// Definição das abas e textos (exatamente como você pediu)
+// 🚀 ESTRATÉGIA DE 10 DIAS (Agressiva, mas com fôlego operacional)
 const TABS = [
-  { id: 1, title: "1. Entrega", daysRule: 30 },
-  { id: 2, title: "2. Checagem", daysRule: 27 },
-  { id: 3, title: "3. Valor", daysRule: 15 },
-  { id: 4, title: "4. Escassez", daysRule: 5 },
-  { id: 5, title: "5. Fechamento", daysRule: 1 },
+  { id: 1, title: "1. Entrega", daysRule: 10 }, // Manda no dia que criou
+  { id: 2, title: "2. Checagem", daysRule: 8 }, // Manda 2 dias depois
+  { id: 3, title: "3. Valor", daysRule: 4 }, // Manda no meio do caminho (Dia de pico de views)
+  { id: 4, title: "4. Escassez", daysRule: 2 }, // Faltam 48h. Gatilho de perda.
+  { id: 5, title: "5. Fechamento", daysRule: 0 }, // Fim da linha. Ou paga ou pausa.
 ];
 
 export default function FunilBoard({ leads }: { leads: any[] }) {
@@ -24,7 +24,6 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
   };
 
   const getWhatsAppLink = (lead: any, etapa: number) => {
-    // Puxa exatamente o telefone e o nome do dono
     const phone = lead.user?.phone?.replace(/\D/g, "") || "";
     const name = lead.user?.name?.split(" ")[0] || "Responsável";
     const businessName = lead.name || "seu negócio";
@@ -33,22 +32,22 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
 
     let msg = "";
 
+    // 🧠 COPYWRITING AVANÇADO: Efeito Posse, Reciprocidade, Prova Social e Urgência
     if (etapa === 1) {
-      msg = `Olá, ${name}! Tudo bem? Aqui é do portal Tafanu.\n\nNossa curadoria mapeou os melhores negócios da região e selecionamos a *${businessName}* para ter um Perfil Oficial na nossa plataforma.\n\nNossa equipe já deixou a sua Vitrine Digital 100% pronta e aprovada. Como cortesia por terem sido selecionados, liberamos 30 dias de acesso VIP gratuito.\n\nVeja como ficou incrível: https://tafanu.com.br/site/${slug}\n\nPoderia clicar no link e me confirmar se o botão do seu WhatsApp está certinho?`;
+      msg = `Olá, ${name}! Tudo bem? Aqui é o Fabiano, do portal Tafanu.\n\nNossa curadoria mapeou os melhores negócios de Guarulhos e selecionamos a *${businessName}* para o grupo de Membros Fundadores da plataforma.\n\nMinha equipe já deixou a sua Vitrine Digital 100% pronta de presente. Liberamos 10 dias de acesso VIP grátis pra você testar na prática.\n\nVeja como ficou estética premium da loja: https://tafanu.com.br/site/${slug}\n\nPoderia clicar e me confirmar se o botão do seu WhatsApp está certinho?`;
     } else if (etapa === 2) {
-      msg = `Fala, ${name}, tudo bem?\n\nPassando só para avisar que sua vitrine está no ar recebendo visitas! Você conseguiu acessar o seu painel de controle para ver os gráficos?\n\nSeu login é: ${email}\n(Basta clicar em "Esqueci minha senha" para criar sua senha segura).\n\nQualquer dúvida para acessar, me avisa!`;
+      msg = `Fala, ${name}! Passando pra avisar que sua vitrine já está rodando nas buscas.\n\nVocê conseguiu entrar no painel pra ver o gráfico de acessos?\n\nSeu login é: ${email}\n(Basta clicar em "Esqueci minha senha" para criar uma rapidinho).\n\nSe precisar de ajuda pra acessar, me dá um toque aqui!`;
     } else if (etapa === 3) {
-      msg = `Olá, ${name}, bom dia!\n\nTrazendo boas notícias: acompanhando seu painel hoje, vi que a página da *${businessName}* já teve [X] visitas e [Y] cliques no seu WhatsApp nos últimos dias!\n\nO perfil está chamando muita atenção. Desejo excelentes vendas pra vocês essa semana! 🚀`;
+      msg = `Bom dia, ${name}!\n\nFui olhar o relatório hoje e a página da *${businessName}* já teve [X] visitas e [Y] clientes clicaram no botão do seu WhatsApp!\n\nO perfil tá chamando atenção. Desejo excelentes vendas pra vocês essa semana! 🚀`;
     } else if (etapa === 4) {
-      msg = `Olá, ${name}! Tudo bem?\n\nO seu período de cortesia VIP no Tafanu encerra nos próximos dias. Nesse período, sua vitrine gerou [X] visualizações para a *${businessName}*.\n\nPara não perdermos esse histórico e mantermos sua loja online recebendo clientes todos os dias, o investimento é de apenas R$ 39,90 por mês (sem fidelidade).\n\nPosso gerar o seu link seguro de renovação para mantermos a vitrine no ar?`;
+      msg = `Olá, ${name}! O acesso VIP da *${businessName}* encerra em 48h.\n\nComo você é um Membro Fundador, se efetivarmos a assinatura hoje, sua mensalidade trava em R$ 39,90 pra sempre, imune a qualquer reajuste futuro da plataforma.\n\nPosso gerar o seu link de renovação para não perdermos o histórico de clientes que já estão chegando?`;
     } else if (etapa === 5) {
-      msg = `Olá, ${name}, como vai?\n\nComo seu período cortesia encerrou e não tivemos retorno, estou arquivando e pausando a vitrine da *${businessName}* no Tafanu hoje, tudo bem?\n\nSeus gráficos de performance ficarão salvos no banco de dados por mais 7 dias. Caso decidam reativar as buscas e voltar para a plataforma por R$ 39,90 mensais, é só me mandar uma mensagem por aqui.\n\nUm abraço e muito sucesso nos negócios!`;
+      msg = `Fala, ${name}. Como o acesso VIP expirou hoje, estou pausando e ocultando a vitrine da *${businessName}* das nossas buscas, tudo bem?\n\nSeus gráficos ficarão salvos por 7 dias. Caso decidam reativar as buscas e voltar para a plataforma pelos R$ 39,90 mensais, é só me mandar uma mensagem.\n\nUm abraço e muito sucesso aí!`;
     }
 
     return `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`;
   };
 
-  // Filtra os leads que estão na etapa atual
   const leadsNaAba = leads.filter((l) => l.etapaFunil === activeTab);
 
   return (
@@ -56,7 +55,7 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
       {/* Menu de Abas */}
       <div className="flex overflow-x-auto gap-2 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 scrollbar-hide">
         {TABS.map((tab) => {
-          // Verifica se existe algum lead NESTA aba que está em estado de alerta
+          // O Alerta vermelho dispara quando o prazo residual da loja bate com o dia de mandar a mensagem!
           const temAlertaNaAba = leads.some((l) => {
             const dias = l.expiresAt
               ? Math.ceil(
@@ -71,11 +70,11 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl text-sm font-bold transition-all relative ${
+              className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all relative ${
                 activeTab === tab.id
                   ? "bg-[#0F172A] text-emerald-400 shadow-md"
                   : temAlertaNaAba
-                    ? "bg-red-50 text-red-500 border border-red-200" // Fica vermelho se houver pendência
+                    ? "bg-red-50 text-red-500 border border-red-200"
                     : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
               }`}
             >
@@ -94,8 +93,8 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
       {/* Lista de Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {leadsNaAba.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl">
-            Nenhum negócio nesta etapa do funil.
+          <div className="col-span-full py-12 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl text-xs font-bold uppercase tracking-widest">
+            Nenhum negócio aguardando contato nesta etapa.
           </div>
         ) : (
           leadsNaAba.map((lead) => {
@@ -117,14 +116,16 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-bold text-[#0F172A] truncate max-w-[200px]">
+                    <h3 className="font-bold text-[#0F172A] truncate max-w-[200px] uppercase">
                       {lead.name}
                     </h3>
-                    <p className="text-xs text-gray-400">{lead.user?.email}</p>
+                    <p className="text-[10px] font-bold text-gray-400">
+                      {lead.user?.email}
+                    </p>
                     {lead.user?.lastLogin && (
-                      <div className="mt-2 inline-flex items-center gap-1 bg-blue-50 text-blue-500 px-2 py-1 rounded-lg text-[10px] font-black uppercase border border-blue-100">
+                      <div className="mt-2 inline-flex items-center gap-1 bg-blue-50 text-blue-500 px-2 py-1 rounded-lg text-[9px] font-black uppercase border border-blue-100">
                         <Clock size={12} />
-                        Visto:{" "}
+                        Acessou:{" "}
                         {new Date(lead.user.lastLogin).toLocaleDateString(
                           "pt-BR",
                         )}{" "}
@@ -136,8 +137,15 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg text-xs font-bold text-gray-500">
-                    <Clock size={14} /> {diasRestantes} dias
+                  <div
+                    className={`flex flex-col items-center justify-center min-w-[50px] bg-gray-50 px-2 py-1 rounded-lg border ${isAlerta ? "border-red-200 bg-red-50 text-red-500" : "border-gray-100 text-gray-500"}`}
+                  >
+                    <span className="text-lg font-black leading-none">
+                      {diasRestantes}
+                    </span>
+                    <span className="text-[8px] font-black uppercase tracking-widest">
+                      Dias
+                    </span>
                   </div>
                 </div>
 
@@ -146,9 +154,10 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
                     href={getWhatsAppLink(lead, activeTab)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-600 transition-all"
+                    className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#1ebd57] transition-all shadow-md shadow-green-900/10"
                   >
-                    <MessageCircle size={18} /> Enviar Mensagem
+                    <MessageCircle size={16} /> Zap{" "}
+                    {TABS[activeTab - 1].title.split(". ")[1]}
                   </a>
 
                   <div className="flex gap-2 mt-2">
@@ -156,9 +165,9 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
                       <button
                         onClick={() => handleMover(lead.id, activeTab - 1)}
                         disabled={loadingId === lead.id}
-                        className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
+                        className="flex-1 flex items-center justify-center gap-1 py-2 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-100 rounded-xl transition-all border border-gray-100"
                       >
-                        <RotateCcw size={14} /> Desfazer
+                        <RotateCcw size={12} /> Desfazer
                       </button>
                     )}
 
@@ -166,10 +175,10 @@ export default function FunilBoard({ leads }: { leads: any[] }) {
                       <button
                         onClick={() => handleMover(lead.id, activeTab + 1)}
                         disabled={loadingId === lead.id}
-                        className="flex-[2] flex items-center justify-center gap-1 py-2 bg-[#0F172A] text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-all"
+                        className="flex-[2] flex items-center justify-center gap-1.5 py-2 bg-[#0F172A] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-gray-800 transition-all shadow-sm"
                       >
                         <CheckCircle2 size={14} className="text-emerald-400" />{" "}
-                        Marcar como OK
+                        Próxima Etapa
                       </button>
                     )}
                   </div>

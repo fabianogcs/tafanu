@@ -119,8 +119,8 @@ export async function criarLeadDireto(formData: FormData) {
         category: "Geral",
         description: "Qualidade e excelência confirmadas na região.",
         userId: newUser.id,
-        // 4. MANTIVE A SUA ESTRATÉGIA DE 30 DIAS DE DEGUSTAÇÃO
-        expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
+        // 4. ESTRATÉGIA VIP: 10 Dias de Degustação para gerar urgência!
+        expiresAt: new Date(new Date().getTime() + 10 * 24 * 60 * 60 * 1000),
         etapaFunil: 1,
         isActive: true,
         published: false,

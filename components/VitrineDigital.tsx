@@ -54,7 +54,7 @@ export default function VitrineDigital({ data }: VitrineDigitalProps) {
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
           <span className="text-[10px] md:text-xs font-bold text-emerald-700 uppercase tracking-wider">
-            Centenas de negócios ativos agora
+            Negócios com entrega disponível
           </span>
         </div>
       </div>
