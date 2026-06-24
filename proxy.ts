@@ -199,15 +199,15 @@ export default auth(async (req) => {
       pathname === "/dashboard" ||
       pathname.startsWith("/dashboard/favoritos") ||
       pathname.startsWith("/dashboard/parceiro") ||
-      pathname.startsWith("/dashboard/perfil")
+      pathname.startsWith("/dashboard/perfil") ||
+      pathname.startsWith("/dashboard/funil") // 🚀 Rota liberada da trava de cookie. O Banco de Dados fará a escolta!
     ) {
       return NextResponse.next();
     }
 
     if (
       pathname.startsWith("/dashboard/editar") ||
-      pathname.startsWith("/dashboard/novo") ||
-      pathname.startsWith("/dashboard/funil")
+      pathname.startsWith("/dashboard/novo")
     ) {
       if (!isPro) {
         return NextResponse.redirect(new URL("/checkout", nextUrl));
