@@ -98,17 +98,81 @@ export const businessSchema = z.object({
   whatsapp: z.string().max(20).optional().or(z.literal("")),
   phone: z.string().max(20).optional().or(z.literal("")),
 
-  // Redes Sociais
-  instagram: z.string().max(255).optional().nullable(),
-  facebook: z.string().max(255).optional().nullable(),
-  tiktok: z.string().max(255).optional().nullable(),
-  website: z.string().max(255).optional().nullable(),
+  // Redes Sociais - 🚀 BLINDAGEM ANTI-JAVASCRIPT
+  instagram: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido (https://...)",
+    ),
+  facebook: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido (https://...)",
+    ),
+  tiktok: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido (https://...)",
+    ),
+  website: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido (https://...)",
+    ),
 
   // --- Novos Canais de Venda ---
-  shopee: z.string().max(255).optional().nullable(),
-  mercadoLivre: z.string().max(255).optional().nullable(),
-  shein: z.string().max(255).optional().nullable(),
-  ifood: z.string().max(255).optional().nullable(),
+  shopee: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido",
+    ),
+  mercadoLivre: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido",
+    ),
+  shein: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido",
+    ),
+  ifood: z
+    .string()
+    .max(255)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => !val || /^https?:\/\//i.test(val),
+      "Deve ser um link válido",
+    ),
   catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
   menuMode: z.enum(["PDF", "DIGITAL"]).default("PDF"),
 
@@ -150,10 +214,19 @@ export const businessSchema = z.object({
         .array(
           z.object({
             type: z.string().max(20),
-            url: z.string().max(1000).optional().or(z.literal("")),
+            // 🚀 BLINDAGEM DE EMBED: Proíbe injeção de HTML no lugar do link do vídeo
+            url: z
+              .string()
+              .max(1000)
+              .optional()
+              .or(z.literal(""))
+              .refine(
+                (val) => !val || val === "" || /^https?:\/\//i.test(val),
+                "Cole apenas o link da página, não o código do vídeo.",
+              ),
           }),
         )
-        .max(30), // 🚀 BLINDAGEM: Trava o número máximo de itens no feed no Back-end!
+        .max(30),
     )
     .default([]),
 
