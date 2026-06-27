@@ -15,15 +15,14 @@ export default {
       },
 
       profile(profile) {
-        const isAdmin =
-          profile.email?.toLowerCase() ===
-          process.env.ADMIN_EMAIL?.toLowerCase();
         return {
           id: profile.sub,
           name: profile.name,
           email: profile.email,
           image: profile.picture,
-          role: isAdmin ? "ADMIN" : "VISITANTE",
+          // 🛡️ Fallback inofensivo apenas para agradar o TypeScript e remover a linha vermelha.
+          // A permissão REAL sempre será sobrescrita pelo banco de dados no auth.ts!
+          role: "VISITANTE",
         };
       },
     }),

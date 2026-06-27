@@ -17,6 +17,7 @@ import { uploadFiles } from "@/lib/uploadthing"; // 🚀 Importação da funçã
 import { compressImage } from "@/lib/compressImage";
 import { toast } from "sonner";
 import { useState, useRef } from "react"; // 🚀 Adicionado useRef
+import { MenuSection } from "./MenuSection"; // 🚀 Importado para embutir a loja aqui
 
 interface ContentSectionProps {
   mediaFeed: { type: "image" | "video"; url: string }[];
@@ -31,6 +32,10 @@ interface ContentSectionProps {
   setCatalogPdf: (val: string | null) => void;
   isUploadingGallery: boolean;
   setIsUploadingGallery: (val: boolean) => void;
+  menuMode: "PDF" | "DIGITAL";
+  setMenuMode: (val: "PDF" | "DIGITAL") => void;
+  products: any[];
+  setProducts: (val: any[] | ((prev: any[]) => any[])) => void;
 }
 
 export function ContentSection({
@@ -46,6 +51,10 @@ export function ContentSection({
   setCatalogPdf,
   isUploadingGallery,
   setIsUploadingGallery,
+  menuMode,
+  setMenuMode,
+  products,
+  setProducts,
 }: ContentSectionProps) {
   const imageCount = mediaFeed.filter((m) => m.type === "image").length;
 
@@ -213,113 +222,138 @@ export function ContentSection({
   return (
     <div className="space-y-8">
       {/* =========================================================
-          🚀 THE MASTER MEDIA MANAGER (Com Drag & Drop)
+          🚀 CARD 1: SELETOR DE LOJA / CARDÁPIO (PRIORIDADE)
+          ========================================================= */}
+      <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[10px] font-black uppercase flex items-center gap-2 text-slate-800">
+            <ListChecks size={18} className="text-orange-500" /> Formato da
+            Vitrine
+          </h2>
+        </div>
+
+        <p className="text-[10px] text-slate-400 font-bold mb-6">
+          Escolha o formato da sua vitrine. Você pode criar um{" "}
+          <span className="text-orange-500 font-black">
+            Cardápio Digital interativo
+          </span>{" "}
+          ou anexar o seu{" "}
+          <span className="text-emerald-500 font-black">PDF</span>.
+        </p>
+
+        <div className="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-xl">
+          <button
+            onClick={() => setMenuMode("DIGITAL")}
+            type="button"
+            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${menuMode === "DIGITAL" ? "bg-white shadow-sm text-orange-600 ring-1 ring-black/5" : "text-slate-400 hover:text-slate-600"}`}
+          >
+            Loja Digital
+          </button>
+          <button
+            onClick={() => setMenuMode("PDF")}
+            type="button"
+            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${menuMode === "PDF" ? "bg-white shadow-sm text-emerald-600 ring-1 ring-black/5" : "text-slate-400 hover:text-slate-600"}`}
+          >
+            Anexar PDF
+          </button>
+        </div>
+
+        {menuMode === "PDF" ? (
+          <div className="space-y-4 animate-in fade-in duration-500">
+            {catalogPdf ? (
+              <div className="w-full h-14 border border-emerald-200 bg-emerald-50 rounded-xl flex items-center justify-between px-6">
+                <span className="text-xs font-bold text-emerald-700 truncate mr-4">
+                  Catálogo Anexado ✅
+                </span>
+                <div className="flex items-center gap-4 shrink-0">
+                  <button
+                    onClick={() => setCatalogPdf(null)}
+                    className="text-[9px] font-bold text-rose-500 uppercase tracking-widest hover:text-rose-600"
+                  >
+                    Remover
+                  </button>
+                  <a
+                    href={catalogPdf}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 underline"
+                  >
+                    Visualizar
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  onClick={() => pdfInputRef.current?.click()}
+                  className="w-full h-14 border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50 transition-colors group"
+                >
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest group-hover:text-emerald-700">
+                    Anexar Arquivo PDF (Max 8MB)
+                  </span>
+                </div>
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 8 * 1024 * 1024) {
+                      toast.error(
+                        "O catálogo é muito pesado. Por favor, comprima seu PDF para no máximo 8MB.",
+                      );
+                      e.target.value = "";
+                      return;
+                    }
+                    e.target.value = "";
+                    toast.loading("Enviando PDF...", { id: "upload-pdf" });
+                    try {
+                      const res = await uploadFiles("pdfUploader", {
+                        files: [file],
+                      });
+                      if (res && res[0]) {
+                        setCatalogPdf(res[0].ufsUrl);
+                        toast.success("Catálogo enviado com sucesso!", {
+                          id: "upload-pdf",
+                        });
+                      }
+                    } catch (err: any) {
+                      toast.error(err.message || "Erro ao enviar arquivo.", {
+                        id: "upload-pdf",
+                      });
+                    }
+                  }}
+                />
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="w-full pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <MenuSection products={products} setProducts={setProducts} />
+          </div>
+        )}
+      </div>
+
+      {/* =========================================================
+          🚀 CARD 2: THE MASTER MEDIA MANAGER (Mídia e Galeria)
           ========================================================= */}
       <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-[10px] font-black uppercase flex items-center gap-2">
-            <Layout size={18} className="text-indigo-500" /> Vitrine de Mídia
-            (Fotos e Vídeos)
+          <h2 className="text-[10px] font-black uppercase flex items-center gap-2 text-slate-800">
+            <Camera size={18} className="text-indigo-500" /> Vitrine de Fotos e
+            Vídeos
           </h2>
           <span className="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-3 py-1 rounded-full">
             Fotos: {imageCount} / 12
           </span>
         </div>
         <p className="text-[10px] text-slate-400 font-bold mb-6 leading-tight">
-          Faça upload de fotos e cole links do YouTube, Reels ou TikTok.{" "}
-          <br className="hidden md:block" />
+          Faça upload de fotos e cole links do YouTube ou TikTok.{" "}
           <span className="text-indigo-500">Clique e arraste</span> para
-          organizar a ordem exata na passarela.
+          organizar.
         </p>
-
-        {/* =========================================================
-            🚀 NOVO: UPLOAD DE CATÁLOGO/CARDÁPIO (PDF)
-            ========================================================= */}
-        <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
-              <ListChecks size={16} className="text-emerald-500" /> Cardápio /
-              Catálogo Digital (PDF)
-            </h3>
-          </div>
-
-          {catalogPdf ? (
-            <div className="w-full h-14 border border-emerald-200 bg-emerald-50 rounded-xl flex items-center justify-between px-6">
-              <span className="text-xs font-bold text-emerald-700 truncate mr-4">
-                Catálogo Anexado ✅
-              </span>
-
-              {/* Botões de Ação Agrupados e Protegidos */}
-              <div className="flex items-center gap-4 shrink-0">
-                <button
-                  onClick={() => setCatalogPdf(null)}
-                  className="text-[9px] font-bold text-rose-500 uppercase tracking-widest hover:text-rose-600"
-                >
-                  Remover
-                </button>
-                <a
-                  href={catalogPdf}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 underline"
-                >
-                  Visualizar
-                </a>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div
-                onClick={() => pdfInputRef.current?.click()}
-                className="w-full h-14 border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50 transition-colors group"
-              >
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest group-hover:text-emerald-700">
-                  Anexar Arquivo PDF (Max 8MB)
-                </span>
-              </div>
-              <input
-                ref={pdfInputRef}
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-
-                  // 🚀 PROTEÇÃO DE BANDA E MEMÓRIA: Verifica o limite real de 8MB no frontend
-                  if (file.size > 8 * 1024 * 1024) {
-                    toast.error(
-                      "O catálogo é muito pesado. Por favor, comprima seu PDF para no máximo 8MB.",
-                    );
-                    e.target.value = "";
-                    return;
-                  }
-
-                  // 🚀 O PULO DO GATO: Limpa a memória do input para ele não travar mais!
-                  e.target.value = "";
-
-                  toast.loading("Enviando PDF...", { id: "upload-pdf" });
-                  try {
-                    const res = await uploadFiles("pdfUploader", {
-                      files: [file],
-                    });
-                    if (res && res[0]) {
-                      setCatalogPdf(res[0].ufsUrl);
-                      toast.success("Catálogo enviado com sucesso!", {
-                        id: "upload-pdf",
-                      });
-                    }
-                  } catch (err: any) {
-                    // Agora mostra o erro REAL que o servidor mandar
-                    toast.error(err.message || "Erro ao enviar arquivo.", {
-                      id: "upload-pdf",
-                    });
-                  }
-                }}
-              />
-            </>
-          )}
-        </div>
 
         {/* 🚀 LISTAGEM DRAG & DROP FÍSICA */}
         <div className="space-y-3">

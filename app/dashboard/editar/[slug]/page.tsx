@@ -21,6 +21,7 @@ export default async function EditBusinessPage({
     where: { slug },
     include: {
       hours: true,
+      products: true, // 🚀 A PEÇA QUE FALTAVA: Traz o cardápio do banco!
       _count: { select: { favorites: true } },
       user: { select: { affiliateId: true } }, // ⬅️ A Chave do Cofre
     },

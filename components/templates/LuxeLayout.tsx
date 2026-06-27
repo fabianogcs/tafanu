@@ -34,6 +34,7 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
+import VitrineCardapio from "../VitrineCardapio"; // 🚀 MOTOR DA MÁQUINA DE VENDAS
 
 // --- ACORDEÃO LUXO ---
 const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
@@ -108,6 +109,7 @@ export default function LuxeLayout({
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -280,7 +282,7 @@ export default function LuxeLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen) {
+    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -288,7 +290,7 @@ export default function LuxeLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen]); // 🚀 AGORA ELE TRAVA A TELA QUANDO O PDF ABRIR TAMBÉM
+  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E PRO CARRINHO
 
   const mapDestination =
     business.latitude && business.longitude
@@ -435,12 +437,25 @@ export default function LuxeLayout({
 
             {/* Botões Mobile */}
             <div className="w-full flex flex-col gap-3 max-w-xs">
-              {rawBusiness.catalogPdf && (
+              {/* 🚀 O MOTOR DE DECISÃO MOBILE: LOJA DIGITAL vs PDF */}
+              {((rawBusiness.menuMode === "DIGITAL" &&
+                Array.isArray(rawBusiness.products) &&
+                rawBusiness.products.length > 0) ||
+                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
                 <button
-                  onClick={() => setIsPdfModalOpen(true)}
+                  onClick={() => {
+                    if (rawBusiness.menuMode === "DIGITAL") {
+                      setShowDigitalMenu(true);
+                    } else {
+                      setIsPdfModalOpen(true);
+                    }
+                  }}
                   className={`w-full h-12 flex items-center justify-center gap-2 text-[10px] font-black tracking-[0.2em] uppercase rounded-full ${bgAction} shadow-md active:scale-[0.98] transition-all`}
                 >
-                  Explorar Menu <ChevronRight size={14} strokeWidth={2} />
+                  {rawBusiness.menuMode === "DIGITAL"
+                    ? "Fazer Pedido"
+                    : "Explorar Menu"}{" "}
+                  <ChevronRight size={14} strokeWidth={2} />
                 </button>
               )}
               {hasWhatsapp && (
@@ -567,12 +582,26 @@ export default function LuxeLayout({
                   transition={{ duration: 1, delay: 0.4 }}
                   className="w-full max-w-xs flex flex-col gap-4"
                 >
-                  {rawBusiness.catalogPdf && (
+                  {/* 🚀 O MOTOR DE DECISÃO DESKTOP (Com Capa): LOJA DIGITAL vs PDF */}
+                  {((rawBusiness.menuMode === "DIGITAL" &&
+                    Array.isArray(rawBusiness.products) &&
+                    rawBusiness.products.length > 0) ||
+                    (rawBusiness.menuMode === "PDF" &&
+                      rawBusiness.catalogPdf)) && (
                     <button
-                      onClick={() => setIsPdfModalOpen(true)}
+                      onClick={() => {
+                        if (rawBusiness.menuMode === "DIGITAL") {
+                          setShowDigitalMenu(true);
+                        } else {
+                          setIsPdfModalOpen(true);
+                        }
+                      }}
                       className={`w-full h-14 flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase rounded-full ${bgAction} shadow-lg hover:-translate-y-0.5 transition-all`}
                     >
-                      Explorar Menu <ChevronRight size={14} strokeWidth={2} />
+                      {rawBusiness.menuMode === "DIGITAL"
+                        ? "Fazer Pedido"
+                        : "Explorar Menu"}{" "}
+                      <ChevronRight size={14} strokeWidth={2} />
                     </button>
                   )}
                   {hasWhatsapp && (
@@ -696,12 +725,26 @@ export default function LuxeLayout({
                 transition={{ duration: 1, delay: 0.4 }}
                 className="flex gap-6"
               >
-                {rawBusiness.catalogPdf && (
+                {/* 🚀 O MOTOR DE DECISÃO DESKTOP (Sem Capa): LOJA DIGITAL vs PDF */}
+                {((rawBusiness.menuMode === "DIGITAL" &&
+                  Array.isArray(rawBusiness.products) &&
+                  rawBusiness.products.length > 0) ||
+                  (rawBusiness.menuMode === "PDF" &&
+                    rawBusiness.catalogPdf)) && (
                   <button
-                    onClick={() => setIsPdfModalOpen(true)}
+                    onClick={() => {
+                      if (rawBusiness.menuMode === "DIGITAL") {
+                        setShowDigitalMenu(true);
+                      } else {
+                        setIsPdfModalOpen(true);
+                      }
+                    }}
                     className={`flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase px-10 py-5 rounded-full ${bgAction} shadow-lg hover:-translate-y-1 transition-all`}
                   >
-                    Explorar Menu <ChevronRight size={14} strokeWidth={2} />
+                    {rawBusiness.menuMode === "DIGITAL"
+                      ? "Fazer Pedido"
+                      : "Explorar Menu"}{" "}
+                    <ChevronRight size={14} strokeWidth={2} />
                   </button>
                 )}
                 {hasWhatsapp && (
@@ -1257,6 +1300,21 @@ export default function LuxeLayout({
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ==========================================
+          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          ========================================== */}
+      <AnimatePresence>
+        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+          <VitrineCardapio
+            businessName={rawBusiness.name}
+            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
+            themeColor={theme.previewColor}
+            products={rawBusiness.products || []}
+            onClose={() => setShowDigitalMenu(false)}
+          />
         )}
       </AnimatePresence>
 

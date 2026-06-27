@@ -37,6 +37,7 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
+import VitrineCardapio from "../VitrineCardapio"; // 🚀 Importa a Máquina de Vendas
 
 export default function UrbanLayout({
   business: rawBusiness,
@@ -66,6 +67,7 @@ export default function UrbanLayout({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
   // 🚀 O filtro inteligente começa nulo
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
   >(null);
@@ -225,7 +227,7 @@ export default function UrbanLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen) {
+    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -233,7 +235,7 @@ export default function UrbanLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen]); // 🚀 TRAVA A TELA PRO PDF
+  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E LOJA DIGITAL
 
   if (!theme) return null;
 
@@ -395,15 +397,27 @@ export default function UrbanLayout({
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              {/* 🚀 BOTÃO DO CATÁLOGO DE PRODUTOS / PDF (Estático Premium) */}
-              {rawBusiness.catalogPdf && (
+              {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF */}
+              {((rawBusiness.menuMode === "DIGITAL" &&
+                Array.isArray(rawBusiness.products) &&
+                rawBusiness.products.length > 0) ||
+                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
                 <button
-                  onClick={() => setIsPdfModalOpen(true)}
+                  onClick={() => {
+                    if (rawBusiness.menuMode === "DIGITAL") {
+                      setShowDigitalMenu(true);
+                    } else {
+                      setIsPdfModalOpen(true);
+                    }
+                  }}
                   className="relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white/10 border border-white/20 backdrop-blur-md text-white rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:bg-white/20 transition-all flex items-center justify-center gap-3 active:scale-95"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    Catálogo Visual <ChevronRight size={20} strokeWidth={2.5} />
+                    {rawBusiness.menuMode === "DIGITAL"
+                      ? "Fazer Pedido"
+                      : "Catálogo Visual"}
+                    <ChevronRight size={20} strokeWidth={2.5} />
                   </span>
                 </button>
               )}
@@ -870,6 +884,21 @@ export default function UrbanLayout({
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ==========================================
+          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          ========================================== */}
+      <AnimatePresence>
+        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+          <VitrineCardapio
+            businessName={rawBusiness.name}
+            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
+            themeColor={theme.previewColor}
+            products={rawBusiness.products || []}
+            onClose={() => setShowDigitalMenu(false)}
+          />
         )}
       </AnimatePresence>
 

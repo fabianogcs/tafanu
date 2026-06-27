@@ -55,7 +55,8 @@ export default auth(async (req) => {
     const isSensitivePage =
       pathname.startsWith("/login") ||
       pathname.startsWith("/esqueci-senha") ||
-      pathname.startsWith("/nova-senha");
+      pathname.startsWith("/nova-senha") ||
+      pathname.startsWith("/api/cron");
 
     if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) {
       // 🚀 CIRURGIA CORRIGIDA: Lemos o IP sanitizado pela infraestrutura da Vercel, sem irritar o TypeScript
@@ -121,6 +122,12 @@ export default auth(async (req) => {
   const user = req.auth?.user as { role?: string } | undefined;
   const userRole = user?.role;
 
+  // 🛡️ PROTEÇÃO DOS CRONS: O Vercel Cron usa Bearer Token, não sessão de usuário.
+  // A trava de segurança real (CRON_SECRET) já está dentro da própria rota da API.
+  if (pathname.startsWith("/api/cron")) {
+    return NextResponse.next();
+  }
+
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isAdminRoute = pathname.startsWith("/admin");
   const isCheckoutRoute = pathname.startsWith("/checkout");
@@ -147,14 +154,19 @@ export default auth(async (req) => {
     pathname === "/manifest.json" ||
     pathname === "/sw.js";
 
-  // 🚀 VACINA DO LOOP: Se um usuário logado cair no /login, respeita o destino dele!
   if (isLoggedIn && pathname.startsWith("/login")) {
     const callback = nextUrl.searchParams.get("callbackUrl");
     const intent = nextUrl.searchParams.get("intent");
 
-    // Se ele queria ir pro checkout, manda pro checkout
     if (callback) {
-      return NextResponse.redirect(new URL(callback, nextUrl));
+      // 🛡️ ANTI-OPEN-REDIRECT: Só redireciona para caminhos relativos ou domínio oficial
+      const isRelative = callback.startsWith("/") && !callback.startsWith("//");
+      const isOfficial =
+        callback.startsWith("https://tafanu.com.br") ||
+        callback.startsWith("http://localhost:3000");
+
+      const safeCallback = isRelative || isOfficial ? callback : "/dashboard";
+      return NextResponse.redirect(new URL(safeCallback, nextUrl));
     }
     if (intent === "assinante") {
       return NextResponse.redirect(new URL("/checkout", nextUrl));

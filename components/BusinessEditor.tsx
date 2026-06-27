@@ -14,6 +14,7 @@ import { SegmentationSection } from "./business-editor/SegmentationSection";
 import { ContentSection } from "./business-editor/ContentSection";
 import { compressImage } from "@/lib/compressImage";
 import { ConnectionsSection } from "./business-editor/ConnectionsSection";
+import { MenuSection } from "./business-editor/MenuSection";
 import {
   Save,
   Loader2,
@@ -184,6 +185,17 @@ export default function BusinessEditor({
     safeBusiness.catalogPdf || null,
   );
 
+  // 🚀 ADICIONADO: ESTADO DO CARDÁPIO
+  const [products, setProducts] = useState<any[]>(() => {
+    return safeBusiness.products
+      ? JSON.parse(JSON.stringify(safeBusiness.products))
+      : [];
+  });
+
+  const [menuMode, setMenuMode] = useState<"PDF" | "DIGITAL">(
+    safeBusiness.menuMode || "PDF",
+  );
+
   const [categoria, setCategoria] = useState(() => {
     if (
       isNew ||
@@ -306,6 +318,7 @@ export default function BusinessEditor({
       profileImage !== safeBusiness.imageUrl ||
       coverImage !== (safeBusiness.coverImage || "") ||
       catalogPdf !== (safeBusiness.catalogPdf || null) || // 🚀 ADICIONADO AQUI
+      menuMode !== (safeBusiness.menuMode || "PDF") ||
       categoria !== initialCategory ||
       hasDelivery !== (safeBusiness.hasDelivery || false) ||
       selectedTheme !== safeBusiness.theme ||
@@ -315,13 +328,45 @@ export default function BusinessEditor({
       whatsapp !== formatPhoneNumber(safeBusiness.whatsapp || "") ||
       phone !== formatPhoneNumber(safeBusiness.phone || "");
 
+    // 🚀 FILTRO ANTI-FANTASMA: Compara apenas os campos que o lojista edita de forma segura com substituição de vírgula
+    const mappedSafeProducts = (safeBusiness.products || []).map((p: any) => {
+      const parsedPrice = parseFloat(String(p.price || 0).replace(",", "."));
+      const parsedOldPrice = parseFloat(
+        String(p.oldPrice || 0).replace(",", "."),
+      );
+      return {
+        name: p.name,
+        description: p.description || "",
+        price: isNaN(parsedPrice) ? 0 : parsedPrice,
+        oldPrice: isNaN(parsedOldPrice) ? 0 : parsedOldPrice,
+        isActive: p.isActive ?? true,
+        imageUrl: p.imageUrl || "",
+      };
+    });
+
+    const mappedStateProducts = products.map((p: any) => {
+      const parsedPrice = parseFloat(String(p.price || 0).replace(",", "."));
+      const parsedOldPrice = parseFloat(
+        String(p.oldPrice || 0).replace(",", "."),
+      );
+      return {
+        name: p.name,
+        description: p.description || "",
+        price: isNaN(parsedPrice) ? 0 : parsedPrice,
+        oldPrice: isNaN(parsedOldPrice) ? 0 : parsedOldPrice,
+        isActive: p.isActive ?? true,
+        imageUrl: p.imageUrl || "",
+      };
+    });
+
     const isArraysDifferent =
       !isDeepEqual(mediaFeed, safeMediaFeed) ||
       !isDeepEqual(selectedSubs, safeBusiness.subcategory || []) ||
       !isDeepEqual(keywords, safeBusiness.keywords || []) ||
       !isDeepEqual(features, safeBusiness.features || []) ||
       !isDeepEqual(faqs, safeBusiness.faqs || []) ||
-      !isDeepEqual(businessHours, safeBusiness.hours || []);
+      !isDeepEqual(businessHours, safeBusiness.hours || []) ||
+      !isDeepEqual(mappedStateProducts, mappedSafeProducts); // 🚀 USA A LISTA FILTRADA!
 
     const isSocialsDifferent =
       socials.instagram !== cleanSocialHandle(safeBusiness.instagram) ||
@@ -373,6 +418,8 @@ export default function BusinessEditor({
     isNew,
     safeBusiness,
     hasDelivery,
+    products,
+    menuMode,
   ]);
 
   // =========================================================================
@@ -448,6 +495,12 @@ export default function BusinessEditor({
       setProfileImage(safeBusiness.imageUrl);
       setCoverImage(safeBusiness.coverImage || "");
       setCatalogPdf(safeBusiness.catalogPdf || null); // 🚀 ADICIONADO AQUI
+      setMenuMode(safeBusiness.menuMode || "PDF");
+      setProducts(
+        safeBusiness.products
+          ? JSON.parse(JSON.stringify(safeBusiness.products))
+          : [],
+      ); // 🚀 CARDÁPIO
       setIsPublished(safeBusiness.published);
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
@@ -694,6 +747,8 @@ export default function BusinessEditor({
         imageUrl: profileImage,
         coverImage: coverImage,
         catalogPdf: catalogPdf, // 🚀 ADICIONADO AQUI
+        menuMode: menuMode,
+        products: products.filter((p: any) => p.name.trim() !== ""), // 🚀 CARDÁPIO ENVIADO AO BANCO
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
       };
@@ -971,6 +1026,10 @@ export default function BusinessEditor({
             setCatalogPdf={setCatalogPdf}
             isUploadingGallery={isUploadingGallery}
             setIsUploadingGallery={setIsUploadingGallery}
+            menuMode={menuMode}
+            setMenuMode={setMenuMode}
+            products={products}
+            setProducts={setProducts}
           />
         </div>
 

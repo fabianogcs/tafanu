@@ -38,6 +38,7 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
+import VitrineCardapio from "../VitrineCardapio"; // 🚀 O MOTOR DA MÁQUINA DE VENDAS
 
 const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -106,6 +107,7 @@ export default function ShowroomLayout({
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -241,7 +243,7 @@ export default function ShowroomLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen) {
+    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -249,7 +251,7 @@ export default function ShowroomLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen]); // 🚀 TRAVA A TELA PRO PDF
+  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E LOJA
 
   const addressPartsForMap = [
     business.address,
@@ -368,10 +370,19 @@ export default function ShowroomLayout({
 
         {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
         <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
-          {/* 🚀 BOTÃO DO CATÁLOGO INTEGRADO AOS ÍCONES REDONDOS */}
-          {rawBusiness.catalogPdf && (
+          {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF INTEGRADO AOS ÍCONES REDONDOS */}
+          {((rawBusiness.menuMode === "DIGITAL" &&
+            Array.isArray(rawBusiness.products) &&
+            rawBusiness.products.length > 0) ||
+            (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
             <button
-              onClick={() => setIsPdfModalOpen(true)}
+              onClick={() => {
+                if (rawBusiness.menuMode === "DIGITAL") {
+                  setShowDigitalMenu(true);
+                } else {
+                  setIsPdfModalOpen(true);
+                }
+              }}
               className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
             >
               <div
@@ -379,8 +390,8 @@ export default function ShowroomLayout({
               >
                 <Layout size={20} />
               </div>
-              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
-                Menu
+              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100 text-center">
+                {rawBusiness.menuMode === "DIGITAL" ? "Pedido" : "Menu"}
               </span>
             </button>
           )}
@@ -789,6 +800,21 @@ export default function ShowroomLayout({
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ==========================================
+          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          ========================================== */}
+      <AnimatePresence>
+        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+          <VitrineCardapio
+            businessName={rawBusiness.name}
+            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
+            themeColor={theme.previewColor}
+            products={rawBusiness.products || []}
+            onClose={() => setShowDigitalMenu(false)}
+          />
         )}
       </AnimatePresence>
 

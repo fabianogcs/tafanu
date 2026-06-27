@@ -40,6 +40,7 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
+import VitrineCardapio from "../VitrineCardapio"; // 🚀 O MOTOR DA MÁQUINA DE VENDAS AQUI!
 
 const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,6 +117,7 @@ export default function ComercialLayout({
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
   // 🚀 O filtro agora começa nulo para a IA decidir o que mostrar depois
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -257,7 +259,7 @@ export default function ComercialLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen) {
+    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -265,7 +267,7 @@ export default function ComercialLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen]); // 🚀 TRAVA A TELA QUANDO O PDF ABRIR
+  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E PRO CARRINHO
 
   const addressPartsForMap = [
     business.address,
@@ -386,18 +388,29 @@ export default function ComercialLayout({
         </div>
       </header>
 
-      {/* 🚀 BOTÃO DO CATÁLOGO ESTÁTICO COM DEGRADÊ PREMIUM (SEM ATRASO DE ANIMAÇÃO) */}
-      {rawBusiness.catalogPdf && (
+      {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF */}
+      {((rawBusiness.menuMode === "DIGITAL" &&
+        Array.isArray(rawBusiness.products) &&
+        rawBusiness.products.length > 0) ||
+        (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
         <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
           <button
-            onClick={() => setIsPdfModalOpen(true)}
+            onClick={() => {
+              if (rawBusiness.menuMode === "DIGITAL") {
+                setShowDigitalMenu(true);
+              } else {
+                setIsPdfModalOpen(true);
+              }
+            }}
             className={`relative overflow-hidden flex w-full md:w-[320px] justify-center items-center gap-3 px-8 py-4 rounded-full text-[11px] md:text-xs font-black tracking-[0.2em] uppercase text-white ${theme.bgAction} shadow-md border border-white/20 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95`}
           >
             {/* Máscara de Degradê Translúcido para dar o efeito "Estilizado/3D" */}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/20 pointer-events-none" />
 
             <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
-              Explorar Menu
+              {rawBusiness.menuMode === "DIGITAL"
+                ? "Fazer Pedido"
+                : "Explorar Menu"}
               <ChevronRight size={16} strokeWidth={2} />
             </span>
           </button>
@@ -954,6 +967,21 @@ export default function ComercialLayout({
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ==========================================
+          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          ========================================== */}
+      <AnimatePresence>
+        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+          <VitrineCardapio
+            businessName={rawBusiness.name}
+            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
+            themeColor={theme.previewColor}
+            products={rawBusiness.products || []}
+            onClose={() => setShowDigitalMenu(false)}
+          />
         )}
       </AnimatePresence>
 

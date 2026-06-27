@@ -168,7 +168,7 @@ export default async function BusinessPage({
         keywords: true,
         imageUrl: true,
         coverImage: true,
-        catalogPdf: true, // 🚀 AQUI! Agora o Prisma puxa o PDF do banco de dados para a tela!
+        catalogPdf: true,
         urban_tag: true,
         luxe_quote: true,
         comercial_badge: true,
@@ -198,6 +198,19 @@ export default async function BusinessPage({
         shein: true,
         ifood: true,
         hasDelivery: true,
+        menuMode: true, // 🚀 MOTOR DE DECISÃO
+        products: {
+          where: { isActive: true }, // 🚀 Filtra os inativos
+          select: {
+            // 🚀 OBRIGATÓRIO: Avisa o banco quais dados do lanche enviar para a tela
+            name: true,
+            description: true,
+            price: true,
+            oldPrice: true,
+            imageUrl: true,
+            isActive: true,
+          },
+        },
         published: true,
         isActive: true,
         expiresAt: true,

@@ -13,8 +13,40 @@ const hourSchema = z.object({
   closeTime: z.string().optional().or(z.literal("")),
   isClosed: z.boolean().optional(),
 });
-
+// 🚀 MOLDE DE SEGURANÇA PARA O CARDÁPIO DIGITAL
+const productSchema = z.object({
+  id: z.string().optional(),
+  name: z
+    .string()
+    .min(1, "O nome do produto é obrigatório")
+    .max(60, "Nome muito longo"),
+  description: z
+    .string()
+    .max(250, "A descrição do lanche deve ter no máximo 250 caracteres")
+    .optional()
+    .or(z.literal("")),
+  price: z.coerce.number().min(0, "O preço não pode ser negativo"),
+  oldPrice: z.coerce.number().optional().nullable(), // 🚀 LIBERA A ENTRADA DA PROMOÇÃO!
+  imageUrl: z.string().max(1000).optional().nullable().or(z.literal("")),
+  isActive: z.boolean().default(true),
+});
 export const businessSchema = z.object({
+  // 🚀 BLINDAGEM DO CARDÁPIO: Máximo de 50 itens para não estourar o banco de dados.
+  products: z
+    .preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          try {
+            return JSON.parse(val);
+          } catch {
+            return [];
+          }
+        }
+        return val || [];
+      },
+      z.array(productSchema).max(50, "O limite é de 50 produtos no cardápio"),
+    )
+    .default([]),
   // --- Identificação Básica ---
   // 🚀 BLINDAGEM: Nome não pode ser um livro.
   name: z
@@ -42,6 +74,7 @@ export const businessSchema = z.object({
     .enum(["urban", "editorial", "businessList", "showroom", "influencer"])
     .default("urban"),
   published: z.preprocess((val) => val === "true" || val === true, z.boolean()),
+  hasDelivery: z.boolean().default(false).optional(),
 
   // --- Campos de Texto Especial dos Layouts ---
   // 🚀 BLINDAGEM: O Slogan não pode quebrar o layout da vitrine (Máx 40 caracteres, como no front).
@@ -77,10 +110,25 @@ export const businessSchema = z.object({
   shein: z.string().max(255).optional().nullable(),
   ifood: z.string().max(255).optional().nullable(),
   catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
+  menuMode: z.enum(["PDF", "DIGITAL"]).default("PDF"),
 
   // URLs do UploadThing
-  imageUrl: z.string().max(1000).optional().or(z.literal("")),
-  coverImage: z.string().max(1000).optional().or(z.literal("")), // Adicionado para segurança!
+  imageUrl: z
+    .string()
+    .max(1000)
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val === "" || /^https?:\/\//i.test(val), {
+      message: "URL de imagem inválida",
+    }),
+  coverImage: z
+    .string()
+    .max(1000)
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val === "" || /^https?:\/\//i.test(val), {
+      message: "URL de capa inválida",
+    }),
   gallery: z
     .array(z.string().url().max(1000))
     .max(12, "O limite é de 12 fotos na galeria")

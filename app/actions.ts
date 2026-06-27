@@ -13,6 +13,42 @@ import crypto from "crypto";
 import { MercadoPagoConfig, PreApproval } from "mercadopago"; // 👈 NOVO IMPORT AQUI
 import { normalizeText, isCpfOrCnpjValid } from "@/lib/normalize";
 import { CommissionStatus } from "@prisma/client";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { headers } from "next/headers";
+
+// 🛡️ Rate limiters internos das Actions (proteção independente do middleware)
+const actionRedis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
+
+const loginRatelimit = actionRedis
+  ? new Ratelimit({
+      redis: actionRedis,
+      limiter: Ratelimit.slidingWindow(5, "15 m"),
+      prefix: "rl_action_login",
+    })
+  : null;
+
+const registerRatelimit = actionRedis
+  ? new Ratelimit({
+      redis: actionRedis,
+      limiter: Ratelimit.slidingWindow(3, "1 h"),
+      prefix: "rl_action_register",
+    })
+  : null;
+
+const resetRatelimit = actionRedis
+  ? new Ratelimit({
+      redis: actionRedis,
+      limiter: Ratelimit.slidingWindow(3, "1 h"),
+      prefix: "rl_action_reset",
+    })
+  : null;
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
@@ -182,6 +218,21 @@ export async function registerUser(formData: FormData) {
     return { error: "Dados excedem o limite máximo de caracteres permitido." };
   }
 
+  // 🛡️ RATE LIMIT INTERNO: 3 registros por hora por IP
+  if (registerRatelimit) {
+    const headersList = await headers();
+    const ip =
+      headersList.get("x-vercel-forwarded-for") ??
+      headersList.get("x-forwarded-for") ??
+      "127.0.0.1";
+    const { success } = await registerRatelimit.limit(`register:${ip}`);
+    if (!success) {
+      return {
+        error: "Limite de cadastros atingido. Tente novamente em 1 hora.",
+      };
+    }
+  }
+
   // --- 🛡️ TRAVA DE E-MAIL INVÁLIDO E DOMÍNIO RESERVADO ---
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!email || !emailRegex.test(email)) {
@@ -214,9 +265,12 @@ export async function registerUser(formData: FormData) {
   }
 
   try {
-    // 2. VALIDAÇÃO DE DUPLICIDADE
+    // 2. VALIDAÇÃO DE DUPLICIDADE (sem vazar se o e-mail existe)
     const existingUser = await db.user.findUnique({ where: { email } });
-    if (existingUser) return { error: "Este e-mail já está cadastrado." };
+    if (existingUser) {
+      // 🛡️ ANTI-ENUMERAÇÃO: mesma mensagem de sucesso para não revelar se o e-mail existe
+      return { success: true };
+    }
 
     // 3. VALIDAÇÃO UNIVERSAL DE DOCUMENTO (NOVO CNPJ E CPF)
     let cleanDocument = null;
@@ -311,7 +365,23 @@ export async function loginUser(formData: FormData) {
 
   // 🚀 O ESCUDO ANTI-CPU EXHAUSTION
   if (email?.length > 100 || password?.length > 100) {
-    return { error: "E-mail ou senha inválidos." }; // Não damos dica para o hacker do porquê falhou
+    return { error: "E-mail ou senha inválidos." };
+  }
+
+  // 🛡️ RATE LIMIT INTERNO: Protege a Action mesmo quando chamada diretamente
+  if (loginRatelimit) {
+    const headersList = await headers();
+    const ip =
+      headersList.get("x-vercel-forwarded-for") ??
+      headersList.get("x-forwarded-for") ??
+      "127.0.0.1";
+    const { success } = await loginRatelimit.limit(`login:${ip}`);
+    if (!success) {
+      return {
+        error:
+          "Muitas tentativas de login. Aguarde 15 minutos e tente novamente.",
+      };
+    }
   }
 
   // 1. Busca o usuário no banco
@@ -607,60 +677,49 @@ export async function createBusiness(payload: any) {
           layout: validatedData.layout as LayoutType, // 🛡️ Blindado igual fizemos na edição!
           category: validatedData.category,
           // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens enviados via Payload!
-          subcategory: Array.isArray(payload.subcategory)
-            ? payload.subcategory.slice(0, 3)
-            : [],
+          subcategory: validatedData.subcategory,
           description: validatedData.description,
           whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
           phone: (validatedData.phone || "").replace(/\D/g, ""),
           address: validatedData.address,
           number: validatedData.number || "",
           complement: validatedData.complement || "",
-          cep: payload.cep || "",
+          cep: validatedData.cep || "",
           city: normalizeText(validatedData.city || ""),
-          neighborhood: normalizeText(payload.neighborhood || ""),
+          neighborhood: normalizeText(validatedData.neighborhood || ""),
           state:
             !validatedData.address && !validatedData.city
               ? ""
               : validatedData.state,
           latitude: coords.lat,
           longitude: coords.lng,
-          imageUrl: payload.imageUrl || "",
-          coverImage: payload.coverImage || "",
-          mediaFeed: Array.isArray(payload.mediaFeed)
-            ? payload.mediaFeed.slice(0, 30)
-            : [],
-          gallery: Array.isArray(payload.mediaFeed)
-            ? payload.mediaFeed
-                .filter((m: any) => m.type === "image")
-                .map((m: any) => m.url)
-                .slice(0, 30)
-            : [],
-          videos: Array.isArray(payload.mediaFeed)
-            ? payload.mediaFeed
-                .filter((m: any) => m.type === "video")
-                .map((m: any) => m.url)
-                .slice(0, 5)
-            : [],
-          features: Array.isArray(payload.features)
-            ? payload.features.slice(0, 20)
-            : [],
+          imageUrl: validatedData.imageUrl || "",
+          coverImage: validatedData.coverImage || "",
+          mediaFeed: validatedData.mediaFeed as any,
+          gallery: (validatedData.mediaFeed || [])
+            .filter((m: any) => m && m.type === "image" && m.url)
+            .map((m: any) => m.url)
+            .slice(0, 30),
+          videos: (validatedData.mediaFeed || [])
+            .filter((m: any) => m && m.type === "video" && m.url)
+            .map((m: any) => m.url)
+            .slice(0, 5),
+          features: validatedData.features,
           keywords: Array.from(
             new Set([
-              ...(payload.keywords || []).map((k: string) => normalizeText(k)),
+              ...(validatedData.keywords || []).map((k: string) =>
+                normalizeText(k),
+              ),
               normalizeText(validatedData.name),
               normalizeText(validatedData.category),
-              ...(Array.isArray(payload.subcategory)
-                ? payload.subcategory.slice(0, 3)
-                : []
-              ).map((s: string) => normalizeText(s)),
-              ...(Array.isArray(payload.subcategory)
-                ? payload.subcategory.slice(0, 3)
-                : []
-              ).flatMap((s: string) => normalizeText(s).split(" ")),
+              ...(validatedData.subcategory || []).map((s: string) =>
+                normalizeText(s),
+              ),
+              ...(validatedData.subcategory || []).flatMap((s: string) =>
+                normalizeText(s).split(" "),
+              ),
             ]),
           ).filter(Boolean),
-          // 🚀 FORÇA O DOMÍNIO OFICIAL NAS REDES SOCIAIS
           instagram: buildSafeSocialLink(
             validatedData.instagram || "",
             "instagram",
@@ -670,8 +729,6 @@ export async function createBusiness(payload: any) {
             "facebook",
           ),
           tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
-
-          // 🚀 LISTA BRANCA ESTREITA: O domínio oficial deve ser a raiz do link
           shopee:
             validatedData.shopee &&
             /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
@@ -694,25 +751,50 @@ export async function createBusiness(payload: any) {
             /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
               ? validatedData.ifood.trim()
               : "",
-          website: payload.website || "",
-          published: payload.published ?? false, // 🚀 AGORA ELE OBEDECE A TELA!
-          hasDelivery: payload.hasDelivery || false,
-          urban_tag: payload.urban_tag || "",
-          luxe_quote: payload.luxe_quote || "",
-          showroom_collection: payload.showroom_collection || "",
-          comercial_badge: payload.comercial_badge || "",
-          faqs: Array.isArray(payload.faqs) ? payload.faqs.slice(0, 15) : [],
+          website: validatedData.website || "",
+          published: validatedData.published ?? false,
+          hasDelivery: validatedData.hasDelivery || false,
+          menuMode: validatedData.menuMode || "PDF",
+          urban_tag: validatedData.urban_tag || "",
+          luxe_quote: validatedData.luxe_quote || "",
+          showroom_collection: validatedData.showroom_collection || "",
+          comercial_badge: validatedData.comercial_badge || "",
+          faqs: validatedData.faqs as any,
         },
       });
 
-      if (Array.isArray(payload.hours) && payload.hours.length > 0) {
+      if (validatedData.hours && validatedData.hours.length > 0) {
         await tx.businessHour.createMany({
-          data: payload.hours.slice(0, 7).map((h: any) => ({
+          data: validatedData.hours.map((h: any) => ({
             businessId: business.id,
             dayOfWeek: h.dayOfWeek,
             openTime: h.openTime || "09:00",
             closeTime: h.closeTime || "18:00",
             isClosed: !!h.isClosed,
+          })),
+        });
+      }
+
+      if (validatedData.products && validatedData.products.length > 0) {
+        await tx.product.createMany({
+          data: validatedData.products.map((p: any) => ({
+            businessId: business.id,
+            name: String(p.name)
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .trim()
+              .substring(0, 60),
+            description: p.description
+              ? String(p.description)
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .trim()
+                  .substring(0, 250)
+              : "",
+            price: Math.abs(Number(p.price) || 0),
+            oldPrice: p.oldPrice ? Math.abs(Number(p.oldPrice)) : null,
+            imageUrl: p.imageUrl || "",
+            isActive: p.isActive ?? true,
           })),
         });
       }
@@ -754,6 +836,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
         coverImage: true,
         catalogPdf: true,
         gallery: true,
+        products: { select: { imageUrl: true } }, // 🚀 ESCUDO ANTI-VAZAMENTO: Mapeia as fotos antigas!
         user: { select: { affiliateId: true } },
       },
     });
@@ -802,162 +885,189 @@ export async function updateFullBusiness(slug: string, payload: any) {
         }
       }
     }
-    // ✂️ CIRURGIA: Faxina do UploadThing
-    const linksParaDeletar = [];
+    // ✂️ CIRURGIA: Faxina do UploadThing (Agora lendo 100% da aduana do Zod)
+    const linksParaDeletar: string[] = [];
 
-    // Se a logo antiga existe e mudou, vai para o lixo
-    if (old.imageUrl && old.imageUrl !== payload.imageUrl) {
+    if (old.imageUrl && old.imageUrl !== validatedData.imageUrl) {
       linksParaDeletar.push(old.imageUrl);
     }
-
-    // Se a capa antiga existe e mudou, vai para o lixo
-    if (old.coverImage && old.coverImage !== payload.coverImage) {
+    if (old.coverImage && old.coverImage !== validatedData.coverImage) {
       linksParaDeletar.push(old.coverImage);
     }
-    if (old.catalogPdf && old.catalogPdf !== payload.catalogPdf) {
+    if (old.catalogPdf && old.catalogPdf !== validatedData.catalogPdf) {
       linksParaDeletar.push(old.catalogPdf);
     }
-    // Se fotos da galeria antiga não estão na nova, vão para o lixo
+
     const galeriaAntiga = (old.gallery as string[]) || [];
-    const novaGaleriaUrls = (payload.mediaFeed || [])
+    const novaGaleriaUrls = (validatedData.mediaFeed || [])
       .filter((m: any) => m && m.type === "image" && m.url)
       .map((m: any) => m.url);
+
     galeriaAntiga.forEach((url) => {
       if (!novaGaleriaUrls.includes(url)) {
         linksParaDeletar.push(url);
       }
     });
 
-    if (linksParaDeletar.length > 0) {
-      await deleteFilesFromUploadThing(linksParaDeletar);
-    }
-    // ---------------------------------
-    await db.business.update({
-      where: { id: old.id },
-      data: {
-        name: validatedData.name,
-        slug: validatedData.slug.toLowerCase().trim(),
-        description: validatedData.description,
-        address: validatedData.address,
-        category: validatedData.category,
-        // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens!
-        subcategory: Array.isArray(payload.subcategory)
-          ? payload.subcategory.slice(0, 3)
-          : [],
-        theme: validatedData.theme,
-        layout: validatedData.layout as LayoutType, // 🛡️ Tipagem segura do Prisma
-        whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
-        phone: (validatedData.phone || "").replace(/\D/g, ""),
-        number: validatedData.number || "",
-        complement: validatedData.complement || "",
-        cep: validatedData.cep || payload.cep || "",
-        city: normalizeText(validatedData.city || ""),
-        neighborhood: normalizeText(payload.neighborhood || ""),
-        state:
-          !validatedData.address && !validatedData.city
-            ? ""
-            : validatedData.state,
-        latitude: lat,
-        longitude: lng,
-        keywords: Array.from(
-          new Set([
-            ...(payload.keywords || []).map((k: string) => normalizeText(k)),
-            normalizeText(validatedData.name),
-            normalizeText(validatedData.category),
-            ...(Array.isArray(payload.subcategory)
-              ? payload.subcategory.slice(0, 3)
-              : []
-            ).map((s: string) => normalizeText(s)),
-            ...(Array.isArray(payload.subcategory)
-              ? payload.subcategory.slice(0, 3)
-              : []
-            ).flatMap((s: string) => normalizeText(s).split(" ")),
-          ]),
-        ).filter(Boolean),
-        // 🚀 FORÇA O DOMÍNIO OFICIAL NAS REDES SOCIAIS
-        instagram: buildSafeSocialLink(
-          validatedData.instagram || "",
-          "instagram",
-        ),
-        facebook: buildSafeSocialLink(validatedData.facebook || "", "facebook"),
-        tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
+    // 🚀 O ESCUDO ANTI-FDoS (Financial DoS): Limpa as fotos dos lanches removidos!
+    const fotosProdutosAntigos =
+      old.products?.map((p: any) => p.imageUrl).filter(Boolean) || [];
+    const fotosProdutosNovos = (validatedData.products || [])
+      .map((p: any) => p.imageUrl)
+      .filter(Boolean);
 
-        // 🚀 AQUI ESTÃO OS DESAPARECIDOS!
-        imageUrl: payload.imageUrl || "",
-        coverImage: payload.coverImage || "",
-        catalogPdf: payload.catalogPdf || null,
-        website: payload.website || "",
-        features: Array.isArray(payload.features)
-          ? payload.features.slice(0, 20)
-          : [],
-        published: payload.published,
-        hasDelivery: payload.hasDelivery || false,
-        urban_tag: payload.urban_tag || "",
-        luxe_quote: payload.luxe_quote || "",
-        showroom_collection: payload.showroom_collection || "",
-        comercial_badge: payload.comercial_badge || "",
-
-        // 🚀 LISTA BRANCA ESTREITA: O domínio oficial deve ser a raiz do link
-        shopee:
-          validatedData.shopee &&
-          /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
-            ? validatedData.shopee.trim()
-            : "",
-        mercadoLivre:
-          validatedData.mercadoLivre &&
-          /^(https?:\/\/)?(www\.)?mercadolivre\.com/i.test(
-            validatedData.mercadoLivre,
-          )
-            ? validatedData.mercadoLivre.trim()
-            : "",
-        shein:
-          validatedData.shein &&
-          /^(https?:\/\/)?(www\.)?shein\.com/i.test(validatedData.shein)
-            ? validatedData.shein.trim()
-            : "",
-        ifood:
-          validatedData.ifood &&
-          /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
-            ? validatedData.ifood.trim()
-            : "",
-        mediaFeed: Array.isArray(payload.mediaFeed)
-          ? payload.mediaFeed.slice(0, 30)
-          : [],
-        gallery: Array.isArray(payload.mediaFeed)
-          ? payload.mediaFeed
-              .filter((m: any) => m && m.type === "image" && m.url)
-              .map((m: any) => m.url)
-              .slice(0, 30)
-          : [],
-        videos: Array.isArray(payload.mediaFeed)
-          ? payload.mediaFeed
-              .filter((m: any) => m && m.type === "video" && m.url)
-              .map((m: any) => m.url)
-              .slice(0, 5)
-          : [],
-        faqs: Array.isArray(payload.faqs) ? payload.faqs.slice(0, 15) : [],
-      },
+    fotosProdutosAntigos.forEach((url: string) => {
+      if (!fotosProdutosNovos.includes(url)) {
+        linksParaDeletar.push(url); // Acha a foto orfã e manda pra guilhotina
+      }
     });
 
-    // 🚀 CORREÇÃO SÊNIOR 2: Atualizando os horários de funcionamento (BLINDADO)!
-    if (payload.hours) {
-      // Primeiro, apagamos os horários velhos dessa loja
-      await db.businessHour.deleteMany({
-        where: { businessId: old.id },
+    // 🛡️ ENVELOPE DE SEGURANÇA ATÔMICA: Tudo salva junto ou nada salva!
+    await db.$transaction(async (tx) => {
+      await tx.business.update({
+        where: { id: old.id },
+        data: {
+          name: validatedData.name,
+          slug: validatedData.slug.toLowerCase().trim(),
+          description: validatedData.description,
+          address: validatedData.address,
+          category: validatedData.category,
+          subcategory: validatedData.subcategory,
+          theme: validatedData.theme,
+          layout: validatedData.layout as LayoutType,
+          whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
+          phone: (validatedData.phone || "").replace(/\D/g, ""),
+          number: validatedData.number || "",
+          complement: validatedData.complement || "",
+          cep: validatedData.cep || "",
+          city: normalizeText(validatedData.city || ""),
+          neighborhood: normalizeText(validatedData.neighborhood || ""),
+          state:
+            !validatedData.address && !validatedData.city
+              ? ""
+              : validatedData.state,
+          latitude: lat,
+          longitude: lng,
+          keywords: Array.from(
+            new Set([
+              ...(validatedData.keywords || []).map((k: string) =>
+                normalizeText(k),
+              ),
+              normalizeText(validatedData.name),
+              normalizeText(validatedData.category),
+              ...(validatedData.subcategory || []).map((s: string) =>
+                normalizeText(s),
+              ),
+              ...(validatedData.subcategory || []).flatMap((s: string) =>
+                normalizeText(s).split(" "),
+              ),
+            ]),
+          ).filter(Boolean),
+          instagram: buildSafeSocialLink(
+            validatedData.instagram || "",
+            "instagram",
+          ),
+          facebook: buildSafeSocialLink(
+            validatedData.facebook || "",
+            "facebook",
+          ),
+          tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
+          imageUrl: validatedData.imageUrl || "",
+          coverImage: validatedData.coverImage || "",
+          catalogPdf: validatedData.catalogPdf || null,
+          website: validatedData.website || "",
+          features: validatedData.features,
+          published: validatedData.published,
+          hasDelivery: validatedData.hasDelivery || false,
+          menuMode: validatedData.menuMode || "PDF",
+          urban_tag: validatedData.urban_tag || "",
+          luxe_quote: validatedData.luxe_quote || "",
+          showroom_collection: validatedData.showroom_collection || "",
+          comercial_badge: validatedData.comercial_badge || "",
+          shopee:
+            validatedData.shopee &&
+            /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
+              ? validatedData.shopee.trim()
+              : "",
+          mercadoLivre:
+            validatedData.mercadoLivre &&
+            /^(https?:\/\/)?(www\.)?mercadolivre\.com/i.test(
+              validatedData.mercadoLivre,
+            )
+              ? validatedData.mercadoLivre.trim()
+              : "",
+          shein:
+            validatedData.shein &&
+            /^(https?:\/\/)?(www\.)?shein\.com/i.test(validatedData.shein)
+              ? validatedData.shein.trim()
+              : "",
+          ifood:
+            validatedData.ifood &&
+            /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
+              ? validatedData.ifood.trim()
+              : "",
+          mediaFeed: validatedData.mediaFeed as any,
+          gallery: (validatedData.mediaFeed || [])
+            .filter((m: any) => m && m.type === "image" && m.url)
+            .map((m: any) => m.url)
+            .slice(0, 30),
+          videos: (validatedData.mediaFeed || [])
+            .filter((m: any) => m && m.type === "video" && m.url)
+            .map((m: any) => m.url)
+            .slice(0, 5),
+          faqs: validatedData.faqs as any,
+        },
       });
 
-      // Depois, criamos os novos limitados a 7 (uma semana) para evitar injeção de dados infinitos
-      if (Array.isArray(payload.hours) && payload.hours.length > 0) {
-        await db.businessHour.createMany({
-          data: payload.hours.slice(0, 7).map((h: any) => ({
-            businessId: old.id,
-            dayOfWeek: h.dayOfWeek,
-            openTime: h.openTime || "09:00",
-            closeTime: h.closeTime || "18:00",
-            isClosed: !!h.isClosed,
-          })),
-        });
+      if (validatedData.hours) {
+        await tx.businessHour.deleteMany({ where: { businessId: old.id } });
+        if (validatedData.hours.length > 0) {
+          await tx.businessHour.createMany({
+            data: validatedData.hours.map((h: any) => ({
+              businessId: old.id,
+              dayOfWeek: h.dayOfWeek,
+              openTime: h.openTime || "09:00",
+              closeTime: h.closeTime || "18:00",
+              isClosed: !!h.isClosed,
+            })),
+          });
+        }
       }
+
+      if (validatedData.products) {
+        await tx.product.deleteMany({ where: { businessId: old.id } });
+
+        if (validatedData.products.length > 0) {
+          await tx.product.createMany({
+            data: validatedData.products.map((p: any) => ({
+              businessId: old.id,
+              name: String(p.name)
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .trim()
+                .substring(0, 60),
+              description: p.description
+                ? String(p.description)
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .trim()
+                    .substring(0, 250)
+                : "",
+              price: Math.abs(Number(p.price) || 0),
+              oldPrice: p.oldPrice ? Math.abs(Number(p.oldPrice)) : null,
+              imageUrl: p.imageUrl || "",
+              isActive: p.isActive ?? true,
+            })),
+          });
+        }
+      }
+    });
+
+    // ✅ SUCESSO NO BANCO! Agora fazemos a faxina no bucket em segundo plano (Fire-and-forget)
+    if (linksParaDeletar.length > 0) {
+      deleteFilesFromUploadThing(linksParaDeletar).catch((err) =>
+        console.error("Erro ao limpar UploadThing após sucesso no DB:", err),
+      );
     }
 
     // 🚀 A MARRETA DO CACHE: Adicionamos "layout" e mapeamos a tela de edição
@@ -1176,6 +1286,7 @@ export async function resetBusiness(slug: string) {
 
     await db.$transaction([
       db.businessHour.deleteMany({ where: { businessId: business.id } }),
+      db.product.deleteMany({ where: { businessId: business.id } }), // 🚀 Zera o cardápio
       db.favorite.deleteMany({ where: { businessId: business.id } }),
       db.report.deleteMany({ where: { businessId: business.id } }),
       db.business.update({
@@ -1257,7 +1368,7 @@ async function executeCoreCleanup() {
       );
     }
 
-    // 🚀 CIRURGIA 2: A Faxina Original (Vai apagar só quem está vencido há mais de 30 dias)
+    // 🚀 CIRURGIA 2: A Faxina Original Otimizada para Evitar Orfãos no Storage
     const ghosts = await db.business.findMany({
       where: {
         user: { role: "VISITANTE" },
@@ -1266,8 +1377,14 @@ async function executeCoreCleanup() {
           { expiresAt: { lt: trintaDiasAtras } },
         ],
       },
-      take: 30, // Proteção Anti-Timeout
-      select: { id: true, imageUrl: true, gallery: true, mediaFeed: true },
+      take: 30,
+      select: {
+        id: true,
+        imageUrl: true,
+        gallery: true,
+        mediaFeed: true,
+        products: { select: { imageUrl: true } }, // 🚀 Puxa os lanches para a faxina externa
+      },
     });
 
     if (ghosts.length === 0)
@@ -1287,6 +1404,12 @@ async function executeCoreCleanup() {
           if (item && item.type === "image" && item.url) {
             linksParaDeletar.push(item.url);
           }
+        });
+      }
+      // 🚀 ENVIANDO IMAGENS DE PRODUTOS DE CONTAS FANTASMAS PRO LIXO
+      if (business.products && business.products.length > 0) {
+        business.products.forEach((p) => {
+          if (p.imageUrl) linksParaDeletar.push(p.imageUrl);
         });
       }
     });
@@ -1334,6 +1457,7 @@ async function cleanStorageFiles(slug: string) {
       catalogPdf: true, // 🚀 AVISAMOS SOBRE O PDF AQUI
       gallery: true,
       mediaFeed: true,
+      products: { select: { imageUrl: true } }, // 🚀 PUXA AS FOTOS DOS LANCHES
     },
   });
   if (!business) return;
@@ -1352,6 +1476,13 @@ async function cleanStorageFiles(slug: string) {
       if (item && item.type === "image" && item.url) {
         filesToDelete.push(item.url);
       }
+    });
+  }
+
+  // 🚀 LIXO DO CARDÁPIO: Pega as fotos dos produtos pra jogar fora
+  if (business.products && business.products.length > 0) {
+    business.products.forEach((p) => {
+      if (p.imageUrl) filesToDelete.push(p.imageUrl);
     });
   }
 
@@ -1501,6 +1632,16 @@ export async function registerClickEvent(
   const columnToIncrement = columnMap[upperEvent];
 
   try {
+    // 🛡️ VALIDAÇÃO IDOR: Garante que o negócio existe e está ativo antes de registrar
+    const businessExists = await db.business.findFirst({
+      where: { id: businessId, isActive: true, published: true },
+      select: { id: true },
+    });
+
+    if (!businessExists) {
+      return { success: true, ignored: true }; // Silencioso para não revelar IDs válidos
+    }
+
     // 🛡️ TRAVA ANTI-BOT (Evita que hackers inflem os relatórios com cliques falsos)
     const cookieStore = await cookies();
     const cookieName = `click_${businessId}_${upperEvent}`;
@@ -1835,6 +1976,22 @@ export async function sendPasswordResetEmail(formData: FormData) {
     return { error: "E-mail obrigatório ou inválido." };
   }
 
+  // 🛡️ RATE LIMIT INTERNO: 3 tentativas por hora por IP
+  if (resetRatelimit) {
+    const headersList = await headers();
+    const ip =
+      headersList.get("x-vercel-forwarded-for") ??
+      headersList.get("x-forwarded-for") ??
+      "127.0.0.1";
+    const { success } = await resetRatelimit.limit(`reset:${ip}`);
+    if (!success) {
+      return {
+        error:
+          "Muitas tentativas. Aguarde 1 hora antes de solicitar novamente.",
+      };
+    }
+  }
+
   const existingUser = await db.user.findUnique({ where: { email } });
 
   // Por segurança, se o usuário não existe, não damos erro, apenas fingimos que enviamos.
@@ -1977,6 +2134,7 @@ export async function runGarbageCollector() {
         catalogPdf: true,
         gallery: true,
         mediaFeed: true,
+        products: { select: { imageUrl: true } }, // 🚀 SALVANDO AS FOTOS DOS LANCHES!
       },
     });
 
@@ -2004,6 +2162,11 @@ export async function runGarbageCollector() {
             add(item.url);
           }
         });
+      }
+
+      // 🚀 SALVA OS PRODUTOS
+      if (b.products && b.products.length > 0) {
+        b.products.forEach((p) => add(p.imageUrl));
       }
     });
 
@@ -2055,10 +2218,12 @@ export async function runGarbageCollector() {
 
     console.log(`🗑️ Lixo identificado: ${filesToDelete.length} arquivos.`);
 
-    // 6. Deleta apenas se tiver lixo
+    // 6. Deleta em lotes para não estourar a API (Chunks de 500)
     if (filesToDelete.length > 0) {
-      // IMPORTANTE: Deletar em lotes se for muito grande
-      await utapi.deleteFiles(filesToDelete);
+      for (let i = 0; i < filesToDelete.length; i += 500) {
+        const chunk = filesToDelete.slice(i, i + 500);
+        await utapi.deleteFiles(chunk);
+      }
       return {
         success: true,
         message: `Faxina concluída! ${filesToDelete.length} arquivos inúteis foram apagados.`,
@@ -2158,10 +2323,19 @@ export async function promoteToAffiliate(userId: string, code: string) {
 // SEGURANÇA DE COOKIE PARA AFILIADOS
 // ==========================================
 export async function setAffiliateCookie(refCode: string) {
+  if (!refCode || refCode.length > 50) return; // Guarda básica de tamanho
   const cookieStore = await cookies();
 
   // 🚀 SANITIZAÇÃO DE ELITE: Remove espaços e padroniza em minúsculas para evitar erros de digitação
   const cleanCode = refCode.trim().toLowerCase();
+
+  // 🛡️ VALIDAÇÃO CONTRA BANCO: Só grava cookie se o afiliado existir e estiver ativo
+  const affiliateExists = await db.user.findFirst({
+    where: { referralCode: cleanCode, role: "AFILIADO" },
+    select: { id: true },
+  });
+
+  if (!affiliateExists) return; // Código inválido — não grava nada
 
   // 🛡️ Grava de forma segura, com HttpOnly e duração de 7 dias
   cookieStore.set("tafanu_ref", cleanCode, {
@@ -2287,7 +2461,7 @@ export async function getAffiliateDashboardData() {
 
     if (!affiliate) return { error: "Parceiro não encontrado." };
 
-    // 2. 🚀 CIRURGIA DE DIVISÃO ATÔMICA: Separa Pagantes de Leads para proteger a RAM e não sumir clientes antigos!
+    // 2. 🚀 CIRURGIA DE DIVISÃO ATÔMICA
     const selectCampos = {
       id: true,
       name: true,
@@ -2302,7 +2476,7 @@ export async function getAffiliateDashboardData() {
           isActive: true,
           planType: true,
           expiresAt: true,
-          mpSubscriptionId: true,
+          mpSubscriptionId: true, // ⬅️ O BANCO LÊ ISSO
           subscriptionStatus: true,
           createdAt: true,
         },
@@ -2317,7 +2491,7 @@ export async function getAffiliateDashboardData() {
           role: "ASSINANTE",
           NOT: { id: sessionUser.id },
         },
-        take: 150, // Resguarda 150 vagas imortais para quem está gerando receita
+        take: 150,
         select: selectCampos,
         orderBy: { createdAt: "desc" },
       }),
@@ -2327,14 +2501,24 @@ export async function getAffiliateDashboardData() {
           role: "VISITANTE",
           NOT: { id: sessionUser.id },
         },
-        take: 150, // Limita os curiosos/leads novos para não estourarem a RAM
+        take: 150,
         select: selectCampos,
         orderBy: { createdAt: "desc" },
       }),
     ]);
 
-    // Junta as duas listas
+    // Junta as duas listas originais
     const combinedClients = [...assinantes, ...leads];
+
+    // 🛡️ DATA MASKING: A Mágica! Apaga o ID perigoso antes de mandar pro front-end
+    const safeClients = combinedClients.map((client) => ({
+      ...client,
+      businesses: client.businesses.map((b) => {
+        const isMercadoPago = !!b.mpSubscriptionId; // Cria a flag de segurança
+        const { mpSubscriptionId, ...safeBusiness } = b; // Arranca o ID transacional daqui
+        return { ...safeBusiness, isMercadoPago }; // Devolve a loja blindada
+      }),
+    }));
 
     return {
       success: true,
@@ -2344,7 +2528,7 @@ export async function getAffiliateDashboardData() {
         name: affiliate.name,
         referralCode: affiliate.referralCode,
       },
-      clients: combinedClients, // 🚀 Manda a lista combinada e protegida
+      clients: safeClients, // 🚀 Agora enviamos a lista blindada
       commissions: affiliate.commissions,
     };
   } catch (error) {
@@ -3226,10 +3410,8 @@ export async function flagComment(commentId: string) {
 }
 // 🛡️ MODERAÇÃO DE COMENTÁRIOS: Limpa a denúncia e mantém o comentário no site
 export async function approveComment(commentId: string) {
-  // 1. Validação de Segurança (Garante que só você, o Admin, faça isso)
-  const session = await auth();
-  const emailSessao = session?.user?.email?.toLowerCase();
-  if (!emailSessao || emailSessao !== process.env.ADMIN_EMAIL) {
+  // 🛡️ CONSISTÊNCIA: usa requireAdmin() igual ao resto do código
+  if (!(await requireAdmin())) {
     return { error: "Acesso negado. Apenas o Admin pode aprovar comentários." };
   }
 
@@ -3501,6 +3683,7 @@ export async function transferBusinessToUser(
           comercial_badge: vitrinePronta.comercial_badge,
           showroom_collection: vitrinePronta.showroom_collection,
           hasDelivery: vitrinePronta.hasDelivery,
+          menuMode: vitrinePronta.menuMode,
 
           // O Transplante foi um sucesso, ativamos a loja pro mundo!
           published: true,
@@ -3522,6 +3705,12 @@ export async function transferBusinessToUser(
         data: { businessId: lojaGaveta.id },
       });
       await tx.comment.updateMany({
+        where: { businessId: vitrinePronta.id },
+        data: { businessId: lojaGaveta.id },
+      });
+
+      // Passamos os produtos do cardápio para o novo dono
+      await tx.product.updateMany({
         where: { businessId: vitrinePronta.id },
         data: { businessId: lojaGaveta.id },
       });

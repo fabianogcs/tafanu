@@ -301,14 +301,22 @@ export async function POST(request: Request) {
                   : "Anual";
 
             // 🏆 O DINHEIRO CAIU! E nós garantimos a injeção do paymentId para nunca duplicar.
-            await generateCommission(
+            const commissionResult = await generateCommission(
               userId,
               transactionAmount,
               `Assinatura ${descricaoPlano} (${mesAno}) - Loja: ${businessId} - Recibo MP: ${paymentId}`,
               planType,
               String(paymentId),
-              businessId, // 🚀 INJEÇÃO DO ID DA LOJA
+              businessId,
             );
+
+            if (commissionResult.error) {
+              console.log(
+                `⚠️ [Webhook MP] Aviso na comissão: ${commissionResult.error}`,
+              );
+              // Retornamos 200 para o MP não ficar tentando infinitamente
+              return new NextResponse("Processado com aviso", { status: 200 });
+            }
 
             console.log(
               `💰 [Webhook MP] Pagamento aprovado e UNICAMENTE gerado: Loja ${businessId}`,

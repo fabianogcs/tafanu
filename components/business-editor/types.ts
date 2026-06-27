@@ -30,3 +30,13 @@ export interface AddressData {
 export interface ContentData {
   catalogPdf?: string | null;
 }
+// 🚀 TIPO PARA O CARDÁPIO DIGITAL
+export interface ProductData {
+  id?: string;
+  name: string;
+  description?: string;
+  price: number;
+  oldPrice?: number; // 🚀 AQUI ESTÁ A CHAVE DA PROMOÇÃO (Opcional)
+  imageUrl?: string;
+  isActive: boolean;
+}

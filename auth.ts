@@ -84,13 +84,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           });
 
           if (dbUser) {
-            // 🚀 BISTURI 3: A Bomba Eletromagnética (Crachá Fantasma)
-            // Se o banco acusa banimento, definimos a expiração (exp) do token para 0 (o passado).
-            // O NextAuth automaticamente vai ler isso como "sessão inválida" e vai ejetar o usuário do site no mesmo segundo.
+            // 🚀 BISTURI 3: A Bomba Eletromagnética (Crachá Fantasma - Banimento)
             if (dbUser.isBanned) {
               token.exp = 0;
               return token;
             }
+
+            // 🚀 BISTURI 4: O Exorcista de Sessões (Trava de Senha Alterada)
+            // Pega os 10 primeiros caracteres do hash da senha atual no banco (se existir)
+            const currentPassFragment = dbUser.password
+              ? dbUser.password.slice(0, 10)
+              : "";
+
+            // Se o token já tem um fragmento gravado, e ele for DIFERENTE do banco agora,
+            // significa que a senha foi trocada. Derruba a sessão instantaneamente!
+            if (
+              token.passFragment !== undefined &&
+              token.passFragment !== currentPassFragment
+            ) {
+              token.exp = 0;
+              return token;
+            }
+
+            // Salva o fragmento atual no token para as próximas checagens (não expõe a senha real)
+            token.passFragment = currentPassFragment;
 
             // O cargo verdadeiro e soberano vindo do Banco de Dados
             token.role = dbUser.role;

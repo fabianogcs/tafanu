@@ -106,7 +106,7 @@ export default function AffiliateDashboard() {
 
     const expDate = business.expiresAt ? new Date(business.expiresAt) : null;
     const planType = business.planType;
-    const mpSubId = business.mpSubscriptionId;
+    const isMercadoPago = business.isMercadoPago; // 🚀 Lendo a nova flag blindada
     const subStatus = business.subscriptionStatus;
 
     // 2. VENCIDOS OU CANCELADOS
@@ -126,7 +126,7 @@ export default function AffiliateDashboard() {
     }
 
     // 4. PIX / MANUAIS
-    if (!mpSubId) {
+    if (!isMercadoPago) {
       listPix.push(u);
       return;
     }
