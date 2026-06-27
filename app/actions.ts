@@ -670,15 +670,24 @@ export async function createBusiness(payload: any) {
       const business = await tx.business.create({
         data: {
           userId: session.id,
-          name: validatedData.name,
-          slug: validatedData.slug.toLowerCase().trim(),
-          // ... (todos os outros campos que você já mapeou)
+          // 🚀 BLINDAGEM XSS: Neutraliza scripts no título
+          name: validatedData.name.replace(/</g, "&lt;").replace(/>/g, "&gt;"),
+          // 🚀 BLINDAGEM DE ROTA: Remove qualquer símbolo maluco do link (só aceita letras, números e traços)
+          slug: validatedData.slug
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9-]/g, ""),
+          // ... (mantenha a categoria, tema, layout iguais)
           theme: validatedData.theme,
-          layout: validatedData.layout as LayoutType, // 🛡️ Blindado igual fizemos na edição!
+          layout: validatedData.layout as LayoutType,
           category: validatedData.category,
-          // 🚀 BLINDAGEM DE MEMÓRIA (ANTI-CRASH): Limita o tamanho máximo de itens enviados via Payload!
           subcategory: validatedData.subcategory,
-          description: validatedData.description,
+          // 🚀 BLINDAGEM XSS: Neutraliza scripts na descrição
+          description: validatedData.description
+            ? validatedData.description
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+            : "",
           whatsapp: (validatedData.whatsapp || "").replace(/\D/g, ""),
           phone: (validatedData.phone || "").replace(/\D/g, ""),
           address: validatedData.address,
@@ -927,9 +936,17 @@ export async function updateFullBusiness(slug: string, payload: any) {
       await tx.business.update({
         where: { id: old.id },
         data: {
-          name: validatedData.name,
-          slug: validatedData.slug.toLowerCase().trim(),
-          description: validatedData.description,
+          // 🚀 BLINDAGEM XSS E SLUG
+          name: validatedData.name.replace(/</g, "&lt;").replace(/>/g, "&gt;"),
+          slug: validatedData.slug
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9-]/g, ""),
+          description: validatedData.description
+            ? validatedData.description
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+            : "",
           address: validatedData.address,
           category: validatedData.category,
           subcategory: validatedData.subcategory,
