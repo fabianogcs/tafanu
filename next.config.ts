@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 🚀 SEGURANÇA MESTRA: Esconde a tecnologia do servidor (Cala o alerta do ZAP)
+  poweredByHeader: false,
+
   // 🚀 LIBERAÇÃO DO IP: Sem as portas (:3000), exatamente como o terminal exigiu
   allowedDevOrigins: ["localhost", "192.168.15.152"],
 
@@ -11,10 +14,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "utfs.io" },
       { protocol: "https", hostname: "*.ufs.sh" },
       { protocol: "https", hostname: "tafanu.com.br" },
+      // 🛡️ PREVENÇÃO UX: Garante que os avatares de quem loga pelo Google carreguem
+      { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
   },
 
-  // 🛡️ NOVO: Headers de Segurança HTTP para produção
+  // 🛡️ Headers de Segurança HTTP para produção (Livres de bloqueios front-end)
   async headers() {
     return [
       {
