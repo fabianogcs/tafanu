@@ -49,6 +49,14 @@ const resetRatelimit = actionRedis
       prefix: "rl_action_reset",
     })
   : null;
+// 🛡️ RATE LIMIT PARA AÇÕES AUTENTICADAS (Criação e Edição de Lojas)
+const storeActionRatelimit = actionRedis
+  ? new Ratelimit({
+      redis: actionRedis,
+      limiter: Ratelimit.slidingWindow(10, "1 m"), // 10 ações por minuto
+      prefix: "rl_action_store",
+    })
+  : null;
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
@@ -618,6 +626,16 @@ export async function getFilterMetadata() {
 export async function createBusiness(payload: any) {
   const session = await getSafeUser();
   if (!session) return { error: "Não autorizado." };
+  // 🛡️ TRAVA ANTI-RACE CONDITION E ANTI-SPAM
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`store_${session.id}`);
+    if (!success) {
+      console.warn(
+        `🚨 [Ataque Bloqueado] Usuário ${session.id} floodando API.`,
+      );
+      return { error: "Muitas ações simultâneas. Aguarde um minuto." };
+    }
+  }
 
   // 🚀 PARTE 1: VALIDAÇÃO DE REGRAS DE NEGÓCIO (ROLES)
   const userRole = session.role; // Pegando o cargo do usuário da sessão
@@ -829,7 +847,16 @@ export async function createBusiness(payload: any) {
 export async function updateFullBusiness(slug: string, payload: any) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
-
+  // 🛡️ TRAVA ANTI-SPAM E PROTEÇÃO DA API DO GOOGLE MAPS
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`store_${user.id}`);
+    if (!success) {
+      return {
+        error:
+          "Você está salvando muito rápido. Aguarde um minuto para não sobrecarregar o sistema.",
+      };
+    }
+  }
   try {
     const old = await db.business.findUnique({
       where: { slug },
@@ -1120,7 +1147,10 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
   if (gallery?.length > 30) return { error: "Limite de mídias excedido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
-
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`store_${user.id}`);
+    if (!success) return { error: "Muitas ações. Aguarde um minuto." };
+  }
   try {
     // 1. Busca o negócio atual e traz o mediaFeed junto
     const business = await db.business.findUnique({
@@ -1193,6 +1223,10 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
   if (hours?.length > 7) return { error: "Limite de horários excedido." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`store_${user.id}`);
+    if (!success) return { error: "Muitas ações. Aguarde um minuto." };
+  }
   const userId = user.id;
   try {
     const b = await db.business.findUnique({

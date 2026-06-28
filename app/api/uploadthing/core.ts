@@ -2,14 +2,36 @@ import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 const f = createUploadthing();
 
-// 1. O Porteiro Geral (Apenas checa login e permissões básicas)
+// 🚀 ALTERAÇÃO DE ELITE: Mudança para Token Bucket para proteger o onboarding
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  // 80 fichas de capacidade máxima (cobre todas as fotos + margem)
+  // Refila 10 fichas a cada 1 minuto para uso contínuo moderado
+  limiter: Ratelimit.tokenBucket(80, "1 m", 10),
+  analytics: true,
+});
+
+// 1. O Porteiro Geral (Agora com Escudo Anti-Spam)
 const handleAuth = async () => {
   const session = await auth();
   if (!session?.user?.id) {
     throw new UploadThingError("Acesso negado. Faça login.");
+  }
+
+  // 🛡️ TRAVA 1: Rate Limiting Imediato (Antes mesmo de gastar o PostgreSQL)
+  const { success } = await ratelimit.limit(`upload_${session.user.id}`);
+  if (!success) {
+    console.warn(
+      `🚨 [DDoS Bloqueado] Usuário ${session.user.id} está fazendo spam de uploads.`,
+    );
+    throw new UploadThingError(
+      "Muitos uploads em sequência. Aguarde um minuto e tente novamente.",
+    );
   }
 
   const dbUser = await db.user.findUnique({
