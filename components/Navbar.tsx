@@ -3,7 +3,6 @@
 import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-// Removi ícones não utilizados para deixar o bundle mais leve
 import {
   LogOut,
   LayoutDashboard,
@@ -19,6 +18,7 @@ import {
   Smartphone,
   Download,
   Briefcase,
+  Clock, // 🚀 NOVO ÍCONE PARA O RASTREIO
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -31,6 +31,29 @@ export default function Navbar({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  // 🚀 ESTADO DA GAVETA DE PEDIDOS (Múltiplos Pedidos)
+  const [activeOrdersCount, setActiveOrdersCount] = useState<number>(0);
+
+  useEffect(() => {
+    const checkActiveOrders = () => {
+      const ordersStr = localStorage.getItem("tafanu_active_orders");
+      if (ordersStr) {
+        try {
+          const ordersArr = JSON.parse(ordersStr);
+          setActiveOrdersCount(ordersArr.length);
+        } catch (e) {
+          setActiveOrdersCount(0);
+        }
+      } else {
+        setActiveOrdersCount(0);
+      }
+    };
+
+    checkActiveOrders();
+    window.addEventListener("storage", checkActiveOrders); // Atualiza se mudar em outra aba
+    return () => window.removeEventListener("storage", checkActiveOrders);
+  }, []);
 
   useEffect(() => {
     const handlePrompt = (e: any) => {
@@ -74,10 +97,8 @@ export default function Navbar({
     };
   }, [isOpen]);
 
-  // 🚀 O PULO DO GATO: Pegamos a sessão do cliente para ser reativo ao SessionRefresher
   const { data: session } = useSession();
 
-  // Se o SessionRefresher atualizar o cargo, a 'session' do cliente muda na hora!
   const currentRole = session?.user?.role || userRole;
   const isCurrentlyLoggedIn = !!session || isLoggedIn;
 
@@ -94,7 +115,6 @@ export default function Navbar({
         <div className="flex justify-between items-center h-20 md:h-24">
           <div className="flex-shrink-0">
             <Link href="/" className="group" onClick={() => setIsOpen(false)}>
-              {/* 🚀 O PULO DO GATO 1: Texto é mais rápido que imagem. Se for usar imagem aqui um dia, adicione priority={true} */}
               <span className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase italic group-hover:text-tafanu-action transition-all duration-500">
                 Tafanu
               </span>
@@ -111,6 +131,16 @@ export default function Navbar({
                   Baixar App
                 </button>
               )}
+              {/* 🚀 BOTÃO DE RASTREIO DESKTOP */}
+              {activeOrdersCount > 0 && (
+                <Link
+                  href="/meus-pedidos"
+                  className="flex items-center gap-2 px-5 py-2 text-white font-black text-[11px] uppercase tracking-widest bg-rose-500 hover:bg-rose-600 rounded-xl animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.4)] border border-rose-400 transition-all"
+                >
+                  <Clock size={14} /> Acompanhar ({activeOrdersCount})
+                </Link>
+              )}
+
               <Link
                 href="/"
                 className="px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
@@ -266,6 +296,17 @@ export default function Navbar({
           )}
 
           <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
+            {/* 🚀 BOTÃO DE RASTREIO MOBILE (Em destaque no topo do menu) */}
+            {activeOrdersCount > 0 && (
+              <MobileLink
+                href="/meus-pedidos"
+                icon={<Clock size={20} />}
+                label={`Acompanhar Pedidos (${activeOrdersCount})`}
+                color="text-rose-400"
+                onClick={() => setIsOpen(false)}
+              />
+            )}
+
             <MobileLink
               href="/"
               icon={<Home size={20} />}

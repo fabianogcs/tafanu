@@ -273,7 +273,14 @@ export default function BusinessEditor({
   const [hasDelivery, setHasDelivery] = useState(
     safeBusiness.hasDelivery || false,
   );
-
+  // 🚀 ESTADO DA TAXA DE ENTREGA
+  const [deliveryFee, setDeliveryFee] = useState<number>(
+    safeBusiness.deliveryFee || 0,
+  );
+  // 🚀 ESTADO DO RAIO DE ENTREGA
+  const [deliveryRadius, setDeliveryRadius] = useState<number>(
+    safeBusiness.deliveryRadius || 0,
+  );
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -321,6 +328,8 @@ export default function BusinessEditor({
       menuMode !== (safeBusiness.menuMode || "PDF") ||
       categoria !== initialCategory ||
       hasDelivery !== (safeBusiness.hasDelivery || false) ||
+      deliveryFee !== (safeBusiness.deliveryFee || 0) || // 🚀 VERIFICA MUDANÇA NA TAXA
+      deliveryRadius !== (safeBusiness.deliveryRadius || 0) ||
       selectedTheme !== safeBusiness.theme ||
       selectedLayout !== initialLayout ||
       description !== safeBusiness.description ||
@@ -341,6 +350,7 @@ export default function BusinessEditor({
         oldPrice: isNaN(parsedOldPrice) ? 0 : parsedOldPrice,
         isActive: p.isActive ?? true,
         imageUrl: p.imageUrl || "",
+        extras: p.extras || [],
       };
     });
 
@@ -356,6 +366,7 @@ export default function BusinessEditor({
         oldPrice: isNaN(parsedOldPrice) ? 0 : parsedOldPrice,
         isActive: p.isActive ?? true,
         imageUrl: p.imageUrl || "",
+        extras: p.extras || [],
       };
     });
 
@@ -567,6 +578,8 @@ export default function BusinessEditor({
       });
 
       setHasDelivery(safeBusiness.hasDelivery || false);
+      setDeliveryFee(safeBusiness.deliveryFee || 0);
+      setDeliveryRadius(safeBusiness.deliveryRadius || 0);
       hasInitialized.current = true;
     }
   }, [safeBusiness, isNew]);
@@ -740,6 +753,8 @@ export default function BusinessEditor({
           : "",
 
         hasDelivery: hasDelivery,
+        deliveryFee: deliveryFee,
+        deliveryRadius: deliveryRadius,
 
         mediaFeed: mediaFeed.filter(
           (m: any) => typeof m.url === "string" && m.url.trim() !== "",
@@ -1052,6 +1067,10 @@ export default function BusinessEditor({
               setPhone={setPhone}
               hasDelivery={hasDelivery}
               setHasDelivery={setHasDelivery}
+              deliveryFee={deliveryFee} // 🚀 PASSA A TAXA
+              setDeliveryFee={setDeliveryFee} // 🚀 PASSA O ATUALIZADOR DA TAXA
+              deliveryRadius={deliveryRadius} // 🚀 MANDA PRA TELA
+              setDeliveryRadius={setDeliveryRadius} // 🚀 MANDA PRA TELA
             />
           </div>
 

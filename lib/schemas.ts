@@ -26,9 +26,10 @@ const productSchema = z.object({
     .optional()
     .or(z.literal("")),
   price: z.coerce.number().min(0, "O preço não pode ser negativo"),
-  oldPrice: z.coerce.number().optional().nullable(), // 🚀 LIBERA A ENTRADA DA PROMOÇÃO!
+  oldPrice: z.coerce.number().optional().nullable(),
   imageUrl: z.string().max(1000).optional().nullable().or(z.literal("")),
   isActive: z.boolean().default(true),
+  extras: z.array(z.any()).optional(), // 🚀 A CHAVE MESTRA: Libera a passagem dos adicionais!
 });
 export const businessSchema = z.object({
   // 🚀 BLINDAGEM DO CARDÁPIO: Máximo de 50 itens para não estourar o banco de dados.
@@ -75,6 +76,10 @@ export const businessSchema = z.object({
     .default("urban"),
   published: z.preprocess((val) => val === "true" || val === true, z.boolean()),
   hasDelivery: z.boolean().default(false).optional(),
+  deliveryFee: z.coerce.number().min(0).optional().default(0),
+  deliveryRadius: z.coerce.number().min(0).max(500).optional().default(0), // 🚀 RAIO MÁXIMO (Ex: 500km)
+
+  // --- Campos de Texto Especial dos Layouts ---
 
   // --- Campos de Texto Especial dos Layouts ---
   // 🚀 BLINDAGEM: O Slogan não pode quebrar o layout da vitrine (Máx 40 caracteres, como no front).
@@ -306,7 +311,9 @@ export const userProfileSchema = z
     document: z
       .string()
       .min(11, "CPF ou CNPJ inválido")
-      .max(20, "Documento muito longo"),
+      .max(20, "Documento muito longo")
+      .optional()
+      .or(z.literal("")), // 🚀 Agora Visitantes podem ter o campo vazio sem o Zod surtar
 
     // 🔑 Campo da Nova Senha
     newPassword: z

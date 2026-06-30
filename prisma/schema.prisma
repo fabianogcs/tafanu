@@ -69,8 +69,8 @@ model User {
   lastPayoutDate  DateTime?
   lastPrice       Float?    @default(0)    
   referrals       User[]    @relation("AffiliateToUser")
-  document        String?
-  phone           String?
+  document        String?   @unique // 🚀 TRAVA DE AÇO: Bloqueia clones e banidos
+  phone           String?   @unique // 🚀 TRAVA DE AÇO: Garante 1 WhatsApp por pessoa
   createdAt       DateTime  @default(now())
   isBanned        Boolean   @default(false)
 
@@ -148,7 +148,9 @@ model Business {
   shein               String?
   ifood               String?
 
-  hasDelivery         Boolean        @default(false)
+ hasDelivery         Boolean        @default(false)
+  deliveryFee         Float          @default(0) 
+  deliveryRadius      Float          @default(0) // 🚀 NOVO: Raio máximo em Km (0 = sem limite)
   menuMode            MenuMode       @default(PDF)
   
   // 💰 Dados da Assinatura Deste Negócio Específico
@@ -175,6 +177,7 @@ model Business {
   commissions         Commission[]
 
   products            Product[]
+  orders              Order[]
 
   // 🚀 ÍNDICES DE ALTA PERFORMANCE
   @@index([category])
@@ -378,6 +381,8 @@ model Product {
   imageUrl    String?  @db.Text // A foto apetitosa do lanche
   isActive    Boolean  @default(true) // O lojista pode pausar um lanche se acabar o estoque
   
+  extras      Json?    @default("[]")
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -385,4 +390,42 @@ model Product {
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId]) // 🚀 Índice para a vitrine carregar o cardápio num piscar de olhos
+}
+// --- SISTEMA DE PEDIDOS (MOTOR iFOOD) ---
+
+enum OrderStatus {
+  PENDING    // Novo pedido, apitando na tela do lojista
+  PREPARING  // Lojista aceitou e está fazendo
+  DISPATCHED // Saiu para entrega ou pronto para retirar
+  COMPLETED  // Finalizado com sucesso
+  CANCELLED  // Lojista recusou ou cliente cancelou
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   Int         @default(autoincrement()) // Gera números sequenciais bonitos (ex: #1024)
+  
+  businessId    String
+  business      Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  customerName  String
+  customerPhone String?
+  
+  items         Json        // 🚀 Cofre Blindado: Salva o array de lanches e adicionais exatamente como foram vendidos
+  totalAmount   Float       // Valor real recalculado pelo servidor
+  
+  deliveryType  String      // "DELIVERY" ou "PICKUP"
+  address       Json?       // { street, number, neighborhood, cep, complement, reference }
+  
+  paymentMethod String      // "PIX", "CASH", "CREDIT", "DEBIT"
+  changeFor     String?     // Troco para
+  observation   String?     @db.Text
+  
+  status        OrderStatus @default(PENDING)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([businessId, status]) // 🚀 Índice de Alta Performance para o Kanban do Lojista carregar na velocidade da luz
+  @@index([createdAt])
 }

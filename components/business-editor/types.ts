@@ -39,4 +39,5 @@ export interface ProductData {
   oldPrice?: number; // 🚀 AQUI ESTÁ A CHAVE DA PROMOÇÃO (Opcional)
   imageUrl?: string;
   isActive: boolean;
+  extras?: { name: string; price: number }[];
 }

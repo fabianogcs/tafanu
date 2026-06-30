@@ -269,6 +269,22 @@ export default function ComercialLayout({
     };
   }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E PRO CARRINHO
 
+  // 🚀 MÁGICA DA CONVERSÃO: Abre o carrinho automaticamente se o cliente voltar de um login!
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // 🧹 EXORCISMO: Deleta o carrinho antigo que ficou preso no navegador
+      sessionStorage.removeItem("tafanu_cart");
+
+      const isCartPending = window.location.search.includes("cart=true");
+      // 🚀 Atualizado para ler o NOVO cofre super seguro
+      const savedCart = sessionStorage.getItem("tafanu_pending_checkout");
+
+      if (isCartPending || savedCart) {
+        setShowDigitalMenu(true);
+      }
+    }
+  }, []);
+
   const addressPartsForMap = [
     business.address,
     business.number,
@@ -976,11 +992,18 @@ export default function ComercialLayout({
       <AnimatePresence>
         {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
           <VitrineCardapio
+            businessId={rawBusiness.id}
             businessName={rawBusiness.name}
             whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
             themeColor={theme.previewColor}
             products={rawBusiness.products || []}
             onClose={() => setShowDigitalMenu(false)}
+            isOpen={isOpen}
+            hours={rawBusiness.hours}
+            deliveryFee={rawBusiness.deliveryFee || 0}
+            deliveryRadius={rawBusiness.deliveryRadius || 0} // 🚀 AQUI
+            businessLat={rawBusiness.latitude} // 🚀 AQUI
+            businessLng={rawBusiness.longitude} // 🚀 AQUI
           />
         )}
       </AnimatePresence>

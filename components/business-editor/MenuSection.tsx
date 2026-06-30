@@ -31,7 +31,6 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
       toast.warning("O limite é de 50 produtos por cardápio.");
       return;
     }
-    // 🚀 FIX: O produto nasce zerado e limpo, pronto para promoção
     setProducts([
       ...products,
       {
@@ -41,14 +40,14 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
         oldPrice: 0,
         isActive: true,
         imageUrl: "",
+        extras: [],
       },
     ]);
     setUploadingIndex(null);
   };
 
   const handleRemoveProduct = (index: number) => {
-    const confirm = window.confirm("Deseja excluir este item do cardápio?");
-    if (confirm) {
+    if (window.confirm("Deseja excluir este item do cardápio?")) {
       setProducts((prev) => prev.filter((_, i) => i !== index));
     }
   };
@@ -65,32 +64,57 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
     });
   };
 
+  // 🚀 NOVAS FUNÇÕES PARA OS ADICIONAIS
+  const handleAddExtra = (productIndex: number) => {
+    const currentExtras = products[productIndex].extras || [];
+    if (currentExtras.length >= 10) {
+      toast.warning("Limite de 10 adicionais por produto.");
+      return;
+    }
+    handleUpdateProduct(productIndex, "extras", [
+      ...currentExtras,
+      { name: "", price: 0 },
+    ]);
+  };
+
+  const handleRemoveExtra = (productIndex: number, extraIndex: number) => {
+    const newExtras = [...(products[productIndex].extras || [])];
+    newExtras.splice(extraIndex, 1);
+    handleUpdateProduct(productIndex, "extras", newExtras);
+  };
+
+  const handleUpdateExtra = (
+    productIndex: number,
+    extraIndex: number,
+    field: string,
+    value: any,
+  ) => {
+    const newExtras = [...(products[productIndex].extras || [])];
+    newExtras[extraIndex] = { ...newExtras[extraIndex], [field]: value };
+    handleUpdateProduct(productIndex, "extras", newExtras);
+  };
+
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     index: number,
   ) => {
     const file = e.target.files?.[0];
-
     if (!file) {
-      setUploadingIndex(null); // Desliga imediatamente se cancelar a janela
+      setUploadingIndex(null);
       return;
     }
-
     if (file.size > 6 * 1024 * 1024) {
       toast.error("A foto do produto é muito pesada (Máx 6MB).");
       e.target.value = "";
       setUploadingIndex(null);
       return;
     }
-
-    setUploadingIndex(index); // SÓ LIGA O SPINNER AQUI!
+    setUploadingIndex(index);
     e.target.value = "";
     toast.loading("Otimizando e subindo foto...", { id: "upload-product" });
-
     try {
       const compressed = await compressImage(file);
       const res = await uploadFiles("imageUploader", { files: [compressed] });
-
       if (res && res.length > 0) {
         handleUpdateProduct(index, "imageUrl", res[0].ufsUrl);
         toast.success("Foto do produto adicionada!", { id: "upload-product" });
@@ -121,7 +145,6 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
             key={i}
             className="flex flex-col md:flex-row gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50 items-start md:items-center relative transition-all focus-within:border-orange-200 focus-within:ring-2 ring-orange-500/10"
           >
-            {/* 🚀 O GATILHO INDIVIDUAL E SEGURO DE FOTO */}
             <input
               type="file"
               accept="image/*"
@@ -129,8 +152,6 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
               onChange={(e) => handleImageUpload(e, i)}
               className="hidden"
             />
-
-            {/* 📸 FOTO DO PRODUTO */}
             <div
               onClick={() =>
                 document.getElementById(`file-upload-${i}`)?.click()
@@ -160,9 +181,7 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
               )}
             </div>
 
-            {/* 📝 DADOS DO PRODUTO */}
             <div className="flex-1 w-full space-y-2">
-              {/* 🟢 LINHA 1: NOME E PREÇOS */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
@@ -174,9 +193,7 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                   placeholder="Ex: X-Bacon Artesanal"
                   className="flex-1 h-10 px-3 bg-white rounded-lg text-xs font-black border outline-none text-slate-800 placeholder:text-slate-300"
                 />
-
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* 🚀 O MOTOR DE PROMOÇÃO BLINDADO: Agradando o TypeScript com String() e as any */}
                   {product.oldPrice !== 0 &&
                   product.oldPrice !== null &&
                   product.oldPrice !== undefined ? (
@@ -192,10 +209,13 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                             ? ""
                             : product.oldPrice
                         }
-                        onChange={(e) => {
-                          let val = e.target.value.replace(/[^0-9.,]/g, "");
-                          handleUpdateProduct(i, "oldPrice", val as any);
-                        }}
+                        onChange={(e) =>
+                          handleUpdateProduct(
+                            i,
+                            "oldPrice",
+                            e.target.value.replace(/[^0-9.,]/g, "") as any,
+                          )
+                        }
                         onBlur={(e) => {
                           const cleanVal = String(e.target.value)
                             .replace(/[^0-9.,]/g, "")
@@ -212,7 +232,6 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                         placeholder="0,00"
                         className="w-full h-10 pl-7 pr-2 bg-rose-50/50 rounded-lg text-[10px] font-black border border-rose-200 outline-none focus:ring-2 ring-rose-500/20 text-rose-400 placeholder:text-rose-300 line-through"
                       />
-                      {/* BOTÃO PARA CANCELAR A PROMOÇÃO */}
                       <button
                         onClick={() => handleUpdateProduct(i, "oldPrice", 0)}
                         className="absolute -top-2 -right-2 bg-white text-rose-500 rounded-full border border-rose-100 shadow-sm p-0.5 hover:scale-110 transition-transform"
@@ -223,11 +242,7 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                   ) : (
                     <button
                       onClick={() =>
-                        handleUpdateProduct(
-                          i,
-                          "oldPrice",
-                          "" as any, // 🚀 FIX TS: Força a entrada vazia para UX sem gerar erro no TS
-                        )
+                        handleUpdateProduct(i, "oldPrice", "" as any)
                       }
                       title="Ativar Promoção"
                       className="h-10 px-3 border border-dashed border-orange-200 bg-orange-50 text-orange-500 rounded-lg text-[10px] font-black uppercase hover:bg-orange-100 hover:border-orange-300 transition-colors flex items-center gap-1"
@@ -235,8 +250,6 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                       <Tag size={12} strokeWidth={3} /> Promo
                     </button>
                   )}
-
-                  {/* PREÇO ATUAL (REAL) */}
                   <div className="relative w-28 shrink-0">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">
                       R$
@@ -245,10 +258,13 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                       type="text"
                       inputMode="decimal"
                       value={String(product.price) === "0" ? "" : product.price}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/[^0-9.,]/g, "");
-                        handleUpdateProduct(i, "price", val as any);
-                      }}
+                      onChange={(e) =>
+                        handleUpdateProduct(
+                          i,
+                          "price",
+                          e.target.value.replace(/[^0-9.,]/g, "") as any,
+                        )
+                      }
                       onBlur={(e) => {
                         const cleanVal = String(e.target.value)
                           .replace(/[^0-9.,]/g, "")
@@ -268,8 +284,6 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                   </div>
                 </div>
               </div>
-
-              {/* 🟢 LINHA 2: DESCRIÇÃO */}
               <textarea
                 value={product.description || ""}
                 onChange={(e) =>
@@ -280,9 +294,82 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                 placeholder="Descrição curta (Ex: Pão brioche... Pressione Enter para pular linha!)"
                 className="w-full p-3 bg-white rounded-lg text-xs font-medium border outline-none text-slate-600 placeholder:text-slate-300 resize-none min-h-[60px]"
               />
+
+              {/* 🚀 CAIXA DE ADICIONAIS ESTILO iFOOD */}
+              <div className="w-full mt-2 pt-3 border-t border-slate-200/60">
+                <label className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-1.5 mb-2">
+                  <Plus size={12} /> Adicionais / Complementos (Opcional)
+                </label>
+                <div className="space-y-2">
+                  {(product.extras || []).map((extra, eIdx) => (
+                    <div
+                      key={eIdx}
+                      className="flex gap-2 items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm animate-in fade-in zoom-in duration-200"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Ex: Bacon Extra"
+                        value={extra.name}
+                        onChange={(e) =>
+                          handleUpdateExtra(i, eIdx, "name", e.target.value)
+                        }
+                        maxLength={40}
+                        className="flex-1 h-8 px-2 bg-slate-50 rounded-md text-[10px] font-bold outline-none border border-transparent focus:border-orange-200 focus:bg-white transition-all"
+                      />
+                      <div className="relative w-24 shrink-0">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400">
+                          + R$
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={String(extra.price) === "0" ? "" : extra.price}
+                          onChange={(e) =>
+                            handleUpdateExtra(
+                              i,
+                              eIdx,
+                              "price",
+                              e.target.value.replace(/[^0-9.,]/g, ""),
+                            )
+                          }
+                          onBlur={(e) => {
+                            const cleanVal = String(e.target.value)
+                              .replace(/[^0-9.,]/g, "")
+                              .replace(",", ".");
+                            const finalNumber = parseFloat(cleanVal);
+                            handleUpdateExtra(
+                              i,
+                              eIdx,
+                              "price",
+                              isNaN(finalNumber)
+                                ? 0
+                                : parseFloat(finalNumber.toFixed(2)),
+                            );
+                          }}
+                          className="w-full h-8 pl-8 pr-2 bg-slate-50 rounded-md text-[10px] font-black outline-none border border-transparent focus:border-emerald-200 focus:bg-white text-emerald-600"
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleRemoveExtra(i, eIdx)}
+                        className="text-rose-300 hover:text-rose-500 transition-colors p-1"
+                      >
+                        <X size={14} strokeWidth={3} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {(product.extras || []).length < 10 && (
+                  <button
+                    onClick={() => handleAddExtra(i)}
+                    className="mt-2 w-full py-2 bg-white text-orange-400 hover:bg-orange-50 hover:text-orange-500 rounded-lg text-[9px] font-black uppercase tracking-widest border border-dashed border-orange-200 transition-all flex items-center justify-center gap-1"
+                  >
+                    <Plus size={12} strokeWidth={3} /> Adicional
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* 🗑️ BOTÃO DELETAR */}
             <button
               onClick={() => handleRemoveProduct(i)}
               className="absolute -top-3 -right-3 md:relative md:top-0 md:right-0 p-2.5 bg-white text-rose-300 rounded-xl hover:bg-rose-500 hover:text-white transition-all border shadow-sm shrink-0"

@@ -147,12 +147,22 @@ export default function LoginPage() {
         }
       }
     } catch (error) {
-      // 🛡️ AMORTECEDOR: Se a internet cair ou o Rate Limit bloquear (Failed to fetch)
+      // 🚀 A CIRURGIA DE CONVERSÃO: O Next.js usa um "erro fantasma" para fazer redirecionamentos.
+      // Se interceptarmos o NEXT_REDIRECT, nós liberamos a catraca para ele voltar pro carrinho!
+      const err = error as any;
+      if (
+        err?.message?.includes("NEXT_REDIRECT") ||
+        err?.digest?.includes("NEXT_REDIRECT")
+      ) {
+        throw error; // ⬅️ Isso é vital! Deixa o Next.js fazer o salto para a loja.
+      }
+
+      // 🛡️ AMORTECEDOR REAL: Se for erro de internet, banco fora do ar ou Rate Limit
       console.error("Erro de conexão interceptado:", error);
       setLoginError(
         "Muitas tentativas ou erro de conexão. Aguarde 1 minuto e tente novamente.",
       );
-      setIsLoading(false); // ⬅️ Desliga a animação de "carregando"
+      setIsLoading(false); // Desliga a animação de "carregando"
     }
   }
 

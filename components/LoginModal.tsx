@@ -41,8 +41,23 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter(); // 🚀 INSTANCIADO
-  const currentUrl =
+
+  // 🚀 O CÉREBRO DA CONVERSÃO: Se tem carrinho na memória, a gente força a volta pra mesma URL,
+  // mas garantindo que o sistema lembre que ele veio de um carrinho!
+  let currentUrl =
     pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+
+  // Como estamos dentro do React Component, usamos useEffect para ler a memória
+  const [hasCart, setHasCart] = useState(false);
+  useEffect(() => {
+    // 🚀 Lendo o cofre ATUALIZADO
+    setHasCart(!!sessionStorage.getItem("tafanu_pending_checkout"));
+  }, []);
+
+  // 🚀 GARANTE QUE O GPS SÓ É INJETADO UMA VEZ NA URL
+  if (hasCart && !currentUrl.includes("cart=true")) {
+    currentUrl += currentUrl.includes("?") ? "&cart=true" : "?cart=true";
+  }
 
   // 🛡️ Função com tipagem forte para evitar erros no build
   const getDestination = (role?: UserRole) => {

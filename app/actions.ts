@@ -57,7 +57,14 @@ const storeActionRatelimit = actionRedis
       prefix: "rl_action_store",
     })
   : null;
-
+// 🚀 NOVO LEÃO DE CHÁCARA: Impede que robôs inundem os lojistas com pedidos
+const orderRatelimit = actionRedis
+  ? new Ratelimit({
+      redis: actionRedis,
+      limiter: Ratelimit.slidingWindow(3, "1 m"), // Máximo 3 pedidos por minuto por cliente
+      prefix: "rl_action_order",
+    })
+  : null;
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
@@ -360,8 +367,14 @@ export async function registerUser(formData: FormData) {
     }
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro no cadastro:", error);
+    // 🚀 INTERCEPTADOR DE CLONES: Avisa se o CPF ou WhatsApp já existe no banco
+    if (error?.code === "P2002") {
+      return {
+        error: "Este CPF/CNPJ ou WhatsApp já está em uso por outra conta.",
+      };
+    }
     return { error: "Erro ao criar conta. Tente novamente mais tarde." };
   }
 }
@@ -486,6 +499,16 @@ export async function updateUserProfile(formData: FormData) {
   if (!sessionUser) return { error: "Não autorizado." };
   const userId = sessionUser.id;
 
+  // 🚀 ESCUDO ANTI-DDoS: Impede ataques de força bruta no banco de dados via atualização de perfil
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(
+      `profile_update_${userId}`,
+    );
+    if (!success) {
+      return { error: "Muitas atualizações simultâneas. Aguarde um minuto." };
+    }
+  }
+
   // 1. PEGA O CÓDIGO DO AFILIADO QUE VEM DO FORMULÁRIO (ProfileForm)
   const affiliateCode = formData.get("affiliateCode") as string; // ⬅️ NOVO
 
@@ -503,26 +526,30 @@ export async function updateUserProfile(formData: FormData) {
   try {
     const dbUser = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true, password: true, affiliateId: true }, // ⬅️ Adicionado affiliateId aqui
+      select: { id: true, password: true, affiliateId: true, document: true }, // 🚀 Lemos o CPF do banco!
     });
 
     if (!dbUser) return { error: "Usuário não encontrado." };
 
-    let cleanDocument = null;
-    if (validatedData.document) {
-      cleanDocument = validatedData.document
+    // 🚀 O ESCUDO ANTI-EVASÃO: O CPF original do banco é sagrado e imutável.
+    let finalDocument = dbUser.document;
+
+    // Só permite salvar um documento novo SE o banco estiver vazio E a pessoa enviou um.
+    if (!dbUser.document && validatedData.document) {
+      const tempDoc = validatedData.document
         .replace(/[^a-zA-Z0-9]/g, "")
         .toUpperCase();
-      // 🚀 APLICAÇÃO DA TRAVA TAMBÉM NA EDIÇÃO: Garante que o Admin tenha a chave PIX correta!
-      if (!isCpfOrCnpjValid(cleanDocument)) {
+      if (isCpfOrCnpjValid(tempDoc)) {
+        finalDocument = tempDoc;
+      } else {
         return { error: "CPF ou CNPJ inválido." };
       }
     }
 
     const updateData: any = {
       name: validatedData.name,
-      phone: validatedData.phone.replace(/\D/g, ""),
-      document: cleanDocument,
+      phone: validatedData.phone.replace(/\D/g, ""), // Zod já garante que não é vazio
+      document: finalDocument, // 🚀 Salva o imutável ou o novo validado. Nunca apaga!
     };
 
     // 2. LÓGICA DE VÍNCULO DE AFILIADO (SÓ ACONTECE UMA VEZ)
@@ -567,8 +594,19 @@ export async function updateUserProfile(formData: FormData) {
 
     revalidatePath("/dashboard/perfil");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao atualizar perfil:", error);
+    // 🚀 INTERCEPTADOR DE CLONES (P2002):
+    if (error?.code === "P2002") {
+      const target = error.meta?.target || "";
+      if (typeof target === "string" || Array.isArray(target)) {
+        if (target.includes("document"))
+          return { error: "Este CPF/CNPJ já pertence a outra conta." };
+        if (target.includes("phone"))
+          return { error: "Este WhatsApp já pertence a outra conta." };
+      }
+      return { error: "Dados de segurança já estão em uso por outra conta." };
+    }
     return { error: "Não foi possível salvar as alterações." };
   }
 }
@@ -781,6 +819,8 @@ export async function createBusiness(payload: any) {
           website: validatedData.website || "",
           published: validatedData.published ?? false,
           hasDelivery: validatedData.hasDelivery || false,
+          deliveryFee: validatedData.deliveryFee || 0,
+          deliveryRadius: validatedData.deliveryRadius || 0, // 🚀 SALVA O RAIO NO BANCO
           menuMode: validatedData.menuMode || "PDF",
           urban_tag: validatedData.urban_tag || "",
           luxe_quote: validatedData.luxe_quote || "",
@@ -822,6 +862,16 @@ export async function createBusiness(payload: any) {
             oldPrice: p.oldPrice ? Math.abs(Number(p.oldPrice)) : null,
             imageUrl: p.imageUrl || "",
             isActive: p.isActive ?? true,
+            extras: Array.isArray(p.extras)
+              ? p.extras.map((extra: any) => ({
+                  name: String(extra.name || "")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .trim()
+                    .substring(0, 40),
+                  price: Math.abs(Number(extra.price) || 0),
+                }))
+              : [],
           })),
         });
       }
@@ -1023,6 +1073,8 @@ export async function updateFullBusiness(slug: string, payload: any) {
           features: validatedData.features,
           published: validatedData.published,
           hasDelivery: validatedData.hasDelivery || false,
+          deliveryFee: validatedData.deliveryFee || 0,
+          deliveryRadius: validatedData.deliveryRadius || 0, // 🚀 SALVA O RAIO NO BANCO
           menuMode: validatedData.menuMode || "PDF",
           urban_tag: validatedData.urban_tag || "",
           luxe_quote: validatedData.luxe_quote || "",
@@ -1101,6 +1153,16 @@ export async function updateFullBusiness(slug: string, payload: any) {
               oldPrice: p.oldPrice ? Math.abs(Number(p.oldPrice)) : null,
               imageUrl: p.imageUrl || "",
               isActive: p.isActive ?? true,
+              extras: Array.isArray(p.extras)
+                ? p.extras.map((extra: any) => ({
+                    name: String(extra.name || "")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .trim()
+                      .substring(0, 40),
+                    price: Math.abs(Number(extra.price) || 0),
+                  }))
+                : [],
             })),
           });
         }
@@ -1192,8 +1254,13 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
       ? business.mediaFeed.filter((m: any) => m && m.type === "video")
       : [];
 
-    // Mapeia as novas fotos vindas do formulário
-    const newImages = gallery.map((url) => ({ type: "image", url }));
+    // 🚀 ESCUDO ANTI-XSS: Só aceita as strings que começam com "http" (barra URLs maliciosas)
+    const validGalleryUrls = gallery.filter(
+      (url) => typeof url === "string" && url.startsWith("http"),
+    );
+
+    // Mapeia as novas fotos validadas
+    const newImages = validGalleryUrls.map((url) => ({ type: "image", url }));
 
     // Une fotos novas e vídeos antigos
     const newMediaFeed = [...newImages, ...currentVideos];
@@ -1273,7 +1340,7 @@ export async function deleteBusiness(slug: string) {
   try {
     const business = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, mpSubscriptionId: true }, // 🚀 Lemos a assinatura!
     });
 
     if (!business) return { error: "Loja não encontrada." };
@@ -1281,6 +1348,25 @@ export async function deleteBusiness(slug: string) {
     // Só o dono ou Admin podem apagar
     if (business.userId !== user.id && user.role !== "ADMIN") {
       return { error: "Acesso Negado." };
+    }
+
+    // 🚀 BLINDAGEM FINANCEIRA: Cancela a cobrança no MP antes de apagar a loja!
+    if (business.mpSubscriptionId) {
+      try {
+        const preApproval = new PreApproval(client);
+        await preApproval.update({
+          id: business.mpSubscriptionId,
+          body: { status: "cancelled" },
+        });
+        console.log(
+          `[Segurança] Assinatura ${business.mpSubscriptionId} cancelada no MP.`,
+        );
+      } catch (mpErr) {
+        console.error(
+          "Falha ao cancelar assinatura no banco central, mas prosseguindo com exclusão:",
+          mpErr,
+        );
+      }
     }
 
     // A faxina das imagens no UploadThing TEM que ser feita ANTES de apagar no banco!
@@ -1391,7 +1477,23 @@ async function executeCoreCleanup() {
   // 🗑️ Tempo 2: A Exclusão Física (30 dias após o vencimento)
   const trintaDiasAtras = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
+  // 🍔 Tempo 3: O Lixo do Carrinho (12 horas)
+  const dozeHorasAtras = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
   try {
+    // 🚀 CIRURGIA 0 (Gestão de Pedidos): Limpa carrinhos abandonados
+    const pedidosDeletados = await db.order.deleteMany({
+      where: {
+        status: "PENDING",
+        createdAt: { lt: dozeHorasAtras },
+      },
+    });
+    if (pedidosDeletados.count > 0) {
+      console.log(
+        `🍔 [Faxina] ${pedidosDeletados.count} pedidos abandonados foram varridos.`,
+      );
+    }
+
     // 🚀 CIRURGIA 1 (CFO/Vendas): O Rebaixamento Tolerante (10 Dias)
     // Deixa o cara acessar o painel por 10 dias para facilitar a renovação
     const usuariosVencidos = await db.user.findMany({
@@ -1601,6 +1703,14 @@ export async function toggleFavorite(businessId: string) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
+  // 🚀 ESCUDO ANTI-FARMING (Defesa do Algoritmo): Impede cliques robóticos e manipulação de ranking
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`fav_${user.id}`);
+    if (!success) {
+      return { error: "Muitas ações rápidas. Aguarde um instante." };
+    }
+  }
+
   // 🛡️ TRAVA DE SERVIDOR: Verifica se o e-mail está confirmado no banco
   const dbUser = await db.user.findUnique({
     where: { id: user.id },
@@ -1621,7 +1731,7 @@ export async function toggleFavorite(businessId: string) {
     } else {
       await db.favorite.create({ data: { userId, businessId } });
 
-      // 🚀 NOVO: Registra o evento de FAVORITE no Analytics para o "Score Híbrido" subir essa loja!
+      // 🚀 EVENTO DE RANKING MANTIDO E AGORA BLINDADO
       await db.analyticsEvent.create({
         data: {
           eventType: "FAVORITE",
@@ -1771,6 +1881,19 @@ export async function createReport(
   }
 
   try {
+    // 🚀 O PASSAPORTE: Exige CPF e Telefone para denunciar
+    const dbUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { document: true, phone: true },
+    });
+
+    if (!dbUser?.document || !dbUser?.phone) {
+      return {
+        error:
+          "Para evitar falsas denúncias, valide seu CPF e WhatsApp no 'Meu Perfil'.",
+      };
+    }
+
     // 2. Resolve o negócio pelo Link
     const b = await db.business.findUnique({
       where: { slug: businessSlug },
@@ -3263,6 +3386,24 @@ export async function verifyEmailAction(token: string) {
   }
 }
 export async function resendVerificationEmail(email: string) {
+  // 🚀 ESCUDO ANTI-DDoS E ANTI-CUSTOS: Protege o banco e a fatura do Resend
+  if (!email || email.length > 100) return { error: "E-mail inválido." };
+
+  if (resetRatelimit) {
+    const headersList = await headers();
+    const ip =
+      headersList.get("x-vercel-forwarded-for") ??
+      headersList.get("x-forwarded-for") ??
+      "127.0.0.1";
+    const { success } = await resetRatelimit.limit(`resend_mail:${ip}`);
+    if (!success) {
+      return {
+        error:
+          "Muitas tentativas. Aguarde 1 hora antes de solicitar um novo envio.",
+      };
+    }
+  }
+
   try {
     // 1. Busca o usuário
     const user = await db.user.findUnique({
@@ -3270,9 +3411,7 @@ export async function resendVerificationEmail(email: string) {
       select: { name: true, emailVerified: true },
     });
 
-    // 🛡️ PREVENÇÃO DE ENUMERAÇÃO (PRIVACIDADE DE DADOS):
-    // Se o usuário não existir ou já for verificado, devolvemos a mesma mensagem de sucesso.
-    // Assim o hacker nunca sabe se o e-mail é real ou não.
+    // 🛡️ PREVENÇÃO DE ENUMERAÇÃO (PRIVACIDADE DE DADOS)
     if (!user || user.emailVerified) {
       return { success: "Novo link enviado! Verifique sua caixa de entrada." };
     }
@@ -3285,7 +3424,7 @@ export async function resendVerificationEmail(email: string) {
     if (tokenExistente) {
       const tempoRestanteMs =
         new Date(tokenExistente.expires).getTime() - new Date().getTime();
-      const limiteDoisMinutosMs = (24 * 60 - 2) * 60 * 1000; // 23 horas e 58 minutos restantes
+      const limiteDoisMinutosMs = (24 * 60 - 2) * 60 * 1000;
       if (tempoRestanteMs > limiteDoisMinutosMs) {
         return {
           error:
@@ -3294,7 +3433,7 @@ export async function resendVerificationEmail(email: string) {
       }
     }
 
-    // 2. Gera um novo token (usando a função que já criamos)
+    // 2. Gera um novo token
     const verificationToken = await generateVerificationToken(email);
 
     // 🚀 BLINDAGEM DO DOMÍNIO
@@ -3352,6 +3491,20 @@ export async function addComment(
     }
 
     const userId = session.user.id;
+
+    // 🚀 O PASSAPORTE: Exige CPF e Telefone para comentar
+    const dbUser = await db.user.findUnique({
+      where: { id: userId },
+      select: { document: true, phone: true },
+    });
+
+    if (!dbUser?.document || !dbUser?.phone) {
+      return {
+        success: false,
+        error:
+          "Valide seu CPF e WhatsApp no 'Meu Perfil' para liberar as avaliações.",
+      };
+    }
 
     // 2. ⏳ TRAVA ANTI-FLOOD (Bloqueio de Spam)
     // Define uma janela de 15 segundos de carência entre comentários
@@ -3819,5 +3972,387 @@ export async function transferBusinessToUser(
     return {
       error: "Erro interno: A operação precisou ser cancelada por segurança.",
     };
+  }
+}
+// ==============================================================================
+// 🛒 GESTÃO DE PEDIDOS (MOTOR iFOOD)
+// ==============================================================================
+export async function createOrderAction(payload: any) {
+  // 🚀 ESCUDO 1: Validação Rigorosa de Tipagem (Defesa Estrutural)
+  if (!payload || typeof payload !== "object")
+    return { error: "Payload inválido." };
+
+  if (typeof payload.clientName !== "string" || !payload.clientName.trim()) {
+    return { error: "Nome do cliente é obrigatório e inválido." };
+  }
+
+  if (
+    !Array.isArray(payload.cart) ||
+    payload.cart.length === 0 ||
+    payload.cart.length > 50
+  ) {
+    return { error: "Carrinho inválido ou excede o limite de segurança." };
+  }
+
+  // 🚀 ESCUDO 2: O PASSAPORTE DE IDENTIDADE (Login Obrigatório)
+  const userSession = await getSafeUser();
+  if (!userSession) {
+    return {
+      error: "AUTH_REQUIRED",
+      message:
+        "Você precisa fazer um login rápido para concluir pedidos com segurança.",
+    };
+  }
+
+  // 🛡️ RATE LIMIT DE ELITE: Agora assinado por USER ID para rotas autenticadas!
+  // Isso impede que vizinhos na mesma rede Wi-Fi se bloqueiem, mas destrói bots que usam proxies rotativos.
+  if (orderRatelimit) {
+    const { success } = await orderRatelimit.limit(
+      `order_user:${userSession.id}`,
+    );
+    if (!success) {
+      return {
+        error:
+          "Calma! Você já realizou pedidos recentemente. Aguarde 1 minuto para enviar outro.",
+      };
+    }
+  }
+
+  try {
+    // 🚀 O PASSAPORTE PARTE 2: Verifica se ele tem CPF e WhatsApp validados
+    const dbUser = await db.user.findUnique({ where: { id: userSession.id } });
+    if (!dbUser) return { error: "Usuário não encontrado." };
+
+    let finalDocument = dbUser.document;
+    let finalPhone = dbUser.phone;
+
+    // Se o banco estiver vazio, o front-end TEM que ter enviado no payload do carrinho
+    if (!finalDocument || !finalPhone) {
+      // 🚀 BLINDAGEM DE TIPAGEM: Garante que o payload é texto e impede o Null Reference Crash
+      if (
+        !payload.document ||
+        typeof payload.document !== "string" ||
+        !payload.customerPhone ||
+        typeof payload.customerPhone !== "string"
+      ) {
+        return {
+          error: "MISSING_DATA",
+          message:
+            "Precisamos do seu CPF e WhatsApp para segurança do lojista.",
+        };
+      }
+
+      const cleanDoc = payload.document
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+      const cleanPhone = payload.customerPhone.replace(/\D/g, "");
+
+      if (!isCpfOrCnpjValid(cleanDoc))
+        return { error: "O CPF ou CNPJ informado é inválido." };
+      if (cleanPhone.length < 10)
+        return { error: "O WhatsApp informado é inválido." };
+
+      try {
+        // Tenta salvar os dados novos na conta do cliente
+        await db.user.update({
+          where: { id: userSession.id },
+          data: { document: cleanDoc, phone: cleanPhone },
+        });
+        finalDocument = cleanDoc;
+        finalPhone = cleanPhone;
+      } catch (updateErr: any) {
+        // 🛡️ AQUI O HACKER É PEGO: Se o CPF/Tel já for de outro (ou de banido), o banco rejeita!
+        if (updateErr.code === "P2002") {
+          return {
+            error:
+              "Este CPF ou WhatsApp já está vinculado a outra conta. Contas banidas não podem criar clones.",
+          };
+        }
+        throw updateErr;
+      }
+    }
+
+    // 1. Busca pela CHAVE PRIMÁRIA (ID) da Loja e PUXA A AGENDA!
+    const business = await db.business.findUnique({
+      where: { id: payload.businessId },
+      include: {
+        products: { where: { isActive: true } },
+        hours: true, // 🚀 NECESSÁRIO PARA A AUDITORIA DE TEMPO
+      },
+    });
+
+    if (!business) return { error: "Loja não encontrada." };
+
+    // 🚀 O ESCUDO DO RELÓGIO (Auditoria Temporal de Servidor - Suporte a Madrugada)
+    const serverDate = new Date();
+    const brazilDate = new Date(
+      serverDate.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+    );
+    const currentDay = brazilDate.getDay();
+    const previousDay = currentDay === 0 ? 6 : currentDay - 1; // Pega o dia de ontem para turnos que viram a noite
+    const currentTime = brazilDate.getHours() * 100 + brazilDate.getMinutes();
+
+    let isStoreOpen = false;
+
+    // Função interna inteligente para checar turnos que cruzam a meia-noite
+    const checkShift = (dayConfig: any, isPreviousDayCheck: boolean) => {
+      if (
+        !dayConfig ||
+        dayConfig.isClosed ||
+        !dayConfig.openTime ||
+        !dayConfig.closeTime
+      )
+        return false;
+      const [openH, openM] = dayConfig.openTime.split(":").map(Number);
+      const [closeH, closeM] = dayConfig.closeTime.split(":").map(Number);
+      const openVal = openH * 100 + openM;
+      const closeVal = closeH * 100 + closeM;
+
+      const crossesMidnight = closeVal < openVal; // Ex: Fecha às 02:00 (200) e abre às 18:00 (1800)
+
+      if (isPreviousDayCheck) {
+        // Se estamos avaliando a agenda de "ontem", só interessa se o turno virou a madrugada e se a hora atual ainda é menor que a hora de fechar.
+        return crossesMidnight && currentTime < closeVal;
+      } else {
+        // Se estamos avaliando a agenda de "hoje"
+        if (crossesMidnight) {
+          return currentTime >= openVal || currentTime < closeVal;
+        } else {
+          return currentTime >= openVal && currentTime < closeVal;
+        }
+      }
+    };
+
+    const todayHours = business.hours.find((h) => h.dayOfWeek === currentDay);
+    const yesterdayHours = business.hours.find(
+      (h) => h.dayOfWeek === previousDay,
+    );
+
+    // A loja está aberta se o turno de HOJE estiver ativo, OU se o turno de ONTEM virou a noite e ainda não fechou.
+    isStoreOpen =
+      checkShift(todayHours, false) || checkShift(yesterdayHours, true);
+
+    if (!isStoreOpen) {
+      return {
+        error:
+          "O estabelecimento está fechado no momento. Os pedidos estão suspensos.",
+      };
+    }
+
+    let totalAmount = 0;
+    const finalItems = [];
+
+    for (const cartItem of payload.cart) {
+      const realProduct = business.products.find(
+        (p) => p.id === cartItem.productId,
+      );
+      if (!realProduct) continue;
+
+      let itemTotal = realProduct.price;
+      const realExtrasList = (realProduct.extras as any[]) || [];
+      const selectedRealExtras = [];
+
+      if (cartItem.selectedExtras && cartItem.selectedExtras.length > 0) {
+        for (const extraName of cartItem.selectedExtras) {
+          const realExtra = realExtrasList.find((e) => e.name === extraName);
+          if (realExtra) {
+            itemTotal += Number(realExtra.price) || 0;
+            selectedRealExtras.push({
+              name: realExtra.name,
+              price: Number(realExtra.price) || 0,
+            });
+          }
+        }
+      }
+
+      // 🚀 ESCUDO FINANCEIRO: Impede quantidades negativas, fracionadas ou zeradas
+      if (
+        typeof cartItem.quantity !== "number" ||
+        cartItem.quantity <= 0 ||
+        !Number.isInteger(cartItem.quantity)
+      ) {
+        throw new Error(
+          "Tentativa de fraude detectada: Quantidade de itens inválida.",
+        );
+      }
+
+      const lineTotal = itemTotal * cartItem.quantity;
+      totalAmount += lineTotal;
+
+      finalItems.push({
+        productId: realProduct.id,
+        productName: realProduct.name,
+        quantity: cartItem.quantity,
+        unitPrice: realProduct.price,
+        extras: selectedRealExtras,
+        lineTotal: lineTotal,
+      });
+    }
+
+    if (finalItems.length === 0)
+      return { error: "Nenhum item válido no pedido." };
+
+    // 🚀 O ESCUDO FINANCEIRO: Adiciona a taxa de entrega real do banco se for Delivery!
+    if (payload.deliveryType === "DELIVERY" && business.deliveryFee > 0) {
+      totalAmount += business.deliveryFee;
+    }
+
+    const newOrder = await db.order.create({
+      data: {
+        businessId: business.id,
+        customerName: payload.clientName.substring(0, 60),
+        customerPhone: finalPhone, // 🚀 Agora salvamos o telefone validado do cliente no pedido!
+        items: finalItems,
+        totalAmount: totalAmount,
+        deliveryType: payload.deliveryType,
+        address: payload.address || null,
+        paymentMethod: payload.paymentMethod,
+        changeFor: payload.changeFor || null,
+        observation: payload.observation
+          ? payload.observation.substring(0, 500)
+          : null,
+        status: "PENDING",
+      },
+    });
+
+    // 🚀 RETORNA O ID PARA A TELA DE RASTREIO
+    return {
+      success: true,
+      orderNumber: newOrder.orderNumber,
+      orderId: newOrder.id,
+    };
+  } catch (error) {
+    console.error("Erro Crítico ao gerar pedido:", error);
+    return { error: "Falha ao registrar o pedido no sistema." };
+  }
+}
+// ==============================================================================
+// 📦 GESTÃO DO KANBAN DE PEDIDOS (LOJISTA)
+// ==============================================================================
+
+export async function getStoreOrders() {
+  const user = await getSafeUser();
+  if (!user) return { error: "Não autorizado." };
+
+  try {
+    // 🚀 BLINDAGEM DE MEMÓRIA E HISTÓRICO COMPLETO:
+    // Puxa os pedidos dos últimos 7 dias para o lojista não perder o controle do caixa.
+    const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const orders = await db.order.findMany({
+      where: {
+        business: { userId: user.id },
+        createdAt: { gte: seteDiasAtras },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, orders };
+  } catch (error) {
+    console.error("Erro ao buscar pedidos:", error);
+    return { error: "Erro interno ao carregar a fila de pedidos." };
+  }
+}
+
+export async function updateOrderStatus(orderId: string, newStatus: string) {
+  const user = await getSafeUser();
+  if (!user) return { error: "Não autorizado." };
+
+  // 🛡️ RATE LIMIT: Impede que um script mude o status de 1.000 pedidos por segundo travando o banco
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(
+      `order_status_${user.id}`,
+    );
+    if (!success)
+      return { error: "Muitas ações rápidas. Aguarde alguns segundos." };
+  }
+
+  // 🛡️ VALIDAÇÃO DE ENTRADA: O hacker não pode enviar um status inventado
+  const validStatuses = [
+    "PENDING",
+    "PREPARING",
+    "DISPATCHED",
+    "COMPLETED",
+    "CANCELLED",
+  ];
+  if (!validStatuses.includes(newStatus)) {
+    return { error: "Status inválido ou corrompido." };
+  }
+
+  try {
+    // 🚀 O ESCUDO IDOR (Crucial):
+    // Achamos o pedido e checamos se o dono da loja desse pedido é o cara que está logado!
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, business: { select: { userId: true } } },
+    });
+
+    if (!order) return { error: "Pedido não encontrado." };
+
+    if (order.business.userId !== user.id && user.role !== "ADMIN") {
+      console.warn(
+        `🚨 [TENTATIVA DE IDOR BLOQUEADA] User ${user.id} tentou alterar pedido de outra loja.`,
+      );
+      return { error: "Acesso Negado. Este pedido não pertence à sua loja." };
+    }
+
+    // 🚀 STATE MACHINE (TRAVA DE LÓGICA): Pedidos mortos não podem voltar à vida.
+    // Lemos o status atual do pedido para garantir que ele não foi fechado.
+    const currentOrderData = await db.order.findUnique({
+      where: { id: order.id },
+      select: { status: true },
+    });
+
+    if (
+      currentOrderData?.status === "COMPLETED" ||
+      currentOrderData?.status === "CANCELLED"
+    ) {
+      return {
+        error:
+          "Não é possível alterar o status de um pedido que já foi finalizado ou cancelado.",
+      };
+    }
+
+    // Se passou pela alfândega, atualiza o status.
+    await db.order.update({
+      where: { id: order.id },
+      data: { status: newStatus as any },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar pedido:", error);
+    return { error: "Falha ao processar a mudança de status." };
+  }
+}
+// ==============================================================================
+// 🛍️ CENTRAL DE PEDIDOS DO VISITANTE (RASTREIO MÚLTIPLO)
+// ==============================================================================
+export async function getActiveOrdersByIds(orderIds: string[]) {
+  if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+    return { success: true, orders: [] };
+  }
+
+  // 🚀 ESCUDO ANTI-ABUSO: Limita a busca a 20 pedidos simultâneos no máximo
+  const safeIds = orderIds.slice(0, 20);
+
+  try {
+    const orders = await db.order.findMany({
+      where: { id: { in: safeIds } },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        totalAmount: true,
+        createdAt: true,
+        business: { select: { name: true, imageUrl: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, orders };
+  } catch (error) {
+    console.error("Erro ao buscar pedidos ativos:", error);
+    return { error: "Falha ao buscar os pedidos em andamento." };
   }
 }

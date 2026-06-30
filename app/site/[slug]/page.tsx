@@ -198,17 +198,20 @@ export default async function BusinessPage({
         shein: true,
         ifood: true,
         hasDelivery: true,
-        menuMode: true, // 🚀 MOTOR DE DECISÃO
+        deliveryFee: true,
+        deliveryRadius: true, // 🚀 FASE 3: PUXA O RAIO
+        menuMode: true,
         products: {
           where: { isActive: true }, // 🚀 Filtra os inativos
           select: {
-            // 🚀 OBRIGATÓRIO: Avisa o banco quais dados do lanche enviar para a tela
+            id: true, // 🚀 A CHAVE MESTRA: Traz o ID oficial do banco para blindar o pedido!
             name: true,
             description: true,
             price: true,
             oldPrice: true,
             imageUrl: true,
             isActive: true,
+            extras: true, // 🚀 A CHAVE MESTRA: Libera os adicionais para o cliente ver!
           },
         },
         published: true,

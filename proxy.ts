@@ -212,7 +212,8 @@ export default auth(async (req) => {
       pathname.startsWith("/dashboard/favoritos") ||
       pathname.startsWith("/dashboard/parceiro") ||
       pathname.startsWith("/dashboard/perfil") ||
-      pathname.startsWith("/dashboard/funil") // 🚀 Rota liberada da trava de cookie. O Banco de Dados fará a escolta!
+      pathname.startsWith("/dashboard/funil") ||
+      pathname.startsWith("/dashboard/pedidos") // 🚀 CIRURGIA: Libera a catraca do middleware! O Banco fará a escolta.
     ) {
       return NextResponse.next();
     }

@@ -10,7 +10,6 @@ const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "",
 });
 
-//  FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
 interface MPWebhookBody {
   data?: { id?: string | number };
   id?: string | number;
@@ -19,13 +18,12 @@ interface MPWebhookBody {
   action?: string;
 }
 
-//  FUNÇÃO DE SEGURANÇA: Validação defensiva (Ajuste 2)
-function validateSignature(request: Request, body: MPWebhookBody) {
+// 🛡️ MÁGICA 1: Validação Híbrida (Lê URL e Body para nunca falhar a assinatura)
+function validateSignature(request: Request, body: MPWebhookBody, url: URL) {
   const signature = request.headers.get("x-signature");
   const requestId = request.headers.get("x-request-id");
   const secret = process.env.MP_WEBHOOK_SECRET;
 
-  //  Ajuste 2: Verifica se a assinatura existe e se tem o formato esperado
   if (
     !signature ||
     !secret ||
@@ -45,11 +43,19 @@ function validateSignature(request: Request, body: MPWebhookBody) {
     const v1 = parts["v1"];
 
     const now = Math.floor(Date.now() / 1000);
+    // Janela de 5 minutos contra Replay Attacks
     if (Math.abs(now - Number(ts)) > 300) {
       return false;
     }
 
-    const manifest = `id:${body.data?.id || body.id};request-id:${requestId};ts:${ts};`;
+    // 🚀 O SEGREDO DO MERCADO PAGO: Se o id vier na URL, usamos ele!
+    const dataId =
+      url.searchParams.get("data.id") ||
+      url.searchParams.get("id") ||
+      body.data?.id ||
+      body.id;
+
+    const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
     const checkV1 = hmac.digest("hex");
@@ -62,39 +68,42 @@ function validateSignature(request: Request, body: MPWebhookBody) {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as MPWebhookBody;
+    // 🛡️ MÁGICA 2: Leitura segura contra Ping do MP e payloads vazios
+    const rawText = await request.text();
+    const body = rawText ? (JSON.parse(rawText) as MPWebhookBody) : {};
+    const url = new URL(request.url);
 
     // 1. [SEGURANÇA] Bloqueia acessos sem assinatura válida
-    if (!validateSignature(request, body)) {
-      console.warn("🚨 [Webhook MP] Tentativa inválida de acesso bloqueada.");
-      return new NextResponse("Assinatura Inválida", { status: 401 });
+    if (!validateSignature(request, body, url)) {
+      console.warn(
+        "🚨 [Webhook MP] Tentativa inválida de acesso bloqueada ou Ping de Configuração.",
+      );
+      return new NextResponse("Assinatura Inválida ou Ping", { status: 401 });
     }
 
-    console.log(`[Webhook MP] Evento recebido: ${body.type || body.entity}`);
+    console.log(
+      `[Webhook MP] Evento recebido: ${body.type || body.entity || body.action}`,
+    );
 
     if (
       body.type === "subscription_preapproval" ||
       body.entity === "preapproval"
     ) {
-      const resourceId = body.data?.id || body.id;
+      const resourceId =
+        url.searchParams.get("data.id") || body.data?.id || body.id;
 
-      // 🔸 Ajuste 3: Hardening no resourceId (evita crash se vier vazio)
       if (!resourceId) {
         return new NextResponse("Resource ID ausente", { status: 400 });
       }
 
-      // 2. [BUSCA REAL NA API]
+      // 2. [BUSCA REAL NA API] Impede spoofing de payload
       const preApproval = new PreApproval(client);
       const subscription = await preApproval.get({ id: String(resourceId) });
 
       if (!subscription) {
-        console.error(
-          `[Webhook MP] Assinatura ${resourceId} não encontrada na API.`,
-        );
         return new NextResponse("Assinatura não encontrada", { status: 404 });
       }
 
-      // 🚀 ATUALIZAÇÃO 1: Descolando a Etiqueta Dupla
       const externalReference = subscription.external_reference;
       const status = subscription.status;
 
@@ -102,22 +111,17 @@ export async function POST(request: Request) {
         return new NextResponse("External Reference ausente", { status: 400 });
       }
 
-      // Separa o userId e o businessId que enviamos lá no checkout
+      // Separa o userId e o businessId
       const [userId, businessId] = externalReference.split("___");
 
-      // 🔸 Ajuste 4: Log de elite para debug futuro
       console.log(
         `📡 [Webhook MP] status=${status} user=${userId} business=${businessId} sub=${subscription.id}`,
       );
 
       if (!userId || !businessId) {
-        console.error(
-          `[Webhook MP] Referência externa malformada: ${externalReference}`,
-        );
         return new NextResponse("Referência malformada", { status: 400 });
       }
 
-      // 🚀 ATUALIZAÇÃO 2: Busca focada no Negócio em vez do Usuário
       const business = await db.business.findUnique({
         where: { id: businessId },
         select: {
@@ -132,7 +136,6 @@ export async function POST(request: Request) {
         return new NextResponse("Negócio não existe no banco", { status: 404 });
       }
 
-      // Validação de segurança: O negócio ainda pertence a este usuário?
       if (business.userId !== userId) {
         console.error(
           `[Webhook MP] Fraude detectada: Negócio ${businessId} não pertence ao usuário ${userId}`,
@@ -143,24 +146,18 @@ export async function POST(request: Request) {
       }
 
       if (!business.mpSubscriptionId && status !== "authorized") {
-        console.log(
-          `⚠️ [Webhook MP] Ignorando ${status} para o negócio ${businessId}. Assinatura já encerrada no banco.`,
-        );
         return new NextResponse("Já processado ou cancelado manualmente", {
           status: 200,
         });
       }
 
-      // 🔴 RE-ADICIONANDO: IDEMPOTÊNCIA (Agora olhando para a data do negócio)
+      // 🔴 IDEMPOTÊNCIA (Protege contra webhooks duplicados)
       if (
         business.mpSubscriptionId === subscription.id &&
         business.expiresAt &&
         subscription.next_payment_date &&
         new Date(business.expiresAt) >= new Date(subscription.next_payment_date)
       ) {
-        console.log(
-          `[Webhook MP] Ignorando duplicata para o negócio ${businessId}`,
-        );
         return new NextResponse("Já processado", { status: 200 });
       }
 
@@ -178,7 +175,6 @@ export async function POST(request: Request) {
         const transactionAmount =
           subscription.auto_recurring?.transaction_amount ?? 0;
 
-        // 🚀 ATUALIZAÇÃO SÊNIOR: Incluindo o 'subscriptionStatus'
         await db.$transaction([
           db.business.update({
             where: { id: businessId },
@@ -187,7 +183,7 @@ export async function POST(request: Request) {
               expiresAt: expiresAt,
               mpSubscriptionId: subscription.id,
               planType: planType,
-              subscriptionStatus: "active", // ⬅️ Atualizando o status real
+              subscriptionStatus: "active",
             },
           }),
           db.user.update({
@@ -210,45 +206,36 @@ export async function POST(request: Request) {
         status === "paused" ||
         status === "rejected"
       ) {
-        console.log(
-          `ℹ️ [Webhook MP] Assinatura ${status} para negócio ${businessId}.`,
-        );
-
-        // 🚀 ATUALIZAÇÃO SÊNIOR: Apenas muda o status, NUNCA apaga o ID
         await db.business.update({
           where: { id: businessId },
           data: {
-            subscriptionStatus: status, // ⬅️ "cancelled", "paused", etc.
+            subscriptionStatus: status,
           },
         });
 
-        // 🚀 AJUSTE SUGERIDO (Trocar strings por Enums)
+        // 🛡️ MÁGICA 3: Usando o businessId exato! Zero custo de processamento O(1).
         await db.commission.updateMany({
           where: {
             userId: userId,
-            status: CommissionStatus.PENDING, // ⬅️ Use o Enum
-            description: { contains: businessId },
+            businessId: businessId, // 🚀 Troca do "LIKE" pesado pela chave indexada
+            status: CommissionStatus.PENDING,
           },
-          data: { status: CommissionStatus.CANCELLED }, // ⬅️ Use o Enum
+          data: { status: CommissionStatus.CANCELLED },
         });
 
         revalidatePath("/", "layout");
-      } else {
-        console.log(
-          `ℹ️ [Webhook MP] Status ignorado (nenhuma ação tomada): ${status}`,
-        );
       }
     }
     // ==============================================================================
-    // 🚀 CIRURGIA 3/4 CORRIGIDA: O RECIBO OFICIAL (Seguro e Antiduplicidade)
+    // 🚀 O RECIBO OFICIAL E GERAÇÃO DE COMISSÃO
     // ==============================================================================
-    // 🛡️ TRAVA 1: Só escuta atualizações de pagamento ou o pagamento em si
     if (
       body.type === "payment" ||
       body.action === "payment.updated" ||
       body.action === "payment.created"
     ) {
-      const paymentId = body.data?.id || body.id;
+      const paymentId =
+        url.searchParams.get("data.id") || body.data?.id || body.id;
 
       if (!paymentId) {
         return new NextResponse("Payment ID ausente", { status: 400 });
@@ -257,15 +244,10 @@ export async function POST(request: Request) {
       const paymentClient = new Payment(client);
       const payment = await paymentClient.get({ id: String(paymentId) });
 
-      // 🛡️ TRAVA 2 (A Mais Importante): Só roda se o pagamento ESTIVER APROVADO
       if (payment.status === "approved" && payment.external_reference) {
-        // 🛡️ TRAVA 3: Idempotência direta no Banco.
-        // Vamos checar na tabela "Commissions" se já existe UMA comissão gerada
-        // usando exatamente este ID de pagamento do Mercado Pago na descrição.
         const [userId, businessId] = payment.external_reference.split("___");
 
         if (userId && businessId) {
-          // 🚀 CIRURGIA: Busca instantânea usando o campo exato e indexado!
           const comissaoJaExiste = await db.commission.findUnique({
             where: {
               mpPaymentId: String(paymentId),
@@ -273,15 +255,11 @@ export async function POST(request: Request) {
           });
 
           if (comissaoJaExiste) {
-            console.log(
-              `[Webhook MP] Ignorando bipes repetidos para o Pagamento ${paymentId}`,
-            );
             return new NextResponse("Pagamento já gerou comissão", {
               status: 200,
             });
           }
 
-          // Busca o negócio no banco para saber qual era o plano
           const business = await db.business.findUnique({
             where: { id: businessId },
             select: { planType: true },
@@ -300,9 +278,9 @@ export async function POST(request: Request) {
                   ? "Trimestral"
                   : "Anual";
 
-            // 🏆 O DINHEIRO CAIU! E nós garantimos a injeção do paymentId para nunca duplicar.
+            // Gera comissão para o afiliado garantindo 0 falhas
             const commissionResult = await generateCommission(
-              userId,
+              userId, // ID de quem comprou (o sistema rastreia o parceiro por ele)
               transactionAmount,
               `Assinatura ${descricaoPlano} (${mesAno}) - Loja: ${businessId} - Recibo MP: ${paymentId}`,
               planType,
@@ -314,19 +292,14 @@ export async function POST(request: Request) {
               console.log(
                 `⚠️ [Webhook MP] Aviso na comissão: ${commissionResult.error}`,
               );
-              // Retornamos 200 para o MP não ficar tentando infinitamente
               return new NextResponse("Processado com aviso", { status: 200 });
             }
 
             console.log(
-              `💰 [Webhook MP] Pagamento aprovado e UNICAMENTE gerado: Loja ${businessId}`,
+              `💰 [Webhook MP] Pagamento aprovado e comissão gerada: Loja ${businessId}`,
             );
           }
         }
-      } else {
-        console.log(
-          `ℹ️ [Webhook MP] Pagamento ignorado no afiliado. Status: ${payment?.status}`,
-        );
       }
     }
     return new NextResponse("OK", { status: 200 });
