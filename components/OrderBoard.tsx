@@ -17,6 +17,7 @@ import {
   Archive,
   LayoutDashboard,
   MessageCircle,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -203,6 +204,121 @@ export default function OrderBoard() {
     return type === "DELIVERY" ? "Entrega" : "Retirada";
   };
 
+  // 🚀 MOTOR DE IMPRESSÃO TÉRMICA (58mm / 80mm)
+  const handlePrintReceipt = (order: Order) => {
+    const printWindow = window.open("", "_blank", "width=400,height=600");
+    if (!printWindow) {
+      toast.error(
+        "O navegador bloqueou a aba de impressão. Permita os pop-ups!",
+      );
+      return;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Pedido #${order.orderNumber}</title>
+        <style>
+          @page { margin: 0; }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 58mm; /* Tamanho exato da bobina térmica */
+            margin: 0 auto;
+            padding: 10px;
+            font-size: 12px;
+            color: #000;
+            background: #fff;
+          }
+          h2, p { margin: 0; padding: 2px 0; text-align: center; }
+          .divider { border-top: 1px dashed #000; margin: 5px 0; }
+          .left { text-align: left; }
+          .bold { font-weight: bold; }
+          .flex { display: flex; justify-content: space-between; }
+          .item { margin-bottom: 5px; }
+          .item-name { text-align: left; font-weight: bold; }
+          .item-details { display: flex; justify-content: space-between; font-size: 11px; }
+          .extras { font-size: 10px; margin-left: 10px; }
+        </style>
+      </head>
+      <body>
+        <h2>PEDIDO #${order.orderNumber}</h2>
+        <p>${new Date(order.createdAt).toLocaleString("pt-BR")}</p>
+        <div class="divider"></div>
+        
+        <div class="left bold">CLIENTE:</div>
+        <div class="left">${order.customerName}</div>
+        ${order.customerPhone ? `<div class="left">${order.customerPhone}</div>` : ""}
+        
+        <div class="divider"></div>
+        <div class="left bold">TIPO: ${order.deliveryType === "DELIVERY" ? "ENTREGA" : "RETIRADA"}</div>
+        ${
+          order.deliveryType === "DELIVERY" && order.address
+            ? `
+          <div class="left">
+            ${order.address.street}, ${order.address.number}<br>
+            ${order.address.neighborhood}<br>
+            ${order.address.complement ? `Comp: ${order.address.complement}<br>` : ""}
+            ${order.address.reference ? `Ref: ${order.address.reference}` : ""}
+          </div>
+        `
+            : ""
+        }
+        
+        <div class="divider"></div>
+        <div class="left bold">ITENS:</div>
+        <div class="items" style="margin-top: 5px;">
+          ${order.items
+            .map(
+              (item) => `
+            <div class="item">
+              <div class="item-name">${item.quantity}x ${item.productName}</div>
+              ${
+                item.extras.length > 0
+                  ? `<div class="left extras">+ ${item.extras.map((e) => e.name).join(", ")}</div>`
+                  : ""
+              }
+              <div class="item-details">
+                <span>R$ ${item.unitPrice.toFixed(2)}</span>
+                <span>R$ ${item.lineTotal.toFixed(2)}</span>
+              </div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+        
+        <div class="divider"></div>
+        ${
+          order.observation
+            ? `<div class="left bold">OBS: ${order.observation}</div><div class="divider"></div>`
+            : ""
+        }
+        
+        <div class="flex bold">
+          <span>TOTAL:</span>
+          <span>R$ ${order.totalAmount.toFixed(2)}</span>
+        </div>
+        <div class="left">Pagamento: ${getPaymentName(order.paymentMethod)}</div>
+        ${order.changeFor ? `<div class="left bold">Troco para: R$ ${order.changeFor}</div>` : ""}
+        
+        <div class="divider"></div>
+        <p>Gerado por Tafanu.com.br</p>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   // 🚀 CARD DO PEDIDO (Agora com o botão do WhatsApp!)
   const OrderCard = ({ order, isNew }: { order: Order; isNew?: boolean }) => (
     <div
@@ -237,17 +353,25 @@ export default function OrderBoard() {
         </div>
       </div>
 
-      {/* 🚀 BOTÃO DO WHATSAPP DO CLIENTE */}
-      {order.customerPhone && (
-        <a
-          href={`https://wa.me/55${order.customerPhone}`}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center justify-center gap-1.5 w-full text-[10px] font-black uppercase bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-lg mb-3 hover:bg-[#25D366] hover:text-white transition-colors border border-[#25D366]/20"
+      {/* 🚀 BOTÕES DE AÇÃO RÁPIDA (WhatsApp e Impressora térmica) */}
+      <div className="flex gap-2 mb-3">
+        {order.customerPhone && (
+          <a
+            href={`https://wa.me/55${order.customerPhone}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 flex justify-center items-center gap-1.5 text-[10px] font-black uppercase bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-lg hover:bg-[#25D366] hover:text-white transition-colors border border-[#25D366]/20"
+          >
+            <MessageCircle size={14} /> WhatsApp
+          </a>
+        )}
+        <button
+          onClick={() => handlePrintReceipt(order)}
+          className="flex-1 flex justify-center items-center gap-1.5 text-[10px] font-black uppercase bg-slate-100 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-colors border border-slate-200"
         >
-          <MessageCircle size={14} /> Falar com o Cliente
-        </a>
-      )}
+          <Printer size={14} /> Imprimir
+        </button>
+      </div>
 
       <div className="space-y-2 mb-3 flex-1">
         {order.items.map((item, idx) => (

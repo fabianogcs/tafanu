@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, ChevronDown, Loader2, Mic } from "lucide-react";
+import { Search, ChevronDown, Loader2, Mic, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,44 @@ export default function Hero() {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
+
+  // 🚀 O BOTÃO MAGNÉTICO: Busca por proximidade num clique!
+  const handleQuickGpsSearch = () => {
+    if (!navigator.geolocation) {
+      toast.error("Seu dispositivo não suporta GPS.");
+      return;
+    }
+    setIsGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const params = new URLSearchParams();
+        params.set("lat", latitude.toString());
+        params.set("lng", longitude.toString());
+        params.set("sort", "distance");
+        params.set("status", "open");
+        params.set("page", "1");
+
+        // 🚀 GRAVA O CACHE ANTES DE IR
+        localStorage.setItem(
+          "tafanu_user_coords",
+          JSON.stringify({ lat: latitude, lng: longitude }),
+        );
+
+        router.push(`/busca?${params.toString()}`);
+      },
+      (error) => {
+        setIsGpsLoading(false);
+        toast.error("GPS Bloqueado", {
+          description:
+            "Permita o acesso à localização para ver os abertos perto de você.",
+        });
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+    );
+  };
 
   const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
     if (e) e.preventDefault();
@@ -170,6 +208,48 @@ export default function Hero() {
             )}
           </button>
         </form>
+        {/* 🚀 CHIPS DE IMPULSO (Neuromarketing) */}
+        <div className="relative z-30 w-full max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-2 mt-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
+          <button
+            onClick={handleQuickGpsSearch}
+            disabled={isGpsLoading}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 transition-all text-[10px] md:text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50"
+          >
+            {isGpsLoading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <MapPin size={16} className="text-emerald-400 animate-pulse" />
+            )}
+            Abertos Perto de Mim
+          </button>
+
+          <button
+            onClick={() =>
+              router.push("/busca?modo=online&category=Alimentacao")
+            }
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white px-4 py-2.5 rounded-full backdrop-blur-md border border-white/5 transition-all text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm active:scale-95"
+          >
+            🍔 Bateu a Fome
+          </button>
+
+          <button
+            onClick={() =>
+              router.push(
+                "/busca?modo=online&subcategory=bar,adega,espetinho,bebidas,cerveja",
+              )
+            }
+            className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white px-4 py-2.5 rounded-full backdrop-blur-md border border-white/5 transition-all text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm active:scale-95"
+          >
+            🍻 Sextou!
+          </button>
+
+          <button
+            onClick={() => router.push("/busca?modo=online&category=Pets")}
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white px-4 py-2.5 rounded-full backdrop-blur-md border border-white/5 transition-all text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm active:scale-95"
+          >
+            🐕 Rolê com o Pet
+          </button>
+        </div>
       </div>
 
       <div className="flex absolute bottom-2 md:bottom-2 lg:bottom-2 left-0 w-full justify-center z-40 animate-bounce pointer-events-none">

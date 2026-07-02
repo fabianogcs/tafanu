@@ -32,29 +32,6 @@ export default function Navbar({
   const [isOpen, setIsOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // 🚀 ESTADO DA GAVETA DE PEDIDOS (Múltiplos Pedidos)
-  const [activeOrdersCount, setActiveOrdersCount] = useState<number>(0);
-
-  useEffect(() => {
-    const checkActiveOrders = () => {
-      const ordersStr = localStorage.getItem("tafanu_active_orders");
-      if (ordersStr) {
-        try {
-          const ordersArr = JSON.parse(ordersStr);
-          setActiveOrdersCount(ordersArr.length);
-        } catch (e) {
-          setActiveOrdersCount(0);
-        }
-      } else {
-        setActiveOrdersCount(0);
-      }
-    };
-
-    checkActiveOrders();
-    window.addEventListener("storage", checkActiveOrders); // Atualiza se mudar em outra aba
-    return () => window.removeEventListener("storage", checkActiveOrders);
-  }, []);
-
   useEffect(() => {
     const handlePrompt = (e: any) => {
       e.preventDefault();
@@ -131,13 +108,13 @@ export default function Navbar({
                   Baixar App
                 </button>
               )}
-              {/* 🚀 BOTÃO DE RASTREIO DESKTOP */}
-              {activeOrdersCount > 0 && (
+              {/* 🚀 BOTÃO DE MEUS PEDIDOS (Visível para usuários logados não-admins) */}
+              {(isVisitor || isSubscriber) && (
                 <Link
                   href="/meus-pedidos"
-                  className="flex items-center gap-2 px-5 py-2 text-white font-black text-[11px] uppercase tracking-widest bg-rose-500 hover:bg-rose-600 rounded-xl animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.4)] border border-rose-400 transition-all"
+                  className="flex items-center gap-2 px-5 py-2 text-rose-50 hover:text-white font-black text-[11px] uppercase tracking-widest transition-all bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 rounded-xl"
                 >
-                  <Clock size={14} /> Acompanhar ({activeOrdersCount})
+                  <Clock size={14} /> Meus Pedidos
                 </Link>
               )}
 
@@ -296,12 +273,12 @@ export default function Navbar({
           )}
 
           <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
-            {/* 🚀 BOTÃO DE RASTREIO MOBILE (Em destaque no topo do menu) */}
-            {activeOrdersCount > 0 && (
+            {/* 🚀 RASTREIO MOBILE OFICIAL */}
+            {(isVisitor || isSubscriber) && (
               <MobileLink
                 href="/meus-pedidos"
                 icon={<Clock size={20} />}
-                label={`Acompanhar Pedidos (${activeOrdersCount})`}
+                label="Meus Pedidos"
                 color="text-rose-400"
                 onClick={() => setIsOpen(false)}
               />

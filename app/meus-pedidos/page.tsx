@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   ArrowLeft,
   Loader2,
+  Truck, // Agora o ícone real do Lucide (Remova a gambiarra lá de baixo)
 } from "lucide-react";
 
 interface OrderData {
@@ -29,42 +30,46 @@ export default function MeusPedidosPage() {
 
   useEffect(() => {
     const fetchOrders = async () => {
+      // Pega a gaveta do navegador (se existir)
       const existingOrdersStr = localStorage.getItem("tafanu_active_orders");
-      if (!existingOrdersStr) {
-        setIsLoading(false);
-        return;
+      let activeOrdersIds: string[] = [];
+
+      if (existingOrdersStr) {
+        try {
+          activeOrdersIds = JSON.parse(existingOrdersStr);
+        } catch (e) {}
       }
 
       try {
-        let activeOrdersIds = JSON.parse(existingOrdersStr);
-        if (!Array.isArray(activeOrdersIds) || activeOrdersIds.length === 0) {
-          setIsLoading(false);
-          return;
-        }
-
+        // Agora nós CHAMAMOS A ACTION MESMO SE A GAVETA ESTIVER VAZIA!
+        // A action nova do servidor é inteligente e vai olhar se o cara tem conta logada
         const res = await getActiveOrdersByIds(activeOrdersIds);
 
         if (res.success && res.orders) {
-          // Dizemos ao TypeScript: "Confie em mim, esses dados têm o formato OrderData"
           const fetchedOrders = res.orders as unknown as OrderData[];
           setOrders(fetchedOrders);
 
           // 🚀 O FAXINEIRO FANTASMA (Memory Leak Fix):
-          const stillActiveIds = fetchedOrders
-            .filter((o) => o.status !== "COMPLETED" && o.status !== "CANCELLED")
-            .map((o) => o.id);
+          // Atualiza a gaveta local só com os que não finalizaram
+          if (activeOrdersIds.length > 0) {
+            const stillActiveIds = fetchedOrders
+              .filter(
+                (o) => o.status !== "COMPLETED" && o.status !== "CANCELLED",
+              )
+              .map((o) => o.id);
 
-          if (stillActiveIds.length === 0) {
-            localStorage.removeItem("tafanu_active_orders");
-          } else if (stillActiveIds.length !== activeOrdersIds.length) {
-            localStorage.setItem(
-              "tafanu_active_orders",
-              JSON.stringify(stillActiveIds),
-            );
+            if (stillActiveIds.length === 0) {
+              localStorage.removeItem("tafanu_active_orders");
+            } else {
+              localStorage.setItem(
+                "tafanu_active_orders",
+                JSON.stringify(stillActiveIds),
+              );
+            }
           }
         }
       } catch (e) {
-        console.error("Erro ao carregar gaveta de pedidos.");
+        console.error("Erro ao carregar pedidos.");
       } finally {
         setIsLoading(false);
       }
@@ -126,7 +131,7 @@ export default function MeusPedidosPage() {
               Meus Pedidos
             </h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-              Acompanhamento em tempo real
+              Histórico & Rastreio
             </p>
           </div>
         </div>
@@ -134,7 +139,7 @@ export default function MeusPedidosPage() {
         {/* LOADING STATE */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Loader2 size={32} className="animate-spin mb-4 text-indigo-500" />
+            <Loader2 size={32} className="animate-spin mb-4 text-emerald-500" />
             <p className="text-[10px] font-black uppercase tracking-widest">
               Buscando seus pedidos...
             </p>
@@ -148,15 +153,15 @@ export default function MeusPedidosPage() {
               <ShoppingBag size={32} className="text-slate-300" />
             </div>
             <h2 className="text-lg font-black text-slate-800 uppercase tracking-wide">
-              Nenhum pedido ativo
+              Nenhum pedido aqui
             </h2>
             <p className="text-xs font-bold text-slate-400 mt-2 max-w-sm">
-              Você não possui pedidos em andamento no momento. Que tal explorar
-              algumas lojas?
+              Você não possui pedidos recentes. Que tal explorar algumas lojas
+              na nossa vitrine?
             </p>
             <Link
               href="/"
-              className="mt-8 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest px-8 py-4 rounded-xl shadow-lg hover:bg-indigo-600 transition-all active:scale-95"
+              className="mt-8 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest px-8 py-4 rounded-xl shadow-lg hover:bg-emerald-500 transition-all active:scale-95"
             >
               Explorar Lojas
             </Link>
@@ -172,7 +177,7 @@ export default function MeusPedidosPage() {
                 href={`/pedido/${order.id}`}
                 className="block group"
               >
-                <div className="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all active:scale-[0.98]">
+                <div className="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all active:scale-[0.98]">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       #{order.orderNumber}
@@ -195,14 +200,14 @@ export default function MeusPedidosPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-black text-slate-800 uppercase truncate group-hover:text-indigo-600 transition-colors">
+                      <h3 className="text-sm font-black text-slate-800 uppercase truncate group-hover:text-emerald-600 transition-colors">
                         {order.business.name}
                       </h3>
                       <p className="text-[11px] font-bold text-slate-400 mt-0.5">
                         R$ {Number(order.totalAmount).toFixed(2)}
                       </p>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
                       <ChevronRight size={16} />
                     </div>
                   </div>
@@ -213,29 +218,5 @@ export default function MeusPedidosPage() {
         )}
       </div>
     </div>
-  );
-}
-
-// Import temporário do Truck para não dar erro no ícone
-function Truck(props: any) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={props.size}
-      height={props.size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M10 17h4V5H2v12h3" />
-      <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" />
-      <path d="M14 17h1" />
-      <circle cx="7.5" cy="17.5" r="2.5" />
-      <circle cx="17.5" cy="17.5" r="2.5" />
-    </svg>
   );
 }

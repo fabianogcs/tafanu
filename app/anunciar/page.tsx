@@ -5,6 +5,7 @@ import {
   Globe,
   BarChart3,
   ShieldCheck,
+  Store,
 } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -155,7 +156,24 @@ export default async function AnunciarPage() {
         {/* 🚀 SEO: H2 invisível apenas para estruturar a página para os robôs */}
         <h2 className="sr-only">Vantagens de Anunciar no Tafanu</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* 🚀 CIRURGIA DE LAYOUT: Passamos para grid-cols-2 para formar um belo quadrado com 4 artigos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* 🚀 O SEU NOVO DESTAQUE DE PORTAL E MÉTRICAS */}
+          <article className="flex flex-col gap-5 p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-emerald-500/50 transition-colors group">
+            <div className="w-12 h-12 bg-[#050814] text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-emerald-500 group-hover:text-[#050814] transition-colors">
+              <Store size={24} aria-hidden="true" />
+            </div>
+            <h3 className="text-2xl font-black uppercase italic text-slate-900 tracking-tighter leading-none">
+              Vitrine e Portal de Buscas
+            </h3>
+            <p className="text-slate-500 font-medium leading-snug">
+              Sua vitrine premium fica disponível no nosso portal para atrair
+              novos clientes da sua região. Acompanhe o crescimento do seu
+              negócio com métricas exatas de visitas e cliques direto no seu
+              painel.
+            </p>
+          </article>
+
           <article className="flex flex-col gap-5 p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-emerald-500/50 transition-colors group">
             <div className="w-12 h-12 bg-[#050814] text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-emerald-500 group-hover:text-[#050814] transition-colors">
               <Smartphone size={24} aria-hidden="true" />
@@ -164,9 +182,9 @@ export default async function AnunciarPage() {
               Venda Direta. Zero Taxas.
             </h3>
             <p className="text-slate-500 font-medium leading-snug">
-              Sem aplicativos intermediários cobrando comissão do seu lucro. O
-              cliente pesquisa no Tafanu e cai direto no seu WhatsApp, pronto
-              para fechar negócio.
+              Sem aplicativos intermediários cobrando até 27% do seu lucro.
+              Exiba seu catálogo de produtos ou portfólio de serviços, e o
+              cliente fecha negócio direto no seu WhatsApp ou Painel.
             </p>
           </article>
 
@@ -175,12 +193,12 @@ export default async function AnunciarPage() {
               <BarChart3 size={24} aria-hidden="true" />
             </div>
             <h3 className="text-2xl font-black uppercase italic text-slate-900 tracking-tighter leading-none">
-              Monitor de Resultados
+              Gestão de Excelência
             </h3>
             <p className="text-slate-500 font-medium leading-snug">
-              Pare de atirar no escuro. Acompanhe em tempo real no seu painel
-              quantas pessoas da sua cidade visitaram sua vitrine e clicaram nos
-              seus links.
+              Pare de anotar pedidos e orçamentos no papel. Tenha um sistema
+              Kanban em tempo real para organizar seus clientes, imprimir
+              comprovantes e acompanhar suas solicitações.
             </p>
           </article>
 
@@ -192,9 +210,9 @@ export default async function AnunciarPage() {
               O "Ímã" do Google
             </h3>
             <p className="text-slate-500 font-medium leading-snug">
-              Aplicamos tecnologia de ponta por trás da sua vitrine para que o
-              Google recomende a sua empresa sempre que alguém buscar pelo seu
-              serviço na região.
+              Aplicamos tecnologia de SEO por trás da sua vitrine. Assim, sempre
+              que alguém buscar pelo seu serviço ou produto na sua cidade, o
+              Google recomendará a sua página oficial.
             </p>
           </article>
         </div>

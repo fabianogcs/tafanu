@@ -73,6 +73,22 @@ export async function POST(request: Request) {
     const body = rawText ? (JSON.parse(rawText) as MPWebhookBody) : {};
     const url = new URL(request.url);
 
+    // 🚀 HACKER FIX: IDEMPOTÊNCIA (Bloqueia eventos duplicados do Mercado Pago)
+    const eventId = body?.id?.toString();
+    if (eventId) {
+      const alreadyProcessed = await db.processedWebhook.findUnique({
+        where: { id: eventId },
+      });
+      if (alreadyProcessed) {
+        console.log(
+          `[Webhook MP] Evento ${eventId} já foi processado. Ignorando duplicata.`,
+        );
+        return new NextResponse("OK", { status: 200 });
+      }
+      // Se é novo, carimba o passaporte para ninguém mais usar
+      await db.processedWebhook.create({ data: { id: eventId } });
+    }
+
     // 1. [SEGURANÇA] Bloqueia acessos sem assinatura válida
     if (!validateSignature(request, body, url)) {
       console.warn(
@@ -163,9 +179,13 @@ export async function POST(request: Request) {
 
       // --- CENÁRIO A: PAGAMENTO APROVADO ---
       if (status === "authorized") {
-        const expiresAt = subscription.next_payment_date
-          ? new Date(subscription.next_payment_date)
-          : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
+        let expiresAt = new Date();
+        if (subscription.next_payment_date) {
+          expiresAt = new Date(subscription.next_payment_date);
+        } else {
+          // 🚀 HACKER FIX: Adiciona 1 mês civil exato, respeitando anos bissextos e meses curtos
+          expiresAt.setMonth(expiresAt.getMonth() + 1);
+        }
 
         let planType: PlanType = "monthly";
         const frequency = subscription.auto_recurring?.frequency;

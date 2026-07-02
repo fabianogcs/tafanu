@@ -32,6 +32,7 @@ export default function LocationTracker() {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("lat");
       params.delete("lng");
+      localStorage.removeItem("tafanu_user_coords"); // 🚀 LIMPA O CACHE
       params.delete("sort"); // Remove a obrigação de ordenar por distância
       params.set("page", "1");
 
@@ -65,6 +66,12 @@ export default function LocationTracker() {
         params.set("lng", longitude.toString());
         params.set("sort", "distance");
         params.set("page", "1");
+
+        // 🚀 SALVA O CACHE AQUI TAMBÉM
+        localStorage.setItem(
+          "tafanu_user_coords",
+          JSON.stringify({ lat: latitude, lng: longitude }),
+        );
 
         setLoading(false);
         router.replace(`/busca?${params.toString()}`);

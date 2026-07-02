@@ -393,7 +393,7 @@ export default async function BusinessPage({
         `}
       </Script>
 
-      {/* 🚀 SEO AVANÇADO: Para JSON-LD, a recomendação oficial do Next.js é a tag HTML nativa! */}
+      {/* 🚀 SEO AVANÇADO MULTI-NICHO: Agora o Google ranqueia advogados, mecânicas e restaurantes corretamente */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -401,14 +401,16 @@ export default async function BusinessPage({
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
             name: business.name,
-            image: appIcon,
-            description: business.description,
-            telephone: business.whatsapp || business.phone,
+            image: [appIcon],
+            "@id": `${siteUrl}/site/${business.slug}`,
+            url: `${siteUrl}/site/${business.slug}`,
+            telephone: business.whatsapp || business.phone || "",
             address: {
               "@type": "PostalAddress",
               streetAddress: streetWithNumber,
-              addressLocality: business.city,
-              addressRegion: business.state,
+              addressLocality: business.city || "",
+              addressRegion: business.state || "",
+              postalCode: business.cep || "",
               addressCountry: "BR",
             },
             ...(business.latitude &&
@@ -419,6 +421,11 @@ export default async function BusinessPage({
                   longitude: business.longitude,
                 },
               }),
+            description:
+              business.description || `Catálogo oficial de ${business.name}`,
+            servesCuisine: business.category.toLowerCase().includes("alimenta")
+              ? "Geral"
+              : undefined,
           }),
         }}
       />

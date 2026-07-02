@@ -7,6 +7,7 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL") // 🚀 O Prisma só vai usar a DIRECT_URL se essa linha existir!
 }
+
 enum EventType {
   WHATSAPP
   PHONE
@@ -22,13 +23,15 @@ enum EventType {
   VIEW
   FAVORITE
 }
+
 enum Role {
   VISITANTE
   CLIENTE
   ADMIN
-  AFILIADO   // ⬅️ Faltava esse!
+  AFILIADO // ⬅️ Faltava esse!
   ASSINANTE
 }
+
 enum LayoutType {
   editorial
   urban
@@ -50,56 +53,59 @@ enum MenuMode {
 
 // --- TABELA DE USUÁRIOS ---
 model User {
-  id              String    @id @default(cuid())
-  name            String?
-  email           String?   @unique
-  emailVerified   DateTime? 
-  image           String?   
-  password        String?
-  commissions    Commission[]  @relation("AffiliateCommissions")
-  withdrawals    Withdrawal[]  @relation("AffiliateWithdrawals")
-  referralLogs   ReferralLog[] @relation("AffiliateLogs")
-  isReferredBy   ReferralLog?  @relation("ReferredUser")
-  
- role            Role      @default(VISITANTE)
-  referralCode    String?   @unique 
-  affiliateId     String?           
- affiliate User? @relation("AffiliateToUser", fields: [affiliateId], references: [id], onDelete: SetNull)
-  affiliateSince  DateTime? 
-  lastPayoutDate  DateTime?
-  lastPrice       Float?    @default(0)    
-  referrals       User[]    @relation("AffiliateToUser")
-  document        String?   @unique // 🚀 TRAVA DE AÇO: Bloqueia clones e banidos
-  phone           String?   @unique // 🚀 TRAVA DE AÇO: Garante 1 WhatsApp por pessoa
-  createdAt       DateTime  @default(now())
-  isBanned        Boolean   @default(false)
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  commissions   Commission[]  @relation("AffiliateCommissions")
+  withdrawals   Withdrawal[]  @relation("AffiliateWithdrawals")
+  referralLogs  ReferralLog[] @relation("AffiliateLogs")
+  isReferredBy  ReferralLog?  @relation("ReferredUser")
 
-  lastLogin       DateTime?
+  role           Role      @default(VISITANTE)
+  referralCode   String?   @unique
+  affiliateId    String?
+  affiliate      User?     @relation("AffiliateToUser", fields: [affiliateId], references: [id], onDelete: SetNull)
+  affiliateSince DateTime?
+  lastPayoutDate DateTime?
+  lastPrice      Float?    @default(0)
+  referrals      User[]    @relation("AffiliateToUser")
+  document       String?   @unique // 🚀 TRAVA DE AÇO: Bloqueia clones e banidos
+  phone          String?   @unique // 🚀 TRAVA DE AÇO: Garante 1 WhatsApp por pessoa
+  createdAt      DateTime  @default(now())
+  isBanned       Boolean   @default(false)
 
-  accounts      Account[] 
-  sessions      Session[] 
+  lastLogin DateTime?
 
- businesses    Business[] 
-  favorites     Favorite[] 
-  comments      Comment[]
-  reports       Report[]   // 🚀 ADICIONE ESTA LINHA AQUI!
+  accounts Account[]
+  sessions Session[]
+
+  businesses Business[]
+  favorites  Favorite[]
+  comments   Comment[]
+  reports    Report[] // 🚀 ADICIONE ESTA LINHA AQUI!
+  orders     Order[]    @relation("UserOrders") // 🚀 Permite que o cliente tenha histórico de compras
+
+  @@index([email]) // 🚀 Acelera o Auth.js e impede gargalos de login
 }
 
 // --- TABELA DE NEGÓCIOS ---
 model Business {
-  id                  String         @id @default(cuid())
-  name                String
-  slug                String         @unique
-  description         String?        @db.Text
-  theme               String         @default("showroom_clean")
-  layout              LayoutType     @default(showroom)
-  category            String
-  subcategory         String[]       @default([])
-  keywords            String[]       @default([])
-  
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?    @db.Text
+  theme       String     @default("showroom_clean")
+  layout      LayoutType @default(showroom)
+  category    String
+  subcategory String[]   @default([])
+  keywords    String[]   @default([])
+
   // Contadores Desnormalizados (Performance)
-  whatsapp_clicks     Int @default(0)  
-  phone_clicks        Int @default(0)  
+  whatsapp_clicks     Int @default(0)
+  phone_clicks        Int @default(0)
   instagram_clicks    Int @default(0)
   facebook_clicks     Int @default(0)
   tiktok_clicks       Int @default(0)
@@ -108,90 +114,91 @@ model Business {
   mercadolivre_clicks Int @default(0)
   shein_clicks        Int @default(0)
   ifood_clicks        Int @default(0)
-  map_clicks          Int @default(0) 
-  views               Int            @default(0) // Centralizado aqui
+  map_clicks          Int @default(0)
+  views               Int @default(0) // Centralizado aqui
 
-// Mídia
-  imageUrl            String?        @db.Text
-  coverImage          String?        @db.Text
-  catalogPdf          String?        @db.Text 
-  gallery             String[]       @default([])
-  videos              String[]       @default([]) 
-  mediaFeed           Json[]         @default([])
+  // Mídia
+  imageUrl   String?  @db.Text
+  coverImage String?  @db.Text
+  catalogPdf String?  @db.Text
+  gallery    String[] @default([])
+  videos     String[] @default([])
+  mediaFeed  Json[]   @default([])
 
   // Tags e Conteúdo Extra
   urban_tag           String?
   luxe_quote          String?
   comercial_badge     String?
   showroom_collection String?
-  features            String[]       @default([])
-  faqs                Json[]         @default([])
+  features            String[] @default([])
+  faqs                Json[]   @default([])
 
   // Localização e Contato
-  address             String?
-  number              String?        
-  complement          String?       
-  cep                 String?
-  neighborhood        String?        
-  city                String?   
-  state               String?   
-  latitude            Float?
-  longitude           Float?
-  whatsapp            String?
-  phone               String?
-  website             String?
-  instagram           String?
-  facebook            String?
-  tiktok              String?
-  shopee              String?
-  mercadoLivre        String?
-  shein               String?
-  ifood               String?
+  address      String?
+  number       String?
+  complement   String?
+  cep          String?
+  neighborhood String?
+  city         String?
+  state        String?
+  latitude     Float?
+  longitude    Float?
+  whatsapp     String?
+  phone        String?
+  website      String?
+  instagram    String?
+  facebook     String?
+  tiktok       String?
+  shopee       String?
+  mercadoLivre String?
+  shein        String?
+  ifood        String?
 
- hasDelivery         Boolean        @default(false)
-  deliveryFee         Float          @default(0) 
-  deliveryRadius      Float          @default(0) // 🚀 NOVO: Raio máximo em Km (0 = sem limite)
-  menuMode            MenuMode       @default(PDF)
-  
+  hasDelivery    Boolean  @default(false)
+  deliveryFee    Float    @default(0)
+  deliveryRadius Float    @default(0) // 🚀 NOVO: Raio máximo em Km (0 = sem limite)
+  menuMode       MenuMode @default(PDF)
+
   // 💰 Dados da Assinatura Deste Negócio Específico
-  planType            PlanType?      // ⬅️ NOVO: Transferido do User
-  subscriptionStatus String?        @default("inactive") // ⬅️ NOVO: 'active', 'past_due', 'cancelled'
-  expiresAt           DateTime?      // ⬅️ NOVO: Transferido do User
-  mpSubscriptionId    String?        // ⬅️ NOVO: Transferido do User
+  planType           PlanType? // ⬅️ NOVO: Transferido do User
+  subscriptionStatus String?   @default("inactive") // ⬅️ NOVO: 'active', 'past_due', 'cancelled'
+  expiresAt          DateTime? // ⬅️ NOVO: Transferido do User
+  mpSubscriptionId   String? // ⬅️ NOVO: Transferido do User
 
-  etapaFunil         Int            @default(1)
-  
-  published           Boolean        @default(true) 
-  isActive            Boolean        @default(true) 
-  createdAt           DateTime       @default(now()) // Centralizado aqui
-  updatedAt           DateTime       @updatedAt
+  etapaFunil Int @default(1)
 
-  userId              String
-  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  hours               BusinessHour[]
-  favorites           Favorite[]
-  reports             Report[]
-  comments            Comment[]
-  analytics           AnalyticsEvent[]
-  commissions         Commission[]
+  published Boolean  @default(true)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) // Centralizado aqui
+  updatedAt DateTime @updatedAt
 
-  products            Product[]
-  orders              Order[]
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  hours       BusinessHour[]
+  favorites   Favorite[]
+  reports     Report[]
+  comments    Comment[]
+  analytics   AnalyticsEvent[]
+  commissions Commission[]
+
+  products          Product[]
+  orders            Order[]
+  // 🚀 MÁQUINA DE VENDAS: Regista se o email de recuperação de assinatura já foi enviado
+  recoveryEmailSent Boolean   @default(false)
 
   // 🚀 ÍNDICES DE ALTA PERFORMANCE
   @@index([category])
   @@index([name])
   @@index([neighborhood])
   @@index([city])
-  @@index([views])       
-  @@index([createdAt])   
-
+  @@index([views])
+  @@index([createdAt])
   // Índices Compostos (Acelera buscas tipo: "Pizzaria em São Paulo")
-  @@index([city, category])            
-  @@index([city, neighborhood])        
-  @@index([city, isActive, published]) 
-  @@index([category, isActive, published]) 
+  @@index([city, category])
+  @@index([city, neighborhood])
+  @@index([city, isActive, published])
+  @@index([category, isActive, published])
   @@index([name, city])
   @@index([expiresAt])
   @@index([keywords], type: Gin)
@@ -199,57 +206,58 @@ model Business {
 }
 
 model BusinessHour {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  dayOfWeek   Int      
-  openTime    String   
-  closeTime   String   
-  isClosed    Boolean  @default(false)
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  openTime   String
+  closeTime  String
+  isClosed   Boolean  @default(false)
+
   @@index([businessId])
 }
 
 model Favorite {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([userId, businessId])
 }
 
 model Report {
-  id          String   @id @default(cuid())
-  reason      String   
-  details     String?  
-  status      String   @default("PENDING") 
-  createdAt   DateTime @default(now())
-  businessId  String
-  reportedBy  String?
-  
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  reporter    User?    @relation(fields: [reportedBy], references: [id], onDelete: SetNull)
+  id         String   @id @default(cuid())
+  reason     String
+  details    String?
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  businessId String
+  reportedBy String?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reporter User?    @relation(fields: [reportedBy], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([reportedBy])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -280,16 +288,16 @@ model PasswordResetToken {
 }
 
 model Comment {
-  id         String   @id @default(cuid())
-  content    String   @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  isFlagged  Boolean  @default(false)
+  id         String    @id @default(cuid())
+  content    String    @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isFlagged  Boolean   @default(false)
   flaggedBy  String?
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   parentId   String?
   parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies    Comment[] @relation("CommentReplies")
@@ -299,73 +307,74 @@ model Comment {
 }
 
 model AnalyticsEvent {
-  id          String   @id @default(cuid())
- eventType   EventType
-  createdAt   DateTime @default(now())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  eventType  EventType
+  createdAt  DateTime  @default(now())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId, createdAt]) // Busca range de datas por loja (Muito rápido)
   @@index([eventType])
 }
+
 // --- SISTEMA DE AFILIADOS PROFISSIONAL ---
 
 enum CommissionStatus {
-  PENDING    // Aguardando prazo de garantia (ex: 7 dias)
-  AVAILABLE  // Liberado para o afiliado pedir saque
-  PAID       // Você já transferiu o dinheiro
-  CANCELLED  // Cliente pediu estorno ou assinatura falhou
+  PENDING // Aguardando prazo de garantia (ex: 7 dias)
+  AVAILABLE // Liberado para o afiliado pedir saque
+  PAID // Você já transferiu o dinheiro
+  CANCELLED // Cliente pediu estorno ou assinatura falhou
 }
 
 model ReferralLog {
   id          String   @id @default(cuid())
-  affiliateId String   // ID do User que indicou
+  affiliateId String // ID do User que indicou
   referredId  String   @unique // ID do User que foi indicado
   createdAt   DateTime @default(now())
-  
-affiliate User @relation("AffiliateLogs", fields: [affiliateId], references: [id], onDelete: Cascade)
-referred User @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
+
+  affiliate User @relation("AffiliateLogs", fields: [affiliateId], references: [id], onDelete: Cascade)
+  referred  User @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
 }
 
 model Commission {
-  id            String           @id @default(cuid())
-  affiliateId   String
-  userId        String           // Cliente que pagou
-  businessId      String?          // 🚀 NOVO: Rastreio exato da loja que gerou a venda
-  business        Business?        @relation(fields: [businessId], references: [id], onDelete: SetNull)
-  amount        Float            // Valor da comissão (ex: 7.98)
-  orderAmount   Float            // Valor total da venda (ex: 39.90)
-  status        CommissionStatus @default(PENDING)
-  description   String?          // Ex: "Mensalidade Março - Cliente X"
-  createdAt     DateTime         @default(now())
-  releaseDate   DateTime         // Data que o valor fica disponível (createdAt + 7 dias)
-  mpPaymentId   String?  @unique
+  id          String           @id @default(cuid())
+  affiliateId String
+  userId      String // Cliente que pagou
+  businessId  String? // 🚀 NOVO: Rastreio exato da loja que gerou a venda
+  business    Business?        @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  amount      Float // Valor da comissão (ex: 7.98)
+  orderAmount Float // Valor total da venda (ex: 39.90)
+  status      CommissionStatus @default(PENDING)
+  description String? // Ex: "Mensalidade Março - Cliente X"
+  createdAt   DateTime         @default(now())
+  releaseDate DateTime // Data que o valor fica disponível (createdAt + 7 dias)
+  mpPaymentId String?          @unique
 
   // ⬅️ NOVO: Relacionamento para saber em qual saque esta comissão foi paga
-  withdrawalId   String?          
-  withdrawal     Withdrawal?      @relation(fields: [withdrawalId], references: [id])
-  
- affiliate User @relation("AffiliateCommissions", fields: [affiliateId], references: [id], onDelete: Cascade)
+  withdrawalId String?
+  withdrawal   Withdrawal? @relation(fields: [withdrawalId], references: [id])
+
+  affiliate User @relation("AffiliateCommissions", fields: [affiliateId], references: [id], onDelete: Restrict)
 
   @@index([affiliateId])
   @@index([status, releaseDate]) // 🚀 VACINA DE ESCALABILIDADE: Deixa o Cron Job 100x mais rápido na escala
-  @@index([withdrawalId]) 
+  @@index([withdrawalId])
   @@index([userId]) // 🚀 ADICIONADO: Acelera as buscas do Webhook em 100x!
-  @@index([businessId])            // 🚀 Índice para buscas super rápidas!
+  @@index([businessId]) // 🚀 Índice para buscas super rápidas!
 }
 
 model Withdrawal {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   affiliateId String
   amount      Float
   pixKey      String
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  createdAt   DateTime @default(now())
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime  @default(now())
   paidAt      DateTime?
 
-affiliate User @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliate   User         @relation("AffiliateWithdrawals", fields: [affiliateId], references: [id], onDelete: Restrict)
   commissions Commission[] // ⬅️ NOVO: Lista de comissões que compõem este saque
 
   @@index([affiliateId])
@@ -373,59 +382,70 @@ affiliate User @relation("AffiliateWithdrawals", fields: [affiliateId], referenc
 
 // --- TABELA DE PRODUTOS / CARDÁPIO (MÁQUINA DE VENDAS) ---
 model Product {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  description String?  @db.Text
-  price       Float    // O valor em reais
+  description String? @db.Text
+  price       Float // O valor em reais
   oldPrice    Float?
-  imageUrl    String?  @db.Text // A foto apetitosa do lanche
-  isActive    Boolean  @default(true) // O lojista pode pausar um lanche se acabar o estoque
-  
-  extras      Json?    @default("[]")
+  imageUrl    String? @db.Text // A foto apetitosa do lanche
+  isActive    Boolean @default(true) // O lojista pode pausar um lanche se acabar o estoque
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  extras Json? @default("[]")
 
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId]) // 🚀 Índice para a vitrine carregar o cardápio num piscar de olhos
 }
+
 // --- SISTEMA DE PEDIDOS (MOTOR iFOOD) ---
 
 enum OrderStatus {
-  PENDING    // Novo pedido, apitando na tela do lojista
-  PREPARING  // Lojista aceitou e está fazendo
+  PENDING // Novo pedido, apitando na tela do lojista
+  PREPARING // Lojista aceitou e está fazendo
   DISPATCHED // Saiu para entrega ou pronto para retirar
-  COMPLETED  // Finalizado com sucesso
-  CANCELLED  // Lojista recusou ou cliente cancelou
+  COMPLETED // Finalizado com sucesso
+  CANCELLED // Lojista recusou ou cliente cancelou
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  orderNumber   Int         @default(autoincrement()) // Gera números sequenciais bonitos (ex: #1024)
-  
-  businessId    String
-  business      Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  
+  id          String @id @default(cuid())
+  orderNumber String @unique // 🚀 Gerado pelo backend (Ex: A4F8B2) para evitar numeração pulada
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Restrict) // 🚀 Impede que a exclusão da loja apague o faturamento global da plataforma
+
   customerName  String
   customerPhone String?
-  
-  items         Json        // 🚀 Cofre Blindado: Salva o array de lanches e adicionais exatamente como foram vendidos
-  totalAmount   Float       // Valor real recalculado pelo servidor
-  
-  deliveryType  String      // "DELIVERY" ou "PICKUP"
-  address       Json?       // { street, number, neighborhood, cep, complement, reference }
-  
-  paymentMethod String      // "PIX", "CASH", "CREDIT", "DEBIT"
-  changeFor     String?     // Troco para
-  observation   String?     @db.Text
-  
-  status        OrderStatus @default(PENDING)
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  customerId    String? // 🚀 Vínculo para a tela "Meus Pedidos" do cliente
+  customer      User?   @relation("UserOrders", fields: [customerId], references: [id], onDelete: SetNull)
+
+  items       Json // 🚀 Cofre Blindado: Salva o array de lanches e adicionais exatamente como foram vendidos
+  totalAmount Float // Valor real recalculado pelo servidor
+
+  deliveryType String // "DELIVERY" ou "PICKUP"
+  address      Json? // { street, number, neighborhood, cep, complement, reference }
+
+  paymentMethod String // "PIX", "CASH", "CREDIT", "DEBIT"
+  changeFor     String? // Troco para
+  observation   String? @db.Text
+
+  status OrderStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // 🚀 MÁQUINA DE VENDAS: Regista se o lojista já foi alertado sobre a demora
+  alertEmailSent Boolean @default(false)
 
   @@index([businessId, status]) // 🚀 Índice de Alta Performance para o Kanban do Lojista carregar na velocidade da luz
   @@index([createdAt])
+}
+
+// 🚀 BLINDAGEM DE WEBHOOK: Evita que o Mercado Pago duplique meses de assinatura
+model ProcessedWebhook {
+  id        String   @id // O ID do evento do Mercado Pago
+  createdAt DateTime @default(now())
 }

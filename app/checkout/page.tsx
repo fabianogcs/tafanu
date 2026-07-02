@@ -215,38 +215,38 @@ export default function CheckoutPage() {
           })}
         </div>
 
-        {/* COLUNA 2: VANTAGENS PRO INCLUSAS (Alta Conversão) */}
+        {/* COLUNA 2: VANTAGENS PRO INCLUSAS (Foco em Vitrine e Portal de Buscas) */}
         <div className="lg:col-span-5 bg-[#0A1220] rounded-[2rem] p-8 border border-white/5 shadow-xl h-full flex flex-col justify-center">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
-            <Sparkles className="text-emerald-500 w-5 h-5 shrink-0" />
-            Tudo o que você vai liberar:
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500 mb-8 flex items-center gap-3">
+            <Sparkles className="text-emerald-500 w-5 h-5 shrink-0" />O Sistema
+            Completo para o Seu Negócio:
           </h2>
           <div className="flex flex-col gap-4">
             {[
               {
-                title: "Vitrine Digital de Alta Conversão",
-                desc: "Seu negócio aberto 24h por dia, com design de luxo e sem taxas por venda.",
+                title: "Vitrine Premium e Portal de Buscas",
+                desc: "Seu negócio em destaque no nosso sistema de buscas. Tenha uma vitrine de luxo e monitore em tempo real as visitas e cliques recebidos.",
               },
               {
-                title: "Vendas Diretas no WhatsApp",
-                desc: "Botões de contato rápido para o cliente fechar o pedido direto com você.",
+                title: "Pedidos e Orçamentos (Zero Taxas)",
+                desc: "Receba solicitações direto no WhatsApp ou no seu Painel, sem pagar porcentagem ou comissões por venda.",
               },
               {
-                title: "Prioridade no Radar de Buscas",
-                desc: "Apareça antes dos seus concorrentes quando buscarem pelo seu serviço.",
+                title: "Gestão Kanban em Tempo Real",
+                desc: "Organize tudo. Mova seus clientes de 'Novo Contato' para 'Em Andamento' e 'Finalizado' sem se perder.",
               },
               {
-                title: "Links Rápidos e Redes Sociais",
-                desc: "Reúna seu Instagram, iFood, Shopee e Mapa em um único link oficial.",
+                title: "O Ímã do Google (SEO Local)",
+                desc: "Nossa tecnologia ajuda o seu negócio a aparecer no Google da sua cidade quando buscarem pelo que você oferece.",
               },
               {
-                title: "Métricas de Acesso e Cliques",
-                desc: "Acompanhe quantas pessoas viram sua loja e clicaram no seu WhatsApp.",
+                title: "Integração Térmica Padrão Franquia",
+                desc: "Imprima comprovantes de orçamentos ou pedidos direto em maquininhas térmicas (58mm/80mm) com apenas um clique.",
               },
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 transition-colors hover:bg-white/10 hover:border-white/10 group"
+                className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 transition-colors hover:bg-emerald-500/10 hover:border-emerald-500/30 group"
               >
                 <div className="mt-0.5">
                   <CheckCircle2
@@ -255,7 +255,7 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div className="flex flex-col text-left">
-                  <span className="text-sm font-black text-white uppercase tracking-wider mb-1">
+                  <span className="text-sm font-black text-white uppercase tracking-wider mb-1 group-hover:text-emerald-400 transition-colors">
                     {item.title}
                   </span>
                   <span className="text-[11px] font-medium text-slate-400 leading-relaxed">

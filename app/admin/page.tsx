@@ -27,7 +27,11 @@ export default async function AdminPage({
     select: { role: true },
   });
 
-  const isEmailAutorizado = emailSessao === adminEmailEnv;
+  // 🚀 HACKER FIX: Aceita múltiplos e-mails de sócios separados por vírgula no .env da Vercel
+  const isEmailAutorizado = adminEmailEnv
+    .split(",")
+    .map((e) => e.trim())
+    .includes(emailSessao);
   const isAdminNoBanco = usuarioNoBanco?.role === "ADMIN";
 
   if (!isEmailAutorizado && !isAdminNoBanco) {
@@ -69,7 +73,17 @@ export default async function AdminPage({
         lastLogin: true,
         createdAt: true,
         businesses: {
-          include: {
+          // 🚀 HACKER FIX: Trocamos 'include' por 'select'. Agora o banco só entrega as métricas vitais para o Admin.
+          // Isso reduz o peso da requisição de 50MB para 50KB. O painel nunca mais vai travar.
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            planType: true,
+            expiresAt: true,
+            views: true,
+            whatsapp_clicks: true,
+            phone_clicks: true,
             _count: { select: { favorites: true } },
           },
         },

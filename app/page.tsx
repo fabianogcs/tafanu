@@ -39,13 +39,11 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  // Busca Tudo Paralelamente
-  const [activeCategories, onlineMarketplaceData, trendingBusinesses] =
-    await Promise.all([
-      getActiveCategories(),
-      getOnlineMarketplaceMetadata(),
-      getTrendingBusinesses(),
-    ]);
+  // Busca Tudo Paralelamente (Mais rápido e limpo agora!)
+  const [activeCategories, trendingBusinesses] = await Promise.all([
+    getActiveCategories(),
+    getTrendingBusinesses(),
+  ]);
 
   return (
     <main className="relative min-h-screen bg-white pb-24 overflow-hidden">
@@ -61,7 +59,7 @@ export default async function Home() {
         <Hero />
         <Categories activeCats={activeCategories} />
         <OsMaisBuscados businesses={trendingBusinesses} />
-        <VitrineDigital data={onlineMarketplaceData} />
+        <VitrineDigital />
       </div>
     </main>
   );

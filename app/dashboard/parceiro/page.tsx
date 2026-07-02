@@ -85,71 +85,70 @@ export default function AffiliateDashboard() {
   const { affiliate, clients } = data;
   const hoje = new Date();
 
-  const listMensal: any[] = [];
-  const listTrimestral: any[] = [];
-  const listAnual: any[] = [];
-  const listPix: any[] = [];
-  const listTeste: any[] = [];
-  const listLeads: any[] = [];
-  const listVencidos: any[] = [];
+  const {
+    listMensal,
+    listTrimestral,
+    listAnual,
+    listPix,
+    listTeste,
+    listLeads,
+    listVencidos,
+  } = useMemo(() => {
+    const res = {
+      listMensal: [] as any[],
+      listTrimestral: [] as any[],
+      listAnual: [] as any[],
+      listPix: [] as any[],
+      listTeste: [] as any[],
+      listLeads: [] as any[],
+      listVencidos: [] as any[],
+    };
 
-  clients.forEach((u: any) => {
-    if (u.role === "AFILIADO") return;
-
-    const business = u.businesses?.[0];
-
-    // 1. LEADS PUROS
-    if (!business) {
-      listLeads.push(u);
-      return;
-    }
-
-    const expDate = business.expiresAt ? new Date(business.expiresAt) : null;
-    const planType = business.planType;
-    const isMercadoPago = business.isMercadoPago; // 🚀 Lendo a nova flag blindada
-    const subStatus = business.subscriptionStatus;
-
-    // 2. VENCIDOS OU CANCELADOS
-    const isExpired = expDate ? hoje > expDate : false;
-    const isCancelled = subStatus === "cancelled";
-    const isExAssinante = u.role === "VISITANTE" && expDate !== null;
-
-    if (isExpired || isCancelled || isExAssinante) {
-      listVencidos.push(u);
-      return;
-    }
-
-    // 3. LEADS COM LOJA INCOMPLETA
-    if (u.role === "VISITANTE" && !expDate) {
-      listLeads.push(u);
-      return;
-    }
-
-    // 4. PIX / MANUAIS
-    if (!isMercadoPago) {
-      listPix.push(u);
-      return;
-    }
-
-    // 5. MERCADO PAGO ATIVOS (Mensal, Trimestral, Anual e Teste)
-    // 🛡️ AJUSTE DE SEGURANÇA: Adicionado (data?.commissions || []) para evitar crash!
-    const jaPassouDaGarantia = (data?.commissions || []).some(
-      (c: any) =>
-        c.userId === u.id && (c.status === "AVAILABLE" || c.status === "PAID"),
-    );
-
-    if (!jaPassouDaGarantia) {
-      listTeste.push(u); // Está nos 7 dias de Trial / Garantia (Comissão PENDING)
-    } else {
-      if (planType === "quarterly") {
-        listTrimestral.push(u);
-      } else if (planType === "yearly") {
-        listAnual.push(u);
-      } else {
-        listMensal.push(u);
+    clients.forEach((u: any) => {
+      if (u.role === "AFILIADO") return;
+      const business = u.businesses?.[0];
+      if (!business) {
+        res.listLeads.push(u);
+        return;
       }
-    }
-  });
+
+      const expDate = business.expiresAt ? new Date(business.expiresAt) : null;
+      const planType = business.planType;
+      const isMercadoPago = business.isMercadoPago;
+      const subStatus = business.subscriptionStatus;
+      const isExpired = expDate ? hoje > expDate : false;
+      const isCancelled = subStatus === "cancelled";
+      const isExAssinante = u.role === "VISITANTE" && expDate !== null;
+
+      if (isExpired || isCancelled || isExAssinante) {
+        res.listVencidos.push(u);
+        return;
+      }
+      if (u.role === "VISITANTE" && !expDate) {
+        res.listLeads.push(u);
+        return;
+      }
+      if (!isMercadoPago) {
+        res.listPix.push(u);
+        return;
+      }
+
+      const jaPassouDaGarantia = (data?.commissions || []).some(
+        (c: any) =>
+          c.userId === u.id &&
+          (c.status === "AVAILABLE" || c.status === "PAID"),
+      );
+
+      if (!jaPassouDaGarantia) {
+        res.listTeste.push(u);
+      } else {
+        if (planType === "quarterly") res.listTrimestral.push(u);
+        else if (planType === "yearly") res.listAnual.push(u);
+        else res.listMensal.push(u);
+      }
+    });
+    return res;
+  }, [clients, hoje, data?.commissions]);
 
   const getRawList = () => {
     if (activeTab === "mensal") return listMensal;

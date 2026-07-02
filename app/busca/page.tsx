@@ -384,6 +384,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     createdAt: true,
     whatsapp: true,
     phone: true,
+    deliveryRadius: true, // 🚀 FASE 3: PUXANDO O RAIO AQUI
     hours: {
       select: {
         dayOfWeek: true,
@@ -857,6 +858,18 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   if (subcategoryArray.length > 0)
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
   if (statusFilter === "open") businesses = businesses.filter((b) => b.isOpen);
+
+  // 🚀 O RAIO DE AÇO: Se o cliente ativou o GPS e está na vitrine online,
+  // nós cortamos as lojas cujo raio não alcança a casa dele!
+  if (isOnlineMode && userLat && userLng) {
+    businesses = businesses.filter((b) => {
+      // Se a loja tem limite de raio, e a distância calculada for MAIOR que o raio, removemos.
+      if (b.deliveryRadius && b.deliveryRadius > 0 && b.distance !== null) {
+        return b.distance <= b.deliveryRadius;
+      }
+      return true; // Se a loja deixou o raio "0", entrega pra todo o Brasil (Shopee/Meli)
+    });
+  }
 
   if (needsJsEngine) {
     if (sort === "distance" && userLat && userLng)

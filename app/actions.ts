@@ -107,7 +107,14 @@ async function requireAdmin() {
   if (!user) return null;
 
   // 2. Agora o TypeScript permite ler user.role e user.email sem o "?"
-  if (user.role !== "ADMIN" && user.email !== process.env.ADMIN_EMAIL) {
+  const adminEmails = (process.env.ADMIN_EMAIL || "")
+    .toLowerCase()
+    .split(",")
+    .map((e) => e.trim());
+  if (
+    user.role !== "ADMIN" &&
+    (!user.email || !adminEmails.includes(user.email.toLowerCase()))
+  ) {
     return null;
   }
 
@@ -1331,7 +1338,7 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
   }
 }
 
-// --- A BOMBA ATÔMICA (Exclui a loja inteira do banco) ---
+// --- A BOMBA ATÔMICA INTELIGENTE (Exclui ou Arquiva para proteger o Financeiro) ---
 export async function deleteBusiness(slug: string) {
   if (!slug || slug.length > 60) return { error: "Link inválido." };
   const user = await getSafeUser();
@@ -1340,7 +1347,12 @@ export async function deleteBusiness(slug: string) {
   try {
     const business = await db.business.findUnique({
       where: { slug },
-      select: { id: true, userId: true, mpSubscriptionId: true }, // 🚀 Lemos a assinatura!
+      select: {
+        id: true,
+        userId: true,
+        mpSubscriptionId: true,
+        _count: { select: { orders: true } }, // 🚀 AUDITORIA: Verifica se a loja tem vendas
+      },
     });
 
     if (!business) return { error: "Loja não encontrada." };
@@ -1372,9 +1384,28 @@ export async function deleteBusiness(slug: string) {
     // A faxina das imagens no UploadThing TEM que ser feita ANTES de apagar no banco!
     await cleanStorageFiles(slug);
 
-    // 🚀 EFICIÊNCIA SÊNIOR: O "onDelete: Cascade" do Prisma já faz a mágica no banco!
-    // Apenas um comando resolve tudo, sem sobrecarregar a conexão.
-    await db.business.delete({ where: { id: business.id } });
+    // 🚀 O TRIBUNAL DE EXCLUSÃO (Soft Delete vs Hard Delete)
+    if (business._count.orders > 0) {
+      // SOFT DELETE: A loja tem vendas. Não podemos quebrar o histórico financeiro.
+      await db.business.update({
+        where: { id: business.id },
+        data: {
+          isActive: false,
+          published: false,
+          imageUrl: null,
+          coverImage: null,
+          catalogPdf: null,
+          gallery: [],
+          mediaFeed: [],
+          // Libera o link original adicionando um prefixo de lixo + timestamp
+          slug: `deleted-${Date.now()}-${business.id.substring(0, 6)}`,
+          subscriptionStatus: "cancelled",
+        },
+      });
+    } else {
+      // HARD DELETE: A loja é virgem de vendas. Aniquilação total liberada.
+      await db.business.delete({ where: { id: business.id } });
+    }
 
     revalidatePath("/admin");
     revalidatePath("/dashboard");
@@ -1481,7 +1512,79 @@ async function executeCoreCleanup() {
   const dozeHorasAtras = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
   try {
-    // 🚀 CIRURGIA 0 (Gestão de Pedidos): Limpa carrinhos abandonados
+    // 🚀 CIRURGIA 5: MÁQUINA DE VENDAS E RETENÇÃO (Disparos Automáticos)
+    const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const trintaMinutosAtras = new Date(Date.now() - 30 * 60 * 1000);
+
+    // 5.A: Recuperação de Assinatura (Lojistas que pararam no checkout)
+    const lojistasAbandonados = await db.business.findMany({
+      where: {
+        subscriptionStatus: "inactive",
+        createdAt: { lt: duasHorasAtras },
+        recoveryEmailSent: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        user: { select: { email: true, name: true } },
+      },
+      take: 20,
+    });
+
+    for (const loja of lojistasAbandonados) {
+      if (loja.user?.email) {
+        try {
+          await resend.emails.send({
+            from: "Equipe Tafanu <sistema@tafanu.com.br>",
+            to: loja.user.email,
+            subject: "Sua vitrine está quase pronta!",
+            html: `<p>Olá ${loja.user.name}, notamos que você começou a configurar a página <b>${loja.name}</b> no Tafanu, mas não finalizou a ativação.</p><p>Não deixe seus clientes esperando! Ative sua vitrine agora e comece a receber pedidos e solicitações de orçamento na sua região.</p><a href="https://tafanu.com.br/dashboard" style="background-color: #0070f3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Finalizar Ativação</a>`,
+          });
+          await db.business.update({
+            where: { id: loja.id },
+            data: { recoveryEmailSent: true },
+          });
+        } catch (e) {
+          console.error("Erro email rec:", e);
+        }
+      }
+    }
+
+    // 5.B: Alerta de Pedido/Orçamento Ignorado
+    const pedidosIgnorados = await db.order.findMany({
+      where: {
+        status: "PENDING",
+        createdAt: { lt: trintaMinutosAtras },
+        alertEmailSent: false,
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        business: { select: { name: true, user: { select: { email: true } } } },
+      },
+      take: 20,
+    });
+
+    for (const pedido of pedidosIgnorados) {
+      if (pedido.business?.user?.email) {
+        try {
+          await resend.emails.send({
+            from: "Tafanu Alertas <sistema@tafanu.com.br>",
+            to: pedido.business.user.email,
+            subject: `🚨 ALERTA: Pedido/Orçamento aguardando resposta!`,
+            html: `<p>Atenção! Você tem um pedido ou contato (<b>#${pedido.orderNumber}</b>) aguardando resposta há mais de 30 minutos na sua vitrine <b>${pedido.business.name}</b>.</p><p>Acesse seu painel agora para aceitar a solicitação antes que o cliente vá para a concorrência.</p><a href="https://tafanu.com.br/dashboard/pedidos" style="background-color: #ef4444; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Ver Solicitação Agora</a>`,
+          });
+          await db.order.update({
+            where: { id: pedido.id },
+            data: { alertEmailSent: true },
+          });
+        } catch (e) {
+          console.error("Erro alerta pedido:", e);
+        }
+      }
+    }
+
+    // 🚀 CIRURGIA 0 (Gestão de Pedidos): Limpa carrinhos abandonados (MANTIDO)
     const pedidosDeletados = await db.order.deleteMany({
       where: {
         status: "PENDING",
@@ -1490,7 +1593,7 @@ async function executeCoreCleanup() {
     });
     if (pedidosDeletados.count > 0) {
       console.log(
-        `🍔 [Faxina] ${pedidosDeletados.count} pedidos abandonados foram varridos.`,
+        `🍔 [Faxina] ${pedidosDeletados.count} pedidos/orçamentos abandonados foram varridos.`,
       );
     }
 
@@ -1521,64 +1624,100 @@ async function executeCoreCleanup() {
       );
     }
 
-    // 🚀 CIRURGIA 2: A Faxina Original Otimizada para Evitar Orfãos no Storage
+    // 🚀 CIRURGIA 2: O Soft Delete Financeiro (Protege o Histórico de Vendas)
     const ghosts = await db.business.findMany({
       where: {
         user: { role: "VISITANTE" },
+        // 🚀 O pulo do gato: Só processa quem ainda está ativo, para o Cron Job não ficar limpando o mesmo zumbi todo dia
+        isActive: true,
         OR: [
           { expiresAt: null, createdAt: { lt: trintaDiasAtras } },
           { expiresAt: { lt: trintaDiasAtras } },
         ],
       },
-      take: 30,
+      take: 30, // Lotes pequenos para não estourar tempo da Vercel
       select: {
         id: true,
         imageUrl: true,
         gallery: true,
         mediaFeed: true,
-        products: { select: { imageUrl: true } }, // 🚀 Puxa os lanches para a faxina externa
+        products: { select: { imageUrl: true } },
+        _count: { select: { orders: true } }, // 🚀 AUDITORIA: Descobre se a loja tem vendas registradas
       },
     });
 
-    if (ghosts.length === 0)
+    if (ghosts.length === 0) {
       return {
         success: true,
-        message: "Banco limpo. Ninguém na fila de exclusão.",
+        message: "Banco limpo. Ninguém na fila de exclusão hoje.",
       };
+    }
 
+    // 1. Coleta o lixo pesado do Storage (UploadThing)
     const linksParaDeletar: string[] = [];
+    const lojasParaDeletarFisicamente: string[] = [];
+    const lojasParaSoftDelete: string[] = [];
+
     ghosts.forEach((business) => {
+      // Coleta imagens da loja
       if (business.imageUrl) linksParaDeletar.push(business.imageUrl);
       if (business.gallery && Array.isArray(business.gallery)) {
         linksParaDeletar.push(...(business.gallery as string[]));
       }
       if (business.mediaFeed && Array.isArray(business.mediaFeed)) {
         business.mediaFeed.forEach((item: any) => {
-          if (item && item.type === "image" && item.url) {
+          if (item && item.type === "image" && item.url)
             linksParaDeletar.push(item.url);
-          }
         });
       }
-      // 🚀 ENVIANDO IMAGENS DE PRODUTOS DE CONTAS FANTASMAS PRO LIXO
+      // Coleta imagens dos produtos
       if (business.products && business.products.length > 0) {
         business.products.forEach((p) => {
           if (p.imageUrl) linksParaDeletar.push(p.imageUrl);
         });
       }
+
+      // 2. O TRIBUNAL: Vive como fantasma ou morre para sempre?
+      if (business._count.orders > 0) {
+        lojasParaSoftDelete.push(business.id); // Tem vendas, não pode apagar!
+      } else {
+        lojasParaDeletarFisicamente.push(business.id); // Não tem vendas, pode aniquilar.
+      }
     });
 
+    // 3. Esvazia a lixeira da UploadThing
     if (linksParaDeletar.length > 0) {
       await deleteFilesFromUploadThing(linksParaDeletar);
     }
 
-    const idsToDelete = ghosts.map((b) => b.id);
-    const deleted = await db.business.deleteMany({
-      where: { id: { in: idsToDelete } },
-    });
+    // 4. Executa o Soft Delete (Esconde a loja e apaga as fotos do banco para não dar erro 404)
+    if (lojasParaSoftDelete.length > 0) {
+      await db.business.updateMany({
+        where: { id: { in: lojasParaSoftDelete } },
+        data: {
+          isActive: false,
+          published: false,
+          imageUrl: null,
+          coverImage: null,
+          catalogPdf: null,
+          gallery: [],
+          mediaFeed: [],
+        },
+      });
+    }
+
+    // 5. Executa a exclusão permanente das lojas inúteis
+    let deletedCount = 0;
+    if (lojasParaDeletarFisicamente.length > 0) {
+      const deleted = await db.business.deleteMany({
+        where: { id: { in: lojasParaDeletarFisicamente } },
+      });
+      deletedCount = deleted.count;
+    }
 
     return {
       success: true,
-      message: `Faxina: ${deleted.count} lojas e ${linksParaDeletar.length} imagens removidas.`,
+      message: `Faxina Executada: ${deletedCount} lojas destruídas, ${lojasParaSoftDelete.length} arquivadas (Soft Delete), ${linksParaDeletar.length} imagens apagadas.`,
     };
   } catch (error) {
     console.error("Erro Crítico na Faxina:", error);
@@ -4197,30 +4336,53 @@ export async function createOrderAction(payload: any) {
       totalAmount += business.deliveryFee;
     }
 
-    const newOrder = await db.order.create({
-      data: {
-        businessId: business.id,
-        customerName: payload.clientName.substring(0, 60),
-        customerPhone: finalPhone, // 🚀 Agora salvamos o telefone validado do cliente no pedido!
-        items: finalItems,
-        totalAmount: totalAmount,
-        deliveryType: payload.deliveryType,
-        address: payload.address || null,
-        paymentMethod: payload.paymentMethod,
-        changeFor: payload.changeFor || null,
-        observation: payload.observation
-          ? payload.observation.substring(0, 500)
-          : null,
-        status: "PENDING",
-      },
-    });
+    let attempts = 0;
 
-    // 🚀 RETORNA O ID PARA A TELA DE RASTREIO
-    return {
-      success: true,
-      orderNumber: newOrder.orderNumber,
-      orderId: newOrder.id,
-    };
+    while (attempts < 3) {
+      try {
+        const shortOrderNumber = crypto
+          .randomBytes(3)
+          .toString("hex")
+          .toUpperCase();
+
+        const newOrder = await db.order.create({
+          data: {
+            orderNumber: shortOrderNumber,
+            businessId: business.id,
+            customerName: payload.clientName.substring(0, 60),
+            customerPhone: finalPhone,
+            customerId: userSession.id,
+            items: finalItems,
+            totalAmount: totalAmount,
+            deliveryType: payload.deliveryType,
+            address: payload.address || null,
+            paymentMethod: payload.paymentMethod,
+            changeFor: payload.changeFor || null,
+            observation: payload.observation
+              ? payload.observation.substring(0, 500)
+              : null,
+            status: "PENDING",
+          },
+        });
+
+        // 🚀 RETORNA O ID PARA A TELA DE RASTREIO DIRETO DAQUI (O TypeScript ama isso!)
+        return {
+          success: true,
+          orderNumber: newOrder.orderNumber,
+          orderId: newOrder.id,
+        };
+      } catch (err: any) {
+        if (err.code === "P2002") {
+          attempts++;
+          if (attempts >= 3)
+            throw new Error(
+              "Sistema sobrecarregado. Tente finalizar novamente.",
+            );
+        } else {
+          throw err;
+        }
+      }
+    }
   } catch (error) {
     console.error("Erro Crítico ao gerar pedido:", error);
     return { error: "Falha ao registrar o pedido no sistema." };
@@ -4326,33 +4488,51 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
   }
 }
 // ==============================================================================
-// 🛍️ CENTRAL DE PEDIDOS DO VISITANTE (RASTREIO MÚLTIPLO)
+// 🛍️ CENTRAL DE PEDIDOS DO VISITANTE (HISTÓRICO REAL LOGADO)
 // ==============================================================================
 export async function getActiveOrdersByIds(orderIds: string[]) {
-  if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+  // 🚀 A MARETA DO CTO: Ignoramos completamente o orderIds do frontend (localStorage).
+  // Apenas a sessão oficial do servidor importa.
+  const session = await getSafeUser();
+
+  if (!session) {
+    // Se não está logado, não tem pedido nenhum e ponto final.
     return { success: true, orders: [] };
   }
 
-  // 🚀 ESCUDO ANTI-ABUSO: Limita a busca a 20 pedidos simultâneos no máximo
-  const safeIds = orderIds.slice(0, 20);
+  const vinteEQuatroHorasAtras = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   try {
-    const orders = await db.order.findMany({
-      where: { id: { in: safeIds } },
+    const dbUser = await db.user.findUnique({
+      where: { id: session.id },
+      select: { phone: true, id: true },
+    });
+
+    if (!dbUser?.phone) {
+      return { success: true, orders: [] }; // Se logou mas não validou telefone, não comprou
+    }
+
+    // Busca ABSOLUTA: Pega pedidos atrelados ao ID do cliente OU ao Telefone dele
+    const userOrders = await db.order.findMany({
+      where: {
+        OR: [{ customerId: dbUser.id }, { customerPhone: dbUser.phone }],
+        createdAt: { gte: vinteEQuatroHorasAtras },
+        // 🚀 Removemos o bloqueio de status para que ele veja os finalizados de hoje no histórico dele
+      },
       select: {
         id: true,
         orderNumber: true,
         status: true,
         totalAmount: true,
         createdAt: true,
-        business: { select: { name: true, imageUrl: true } },
+        business: { select: { name: true, imageUrl: true, slug: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return { success: true, orders };
+    return { success: true, orders: userOrders };
   } catch (error) {
-    console.error("Erro ao buscar pedidos ativos:", error);
+    console.error("Erro ao buscar histórico de pedidos:", error);
     return { error: "Falha ao buscar os pedidos em andamento." };
   }
 }
