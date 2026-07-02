@@ -426,7 +426,7 @@ export default async function BusinessPage({
             servesCuisine: business.category.toLowerCase().includes("alimenta")
               ? "Geral"
               : undefined,
-          }),
+          }).replace(/</g, "\\u003c"), // 🚀 HACKER FIX: Neutraliza injeção de script direto na raiz!
         }}
       />
 

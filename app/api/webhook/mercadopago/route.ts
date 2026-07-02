@@ -60,7 +60,16 @@ function validateSignature(request: Request, body: MPWebhookBody, url: URL) {
     hmac.update(manifest);
     const checkV1 = hmac.digest("hex");
 
-    return v1 === checkV1;
+    // 🚀 HACKER FIX: Comparação em Tempo Constante (Constant-Time) contra Timing Attacks.
+    // Criamos buffers seguros. A checagem de tamanho inicial impede que o método timingSafeEqual quebre o servidor caso os tamanhos sejam diferentes.
+    const v1Buffer = Buffer.from(v1 || "");
+    const checkV1Buffer = Buffer.from(checkV1);
+
+    if (v1Buffer.length !== checkV1Buffer.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(v1Buffer, checkV1Buffer);
   } catch (e) {
     return false;
   }

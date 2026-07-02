@@ -180,15 +180,6 @@ export default async function AdminPage({
   const seteDiasDepois = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   lojasAtivasGerais.forEach((loja) => {
-    // Ignora se o usuário foi banido ou se é a conta do próprio Admin
-    if (
-      loja.user?.isBanned ||
-      loja.user?.email?.toLowerCase() === adminEmailEnv
-    )
-      return;
-
-    totalPagantes += 1;
-
     // 🚀 CONTADOR REAL: Se a loja ativa expira nos próximos 7 dias, conta globalmente
     if (loja.expiresAt && loja.expiresAt <= seteDiasDepois) {
       vencendo7d += 1;

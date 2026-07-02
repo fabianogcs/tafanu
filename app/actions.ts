@@ -3390,8 +3390,8 @@ export async function forceResetPasswordAdmin(userId: string) {
       return { error: "Você não pode resetar a própria senha por aqui." };
     }
 
-    // 🚀 CORREÇÃO DA AUDITORIA: Gera uma senha aleatória de 8 caracteres
-    const novaSenhaAleatoria = Math.random().toString(36).slice(-8);
+    // 🚀 HACKER FIX: Usando a biblioteca 'crypto' oficial do Node.js (que já está importada no topo do arquivo) para gerar senhas imunes a engenharia reversa.
+    const novaSenhaAleatoria = crypto.randomBytes(4).toString("hex");
     const hashedPassword = await hash(novaSenhaAleatoria, 10);
 
     await db.user.update({
