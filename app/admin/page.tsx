@@ -100,6 +100,15 @@ export default async function AdminPage({
       include: {
         business: { select: { name: true, slug: true } },
         reporter: { select: { id: true, name: true, email: true } }, // 🚀 O Prisma faz a mágica aqui!
+        // 🚀 HACKER FIX: Traz os dados do comprador para o Admin poder banir a pessoa certa!
+        order: {
+          select: {
+            orderNumber: true,
+            customerName: true,
+            customerId: true,
+            totalAmount: true,
+          },
+        },
       },
     }),
     db.comment.findMany({

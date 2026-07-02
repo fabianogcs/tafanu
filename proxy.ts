@@ -59,26 +59,21 @@ export default auth(async (req) => {
       pathname.startsWith("/api/cron");
 
     if (isApiAuthRoute || isUploadRoute || isSearchRoute || isSensitivePage) {
-      // 🚀 CIRURGIA CORRIGIDA: Lemos o IP sanitizado pela infraestrutura da Vercel, sem irritar o TypeScript
-      const forwardedFor = req.headers.get("x-forwarded-for");
-      const ip =
-        req.headers.get("x-real-ip") ??
-        (forwardedFor ? forwardedFor.split(",")[0] : "127.0.0.1");
+      // 🚀 HACKER FIX 1: req.ip é validado nativamente pela Vercel.
+      // Usamos (req as any) só para o TypeScript parar de chorar, já que o Auth.js esqueceu de tipar isso.
+      const ip = (req as any).ip ?? req.headers.get("x-real-ip") ?? "127.0.0.1";
 
       // 🚀 A MÁGICA DE TRIPLA CAMADA BLINDADA: Só pune severamente tentativas de envio (POST)
       const isPostRequest = req.method === "POST";
-
-      // 🚀 A VACINA CONTRA O "GOLPE DO CLONE" (Race Condition)
       const isCreationRoute = pathname.startsWith("/dashboard/novo");
 
       const activeRatelimit = isUploadRoute
         ? uploadRatelimit
         : (isSensitivePage || isApiAuthRoute || isCreationRoute) &&
             isPostRequest
-          ? authRatelimit // ⬅️ 5 por min: Esmaga Força Bruta, Spam de Cadastro e Cliques Duplos simultâneos!
-          : generalRatelimit; // Carregar páginas (GET) continua livre e rápido
+          ? authRatelimit
+          : generalRatelimit;
 
-      // 🛡️ TRAVA DO TYPESCRIPT: Se por algum motivo de rede o segurança estiver vazio, deixa o usuário passar para o site não cair.
       if (!activeRatelimit) {
         return NextResponse.next();
       }
@@ -86,17 +81,20 @@ export default auth(async (req) => {
       const { success } = await activeRatelimit.limit(ip);
 
       if (!success) {
-        if (isApiAuthRoute || isUploadRoute) {
+        // 🚀 HACKER FIX 2: Identificamos se é uma Server Action para não quebrar a tela do usuário com Redirects invisíveis.
+        const isServerAction = req.headers.get("next-action");
+
+        if (isApiAuthRoute || isUploadRoute || isServerAction) {
           return new NextResponse(
             JSON.stringify({
-              error: isUploadRoute
-                ? "Limite de envios de arquivos excedido. Aguarde 1 minuto."
-                : "Limite de tentativas excedido. Aguarde 1 minuto.",
+              error:
+                "Limite de tentativas excedido. Por favor, aguarde 1 minuto para evitar sobrecarga no sistema.",
             }),
             { status: 429, headers: { "Content-Type": "application/json" } },
           );
         }
 
+        // Se for navegação de página comum, manda pro login ou busca
         const fallbackUrl = isSearchRoute ? "/busca" : "/login";
         return NextResponse.redirect(
           new URL(`${fallbackUrl}?error=RateLimited`, nextUrl),
@@ -147,6 +145,8 @@ export default auth(async (req) => {
     pathname.startsWith("/busca") ||
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||
+    pathname.startsWith("/pedido") || // 🚀 CIRURGIA: Libera a tela de rastreio ao vivo para o cliente!
+    pathname.startsWith("/meus-pedidos") || // 🚀 CIRURGIA: Libera o histórico de pedidos!
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhook") ||
     pathname.startsWith("/api/uploadthing") ||

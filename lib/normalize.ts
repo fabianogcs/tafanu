@@ -153,6 +153,16 @@ export function normalizeBusiness(raw: any) {
 
     theme: b.theme || "urban_gold",
     layout: b.layout || "urban",
+
+    // 🚀 HACKER FIX: Curando a "Amnésia" do Formulário!
+    // Sem isso aqui, o lojista perde a configuração de GPS e Delivery toda vez que edita a loja.
+    latitude: b.latitude || null,
+    longitude: b.longitude || null,
+    hasDelivery: b.hasDelivery ?? false,
+    deliveryFee: b.deliveryFee || 0,
+    deliveryRadius: b.deliveryRadius || 0,
+    menuMode: b.menuMode || "PDF",
+    catalogPdf: b.catalogPdf || "",
   };
 }
 

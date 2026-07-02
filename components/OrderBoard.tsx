@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import ReportOrderButton from "@/components/ReportOrderButton";
 import { getStoreOrders, updateOrderStatus } from "@/app/actions";
 import {
   Loader2,
@@ -61,6 +62,8 @@ export default function OrderBoard() {
   // 🚀 NOVOS ESTADOS DE CONFIANÇA DO LOJISTA
   const [lastSync, setLastSync] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
+  // 🚀 REFERÊNCIA INVISÍVEL: Guarda o horário exato da última batida no servidor
+  const lastSyncRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Carrega o áudio e prepara o loop
@@ -71,18 +74,46 @@ export default function OrderBoard() {
   }, []);
 
   const fetchOrders = useCallback(async (isSilent = false) => {
-    if (isSilent) setIsSyncing(true); // Acende a luz de atualização no painel
+    if (isSilent) setIsSyncing(true);
     try {
-      const res = await getStoreOrders();
+      // 🚀 Se for silencioso (Polling), enviamos a data da última checagem!
+      const syncParam =
+        isSilent && lastSyncRef.current ? lastSyncRef.current : undefined;
+      const res = await getStoreOrders(syncParam);
+
       if (res.success && res.orders) {
-        setOrders(res.orders as unknown as Order[]);
-        setLastSync(new Date()); // 🚀 Carimba o horário exato da última busca com sucesso
+        const fetchedOrders = res.orders as unknown as Order[];
+
+        if (isSilent) {
+          // 🚀 MERGE INTELIGENTE: Se chegaram pacotes novos, a gente atualiza apenas os cards modificados
+          if (fetchedOrders.length > 0) {
+            setOrders((prev) => {
+              const map = new Map(prev.map((o) => [o.id, o]));
+              fetchedOrders.forEach((o) => map.set(o.id, o));
+              // Devolve a lista inteira atualizada e ordenada
+              return Array.from(map.values()).sort(
+                (a, b) =>
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime(),
+              );
+            });
+          }
+        } else {
+          // Carga inicial pesada (Lota a tela de primeira)
+          setOrders(fetchedOrders);
+        }
+
+        // Atualiza a memória de sincronização
+        if (res.serverTime) {
+          lastSyncRef.current = res.serverTime;
+          setLastSync(new Date(res.serverTime));
+        }
       }
     } catch (e) {
       console.error("Erro no Polling de Pedidos");
     } finally {
       if (!isSilent) setIsLoading(false);
-      setIsSyncing(false); // Apaga a luz de atualização
+      setIsSyncing(false);
     }
   }, []);
 
@@ -435,6 +466,11 @@ export default function OrderBoard() {
         </p>
       )}
 
+      {/* 🚀 BOTÃO DE DENÚNCIA DO LOJISTA */}
+      <div className="-mt-1 mb-3">
+        <ReportOrderButton orderId={order.id} />
+      </div>
+
       <div className="flex flex-wrap gap-2 mt-auto pt-3 border-t border-slate-100">
         {order.status === "PENDING" && (
           <>
@@ -504,6 +540,23 @@ export default function OrderBoard() {
     </div>
   );
 
+  // 🚀 O DESTRAVADOR DE ÁUDIO (Bypassa o bloqueio do Chrome/Safari)
+  const toggleSound = () => {
+    if (!soundEnabled && audioRef.current) {
+      // O truque de mestre: Toca e pausa instantaneamente no clique para ganhar a permissão eterna do navegador
+      audioRef.current
+        .play()
+        .then(() => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+        })
+        .catch(() => {});
+    }
+    setSoundEnabled(!soundEnabled);
+  };
+
   if (isLoading) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center gap-4">
@@ -536,6 +589,32 @@ export default function OrderBoard() {
           </>
         )}
       </div>
+
+      {/* 🚀 BANNER DE ALERTA SONORO OBRIGATÓRIO (Só aparece se o som estiver mutado) */}
+      {!soundEnabled && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 p-4 lg:px-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 shrink-0">
+              <VolumeX size={20} />
+            </div>
+            <div>
+              <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest">
+                Aviso: Sirene Desligada!
+              </p>
+              <p className="text-xs font-medium text-amber-600">
+                Seu navegador bloqueou o alerta sonoro. Ative para ouvir quando
+                novos pedidos chegarem.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={toggleSound}
+            className="w-full md:w-auto px-6 py-3.5 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shrink-0 shadow-md animate-pulse flex items-center justify-center gap-2"
+          >
+            <Volume2 size={16} /> Destravar Som
+          </button>
+        </div>
+      )}
 
       {/* 🚀 TOPO: ABAS, PESQUISA E ÁUDIO */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-8 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
@@ -570,7 +649,7 @@ export default function OrderBoard() {
           </div>
 
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={toggleSound}
             className={`flex justify-center w-full md:w-auto items-center gap-2 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 ${soundEnabled ? "bg-indigo-50 text-indigo-600 border-indigo-200" : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"}`}
           >
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}

@@ -29,7 +29,18 @@ const productSchema = z.object({
   oldPrice: z.coerce.number().optional().nullable(),
   imageUrl: z.string().max(1000).optional().nullable().or(z.literal("")),
   isActive: z.boolean().default(true),
-  extras: z.array(z.any()).optional(), // 🚀 A CHAVE MESTRA: Libera a passagem dos adicionais!
+  // 🚀 HACKER FIX: Tipagem estrita. Impede o envio de payloads maliciosos gigantes disfarçados de extras.
+  extras: z
+    .array(
+      z.object({
+        name: z.string().max(60, "O nome do adicional é muito longo"),
+        price: z.coerce
+          .number()
+          .min(0, "Preço inválido")
+          .max(1000, "Valor surreal"),
+      }),
+    )
+    .optional(),
 });
 export const businessSchema = z.object({
   // 🚀 BLINDAGEM DO CARDÁPIO: Máximo de 50 itens para não estourar o banco de dados.

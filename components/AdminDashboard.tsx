@@ -39,6 +39,7 @@ import {
   Store,
   Clock,
   Copy,
+  ShoppingBag,
   Check,
   CalendarPlus,
   MessageCircle,
@@ -1276,15 +1277,29 @@ export default function AdminDashboard({
                 segments.pendingReports.map((r: any) => (
                   <div
                     key={r.id}
-                    className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                    className={`p-5 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${r.order ? "bg-orange-50/30 border-orange-100" : "bg-slate-50 border-slate-100"}`}
                   >
                     <div>
-                      <p className="font-black text-slate-800 uppercase text-sm">
-                        {r.businessDetail?.name ||
-                          r.business?.name ||
-                          "Negócio desconhecido"}
+                      {/* 🚀 SEPARAÇÃO VISUAL: Pedido vs Vitrine */}
+                      <p className="font-black text-slate-800 uppercase text-sm flex items-center gap-2">
+                        {r.order ? (
+                          <>
+                            <ShoppingBag
+                              size={15}
+                              className="text-orange-500"
+                            />{" "}
+                            Pedido #{r.order.orderNumber}
+                          </>
+                        ) : (
+                          <>
+                            <Store size={15} className="text-indigo-500" />{" "}
+                            Vitrine:{" "}
+                            {r.businessDetail?.name || r.business?.name}
+                          </>
+                        )}
                       </p>
-                      <p className="text-[11px] text-slate-500 mt-1">
+
+                      <p className="text-[11px] text-slate-500 mt-2">
                         <span className="font-bold text-slate-700">
                           Motivo:
                         </span>{" "}
@@ -1292,49 +1307,79 @@ export default function AdminDashboard({
                       </p>
                       {r.details && (
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          {r.details}
+                          "{r.details}"
                         </p>
                       )}
 
-                      {/* 🚀 EXIBE QUEM FEZ A DENÚNCIA */}
+                      {/* 🚀 DADOS DO PEDIDO PARA O JUIZ (Você) */}
+                      {r.order && (
+                        <div className="mt-2 mb-2 p-2 bg-white rounded-lg border border-orange-100 inline-block">
+                          <p className="text-[10px] font-bold text-slate-500">
+                            <span className="text-slate-700">Comprador:</span>{" "}
+                            {r.order.customerName}
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-500">
+                            <span className="text-slate-700">Loja:</span>{" "}
+                            {r.business?.name}
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-500">
+                            <span className="text-slate-700">Valor:</span> R${" "}
+                            {r.order.totalAmount.toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* EXIBE QUEM FEZ A DENÚNCIA */}
                       {r.reporter ? (
-                        <p className="text-[10px] text-amber-600 mt-2 font-bold bg-amber-50 inline-block px-2 py-1 rounded-md border border-amber-100">
-                          🕵️‍♂️ Denunciado por: {r.reporter.name} (
-                          {r.reporter.email})
+                        <p className="text-[10px] text-amber-600 mt-1 font-bold">
+                          🕵️‍♂️ Aberto por: {r.reporter.name}
                         </p>
                       ) : (
-                        <p className="text-[10px] text-slate-400 mt-2">
-                          👤 Denúncia anônima ou de usuário excluído
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          👤 Anônimo
                         </p>
                       )}
-
-                      <p className="text-[10px] text-slate-300 mt-1.5">
-                        Em: {new Date(r.createdAt).toLocaleDateString("pt-BR")}
-                      </p>
                     </div>
-                    <div className="flex gap-2 shrink-0">
+
+                    <div className="flex gap-2 shrink-0 flex-wrap md:flex-nowrap">
                       {r.business?.slug && (
                         <a
                           href={`/site/${r.business.slug}`}
                           target="_blank"
-                          className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase flex items-center gap-1.5 hover:bg-slate-200 transition-all"
+                          className="px-3 py-2 bg-white text-slate-600 rounded-lg text-[10px] font-black uppercase border border-slate-200 hover:bg-slate-100 flex items-center gap-1.5"
                         >
-                          <ExternalLink size={13} /> Ver Loja
+                          <ExternalLink size={13} /> Loja
                         </a>
                       )}
 
-                      {/* 🚀 BOTÃO DE BANIR O DENUNCIANTE FALSO (SPAM) */}
-                      {r.reporter && (
+                      {/* 🚀 O BOTÃO DE BANIR INTELIGENTE */}
+                      {r.order &&
+                      r.order.customerId &&
+                      r.reporter?.id !== r.order.customerId ? (
+                        // Se tem um pedido e quem denunciou NÃO foi o comprador, então o comprador é o fraudador!
                         <button
                           onClick={() =>
-                            handleBan(r.reporter.id, r.reporter.name)
+                            handleBan(r.order.customerId, r.order.customerName)
                           }
                           disabled={isPending}
                           className="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1.5 border border-rose-100"
-                          title="Banir o usuário que fez a denúncia"
                         >
-                          <UserX size={13} /> Banir Autor
+                          <UserX size={13} /> Banir Comprador
                         </button>
+                      ) : (
+                        r.reporter && (
+                          // Se não é pedido, ou se o próprio comprador denunciou a loja fraudulenta, bane quem foi denunciado (ou o autor do spam)
+                          <button
+                            onClick={() =>
+                              handleBan(r.reporter.id, r.reporter.name)
+                            }
+                            disabled={isPending}
+                            className="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1.5 border border-rose-100"
+                            title="Banir usuário"
+                          >
+                            <UserX size={13} /> Banir Autor
+                          </button>
+                        )
                       )}
 
                       <button

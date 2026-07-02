@@ -242,17 +242,15 @@ export async function POST(request: Request) {
           },
         });
 
-        // 🛡️ MÁGICA 3: Usando o businessId exato! Zero custo de processamento O(1).
+        // 🛡️ MÁGICA 3: Usando o businessId exato e lidando com a tipagem String?
         await db.commission.updateMany({
           where: {
             userId: userId,
-            businessId: businessId, // 🚀 Troca do "LIKE" pesado pela chave indexada
+            businessId: { equals: businessId }, // 🚀 HACKER FIX: Garante que o Prisma não surte com nulls no banco
             status: CommissionStatus.PENDING,
           },
           data: { status: CommissionStatus.CANCELLED },
         });
-
-        revalidatePath("/", "layout");
       }
     }
     // ==============================================================================

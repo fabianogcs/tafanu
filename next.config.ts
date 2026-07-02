@@ -4,8 +4,12 @@ const nextConfig: NextConfig = {
   // 🚀 SEGURANÇA MESTRA: Esconde a tecnologia do servidor (Cala o alerta do ZAP)
   poweredByHeader: false,
 
-  // 🚀 LIBERAÇÃO DO IP: Sem as portas (:3000), exatamente como o terminal exigiu
-  allowedDevOrigins: ["localhost", "192.168.15.152"],
+  // 🚀 LIBERAÇÃO DO IP: Configuração oficial do Next.js para Server Actions em rede local
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "192.168.15.152:3000"],
+    },
+  },
 
   // 🚀 A linha transpilePackages foi removida para parar de corromper o UploadThing
   images: {

@@ -4392,24 +4392,33 @@ export async function createOrderAction(payload: any) {
 // 📦 GESTÃO DO KANBAN DE PEDIDOS (LOJISTA)
 // ==============================================================================
 
-export async function getStoreOrders() {
+export async function getStoreOrders(lastSyncIso?: string) {
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
 
   try {
-    // 🚀 BLINDAGEM DE MEMÓRIA E HISTÓRICO COMPLETO:
-    // Puxa os pedidos dos últimos 7 dias para o lojista não perder o controle do caixa.
-    const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const whereClause: any = { business: { userId: user.id } };
+
+    if (lastSyncIso) {
+      // 🚀 DELTA FETCH: Busca APENAS o que sofreu mudança nos últimos 15 segundos!
+      whereClause.updatedAt = { gt: new Date(lastSyncIso) };
+    } else {
+      // Carga inicial (quando ele acabou de abrir a tela): Busca os últimos 7 dias
+      whereClause.createdAt = {
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      };
+    }
 
     const orders = await db.order.findMany({
-      where: {
-        business: { userId: user.id },
-        createdAt: { gte: seteDiasAtras },
-      },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
     });
 
-    return { success: true, orders };
+    return {
+      success: true,
+      orders,
+      serverTime: new Date().toISOString(), // 🚀 Mandamos o relógio do servidor de volta!
+    };
   } catch (error) {
     console.error("Erro ao buscar pedidos:", error);
     return { error: "Erro interno ao carregar a fila de pedidos." };
