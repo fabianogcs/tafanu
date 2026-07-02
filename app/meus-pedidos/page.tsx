@@ -171,6 +171,24 @@ export default function MeusPedidosPage() {
         {/* ORDER LIST */}
         {!isLoading && orders.length > 0 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
+            {/* 🚀 ALERTA DE CANCELAMENTO (Só aparece se houver pedido Pendente) */}
+            {orders.some((o) => o.status === "PENDING") && (
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 shadow-sm mb-2">
+                <Clock size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[10px] font-black uppercase text-amber-700 tracking-widest mb-1">
+                    Dica de Cancelamento
+                  </p>
+                  <p className="text-[11px] font-medium text-amber-600 leading-snug">
+                    Você pode cancelar pedidos que ainda estão{" "}
+                    <strong>Aguardando</strong>. Assim que a loja aceitar e
+                    colocar Em Preparo, o cancelamento só poderá ser feito
+                    direto pelo WhatsApp.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {orders.map((order) => (
               <Link
                 key={order.id}

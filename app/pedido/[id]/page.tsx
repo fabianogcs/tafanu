@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { CheckCircle2, ChefHat, FileText, Bike } from "lucide-react";
 import OrderCleanupScript from "./OrderCleanupScript"; // 🚀 Injetor de Limpeza
+import ReportOrderButton from "@/components/ReportOrderButton";
+import CancelOrderButton from "@/components/CancelOrderButton";
 
 export default async function RastreioPedidoPage({
   params,
@@ -29,7 +31,7 @@ export default async function RastreioPedidoPage({
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center p-6 pt-12">
       {/* 🚀 O MOTOR QUE APAGA O BOTÃO DA NAVBAR QUANDO ACABA */}
-      {isFinished && <OrderCleanupScript />}
+      {isFinished && <OrderCleanupScript orderId={order.id} />}
 
       <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-xl border border-slate-200 p-8 md:p-12">
         <div className="text-center mb-10">
@@ -114,14 +116,25 @@ export default async function RastreioPedidoPage({
           </div>
         </div>
 
-        <a
-          href={`https://wa.me/55${order.business.whatsapp || order.business.phone}`}
-          target="_blank"
-          rel="noreferrer"
-          className="w-full bg-slate-900 text-white font-black py-4 rounded-xl flex justify-center uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-colors"
-        >
-          Falar com a Loja
-        </a>
+        {/* GRUPO DE BOTÕES DE AÇÃO */}
+        <div className="space-y-3">
+          {/* 🚀 O CANCELAMENTO DE FRICÇÃO ZERO (Só aparece enquanto não estiver em preparo) */}
+          {order.status === "PENDING" && (
+            <CancelOrderButton orderId={order.id} />
+          )}
+
+          <a
+            href={`https://wa.me/55${order.business.whatsapp || order.business.phone}`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full bg-slate-900 text-white font-black py-4 rounded-xl flex justify-center uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-colors"
+          >
+            Falar com a Loja
+          </a>
+
+          {/* 🚀 BOTÃO DE MODERAÇÃO */}
+          <ReportOrderButton orderId={order.id} />
+        </div>
       </div>
     </div>
   );

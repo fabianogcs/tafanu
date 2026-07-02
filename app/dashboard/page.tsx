@@ -39,7 +39,7 @@ export default async function DashboardPage() {
           // 🚀 CFO: Puxamos os pedidos para calcular o faturamento e reter o cliente
           orders: {
             where: {
-              status: { not: "CANCELLED" }, // Ignora pedidos cancelados na matemática
+              status: "COMPLETED", // 🚀 HACKER FIX: Conta APENAS dinheiro real que já está no bolso! Ignora trotes e pendentes.
             },
             select: {
               totalAmount: true,

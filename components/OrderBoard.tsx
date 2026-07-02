@@ -583,7 +583,7 @@ export default function OrderBoard() {
       {activeTab === "ACTIVE" ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="bg-slate-100/50 rounded-[2rem] p-4 min-h-[500px] border border-slate-200">
-            <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center justify-between mb-2 px-2">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2">
                 <AlertCircle size={14} className="text-rose-500" /> Novos
                 Pedidos
@@ -592,6 +592,20 @@ export default function OrderBoard() {
                 {pendingOrders.length}
               </span>
             </div>
+
+            {/* 🚀 GATILHO DE URGÊNCIA (Aviso do botão de cancelar) */}
+            {pendingOrders.length > 0 && (
+              <div className="mx-2 mb-4 bg-rose-100/50 border border-rose-200 p-2.5 rounded-xl text-center shadow-sm">
+                <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest leading-tight">
+                  ⚠️ Aceite Rápido!
+                  <br />
+                  <span className="font-bold text-rose-500">
+                    O cliente pode cancelar enquanto estiver aqui.
+                  </span>
+                </p>
+              </div>
+            )}
+
             <div className="flex flex-col gap-4">
               {pendingOrders.length === 0 ? (
                 <p className="text-[10px] font-bold text-center text-slate-400 uppercase py-10">

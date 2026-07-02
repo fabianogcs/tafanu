@@ -4536,3 +4536,106 @@ export async function getActiveOrdersByIds(orderIds: string[]) {
     return { error: "Falha ao buscar os pedidos em andamento." };
   }
 }
+// ==============================================================================
+// 🚫 CANCELAMENTO DE PEDIDO PELO CLIENTE (Regra iFood)
+// ==============================================================================
+export async function cancelOrderByCustomer(orderId: string) {
+  try {
+    // 1. Busca o pedido para ver se ele ainda está como PENDING
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      select: { status: true, orderNumber: true },
+    });
+
+    if (!order) return { error: "Pedido não encontrado." };
+
+    // 2. A TRAVA DO PREJUÍZO: Se o lojista já aceitou, o cliente não pode mais cancelar pelo botão
+    if (order.status !== "PENDING") {
+      return {
+        error:
+          "O estabelecimento já começou a preparar seu pedido. Entre em contato pelo WhatsApp para solicitar o cancelamento.",
+      };
+    }
+
+    // 3. Executa o cancelamento
+    await db.order.update({
+      where: { id: orderId },
+      data: { status: "CANCELLED" },
+    });
+
+    revalidatePath("/meus-pedidos");
+    return {
+      success: true,
+      message: `Pedido #${order.orderNumber} cancelado com sucesso.`,
+    };
+  } catch (error) {
+    console.error("Erro ao cancelar pedido pelo cliente:", error);
+    return { error: "Erro interno ao tentar cancelar o pedido." };
+  }
+}
+// ==============================================================================
+// 🚨 SISTEMA DE DENÚNCIAS DE PEDIDOS (MODERAÇÃO)
+// ==============================================================================
+export async function reportOrderAction(
+  orderId: string,
+  reason: string,
+  details: string,
+) {
+  const session = await getSafeUser();
+  if (!session)
+    return { error: "Você precisa estar logado para reportar um problema." };
+
+  if (reason?.length > 100 || details?.length > 500) {
+    return { error: "Os dados excedem o limite de caracteres permitido." };
+  }
+
+  try {
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      include: { business: true },
+    });
+
+    if (!order) return { error: "Pedido não encontrado." };
+
+    // 🛡️ Segurança: Só o comprador ou o dono da loja podem denunciar este pedido
+    const isCustomer = order.customerId === session.id;
+    const isBusinessOwner = order.business.userId === session.id;
+    const isAdmin = session.role === "ADMIN";
+
+    if (!isCustomer && !isBusinessOwner && !isAdmin) {
+      return { error: "Você não tem permissão para reportar este pedido." };
+    }
+
+    // ⏳ Trava Anti-Spam: Limita 1 denúncia por pessoa neste pedido
+    const denunciaRecente = await db.report.findFirst({
+      where: { orderId: order.id, reportedBy: session.id },
+    });
+
+    if (denunciaRecente) {
+      return {
+        error:
+          "Você já enviou um reporte para este pedido. O Admin está analisando.",
+      };
+    }
+
+    // Cria a denúncia vinculada ao pedido!
+    await db.report.create({
+      data: {
+        businessId: order.businessId,
+        orderId: order.id,
+        reason,
+        details: details || "",
+        status: "PENDING",
+        reportedBy: session.id, // O Admin vai saber se foi o lojista ou o cliente quem abriu!
+      },
+    });
+
+    return {
+      success: true,
+      message: "Problema reportado com sucesso! A moderação foi acionada.",
+    };
+  } catch (error) {
+    console.error("Erro ao reportar pedido:", error);
+    return { error: "Erro interno. Tente novamente mais tarde." };
+  }
+}

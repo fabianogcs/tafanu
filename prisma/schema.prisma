@@ -237,11 +237,16 @@ model Report {
   businessId String
   reportedBy String?
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   reporter User?    @relation(fields: [reportedBy], references: [id], onDelete: SetNull)
+
+  // 🚀 NOVO: Vínculo da denúncia com o Pedido
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([reportedBy])
+  @@index([orderId]) // 🚀 NOVO: Acelera as buscas do Admin
 }
 
 model Account {
@@ -439,6 +444,9 @@ model Order {
   updatedAt DateTime @updatedAt
   // 🚀 MÁQUINA DE VENDAS: Regista se o lojista já foi alertado sobre a demora
   alertEmailSent Boolean @default(false)
+
+  // 🚀 NOVO: Permite que este pedido receba denúncias
+  reports Report[]
 
   @@index([businessId, status]) // 🚀 Índice de Alta Performance para o Kanban do Lojista carregar na velocidade da luz
   @@index([createdAt])
