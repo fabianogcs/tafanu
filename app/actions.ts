@@ -4549,14 +4549,27 @@ export async function getActiveOrdersByIds(orderIds: string[]) {
 // 🚫 CANCELAMENTO DE PEDIDO PELO CLIENTE (Regra iFood)
 // ==============================================================================
 export async function cancelOrderByCustomer(orderId: string) {
+  // 🚀 HACKER FIX: Exige o "Crachá" do usuário (Impede acesso anônimo)
+  const session = await getSafeUser();
+  if (!session)
+    return { error: "Você precisa estar logado para cancelar um pedido." };
+
   try {
-    // 1. Busca o pedido para ver se ele ainda está como PENDING
+    // 1. Busca o pedido trazendo a identidade do dono dele
     const order = await db.order.findUnique({
       where: { id: orderId },
-      select: { status: true, orderNumber: true },
+      select: { status: true, orderNumber: true, customerId: true }, // 🚀 AQUI: Lemos quem comprou!
     });
 
     if (!order) return { error: "Pedido não encontrado." };
+
+    // 🚀 O ESCUDO IDOR: Garante que só o verdadeiro comprador pode cancelar
+    if (order.customerId !== session.id && session.role !== "ADMIN") {
+      console.warn(
+        `🚨 [Ataque IDOR Bloqueado] Usuário ${session.id} tentou cancelar pedido de outro.`,
+      );
+      return { error: "Acesso Negado. Este pedido não pertence a você." };
+    }
 
     // 2. A TRAVA DO PREJUÍZO: Se o lojista já aceitou, o cliente não pode mais cancelar pelo botão
     if (order.status !== "PENDING") {

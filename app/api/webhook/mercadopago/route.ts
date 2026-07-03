@@ -224,7 +224,8 @@ export async function POST(request: Request) {
           }),
         ]);
 
-        revalidatePath("/", "layout");
+        // 🚀 CFO FIX: revalidatePath removido! O Webhook roda nos bastidores.
+        // Limpar o cache global do site a cada PIX pago causaria um pico monstruoso de CPU na Vercel.
         console.log(
           `✅ Sucesso: Negócio ${businessId} PRO (${planType}) até ${expiresAt.toLocaleDateString()}`,
         );
