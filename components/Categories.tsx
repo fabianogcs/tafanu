@@ -199,7 +199,7 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
   };
 
   return (
-    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-8 relative z-30 mt-16 mb-16 md:mb-24 animate-in fade-in duration-700 group">
+    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-8 relative z-30 mt-16 mb-4 md:mb-6 animate-in fade-in duration-700 group">
       <div className="flex items-center justify-between mb-6 px-2 md:px-4">
         <div>
           <h2 className="text-xl md:text-3xl font-black text-[#023059] uppercase tracking-tighter italic leading-none mb-1">

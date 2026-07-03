@@ -19,9 +19,13 @@ export async function GET(request: Request) {
   // Se tem a chave, roda a faxina!
   const result = await runSystemGhostCleanup();
 
-  if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+  // 🛡️ CTO FIX: Desestruturação explícita (Type Casting).
+  // Isso silencia o compilador da Vercel e evita o "Type error: Property 'message' does not exist".
+  const { error, message } = result as { error?: string; message?: string };
+
+  if (error) {
+    return NextResponse.json({ error }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, data: result.message });
+  return NextResponse.json({ success: true, data: message });
 }

@@ -46,7 +46,7 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="relative min-h-screen bg-white pb-24 overflow-hidden">
+    <main className="relative min-h-screen bg-white pb-6 md:pb-8 overflow-hidden">
       {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute top-[30vh] left-0 w-full h-[100%] bg-[#F8FAFC] transform -skew-y-2 origin-top-left border-t border-slate-200 shadow-[inset_0_10px_30px_rgba(0,0,0,0.05)]" />
