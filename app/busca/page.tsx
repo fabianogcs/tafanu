@@ -13,6 +13,7 @@ import { SearchX } from "lucide-react";
 const PAGE_SIZE = 12;
 const STOPWORDS = ["na", "no", "em", "de", "do", "da", "com", "para", "o", "a"];
 
+// 🚀 CTO FIX: Fórmula exata da Terra. Sem inflacionar a distância!
 function calculateDistance(
   lat1: number,
   lon1: number,
@@ -29,7 +30,7 @@ function calculateDistance(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c * 1.3;
+  return R * c;
 }
 
 const SINONIMOS_BASE: Record<string, string[]> = {
@@ -589,8 +590,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     ...(sort === "distance" && userLat && userLng
       ? [
           {
-            latitude: { gte: userLat - 0.3, lte: userLat + 0.3 },
-            longitude: { gte: userLng - 0.3, lte: userLng + 0.3 },
+            // 🚀 CTO FIX: Bounding Box ampliado para 1 grau (~110km).
+            // O JavaScript no final fará a filtragem fina usando o raio de entrega exato do lojista!
+            latitude: { gte: userLat - 1.0, lte: userLat + 1.0 },
+            longitude: { gte: userLng - 1.0, lte: userLng + 1.0 },
           },
         ]
       : []),
@@ -859,16 +862,28 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
   if (statusFilter === "open") businesses = businesses.filter((b) => b.isOpen);
 
-  // 🚀 O RAIO DE AÇO: Se o cliente ativou o GPS e está na vitrine online,
-  // nós cortamos as lojas cujo raio não alcança a casa dele!
-  if (isOnlineMode && userLat && userLng) {
-    businesses = businesses.filter((b) => {
-      // Se a loja tem limite de raio, e a distância calculada for MAIOR que o raio, removemos.
-      if (b.deliveryRadius && b.deliveryRadius > 0 && b.distance !== null) {
-        return b.distance <= b.deliveryRadius;
-      }
-      return true; // Se a loja deixou o raio "0", entrega pra todo o Brasil (Shopee/Meli)
-    });
+  // 🚀 CTO & CFO FIX: O FILTRO DO MODO DELIVERY BLINDADO
+  if (isOnlineMode) {
+    if (userLat && userLng) {
+      // 1. Cliente tem GPS: Calcula o raio de entrega milimetricamente!
+      businesses = businesses.filter((b) => {
+        if (b.deliveryRadius && b.deliveryRadius > 0 && b.distance !== null) {
+          return b.distance <= b.deliveryRadius;
+        }
+        return true; // Raio 0 significa frete nacional (Shopee, Mercado Livre, etc)
+      });
+    } else if (!cityFilter && !stateFilter) {
+      // 2. Cliente NÃO tem GPS e NÃO informou a cidade (O Perigo!):
+      // Para não mostrar pizzarias de outro estado, a gente impõe uma punição na nota de relevância
+      // para lojas locais (que têm raio) se ele não tem cidade. Lojas nacionais (raio 0) ganham prioridade.
+      businesses = businesses.map((b) => ({
+        ...b,
+        score:
+          b.deliveryRadius && b.deliveryRadius > 0
+            ? Math.max(0, b.score - 500)
+            : b.score + 100,
+      }));
+    }
   }
 
   if (needsJsEngine) {
@@ -945,9 +960,32 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
           <aside className="w-full lg:col-span-1">
             <LocationTracker />
+            {/* 🚀 AVISO DE UX: Se o usuário estiver no modo online mas sem GPS/Cidade, pedimos a ação dele */}
+            {isOnlineMode && !userLat && !cityFilter && (
+              <div className="hidden lg:block bg-amber-50 border border-amber-200 p-4 rounded-2xl mt-4 animate-pulse">
+                <p className="text-[10px] font-black uppercase text-amber-600 mb-1">
+                  ⚠️ Restringir Resultados
+                </p>
+                <p className="text-xs font-medium text-amber-700 leading-tight">
+                  Ative o GPS acima ou use o botão{" "}
+                  <strong>Filtros Online</strong> para escolher sua cidade.
+                </p>
+              </div>
+            )}
           </aside>
 
           <div className="lg:col-span-3">
+            {/* 🚀 O MESMO AVISO PARA O MOBILE */}
+            {isOnlineMode && !userLat && !cityFilter && (
+              <div className="lg:hidden mb-4 bg-amber-50 border border-amber-200 p-3 rounded-xl animate-pulse">
+                <p className="text-[10px] font-black uppercase text-amber-600 mb-0.5">
+                  ⚠️ Restringir Resultados
+                </p>
+                <p className="text-[11px] font-medium text-amber-700 leading-tight">
+                  Ligue o GPS ou filtre sua cidade para evitar lojas distantes.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
               {paginatedResults.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-4">

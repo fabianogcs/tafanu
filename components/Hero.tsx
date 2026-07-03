@@ -117,7 +117,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative bg-[#050B14] overflow-hidden pt-8 md:pt-20 lg:pt-24 pb-[260px] md:pb-[350px] lg:pb-[390px] border-b border-white/5">
+    <section className="relative bg-[#050B14] overflow-hidden pt-8 md:pt-20 lg:pt-24 pb-20 md:pb-24 border-b-4 border-emerald-500/10">
       <div
         className="absolute inset-0 z-0 opacity-[0.03] mix-blend-screen pointer-events-none"
         style={{
@@ -208,46 +208,19 @@ export default function Hero() {
             )}
           </button>
         </form>
-        {/* 🚀 CHIPS DE IMPULSO (Neuromarketing) */}
-        <div className="relative z-30 w-full max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-2 mt-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
+        {/* 🚀 BOTÃO ÚNICO DE AÇÃO RÁPIDA (Foco e Conversão) */}
+        <div className="relative z-30 w-full flex justify-center mt-8 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
           <button
             onClick={handleQuickGpsSearch}
             disabled={isGpsLoading}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 transition-all text-[10px] md:text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-3 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-[#050B14] px-8 py-4 rounded-full transition-all text-[11px] md:text-xs font-black uppercase tracking-widest shadow-[0_0_30px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50"
           >
             {isGpsLoading ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={18} className="animate-spin" />
             ) : (
-              <MapPin size={16} className="text-emerald-400 animate-pulse" />
+              <MapPin size={18} className="animate-bounce" />
             )}
-            Abertos Perto de Mim
-          </button>
-
-          <button
-            onClick={() =>
-              router.push("/busca?modo=online&category=Alimentacao")
-            }
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white px-4 py-2.5 rounded-full backdrop-blur-md border border-white/5 transition-all text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm active:scale-95"
-          >
-            🍔 Bateu a Fome
-          </button>
-
-          <button
-            onClick={() =>
-              router.push(
-                "/busca?modo=online&subcategory=bar,adega,espetinho,bebidas,cerveja",
-              )
-            }
-            className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white px-4 py-2.5 rounded-full backdrop-blur-md border border-white/5 transition-all text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm active:scale-95"
-          >
-            🍻 Sextou!
-          </button>
-
-          <button
-            onClick={() => router.push("/busca?modo=online&category=Pets")}
-            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white px-4 py-2.5 rounded-full backdrop-blur-md border border-white/5 transition-all text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm active:scale-95"
-          >
-            🐕 Rolê com o Pet
+            Ver Abertos Perto de Mim
           </button>
         </div>
       </div>

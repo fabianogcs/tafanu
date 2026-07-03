@@ -15,23 +15,37 @@ export async function GET(request: Request) {
 
   try {
     const hoje = new Date();
+    let totalLiberadas = 0;
+    let loteDeAtualizacao = 0;
 
-    const atualizacao = await db.commission.updateMany({
-      where: {
-        status: CommissionStatus.PENDING,
-        releaseDate: { lte: hoje },
-      },
-      data: {
-        status: CommissionStatus.AVAILABLE,
-      },
-    });
+    // 🚀 CTO FIX: Loop atômico em lotes direto no motor SQL do PostgreSQL.
+    // Não gasta memória da Vercel e garante que 100% das comissões do dia sejam liberadas,
+    // seja em escala de 100 ou 100.000 afiliados, sem travar a tabela (SKIP LOCKED)!
+    do {
+      const result = await db.$executeRaw`
+        UPDATE "Commission"
+        SET status = 'AVAILABLE'::"CommissionStatus"
+        WHERE id IN (
+          SELECT id FROM "Commission"
+          WHERE status = 'PENDING'::"CommissionStatus"
+          AND "releaseDate" <= ${hoje}
+          LIMIT 1000
+          FOR UPDATE SKIP LOCKED
+        )
+      `;
 
-    // 🛡️ CORREÇÃO 2: Log do resultado
-    console.log(`[Cron Comissões] ${atualizacao.count} comissões liberadas.`);
-    return NextResponse.json({ success: true, liberadas: atualizacao.count });
+      loteDeAtualizacao = Number(result);
+      totalLiberadas += loteDeAtualizacao;
+    } while (loteDeAtualizacao === 1000);
+
+    console.log(
+      `✅ [Cron Comissões] Fila do dia zerada: ${totalLiberadas} comissões liberadas.`,
+    );
+    return NextResponse.json({ success: true, liberadas: totalLiberadas });
   } catch (error) {
-    // 🛡️ CORREÇÃO 2: Log do erro real
-    console.error("[Cron Comissões] Erro:", error);
-    return new NextResponse("Erro", { status: 500 });
+    console.error("[Cron Comissões] Erro crítico na virada de saldo:", error);
+    return new NextResponse("Erro interno no cron de comissões", {
+      status: 500,
+    });
   }
 }

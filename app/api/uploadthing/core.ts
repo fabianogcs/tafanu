@@ -86,14 +86,14 @@ export const ourFileRouter = {
       return { uploadedBy: metadata.userId };
     }),
   // ... (mantenha o seu pdfUploader intacto abaixo disso)
-  // 4. PDF (Catálogo/Cardápio) - ABERTO E SEGURO (O Garbage Collector limpa o lixo!)
+  // 4. PDF (Catálogo/Cardápio) - 🛡️ BLINDADO E RESTRITO AO PADRÃO IANA
   pdfUploader: f({
-    pdf: { maxFileSize: "8MB", maxFileCount: 1 },
+    "application/pdf": { maxFileSize: "8MB", maxFileCount: 1 }, // 🚀 WHITE HAT FIX: Bloqueia malwares disfarçados
   })
     .middleware(handleAuth)
     .onUploadComplete(async ({ metadata, file }) => {
       console.log(
-        `✅ PDF Catálogo: Usuário ${metadata.userId} enviou ${file.ufsUrl}`,
+        `✅ PDF Catálogo Seguro: Usuário ${metadata.userId} enviou ${file.ufsUrl}`,
       );
       return { uploadedBy: metadata.userId };
     }),

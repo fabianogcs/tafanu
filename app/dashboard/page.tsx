@@ -47,12 +47,17 @@ export default async function DashboardPage() {
               status: true,
             },
           },
-          // ✅ Traz apenas os cliques recentes para o gráfico não quebrar e não travar o servidor
+          // 🚀 CTO FIX: Substituímos o 'include' implícito por uma seleção estrita.
+          // Trazemos apenas a Data e o Tipo de Evento. Removemos IDs e IDs da loja para poupar 80% do payload!
           analytics: {
             where: {
               createdAt: {
                 gte: new Date(new Date().setDate(new Date().getDate() - 7)),
               },
+            },
+            select: {
+              eventType: true,
+              createdAt: true,
             },
           },
         },

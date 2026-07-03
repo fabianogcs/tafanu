@@ -149,18 +149,23 @@ export default function OrderBoard() {
     };
   }, [orders, soundEnabled]);
 
-  // POLLING INTELIGENTE: Poupando o seu bolso na Vercel
+  // 🚀 CTO FIX: POLLING INTELIGENTE E BLINDADO CONTRA MEMORY LEAK
   useEffect(() => {
     fetchOrders(); // Busca inicial
-    let interval: NodeJS.Timeout;
+    let interval: NodeJS.Timeout | null = null;
 
     const startPolling = () => {
+      // 🛡️ TRAVA CRÍTICA: Nunca cria um novo intervalo se o antigo ainda estiver rodando!
+      if (interval) clearInterval(interval);
       interval = setInterval(() => fetchOrders(true), 15000);
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        clearInterval(interval);
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
       } else {
         fetchOrders(true);
         startPolling();
@@ -171,7 +176,7 @@ export default function OrderBoard() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [fetchOrders]);
@@ -245,6 +250,26 @@ export default function OrderBoard() {
       return;
     }
 
+    // 🛡️ WHITE HAT FIX: Função Sanitizadora de HTML!
+    const sanitizeHTML = (str: string | undefined | null) => {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    // 🚀 CFO FIX: Resolve o nome do pagamento dentro do recibo
+    const paymentMap: Record<string, string> = {
+      PIX: "Pix",
+      CASH: "Dinheiro",
+      CREDIT: "C. Crédito",
+      DEBIT: "C. Débito",
+    };
+    const paymentName = paymentMap[order.paymentMethod] || order.paymentMethod;
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -278,8 +303,8 @@ export default function OrderBoard() {
         <div class="divider"></div>
         
         <div class="left bold">CLIENTE:</div>
-        <div class="left">${order.customerName}</div>
-        ${order.customerPhone ? `<div class="left">${order.customerPhone}</div>` : ""}
+        <div class="left">${sanitizeHTML(order.customerName)}</div>
+        ${order.customerPhone ? `<div class="left">${sanitizeHTML(order.customerPhone)}</div>` : ""}
         
         <div class="divider"></div>
         <div class="left bold">TIPO: ${order.deliveryType === "DELIVERY" ? "ENTREGA" : "RETIRADA"}</div>
@@ -287,10 +312,10 @@ export default function OrderBoard() {
           order.deliveryType === "DELIVERY" && order.address
             ? `
           <div class="left">
-            ${order.address.street}, ${order.address.number}<br>
-            ${order.address.neighborhood}<br>
-            ${order.address.complement ? `Comp: ${order.address.complement}<br>` : ""}
-            ${order.address.reference ? `Ref: ${order.address.reference}` : ""}
+            ${sanitizeHTML(order.address.street)}, ${sanitizeHTML(order.address.number)}<br>
+            ${sanitizeHTML(order.address.neighborhood)}<br>
+            ${order.address.complement ? `Comp: ${sanitizeHTML(order.address.complement)}<br>` : ""}
+            ${order.address.reference ? `Ref: ${sanitizeHTML(order.address.reference)}` : ""}
           </div>
         `
             : ""
@@ -303,10 +328,10 @@ export default function OrderBoard() {
             .map(
               (item) => `
             <div class="item">
-              <div class="item-name">${item.quantity}x ${item.productName}</div>
+              <div class="item-name">${item.quantity}x ${sanitizeHTML(item.productName)}</div>
               ${
                 item.extras.length > 0
-                  ? `<div class="left extras">+ ${item.extras.map((e) => e.name).join(", ")}</div>`
+                  ? `<div class="left extras">+ ${item.extras.map((e) => sanitizeHTML(e.name)).join(", ")}</div>`
                   : ""
               }
               <div class="item-details">
@@ -322,7 +347,7 @@ export default function OrderBoard() {
         <div class="divider"></div>
         ${
           order.observation
-            ? `<div class="left bold">OBS: ${order.observation}</div><div class="divider"></div>`
+            ? `<div class="left bold">OBS: ${sanitizeHTML(order.observation)}</div><div class="divider"></div>`
             : ""
         }
         
@@ -330,7 +355,7 @@ export default function OrderBoard() {
           <span>TOTAL:</span>
           <span>R$ ${order.totalAmount.toFixed(2)}</span>
         </div>
-        <div class="left">Pagamento: ${getPaymentName(order.paymentMethod)}</div>
+        <div class="left">Pagamento: ${paymentName}</div>
         ${order.changeFor ? `<div class="left bold">Troco para: R$ ${order.changeFor}</div>` : ""}
         
         <div class="divider"></div>

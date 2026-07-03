@@ -38,13 +38,17 @@ export default function BusinessCard({ business, showDistance }: any) {
       hiddenCount > 0 ? `${visibleSubs} • +${hiddenCount}` : visibleSubs;
   }
 
-  // --- LÓGICA INTELIGENTE ABERTO/FECHADO E PRÓXIMO HORÁRIO ---
+  // --- LÓGICA INTELIGENTE ABERTO/FECHADO COM FUSO HORÁRIO BLINDADO ---
   const getBusinessStatus = (hours: any[]) => {
     if (!hours || hours.length === 0) return { status: "UNKNOWN", text: null };
 
+    // 🚀 CTO FIX: Sincroniza o relógio do card com o fuso oficial de São Paulo
     const now = new Date();
-    const todayIndex = now.getDay();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const brazilDate = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+    );
+    const todayIndex = brazilDate.getDay();
+    const currentMinutes = brazilDate.getHours() * 60 + brazilDate.getMinutes();
     const daysMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const todayHours = hours.find((h: any) => h.dayOfWeek === todayIndex);
 
@@ -53,12 +57,26 @@ export default function BusinessCard({ business, showDistance }: any) {
       return h * 60 + m;
     };
 
-    if (todayHours && !todayHours.isClosed) {
+    if (
+      todayHours &&
+      !todayHours.isClosed &&
+      todayHours.openTime &&
+      todayHours.closeTime
+    ) {
       const openMins = toMinutes(todayHours.openTime);
       const closeMins = toMinutes(todayHours.closeTime);
 
-      if (currentMinutes >= openMins && currentMinutes <= closeMins) {
-        const timeToClose = closeMins - currentMinutes;
+      // 🛡️ Suporte a turnos que passam da meia-noite (Igual ao VitrineCardapio)
+      const crossesMidnight = closeMins < openMins;
+      const isReallyOpen = crossesMidnight
+        ? currentMinutes >= openMins || currentMinutes < closeMins
+        : currentMinutes >= openMins && currentMinutes <= closeMins;
+
+      if (isReallyOpen) {
+        const timeToClose = crossesMidnight
+          ? closeMins + 1440 - currentMinutes
+          : closeMins - currentMinutes;
+
         if (timeToClose <= 60 && timeToClose > 0) {
           return {
             status: "CLOSING_SOON",
@@ -68,7 +86,7 @@ export default function BusinessCard({ business, showDistance }: any) {
         return { status: "OPEN", text: `Fecha às ${todayHours.closeTime}` };
       }
 
-      if (currentMinutes < openMins) {
+      if (!crossesMidnight && currentMinutes < openMins) {
         return {
           status: "CLOSED",
           text: `Abre hoje às ${todayHours.openTime}`,
@@ -76,11 +94,12 @@ export default function BusinessCard({ business, showDistance }: any) {
       }
     }
 
+    // Calcula o próximo dia de abertura caso esteja fechado
     for (let i = 1; i <= 7; i++) {
       const nextDayIndex = (todayIndex + i) % 7;
       const nextDayHours = hours.find((h: any) => h.dayOfWeek === nextDayIndex);
 
-      if (nextDayHours && !nextDayHours.isClosed) {
+      if (nextDayHours && !nextDayHours.isClosed && nextDayHours.openTime) {
         const isTomorrow = i === 1;
         const dayText = isTomorrow ? "amanhã" : daysMap[nextDayIndex];
         return {
@@ -90,7 +109,7 @@ export default function BusinessCard({ business, showDistance }: any) {
       }
     }
 
-    return { status: "CLOSED", text: null };
+    return { status: "CLOSED", text: "Fechado" };
   };
 
   const { status: currentStatus, text: statusText } = getBusinessStatus(

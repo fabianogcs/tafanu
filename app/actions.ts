@@ -1735,7 +1735,23 @@ export async function runGhostCleanup() {
 
 // --- 3. O ROBÔ DA VERCEL (Usa no Cron Job) ---
 export async function runSystemGhostCleanup() {
-  // A proteção não fica aqui, fica na Rota da API que o robô vai chamar
+  // 🛡️ CTO FIX: A porta agora tem duas fechaduras seguras.
+  // Lemos os cabeçalhos para ver se é o robô da Vercel com a senha oficial.
+  const headersList = await headers();
+  const authHeader = headersList.get("authorization");
+  const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+  // Verificamos se é o dono do sistema (Admin) logado.
+  const adminId = await requireAdmin();
+
+  // Se não for o robô E também não for o Admin, bloqueia o hacker!
+  if (!isCron && !adminId) {
+    console.warn(
+      "🚨 [Segurança] Tentativa não autorizada de disparar a Faxina do Banco.",
+    );
+    return { error: "Acesso restrito à infraestrutura." };
+  }
+
   return await executeCoreCleanup();
 }
 
@@ -3058,6 +3074,31 @@ export async function markAffiliateAsPaid(affiliateId: string) {
     return { error: "Erro interno ao gerar o recibo de pagamento." };
   }
 }
+// 🚀 CONSULTA DE ELEGIBILIDADE AO TRIAL (Para o Frontend não prometer teste grátis indevido)
+export async function checkTrialStatus() {
+  const session = await auth();
+  if (!session?.user?.id) return { eligible: false };
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      businesses: {
+        select: {
+          mpSubscriptionId: true,
+          subscriptionStatus: true,
+          expiresAt: true,
+        },
+      },
+    },
+  });
+  const hasUsedTrial = dbUser?.businesses?.some(
+    (b) =>
+      b.mpSubscriptionId !== null ||
+      (b.subscriptionStatus !== null && b.subscriptionStatus !== "inactive") ||
+      b.expiresAt !== null,
+  );
+  return { eligible: !hasUsedTrial };
+}
+
 export async function createSubscription(
   userId: string,
   userEmail: string,
@@ -3067,6 +3108,18 @@ export async function createSubscription(
   const session = await auth();
   if (session?.user?.id !== userId) {
     return { error: "Não autorizado." };
+  }
+
+  // 🛡️ CFO & CTO FIX: Trava anti-spam no gateway de pagamento!
+  // Evita cliques duplos ou bots gerando cobranças duplicadas ou derrubando a API do Mercado Pago.
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`checkout_${userId}`);
+    if (!success) {
+      return {
+        error:
+          "Você já gerou um link de pagamento há poucos segundos. Aguarde um momento e tente novamente.",
+      };
+    }
   }
 
   // =========================================================================
@@ -4292,7 +4345,11 @@ export async function createOrderAction(payload: any) {
       const selectedRealExtras = [];
 
       if (cartItem.selectedExtras && cartItem.selectedExtras.length > 0) {
-        for (const extraName of cartItem.selectedExtras) {
+        // 🛡️ WHITE HAT FIX: Remove itens duplicados do array usando Set()
+        // Impede injeção de "50x Bacon" no mesmo lanche para quebrar o sistema ou burlar estoque
+        const uniqueExtras = Array.from(new Set(cartItem.selectedExtras));
+
+        for (const extraName of uniqueExtras) {
           const realExtra = realExtrasList.find((e) => e.name === extraName);
           if (realExtra) {
             itemTotal += Number(realExtra.price) || 0;
@@ -4331,6 +4388,22 @@ export async function createOrderAction(payload: any) {
     if (finalItems.length === 0)
       return { error: "Nenhum item válido no pedido." };
 
+    // 🛡️ CFO & UX FIX: Radar anti-malandragem de frete nas observações!
+    let finalObservation = payload.observation
+      ? String(payload.observation).substring(0, 500)
+      : null;
+
+    if (payload.deliveryType === "PICKUP" && finalObservation) {
+      // Procura por palavras suspeitas que indiquem tentativa de pedir entrega na opção de retirada grátis
+      const suspeitoDeFrete =
+        /entreg|mandar|trazer|rua |av |avenida|bairro|condom|residen/i.test(
+          finalObservation,
+        );
+      if (suspeitoDeFrete) {
+        finalObservation = `⚠️ [ALERTA DO SISTEMA: CLIENTE ESCOLHEU RETIRADA GRÁTIS, MAS CITOU ENDEREÇO NA OBSERVAÇÃO!] - ${finalObservation}`;
+      }
+    }
+
     // 🚀 O ESCUDO FINANCEIRO: Adiciona a taxa de entrega real do banco se for Delivery!
     if (payload.deliveryType === "DELIVERY" && business.deliveryFee > 0) {
       totalAmount += business.deliveryFee;
@@ -4358,9 +4431,7 @@ export async function createOrderAction(payload: any) {
             address: payload.address || null,
             paymentMethod: payload.paymentMethod,
             changeFor: payload.changeFor || null,
-            observation: payload.observation
-              ? payload.observation.substring(0, 500)
-              : null,
+            observation: finalObservation,
             status: "PENDING",
           },
         });

@@ -220,13 +220,17 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                           const cleanVal = String(e.target.value)
                             .replace(/[^0-9.,]/g, "")
                             .replace(",", ".");
-                          const finalNumber = parseFloat(cleanVal);
+                          let finalNumber = parseFloat(cleanVal);
+
+                          // 🛡️ CFO FIX: Trava do preço promocional antigo
+                          if (isNaN(finalNumber) || finalNumber < 0)
+                            finalNumber = 0;
+                          if (finalNumber > 10000) finalNumber = 10000;
+
                           handleUpdateProduct(
                             i,
                             "oldPrice",
-                            isNaN(finalNumber)
-                              ? 0
-                              : parseFloat(finalNumber.toFixed(2)),
+                            parseFloat(finalNumber.toFixed(2)),
                           );
                         }}
                         placeholder="0,00"
@@ -269,13 +273,22 @@ export function MenuSection({ products = [], setProducts }: MenuSectionProps) {
                         const cleanVal = String(e.target.value)
                           .replace(/[^0-9.,]/g, "")
                           .replace(",", ".");
-                        const finalNumber = parseFloat(cleanVal);
+                        let finalNumber = parseFloat(cleanVal);
+
+                        // 🛡️ CFO FIX: Teto financeiro do Produto Principal!
+                        if (isNaN(finalNumber) || finalNumber < 0)
+                          finalNumber = 0;
+                        if (finalNumber > 10000) {
+                          toast.error(
+                            "O valor máximo permitido por item é de R$ 10.000,00.",
+                          );
+                          finalNumber = 10000;
+                        }
+
                         handleUpdateProduct(
                           i,
                           "price",
-                          isNaN(finalNumber)
-                            ? 0
-                            : parseFloat(finalNumber.toFixed(2)),
+                          parseFloat(finalNumber.toFixed(2)),
                         );
                       }}
                       placeholder="0,00"

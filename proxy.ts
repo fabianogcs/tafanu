@@ -45,6 +45,41 @@ export default auth(async (req) => {
   const isLoggedIn = !!req.auth;
   const pathname = nextUrl.pathname;
 
+  // 🚀 CFO & UX FIX: RASTREAMENTO CIRÚRGICO DE AFILIADOS NA BORDA!
+  // Capta a indicação antes mesmo do navegador desenhar a tela, com 0% de chance de falha.
+  const refCode = nextUrl.searchParams.get("ref");
+  if (refCode) {
+    const cleanCode = refCode.trim().toLowerCase();
+    // Prepara a resposta (deixando o tráfego seguir normalmente)
+    const response = NextResponse.next();
+
+    // 🛡️ Grava o cookie na hora! Duração: 7 dias (604800 segundos)
+    response.cookies.set("tafanu_ref", cleanCode, {
+      maxAge: 604800,
+      httpOnly: true, // Bloqueia leitura por scripts maliciosos na tela
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax", // Vital para links vindos de redes sociais
+      path: "/",
+    });
+
+    // Remove o ?ref= da URL na barra do navegador do cliente para ficar limpo e elegante!
+    const cleanUrl = new URL(nextUrl.pathname, nextUrl.origin);
+
+    // 🚀 A MÁGICA: Redireciona imediatamente para a mesma tela, sem o "ref",
+    // mas com o cookie enfiado goela abaixo no navegador. É instantâneo!
+    const redirectResponse = NextResponse.redirect(cleanUrl);
+
+    // Copiamos o cookie recém-criado para o redirecionamento
+    redirectResponse.cookies.set("tafanu_ref", cleanCode, {
+      maxAge: 604800,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return redirectResponse;
+  }
   // =====================================================================
   // 🛡️ O LEÃO DE CHÁCARA: RATE LIMITING DE DUPLA CAMADA
   // =====================================================================
@@ -120,9 +155,21 @@ export default auth(async (req) => {
   const user = req.auth?.user as { role?: string } | undefined;
   const userRole = user?.role;
 
-  // 🛡️ PROTEÇÃO DOS CRONS: O Vercel Cron usa Bearer Token, não sessão de usuário.
-  // A trava de segurança real (CRON_SECRET) já está dentro da própria rota da API.
+  // 🛡️ WHITE HAT & CTO FIX: Proteção dos Crons na Borda!
   if (pathname.startsWith("/api/cron")) {
+    // 1. Aplica rate limit para impedir flood de requisições gastando Vercel Serverless
+    if (generalRatelimit) {
+      const ip = (req as any).ip ?? req.headers.get("x-real-ip") ?? "127.0.0.1";
+      const { success } = await generalRatelimit.limit(`cron_${ip}`);
+      if (!success)
+        return new NextResponse("Rate Limit Exceeded", { status: 429 });
+    }
+
+    // 2. Trava na borda: Se não tiver o header Authorization com o segredo da Vercel, nem aciona o backend!
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new NextResponse("Unauthorized Edge", { status: 401 });
+    }
     return NextResponse.next();
   }
 
@@ -159,13 +206,28 @@ export default auth(async (req) => {
     const intent = nextUrl.searchParams.get("intent");
 
     if (callback) {
-      // 🛡️ ANTI-OPEN-REDIRECT: Só redireciona para caminhos relativos ou domínio oficial
-      const isRelative = callback.startsWith("/") && !callback.startsWith("//");
-      const isOfficial =
-        callback.startsWith("https://tafanu.com.br") ||
-        callback.startsWith("http://localhost:3000");
+      // 🛡️ WHITE HAT FIX: Análise rigorosa do Hostname contra Phishing (Open Redirect)
+      let safeCallback = "/dashboard";
+      const isRelative =
+        callback.startsWith("/") &&
+        !callback.startsWith("//") &&
+        !callback.startsWith("/\\");
 
-      const safeCallback = isRelative || isOfficial ? callback : "/dashboard";
+      let isOfficialDomain = false;
+      try {
+        const parsedUrl = new URL(callback);
+        isOfficialDomain =
+          parsedUrl.hostname === "tafanu.com.br" ||
+          parsedUrl.hostname.endsWith(".tafanu.com.br") ||
+          (process.env.NODE_ENV === "development" &&
+            parsedUrl.hostname === "localhost");
+      } catch (e) {
+        isOfficialDomain = false;
+      }
+
+      if (isRelative || isOfficialDomain) {
+        safeCallback = callback;
+      }
       return NextResponse.redirect(new URL(safeCallback, nextUrl));
     }
     if (intent === "assinante") {

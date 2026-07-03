@@ -10,8 +10,9 @@ export default function LocationTracker() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [deviceEnv, setDeviceEnv] = useState({ isPwa: false, isMobile: false });
+  // 🚀 NOVO ESTADO: Guarda a última cidade achada para dar segurança ao cliente
+  const [cachedCity, setCachedCity] = useState<string | null>(null);
 
-  // Detecta o ambiente do usuário apenas no client-side
   useEffect(() => {
     const isPwa =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -21,19 +22,27 @@ export default function LocationTracker() {
         navigator.userAgent,
       );
     setDeviceEnv({ isPwa, isMobile });
+
+    // 🚀 LÊ O CACHE PARA EXIBIR A CIDADE DE FORMA AMIGÁVEL
+    try {
+      const coords = localStorage.getItem("tafanu_user_coords");
+      if (coords) {
+        const parsed = JSON.parse(coords);
+        if (parsed.city) setCachedCity(parsed.city);
+      }
+    } catch (e) {}
   }, []);
 
-  // 🚀 A MÁGICA AQUI: O componente sabe se o GPS já está ligado!
   const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
   const handleToggleLocation = () => {
-    // 🚀 CIRURGIA: SE O GPS JÁ ESTÁ LIGADO, ELE DESLIGA E LIMPA A URL!
     if (isGpsActive) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("lat");
       params.delete("lng");
-      localStorage.removeItem("tafanu_user_coords"); // 🚀 LIMPA O CACHE
-      params.delete("sort"); // Remove a obrigação de ordenar por distância
+      localStorage.removeItem("tafanu_user_coords");
+      setCachedCity(null);
+      params.delete("sort");
       params.set("page", "1");
 
       router.replace(`/busca?${params.toString()}`);
@@ -43,7 +52,6 @@ export default function LocationTracker() {
       return;
     }
 
-    // Se estiver desligado, ele faz o processo normal de ligar (O seu código original intacto)
     if (!navigator.geolocation) {
       toast.error("Seu dispositivo não suporta geolocalização.");
       return;
@@ -58,7 +66,7 @@ export default function LocationTracker() {
     };
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         const params = new URLSearchParams(searchParams.toString());
 
@@ -67,17 +75,35 @@ export default function LocationTracker() {
         params.set("sort", "distance");
         params.set("page", "1");
 
-        // 🚀 SALVA O CACHE AQUI TAMBÉM
+        // 🚀 O BÔNUS CTO: Tenta adivinhar a cidade do usuário via API gratuita para melhorar o UX
+        let foundCity = null;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+          );
+          const data = await res.json();
+          foundCity =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.municipality ||
+            null;
+          if (foundCity) setCachedCity(foundCity);
+        } catch (e) {
+          // Ignora silenciosamente, é só um bônus visual
+        }
+
         localStorage.setItem(
           "tafanu_user_coords",
-          JSON.stringify({ lat: latitude, lng: longitude }),
+          JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
         );
 
         setLoading(false);
         router.replace(`/busca?${params.toString()}`);
 
         toast.success("Localização encontrada!", {
-          description: "Mostrando os negócios a até 30km de você.",
+          description: foundCity
+            ? `Buscando negócios perto de você em ${foundCity}.`
+            : "Mostrando os negócios perto de você.",
         });
       },
       (error) => {
@@ -133,7 +159,7 @@ export default function LocationTracker() {
 
   return (
     <div
-      className={`w-full bg-white rounded-2xl p-4 shadow-sm border transition-colors duration-500 mb-6 flex items-center justify-between ${isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-gray-100"}`}
+      className={`w-full bg-white rounded-2xl p-4 shadow-sm border transition-colors duration-500 flex items-center justify-between ${isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-gray-100 mb-6"}`}
     >
       <div className="flex items-center gap-3">
         <div
@@ -149,14 +175,14 @@ export default function LocationTracker() {
         </div>
         <div>
           <h4 className="text-xs font-black text-gray-800 uppercase italic leading-tight">
-            {isGpsActive ? "GPS Ativado" : "Ver por proximidade?"}
+            {isGpsActive ? cachedCity || "GPS Ativado" : "Ver por proximidade?"}
           </h4>
           <p
             className={`text-[10px] font-bold uppercase italic mt-0.5 ${isGpsActive ? "text-rose-600" : "text-gray-400"}`}
           >
             {isGpsActive
-              ? "Negócios em um raio de 30km"
-              : "Buscar até 30km ao seu redor"}
+              ? "Negócios na sua região"
+              : "Buscando lojas ao seu redor"}
           </p>
         </div>
       </div>
@@ -170,7 +196,7 @@ export default function LocationTracker() {
             : "bg-[#0f172a] text-white hover:bg-black"
         }`}
       >
-        {loading ? "Aguarde..." : isGpsActive ? "Desativar" : "Ligar GPS"}
+        {loading ? "Aguarde..." : isGpsActive ? "Desligar" : "Ligar GPS"}
       </button>
     </div>
   );

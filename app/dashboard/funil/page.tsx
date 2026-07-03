@@ -41,12 +41,14 @@ export default async function FunilPage() {
     // 2. BUSCA ISOLADA: Separei as buscas para o Prisma não ter como se confundir
     let leads = [];
 
+    // 🚀 CRM / VENDAS FIX: Desbloqueia o Funil para todos os Leads!
+    // O Funil é onde o Parceiro convence o Lead (Visitante) a assinar.
     if (isAdmin) {
       leads = await db.business.findMany({
         where: {
           user: {
-            email: { endsWith: "@tafanu.com.br" },
-            affiliateId: null, // Admin vê os órfãos
+            role: "VISITANTE", // O Admin tenta converter qualquer visitante da plataforma que não tenha padrinho
+            affiliateId: null,
           },
         },
         include: {
@@ -60,8 +62,8 @@ export default async function FunilPage() {
       leads = await db.business.findMany({
         where: {
           user: {
-            email: { endsWith: "@tafanu.com.br" },
-            affiliateId: session.user.id, // Afiliado vê os dele
+            role: "VISITANTE", // O Afiliado vê apenas os leads (Visitantes) vinculados ao ID dele
+            affiliateId: session.user.id,
           },
         },
         include: {

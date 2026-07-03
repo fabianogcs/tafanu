@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Store, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// 🚀 OS MOODS (Estados de Espírito do Neuromarketing)
 const MOODS = [
   {
     id: "fome",
@@ -63,74 +62,61 @@ const MOODS = [
 ];
 
 export default function VitrineDigital() {
-  const router = useRouter(); // 🚀 ACIONA O DIRECIONADOR
+  const router = useRouter();
 
-  // 🚀 O INTERCEPTADOR MÁGICO (COLE ISTO AQUI!)
   const handleMoodClick = (e: React.MouseEvent, baseUrl: string) => {
-    e.preventDefault(); // Cancela o comportamento nativo do link
-
+    e.preventDefault();
     const cachedCoords = localStorage.getItem("tafanu_user_coords");
 
     if (cachedCoords) {
       try {
         const { lat, lng } = JSON.parse(cachedCoords);
-        // 🚀 SE HOUVER CACHE: Injeta as coordenadas dinamicamente na URL e ordena por distância!
         router.push(`${baseUrl}&lat=${lat}&lng=${lng}&sort=distance`);
         return;
       } catch (err) {
         console.error("Erro ao ler cache de localização");
       }
     }
-
-    // Se for a primeira vez do cara e não houver cache, vai limpo (mostra tudo)
     router.push(baseUrl);
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-6 mt-8 md:mt-12 pb-16 relative overflow-hidden z-10">
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-tafanu-action/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
-
-      {/* CABEÇALHO */}
-      <div className="mb-8 md:mb-12 text-center md:text-left flex flex-col items-center md:items-start animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-12 md:pt-16 pb-8 relative z-10">
+      {/* CABEÇALHO LIMPO E CLARO */}
+      <div className="mb-10 text-center flex flex-col items-center">
         <div className="flex items-center gap-2 mb-3">
-          <span className="bg-gradient-to-r from-tafanu-action to-emerald-400 text-[#0f172a] p-1.5 rounded-xl shadow-lg">
+          <span className="bg-emerald-100 text-emerald-600 p-1.5 rounded-xl shadow-sm">
             <Sparkles size={16} strokeWidth={2.5} />
           </span>
-          <span className="text-emerald-500 font-black text-[10px] md:text-[11px] uppercase tracking-[0.25em]">
+          <span className="text-emerald-600 font-black text-[10px] md:text-[11px] uppercase tracking-[0.25em]">
             Experiência Local
           </span>
         </div>
-        <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-[#0f172a] uppercase italic tracking-tighter leading-[1.1] drop-shadow-sm mb-4">
-          O Que Você <br className="md:hidden" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400 pr-2">
-            Quer Hoje?
-          </span>
+        <h2 className="text-3xl md:text-5xl font-black text-[#023059] uppercase italic tracking-tighter leading-tight mb-4">
+          O Que Você <span className="text-emerald-500">Quer Hoje?</span>
         </h2>
-
         <p className="text-slate-500 font-medium text-sm md:text-base max-w-lg">
           Escolha o seu estado de espírito e nós encontramos as melhores opções
           da sua cidade em segundos.
         </p>
       </div>
 
-      {/* 🚀 GRELHA DE MOODS (NEUROMARKETING APLICADO) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 relative z-10">
-        {MOODS.map((mood, idx) => (
+      {/* GRELHA DE CARTÕES */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
+        {MOODS.map((mood) => (
           <Link
             key={mood.id}
             href={mood.url}
-            onClick={(e) => handleMoodClick(e, mood.url)} // 🚀 DISPARA O INTERCEPTADOR
-            className={`group relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-8 flex flex-col justify-between aspect-square md:aspect-auto md:h-52 bg-gradient-to-br ${mood.bgClass} shadow-lg hover:${mood.shadowClass} hover:-translate-y-2 transition-all duration-500`}
-            style={{ animationDelay: `${idx * 100}ms` }}
+            onClick={(e) => handleMoodClick(e, mood.url)}
+            className={`group relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-8 flex flex-col justify-between aspect-square md:aspect-[4/3] lg:h-52 bg-gradient-to-br ${mood.bgClass} shadow-md hover:${mood.shadowClass} hover:-translate-y-1.5 transition-all duration-300`}
           >
-            {/* Efeito de Reflexo no Vidro */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <div className="flex justify-between items-start w-full relative z-10">
-              <span className="text-4xl md:text-5xl drop-shadow-md group-hover:scale-110 transition-transform duration-500 origin-top-left">
+              <span className="text-4xl md:text-5xl drop-shadow-md group-hover:scale-110 transition-transform duration-300 origin-top-left">
                 {mood.icon}
               </span>
-              <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-x-4 group-hover:translate-x-0">
+              <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-4 group-hover:translate-x-0">
                 <ArrowRight size={16} strokeWidth={3} />
               </div>
             </div>

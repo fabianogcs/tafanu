@@ -300,6 +300,17 @@ export function ContentSection({
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
+
+                    // 🛡️ WHITE HAT FIX: Impede que hackers enviem .exe ou .php disfarçados
+                    if (file.type !== "application/pdf") {
+                      toast.error(
+                        "Formato inválido. Apenas arquivos PDF originais são permitidos.",
+                      );
+                      e.target.value = "";
+                      return;
+                    }
+
+                    // 🛡️ LIMITADOR DE MEMÓRIA DO NAVEGADOR
                     if (file.size > 8 * 1024 * 1024) {
                       toast.error(
                         "O catálogo é muito pesado. Por favor, comprima seu PDF para no máximo 8MB.",

@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { hashSync } from "bcryptjs";
+import { hash } from "bcryptjs";
 import { auth } from "@/auth";
 import { toSlug } from "@/lib/normalize";
 
@@ -94,7 +94,8 @@ export async function criarLeadDireto(formData: FormData) {
       if (aff) affiliateId = aff.id;
     }
 
-    const hashedPassword = hashSync(password, 10);
+    // 🚀 CTO FIX: Usando await hash() para não bloquear o Event Loop da Vercel!
+    const hashedPassword = await hash(password, 10);
 
     const newUser = await db.user.create({
       data: {

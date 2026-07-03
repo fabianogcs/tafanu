@@ -11,16 +11,30 @@ export async function generateCommission(
   description: string,
   planType: "monthly" | "quarterly" | "yearly" = "monthly",
   mpPaymentId: string,
-  businessId: string, // 🚀 NOVO PARÂMETRO EXIGIDO PARA RASTREAR A LOJA
+  businessId: string,
 ) {
   try {
-    // 1. Verifica se quem comprou tem um afiliado vinculado
+    // 1. Busca o cliente E valida se o afiliado existe e NÃO está banido no banco
     const customer = await db.user.findUnique({
       where: { id: userId },
-      select: { affiliateId: true },
+      select: {
+        affiliateId: true,
+        affiliate: {
+          select: { id: true, isBanned: true },
+        },
+      },
     });
 
-    if (!customer?.affiliateId) return { success: false };
+    if (
+      !customer?.affiliateId ||
+      !customer.affiliate ||
+      customer.affiliate.isBanned
+    ) {
+      console.warn(
+        `⚠️ [RevShare] Comissão abortada: Afiliado inexistente ou banido para o usuário ${userId}`,
+      );
+      return { success: false };
+    }
 
     // 🛡️ TRAVA ANTI-FRAUDE: Se o afiliado tentar comprar com o próprio link, bloqueia!
     if (customer.affiliateId === userId) {
@@ -30,40 +44,46 @@ export async function generateCommission(
       return { success: false, error: "Auto-compra não permitida." };
     }
 
-    // 🚀 LÓGICA DE CAIXA
-    const comissoes = {
+    // 🚀 LÓGICA DE CAIXA COM TETO DE MARGEM (CFO BLINDADO)
+    const comissoesBase = {
       monthly: 10.0,
       quarterly: 30.0,
       yearly: 120.0,
     };
 
-    const amount = comissoes[planType] || 10.0;
+    const comissaoIdeal = comissoesBase[planType] || 10.0;
+
+    // 🛡️ TRAVA FINOPS: A comissão NUNCA pode ultrapassar 50% do valor real pago pelo cliente!
+    // Se o cliente usou cupom e pagou R$ 5,00, a comissão será cortada para R$ 2,50 no máximo.
+    const MAX_REVSHARE_PERCENTAGE = 0.5;
+    const amount = Number(
+      Math.min(comissaoIdeal, orderAmount * MAX_REVSHARE_PERCENTAGE).toFixed(2),
+    );
+
+    if (amount <= 0) {
+      console.warn(
+        `⚠️ [RevShare] Valor da transação (R$ ${orderAmount}) insuficiente para gerar comissão.`,
+      );
+      return { success: false, error: "Valor insuficiente para comissão." };
+    }
 
     // Define a data de liberação (7 dias de garantia)
     const releaseDate = new Date();
     releaseDate.setDate(releaseDate.getDate() + 7);
 
-    // 🚀 CIRURGIA: Barragem absoluta usando o ID transacional do gateway de pagamento
-    const jaExiste = await db.commission.findUnique({
-      where: {
-        mpPaymentId: String(mpPaymentId),
-      },
-    });
-
-    if (jaExiste) return { success: true, message: "Comissão já registrada." };
-
-    // Salva a comissão como PENDENTE no banco, AGORA RASTREANDO A LOJA!
+    // 🚀 CIRURGIA DE IDEMPOTÊNCIA: Gravamos direto no banco.
+    // Se o recibo (mpPaymentId) já existir, o banco bloqueia sem Race Condition!
     await db.commission.create({
       data: {
         affiliateId: customer.affiliateId,
         userId: userId,
-        businessId: businessId, // 🚀 SALVA NO BANCO O ID DA LOJA
+        businessId: businessId,
         amount: amount,
         orderAmount: orderAmount,
         status: CommissionStatus.PENDING,
         description: description,
         releaseDate: releaseDate,
-        mpPaymentId: mpPaymentId,
+        mpPaymentId: String(mpPaymentId),
       },
     });
 
@@ -71,8 +91,18 @@ export async function generateCommission(
       `✅ Comissão (RevShare) de R$ ${amount} gerada para o afiliado ${customer.affiliateId}`,
     );
     return { success: true };
-  } catch (error) {
-    console.error("Erro ao gerar comissão:", error);
-    return { error: "Falha ao registrar comissão no banco." };
+  } catch (error: any) {
+    // 🛡️ WHITE HAT FIX: Se o banco recusar por código único (P2002), é idempotência operando perfeitamente!
+    if (error?.code === "P2002") {
+      console.log(
+        `[RevShare] Comissão para o recibo ${mpPaymentId} já foi gerada por outra thread. OK.`,
+      );
+      return {
+        success: true,
+        message: "Comissão já registrada (Idempotência).",
+      };
+    }
+    console.error("Erro crítico ao gerar comissão:", error);
+    return { success: false, error: "Falha ao registrar comissão no banco." };
   }
 }

@@ -161,10 +161,8 @@ export default function AffiliateDashboard() {
   };
 
   const filteredList = getRawList()
-    .filter(
-      (ref: any) =>
-        ref.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ref.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+    .filter((ref: any) =>
+      ref.name?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     // 🚀 CORTE 4.2 (LÓGICA) AQUI:
     .sort((a: any, b: any) => {
@@ -589,9 +587,6 @@ export default function AffiliateDashboard() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-[11px] font-bold text-gray-400 mt-1 truncate">
-                              {ref.email}
-                            </p>
                           </div>
                           {business && (
                             <div className="flex items-center gap-2 shrink-0">
@@ -680,13 +675,6 @@ export default function AffiliateDashboard() {
                           <MessageCircle size={18} />
                           <span className="hidden sm:inline">WhatsApp</span>
                           <span className="sm:hidden">WPP</span>
-                        </a>
-                        <a
-                          href={`mailto:${ref.email}?subject=Sua%20Vitrine%20no%20Tafanu`}
-                          className="w-14 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"
-                          title="Enviar E-mail"
-                        >
-                          <Mail size={18} />
                         </a>
                       </div>
                     </div>

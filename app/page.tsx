@@ -49,7 +49,7 @@ export default async function Home() {
     <main className="relative min-h-screen bg-white pb-24 overflow-hidden">
       {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[40vh] left-0 w-full h-[1200px] bg-[#F8FAFC] transform -skew-y-3 origin-top-left border-t border-slate-100 shadow-[inset_0_10px_30px_rgba(0,0,0,0.01)]" />
+        <div className="absolute top-[30vh] left-0 w-full h-[100%] bg-[#F8FAFC] transform -skew-y-2 origin-top-left border-t border-slate-200 shadow-[inset_0_10px_30px_rgba(0,0,0,0.05)]" />
         <div className="absolute top-[60vh] -right-48 w-[800px] h-[800px] rounded-full border-[60px] border-emerald-50/80" />
         <div className="absolute top-[100vh] -left-32 w-[500px] h-[500px] rounded-full border-[40px] border-orange-50/50" />
       </div>
@@ -57,9 +57,9 @@ export default async function Home() {
       {/* 📦 CONTEÚDO PRINCIPAL */}
       <div className="relative z-10">
         <Hero />
-        <Categories activeCats={activeCategories} />
-        <OsMaisBuscados businesses={trendingBusinesses} />
         <VitrineDigital />
+        <OsMaisBuscados businesses={trendingBusinesses} />
+        <Categories activeCats={activeCategories} />
       </div>
     </main>
   );

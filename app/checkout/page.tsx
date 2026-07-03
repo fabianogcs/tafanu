@@ -9,6 +9,7 @@ import {
   createSubscription,
   getAuthSession,
   getBusinessExpiration,
+  checkTrialStatus,
 } from "@/app/actions";
 
 // 🚀 AJUSTES NOS TEXTOS PARA CLAREZA DO TRIAL
@@ -56,6 +57,7 @@ export default function CheckoutPage() {
 
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isTrialEligible, setIsTrialEligible] = useState(true); // 🚀 NOVO: Sabe se o cliente é virgem de teste grátis
 
   const hasFetched = useRef(false);
 
@@ -63,7 +65,6 @@ export default function CheckoutPage() {
     async function checkStatus() {
       if (status === "loading") return;
 
-      // 🚀 VACINA DO LOOP CEGO: Se o React achar que tá deslogado, confere no servidor antes de ejetar!
       if (status === "unauthenticated") {
         const serverSession = await getAuthSession();
         if (!serverSession) {
@@ -78,10 +79,18 @@ export default function CheckoutPage() {
       let expirationDate = null;
 
       try {
-        const expiration = await getBusinessExpiration();
+        // 🚀 BUSCA DUPLA: Pega a expiração E confere no banco se ele ainda tem direito ao grátis!
+        const [expiration, trialCheck] = await Promise.all([
+          getBusinessExpiration(),
+          checkTrialStatus(),
+        ]);
+
         if (expiration) {
           expirationDate = new Date(expiration);
           setExpiresAt(expirationDate);
+        }
+        if (trialCheck && typeof trialCheck.eligible === "boolean") {
+          setIsTrialEligible(trialCheck.eligible);
         }
       } catch (error) {
         console.log("Usuário não possui loja ainda.");
@@ -284,7 +293,9 @@ export default function CheckoutPage() {
                 R$
               </span>
               <span className="text-7xl font-black italic leading-none drop-shadow-md">
-                {PLANS[selectedPlan].initialPrice}
+                {selectedPlan === "monthly" && isTrialEligible
+                  ? "0,00"
+                  : PLANS[selectedPlan].price}
               </span>
             </div>
 
@@ -301,9 +312,9 @@ export default function CheckoutPage() {
             </button>
 
             <p className="text-slate-500 text-[10px] uppercase font-bold mt-6 px-2 leading-relaxed">
-              {selectedPlan === "monthly"
+              {selectedPlan === "monthly" && isTrialEligible
                 ? "Cobrança única mensal de R$ 39,90 programada para o 8º dia. Não existe cobrança diária."
-                : "Você está coberto pela nossa Garantia de 7 Dias. Risco Zero."}
+                : "Assinatura PRO com renovação automática. Acesso imediato liberado após a confirmação do pagamento."}
             </p>
           </div>
         </div>

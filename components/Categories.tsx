@@ -199,7 +199,17 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
   };
 
   return (
-    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-8 relative z-30 -mt-[220px] md:-mt-[280px] lg:-mt-[320px] mb-16 md:mb-24 animate-in fade-in duration-700 delay-500 group">
+    <section className="w-full max-w-[1400px] mx-auto px-4 md:px-8 relative z-30 mt-16 mb-16 md:mb-24 animate-in fade-in duration-700 group">
+      <div className="flex items-center justify-between mb-6 px-2 md:px-4">
+        <div>
+          <h2 className="text-xl md:text-3xl font-black text-[#023059] uppercase tracking-tighter italic leading-none mb-1">
+            Diretório <span className="text-emerald-500">Global</span>
+          </h2>
+          <p className="text-slate-400 font-medium text-[10px] md:text-sm">
+            Navegue por todas as categorias da plataforma de forma organizada.
+          </p>
+        </div>
+      </div>{" "}
       {showArrows && (
         <button
           onClick={() => scroll("left")}
@@ -209,7 +219,6 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
           <ChevronLeft strokeWidth={3} size={20} />
         </button>
       )}
-
       <div
         ref={scrollRef}
         onMouseDown={showArrows ? handleMouseDown : undefined}
@@ -293,7 +302,6 @@ export default function Categories({ activeCats = [] }: CategoriesProps) {
           );
         })}
       </div>
-
       {showArrows && (
         <button
           onClick={() => scroll("right")}

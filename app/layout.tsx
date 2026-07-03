@@ -12,7 +12,6 @@ import PasswordAlert from "@/components/PasswordAlert";
 import { Providers } from "@/components/Providers";
 import CookieBanner from "@/components/CookieBanner";
 import PwaListener from "@/components/PwaListener";
-import AffiliateTracker from "@/components/AffiliateTracker";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -87,11 +86,6 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="flex flex-col min-h-screen">
-        {/* 1. SISTEMA DE AFILIADOS */}
-        <Suspense fallback={null}>
-          <AffiliateTracker />
-        </Suspense>
-
         {/* 2. SCRIPT DE CONTROLE PWA E SERVICE WORKER */}
         <Script
           id="pwa-control"

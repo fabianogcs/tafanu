@@ -82,7 +82,15 @@ export async function POST(request: Request) {
     const body = rawText ? (JSON.parse(rawText) as MPWebhookBody) : {};
     const url = new URL(request.url);
 
-    // 🚀 HACKER FIX: IDEMPOTÊNCIA (Bloqueia eventos duplicados do Mercado Pago)
+    // 1. [SEGURANÇA PRIMÁRIA] Bloqueia acessos falsos ou hackers ANTES de tocar no banco!
+    if (!validateSignature(request, body, url)) {
+      console.warn(
+        "🚨 [Webhook MP] Tentativa inválida de acesso bloqueada ou Ping de Configuração.",
+      );
+      return new NextResponse("Assinatura Inválida ou Ping", { status: 401 });
+    }
+
+    // 2. [LEITURA DE IDEMPOTÊNCIA] Apenas verifica se já processamos (sem queimar o evento)
     const eventId = body?.id?.toString();
     if (eventId) {
       const alreadyProcessed = await db.processedWebhook.findUnique({
@@ -94,16 +102,6 @@ export async function POST(request: Request) {
         );
         return new NextResponse("OK", { status: 200 });
       }
-      // Se é novo, carimba o passaporte para ninguém mais usar
-      await db.processedWebhook.create({ data: { id: eventId } });
-    }
-
-    // 1. [SEGURANÇA] Bloqueia acessos sem assinatura válida
-    if (!validateSignature(request, body, url)) {
-      console.warn(
-        "🚨 [Webhook MP] Tentativa inválida de acesso bloqueada ou Ping de Configuração.",
-      );
-      return new NextResponse("Assinatura Inválida ou Ping", { status: 401 });
     }
 
     console.log(
@@ -329,6 +327,12 @@ export async function POST(request: Request) {
           }
         }
       }
+    }
+    // 🚀 HACKER & CFO FIX: O carimbo só é gravado AGORA, após o pagamento/assinatura dar 100% certo!
+    if (eventId) {
+      await db.processedWebhook
+        .create({ data: { id: eventId } })
+        .catch(() => {});
     }
     return new NextResponse("OK", { status: 200 });
   } catch (error) {
