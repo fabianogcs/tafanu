@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // 🚀 BLINDAGEM SEO: Impede o Google de ler painéis fechados e indexar filtros de busca dinâmicos infinitos
+      // 🚀 BLINDAGEM SEO: Impede o Google de ler painéis fechados e indexar filtros de busca dinâmicos infinitos.
       disallow: [
         "/dashboard/",
         "/admin/",
