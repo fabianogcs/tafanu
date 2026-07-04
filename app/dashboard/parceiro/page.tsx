@@ -20,7 +20,6 @@ import {
   Mail,
   Edit3,
 } from "lucide-react";
-import { CommissionStatus } from "@prisma/client";
 
 export default function AffiliateDashboard() {
   const [data, setData] = useState<any>(null);
@@ -46,6 +45,7 @@ export default function AffiliateDashboard() {
     loadStats();
   }, []);
 
+  // 🚀 1. HOOK: STATS FINANCEIROS
   const stats = useMemo(() => {
     let disponivel = 0;
     let pendente = 0;
@@ -54,7 +54,7 @@ export default function AffiliateDashboard() {
 
     if (data?.commissions) {
       data.commissions.forEach((c: any) => {
-        if (c.userId === data.affiliate.id) return;
+        if (c.userId === data.affiliate?.id) return;
 
         if (c.status === "PAID") {
           pago += c.amount;
@@ -71,20 +71,7 @@ export default function AffiliateDashboard() {
     return { disponivel, pendente, pago };
   }, [data]);
 
-  if (loading)
-    return (
-      <div className="flex h-[90vh] items-center justify-center flex-col gap-4">
-        <div className="h-14 w-14 border-4 border-[#F28705] border-t-transparent rounded-full animate-spin shadow-lg" />
-        <p className="text-[#023059] font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">
-          Sincronizando Funil de Vendas...
-        </p>
-      </div>
-    );
-
-  if (!data || !data.affiliate) return null;
-  const { affiliate, clients } = data;
-  const hoje = new Date();
-
+  // 🚀 2. HOOK: CLASSIFICAÇÃO DE LISTAS
   const {
     listMensal,
     listTrimestral,
@@ -104,7 +91,11 @@ export default function AffiliateDashboard() {
       listVencidos: [] as any[],
     };
 
-    clients.forEach((u: any) => {
+    if (!data?.clients) return res;
+
+    const hoje = new Date();
+
+    data.clients.forEach((u: any) => {
       if (u.role === "AFILIADO") return;
       const business = u.businesses?.[0];
       if (!business) {
@@ -148,25 +139,24 @@ export default function AffiliateDashboard() {
       }
     });
     return res;
-  }, [clients, hoje, data?.commissions]);
+  }, [data]);
 
-  const getRawList = () => {
-    if (activeTab === "mensal") return listMensal;
-    if (activeTab === "trimestral") return listTrimestral;
-    if (activeTab === "anual") return listAnual;
-    if (activeTab === "pix") return listPix;
-    if (activeTab === "teste") return listTeste;
-    if (activeTab === "leads") return listLeads;
-    return listVencidos;
-  };
+  // 🚀 3. HOOK: FILTRAGEM E ORDENAÇÃO (Trouxemos o "filteredList" para cá!)
+  const filteredList = useMemo(() => {
+    let list = [] as any[];
+    if (activeTab === "mensal") list = listMensal;
+    else if (activeTab === "trimestral") list = listTrimestral;
+    else if (activeTab === "anual") list = listAnual;
+    else if (activeTab === "pix") list = listPix;
+    else if (activeTab === "teste") list = listTeste;
+    else if (activeTab === "leads") list = listLeads;
+    else if (activeTab === "vencidos") list = listVencidos;
 
-  const filteredList = getRawList()
-    .filter((ref: any) =>
+    let result = list.filter((ref: any) =>
       ref.name?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    // 🚀 CORTE 4.2 (LÓGICA) AQUI:
-    .sort((a: any, b: any) => {
-      // 🚀 ORDENAÇÃO DE LOGIN TEM PRIORIDADE SE O FILTRO ESTIVER ATIVO
+    );
+
+    result.sort((a: any, b: any) => {
       if (loginSort === "recentes")
         return (
           new Date(b.lastLogin || 0).getTime() -
@@ -178,7 +168,6 @@ export default function AffiliateDashboard() {
           new Date(b.lastLogin || 0).getTime()
         );
 
-      // Se não, usa a ordem padrão (vencimento)
       const expA = a.businesses?.[0]?.expiresAt
         ? new Date(a.businesses[0].expiresAt).getTime()
         : 0;
@@ -188,8 +177,24 @@ export default function AffiliateDashboard() {
       return expA - expB;
     });
 
+    return result;
+  }, [
+    activeTab,
+    listMensal,
+    listTrimestral,
+    listAnual,
+    listPix,
+    listTeste,
+    listLeads,
+    listVencidos,
+    searchTerm,
+    loginSort,
+  ]);
+
+  // 🚀 4. FUNÇÕES GERAIS (Podem ficar soltas aqui, pois não computam dados no render)
   const copyLink = () => {
-    const linkCompleto = `${origin}/?ref=${affiliate.referralCode}`;
+    if (!data?.affiliate?.referralCode) return;
+    const linkCompleto = `${origin}/?ref=${data.affiliate.referralCode}`;
     navigator.clipboard.writeText(linkCompleto);
     toast.success("Link copiado! Boas vendas!", { icon: <Share2 size={16} /> });
   };
@@ -200,6 +205,24 @@ export default function AffiliateDashboard() {
       currency: "BRL",
     }).format(value);
   };
+
+  // =======================================================================
+  // 🛡️ A REGRA DA MURALHA (Os Retornos de Tela começam SOMENTE AQUI)
+  // =======================================================================
+  if (loading)
+    return (
+      <div className="flex h-[90vh] items-center justify-center flex-col gap-4">
+        <div className="h-14 w-14 border-4 border-[#F28705] border-t-transparent rounded-full animate-spin shadow-lg" />
+        <p className="text-[#023059] font-black uppercase text-[10px] tracking-[0.3em] animate-pulse">
+          Sincronizando Funil de Vendas...
+        </p>
+      </div>
+    );
+
+  if (!data || !data.affiliate) return null;
+
+  const { affiliate } = data;
+  const hoje = new Date();
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 px-4 font-sans">
@@ -697,9 +720,6 @@ export default function AffiliateDashboard() {
     </div>
   );
 }
-
-// Obs: Seu código continua com as funções TabButton, MetricCard, etc., abaixo daqui
-// O arquivo está fechado corretamente no `}` da função AffiliateDashboard.
 
 function TabButton({ active, onClick, label, count, color, icon }: any) {
   return (
