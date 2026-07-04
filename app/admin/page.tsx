@@ -72,6 +72,7 @@ export default async function AdminPage({
         isBanned: true,
         lastLogin: true,
         createdAt: true,
+        referralCode: true, // 🚀 A CIRURGIA ESTÁ AQUI: Avisamos o banco para trazer o código do afiliado!
         businesses: {
           // 🚀 HACKER FIX: Trocamos 'include' por 'select'. Agora o banco só entrega as métricas vitais para o Admin.
           // Isso reduz o peso da requisição de 50MB para 50KB. O painel nunca mais vai travar.
