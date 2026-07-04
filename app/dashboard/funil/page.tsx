@@ -38,18 +38,18 @@ export default async function FunilPage() {
   const isAdmin = currentUser.role === "ADMIN";
 
   try {
-    // 2. BUSCA ISOLADA: Separei as buscas para o Prisma não ter como se confundir
     let leads = [];
 
-    // 🚀 CRM / VENDAS FIX: Desbloqueia o Funil para todos os Leads!
-    // O Funil é onde o Parceiro convence o Lead (Visitante) a assinar.
+    // 🚀 CRM / VENDAS FIX: A ARQUITETURA CORRETA E BLINDADA
     if (isAdmin) {
+      // O ADMIN SÓ VÊ OS ÓRFÃOS (Leads e Contas Testes sem parceiros)
       leads = await db.business.findMany({
         where: {
           user: {
-            role: "VISITANTE", // O Admin tenta converter qualquer visitante da plataforma que não tenha padrinho
-            affiliateId: null,
+            affiliateId: null, // Garante que o Admin não roube o lead do Afiliado
           },
+          // Ignora a "Role" e traz quem está rodando nas 5 etapas do funil
+          etapaFunil: { gt: 0, lte: 5 },
         },
         include: {
           user: {
@@ -59,12 +59,13 @@ export default async function FunilPage() {
         orderBy: { expiresAt: "asc" },
       });
     } else {
+      // O AFILIADO SÓ VÊ OS LEADS DELE
       leads = await db.business.findMany({
         where: {
           user: {
-            role: "VISITANTE", // O Afiliado vê apenas os leads (Visitantes) vinculados ao ID dele
-            affiliateId: session.user.id,
+            affiliateId: session.user.id, // Amarrado ao ID do parceiro
           },
+          etapaFunil: { gt: 0, lte: 5 },
         },
         include: {
           user: {

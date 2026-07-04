@@ -561,20 +561,22 @@ export default function AdminModals({
 
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center flex flex-col justify-center">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Total de Indicações
+                    Indicações
                   </p>
-                  <p className="text-3xl font-black text-slate-800">
+                  <p className="text-3xl font-black text-slate-800 leading-none">
                     {selectedUser.referralCount || 0}
                   </p>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center flex flex-col justify-center overflow-hidden">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-1">
-                    Código
+                    Código Parceiro
                   </p>
-                  <code className="text-xl font-black text-emerald-600">
-                    {selectedUser.referralCode || "—"}
+                  <code className="text-sm sm:text-base lg:text-lg font-black text-emerald-600 break-words px-2 leading-tight">
+                    {selectedUser.referralCode ||
+                      selectedUser.affiliate?.referralCode ||
+                      "GERAR ABAIXO"}
                   </code>
                 </div>
               </div>
