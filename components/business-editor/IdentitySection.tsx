@@ -36,8 +36,7 @@ interface IdentitySectionProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   selectedLayout: string;
   setSelectedLayout: (val: string) => void;
-  layoutText: string;
-  setLayoutText: (val: string) => void;
+  // ✂️ layoutText e setLayoutText foram removidos daqui pois foram para o ContentSection
   selectedTheme: string;
   setSelectedTheme: (val: string) => void;
   filteredThemeKeys: string[];
@@ -63,18 +62,13 @@ export function IdentitySection({
   handleFileChange,
   selectedLayout,
   setSelectedLayout,
-  layoutText,
-  setLayoutText,
   selectedTheme,
   setSelectedTheme,
   filteredThemeKeys,
 }: IdentitySectionProps) {
-  const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
   const isChanged = !isNew && slug !== safeBusinessSlug;
 
   // 1. A IMPRESSÃO DIGITAL: Verifica se o link original tem exatamente o padrão gerado pelo Backend
-  // Padrão 1: "vitrine-" + 5 caracteres + "-" + 13 números (Date.now)
-  // Padrão 2: "loja-" + 8 caracteres + "-" + 4 números (usado no adminActivateVisitor)
   const isGhostOriginal =
     /^vitrine-[a-z0-9]{5}-\d{13}$/i.test(safeBusinessSlug) ||
     /^loja-[a-z0-9]{8}-\d{4}$/i.test(safeBusinessSlug);
@@ -90,8 +84,11 @@ export function IdentitySection({
 
   return (
     <div className="space-y-8">
+      {/* ==============================================
+          CAIXA 1: IDENTIDADE E TEMPLATES
+          ============================================== */}
       <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col items-center text-center relative overflow-hidden">
-        {/* 🚨 O ALERTA GIGANTE (Só aparece para a loja fantasma) */}
+        {/* 🚨 O ALERTA GIGANTE */}
         {isGhostBusiness && (
           <div className="absolute top-0 left-0 w-full bg-rose-500 text-white p-3 md:p-4 flex items-center justify-center gap-3 animate-pulse shadow-md z-10">
             <AlertOctagon size={20} className="shrink-0" />
@@ -102,9 +99,7 @@ export function IdentitySection({
           </div>
         )}
 
-        {/* ==============================================
-            📸 PAINEL DE MÍDIA COMPACTO (Capa e Logo Lado a Lado)
-            ============================================== */}
+        {/* 📸 PAINEL DE MÍDIA COMPACTO */}
         <div className="w-full flex flex-row items-start justify-center gap-6 md:gap-12 mt-8 mb-6 px-2">
           {/* COLUNA 1: FOTO DE CAPA */}
           <div className="flex-1 flex flex-col items-center max-w-[160px] md:max-w-[220px]">
@@ -147,6 +142,7 @@ export function IdentitySection({
                   <img
                     src={profileImage}
                     className="w-full h-full object-cover"
+                    alt="Logo"
                   />
                 ) : (
                   <Plus
@@ -192,7 +188,7 @@ export function IdentitySection({
           <input
             ref={nameRef}
             value={name}
-            maxLength={100} // 🚀 TRAVA UX (Sincronizado com o Back-end)
+            maxLength={100}
             onChange={(e) => handleNameChange(e.target.value)}
             className={`w-full text-center bg-transparent text-2xl md:text-3xl font-black outline-none border-b-2 py-2 italic tracking-tighter transition-all ${
               nameError
@@ -221,7 +217,7 @@ export function IdentitySection({
           <input
             ref={slugRef}
             value={slug}
-            maxLength={60} // 🚀 TRAVA UX (Sincronizado com o Back-end)
+            maxLength={60}
             onChange={(e) => handleSlugChange(e.target.value)}
             className={`w-full text-center text-sm font-bold font-mono outline-none border-2 py-3 rounded-xl transition-all ${
               slugError
@@ -233,9 +229,6 @@ export function IdentitySection({
                     : "bg-slate-50 border-slate-200 text-slate-600"
             }`}
           />
-
-          {/* 🚀 O AVISO DE CUIDADO AGORA É INTELIGENTE */}
-          {/* Se a pessoa está na loja fantasma, nós QUEREMOS que ela mude. Então NÃO mostramos o aviso de perigo. */}
           {isChanged && !isGhostBusiness && (
             <div className="mt-2 text-[10px] font-black uppercase text-amber-600 flex items-center justify-center gap-1 animate-pulse">
               <AlertTriangle size={12} /> Cuidado: Links antigos vão parar de
@@ -243,16 +236,15 @@ export function IdentitySection({
             </div>
           )}
         </div>
+
         {/* LAYOUTS */}
         <div className="w-full mt-10 pt-8 border-t border-slate-100">
           <h2 className="text-xs md:text-sm font-black uppercase text-slate-800 tracking-widest text-left mb-6 flex items-center gap-2">
             🎨 Escolha o Design da sua Vitrine
           </h2>
-
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
             {Object.keys(layoutInfo).map((key) => {
               const isSelected = selectedLayout === key;
-
               return (
                 <button
                   key={key}
@@ -276,23 +268,11 @@ export function IdentitySection({
             })}
           </div>
         </div>
-
-        {/* TEXTO ESPECIAL */}
-        <div className="bg-slate-50 p-4 rounded-[1.5rem] border border-dashed border-slate-200 w-full mt-6 text-left">
-          <label className="text-[9px] font-black uppercase text-indigo-500 block mb-2">
-            {currentLayoutData.label} - Texto Especial
-          </label>
-          <input
-            value={layoutText}
-            maxLength={40} // 🚀 TRAVA NATIVA HTML
-            onChange={(e) => setLayoutText(e.target.value.slice(0, 40))}
-            className="w-full h-12 px-5 rounded-xl bg-white border font-bold text-xs shadow-sm outline-none"
-            placeholder={currentLayoutData.placeholder}
-          />
-        </div>
       </div>
 
-      {/* TEMAS */}
+      {/* ==============================================
+          CAIXA 2: CORES E TEMAS
+          ============================================== */}
       <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
         <h3 className="text-[10px] font-black uppercase text-slate-400 mb-6 flex items-center gap-2">
           <Palette size={16} /> Cores e Temas

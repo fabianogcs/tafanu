@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, ShieldCheck } from "lucide-react";
 import {
   createSubscription,
   getAuthSession,
@@ -12,39 +12,14 @@ import {
   checkTrialStatus,
 } from "@/app/actions";
 
-// 🚀 AJUSTES NOS TEXTOS PARA CLAREZA DO TRIAL
 const PLANS = {
   monthly: {
     id: "monthly",
     name: "Mensal",
     price: "39,90",
-    initialPrice: "0,00", // Continua zero por causa do Trial de 7 dias
     description: "Equivale a R$ 1,33 por dia",
-    footer: "R$ 39,90 / mês após o teste",
-    badge: "1ª Assinatura: 7 Dias Grátis",
+    footer: "R$ 39,90 / mês",
   },
-
-  // 🔒 PLANOS MAIORES COMENTADOS PARA VALIDAÇÃO DE MVP (DESCOMENTE QUANDO QUISER ESCALAR)
-  /*
-  quarterly: {
-    id: "quarterly",
-    name: "Trimestral",
-    price: "104,70",
-    initialPrice: "104,70", // Cobrado na hora, sem trial
-    description: "Equivale a R$ 34,90/mês",
-    footer: "Cobrado a cada 3 meses",
-    badge: "Plano Seguro - 7 Dias de Garantia",
-  },
-  yearly: {
-    id: "yearly",
-    name: "Anual",
-    price: "358,80",
-    initialPrice: "358,80", // Cobrado na hora, sem trial
-    description: "Equivale a R$ 29,90/mês",
-    footer: "Cobrado anualmente",
-    badge: "SUPER OFERTA - 7 Dias de Garantia",
-  },
-  */
 } as const;
 
 type PlanType = keyof typeof PLANS;
@@ -57,7 +32,7 @@ export default function CheckoutPage() {
 
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isTrialEligible, setIsTrialEligible] = useState(true); // 🚀 NOVO: Sabe se o cliente é virgem de teste grátis
+  const [isTrialEligible, setIsTrialEligible] = useState(true); // 🚀 Confere se o cliente é elegível ao trial
 
   const hasFetched = useRef(false);
 
@@ -79,7 +54,6 @@ export default function CheckoutPage() {
       let expirationDate = null;
 
       try {
-        // 🚀 BUSCA DUPLA: Pega a expiração E confere no banco se ele ainda tem direito ao grátis!
         const [expiration, trialCheck] = await Promise.all([
           getBusinessExpiration(),
           checkTrialStatus(),
@@ -99,8 +73,6 @@ export default function CheckoutPage() {
       }
 
       const role = session?.user?.role;
-
-      // 🚀 CIRURGIA 1: Avalia o tempo em milissegundos para evitar falhas de Fuso Horário
       const isPlanoAtivo = expirationDate
         ? expirationDate.getTime() > Date.now()
         : false;
@@ -147,7 +119,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // 🚀 CIRURGIA 2: Mesma proteção em milissegundos para a barreira visual
   const isPlanoAtivoRender = expiresAt
     ? expiresAt.getTime() > Date.now()
     : false;
@@ -166,108 +137,130 @@ export default function CheckoutPage() {
     );
   }
 
+  const plan = PLANS[selectedPlan];
+
   return (
-    // 🚀 NOVO TEMA DARK PREMIUM COM 3 COLUNAS
     <div className="bg-[#050B14] min-h-screen pb-20 font-sans">
       <div className="max-w-7xl mx-auto pt-10 pb-6 px-6 text-center">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tighter uppercase italic">
-          Escolha seu plano <span className="text-emerald-500">Tafanu PRO</span>
+          Ative seu plano <span className="text-emerald-500">Tafanu PRO</span>
         </h1>
         <p className="text-slate-400 font-medium mt-3">
-          Cancele quando quiser. Sem taxas escondidas.
+          Acesso imediato ao painel. Cancele quando quiser diretamente pela
+          plataforma.
         </p>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mt-6">
-        {/* COLUNA 1: SELEÇÃO DE PLANOS (Ajustado para crescer se tiver mais planos) */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
-          {(Object.keys(PLANS) as PlanType[]).map((key) => {
-            const plan = PLANS[key];
-            return (
-              <button
-                key={key}
-                onClick={handlePayment} // 🚀 AQUI: O clique no card aciona o pagamento!
-                disabled={isProcessing}
-                className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-500 bg-[#0D172A] shadow-2xl shadow-emerald-900/20 hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group"
-              >
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-[#050B14] text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-lg">
-                  {plan.badge}
-                </div>
+        {/* COLUNA 1: CARD DINÂMICO DE SELEÇÃO */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          <button
+            onClick={handlePayment}
+            disabled={isProcessing}
+            className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-500 bg-[#0D172A] shadow-2xl shadow-emerald-900/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
+          >
+            {/* TAG DINÂMICA BASEADA NO HISTÓRICO DO CLIENTE */}
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-[#050B14] text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-lg">
+              {isTrialEligible
+                ? "🎁 7 Dias Grátis Inclusos"
+                : "⚡ Ativação Imediata"}
+            </div>
 
-                <h3 className="font-black uppercase italic text-xl text-emerald-500">
-                  {plan.name}
-                </h3>
+            <h3 className="font-black uppercase italic text-xl text-emerald-500">
+              {plan.name}
+            </h3>
 
-                <div className="flex items-baseline gap-1 mt-4">
+            {/* PREÇO COMPORTAMENTAL */}
+            <div className="flex flex-col items-center mt-4">
+              {isTrialEligible ? (
+                <>
+                  <p className="text-sm font-bold text-slate-400 line-through">
+                    R$ 39,90
+                  </p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-5xl font-black text-white">
+                      R$ 0,00
+                    </span>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider ml-1">
+                      hoje
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-baseline gap-1">
                   <span className="text-sm font-bold text-slate-500">R$</span>
                   <span className="text-5xl font-black text-white">
                     {plan.price}
                   </span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
+                    /mês
+                  </span>
                 </div>
+              )}
+            </div>
 
-                <p className="text-xs font-bold text-slate-400 mt-3 uppercase tracking-wider">
-                  {plan.description}
-                </p>
+            <p className="text-xs font-bold text-slate-400 mt-4 uppercase tracking-wider bg-white/5 px-4 py-1.5 rounded-full">
+              {plan.description}
+            </p>
 
-                {/* 🚀 O BOTÃO VERDE INJETADO DENTRO DO CARD */}
-                <div className="mt-8 w-full py-4 rounded-xl bg-emerald-500 text-[#050B14] font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg group-hover:bg-emerald-400 transition-colors">
-                  {isProcessing ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <>
-                      Ativar Plano <CheckCircle2 size={18} strokeWidth={3} />
-                    </>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+            {/* CTA INTERESSANTE E TRANSPARENTE */}
+            <div className="mt-8 w-full py-4 rounded-xl bg-emerald-500 text-[#050B14] font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg group-hover:bg-emerald-400 transition-colors">
+              {isProcessing ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  {isTrialEligible
+                    ? "Iniciar Teste Gratuito"
+                    : "Ativar Minha Vitrine"}{" "}
+                  <CheckCircle2 size={18} strokeWidth={3} />
+                </>
+              )}
+            </div>
+          </button>
         </div>
 
-        {/* COLUNA 2: VANTAGENS PRO INCLUSAS (Foco em Vitrine e Portal de Buscas) */}
-        <div className="lg:col-span-5 bg-[#0A1220] rounded-[2rem] p-8 border border-white/5 shadow-xl h-full flex flex-col justify-center">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500 mb-8 flex items-center gap-3">
-            <Sparkles className="text-emerald-500 w-5 h-5 shrink-0" />O Sistema
-            Completo para o Seu Negócio:
+        {/* COLUNA 2: RECURSOS INCLUSOS */}
+        <div className="lg:col-span-4 bg-[#0A1220] rounded-[2rem] p-6 border border-white/5 shadow-xl flex flex-col justify-center">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500 mb-6 flex items-center gap-3 px-2">
+            <Sparkles className="text-emerald-500 w-4 h-4 shrink-0" />O que você
+            recebe:
           </h2>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {[
               {
-                title: "Vitrine Premium e Portal de Buscas",
-                desc: "Seu negócio em destaque no nosso sistema de buscas. Tenha uma vitrine de luxo e monitore em tempo real as visitas e cliques recebidos.",
+                title: "Vitrine Premium e Buscas",
+                desc: "Destaque total no nosso sistema de busca local e indexação automática.",
               },
               {
-                title: "Pedidos e Orçamentos (Zero Taxas)",
-                desc: "Receba solicitações direto no WhatsApp ou no seu Painel, sem pagar porcentagem ou comissões por venda.",
+                title: "Pedidos e Orçamentos Livres",
+                desc: "Receba contatos diretos no WhatsApp sem pagar comissão por venda.",
               },
               {
-                title: "Gestão Kanban em Tempo Real",
-                desc: "Organize tudo. Mova seus clientes de 'Novo Contato' para 'Em Andamento' e 'Finalizado' sem se perder.",
+                title: "Gestão Kanban Integrada",
+                desc: "Organize seus leads de prospecção e clientes do contato ao fechamento.",
               },
               {
                 title: "O Ímã do Google (SEO Local)",
-                desc: "Nossa tecnologia ajuda o seu negócio a aparecer no Google da sua cidade quando buscarem pelo que você oferece.",
+                desc: "Código otimizado para o robô do Google achar sua loja na sua região.",
               },
               {
-                title: "Integração Térmica Padrão Franquia",
-                desc: "Imprima comprovantes de orçamentos ou pedidos direto em maquininhas térmicas (58mm/80mm) com apenas um clique.",
+                title: "Impressão Térmica Direta",
+                desc: "Imprima orçamentos e comandas em aparelhos de 58mm/80mm num clique.",
               },
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 transition-colors hover:bg-emerald-500/10 hover:border-emerald-500/30 group"
+                className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/5 transition-colors hover:bg-emerald-500/5"
               >
-                <div className="mt-0.5">
-                  <CheckCircle2
-                    className="text-emerald-500 shrink-0 w-5 h-5 group-hover:scale-110 transition-transform"
-                    strokeWidth={2.5}
-                  />
-                </div>
+                <CheckCircle2
+                  className="text-emerald-500 shrink-0 w-4 h-4 mt-0.5"
+                  strokeWidth={2.5}
+                />
                 <div className="flex flex-col text-left">
-                  <span className="text-sm font-black text-white uppercase tracking-wider mb-1 group-hover:text-emerald-400 transition-colors">
+                  <span className="text-xs font-black text-white uppercase tracking-wider mb-0.5">
                     {item.title}
                   </span>
-                  <span className="text-[11px] font-medium text-slate-400 leading-relaxed">
+                  <span className="text-[10px] font-medium text-slate-400 leading-relaxed">
                     {item.desc}
                   </span>
                 </div>
@@ -276,15 +269,17 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* COLUNA 3: RESUMO E PAGAMENTO MERCADO PAGO */}
-        <div className="lg:col-span-4 bg-[#050814] rounded-[2.5rem] shadow-2xl overflow-hidden text-white border border-white/10 sticky top-12">
+        {/* COLUNA 3: CAIXA CENTRAL DO MERCADO PAGO */}
+        <div className="lg:col-span-4 bg-[#050814] rounded-[2.5rem] shadow-2xl overflow-hidden text-white border border-white/10">
           <div className="bg-gradient-to-r from-blue-600 to-sky-500 py-3 px-6 flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/90">
-              Resumo
+              Resumo do Pedido
             </span>
-            <span className="font-bold text-xs">mercado pago</span>
+            <span className="font-mono text-[10px] font-bold tracking-widest text-white/80">
+              MERCADO PAGO
+            </span>
           </div>
-          <div className="p-8 md:p-10 text-center">
+          <div className="p-8 text-center">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
               Total a pagar hoje
             </p>
@@ -292,29 +287,32 @@ export default function CheckoutPage() {
               <span className="text-xl font-black mt-2 text-emerald-500">
                 R$
               </span>
-              <span className="text-7xl font-black italic leading-none drop-shadow-md">
-                {selectedPlan === "monthly" && isTrialEligible
-                  ? "0,00"
-                  : PLANS[selectedPlan].price}
+              <span className="text-6xl font-black italic leading-none drop-shadow-md">
+                {isTrialEligible ? "0,00" : plan.price}
               </span>
             </div>
 
             <button
               onClick={handlePayment}
               disabled={isProcessing}
-              className="mt-10 group w-full h-16 bg-emerald-500 hover:bg-emerald-400 text-[#050814] rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              className="mt-8 group w-full h-16 bg-emerald-500 hover:bg-emerald-400 text-[#050814] rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all transform hover:scale-[1.01] active:scale-95"
             >
               {isProcessing ? (
                 <Loader2 className="animate-spin" size={24} />
               ) : (
-                "Ativar Plano"
+                <span className="flex items-center gap-2">
+                  {isTrialEligible
+                    ? "Garantir Meu Teste"
+                    : "Ir Para o Pagamento"}{" "}
+                  <ShieldCheck size={18} />
+                </span>
               )}
             </button>
 
-            <p className="text-slate-500 text-[10px] uppercase font-bold mt-6 px-2 leading-relaxed">
-              {selectedPlan === "monthly" && isTrialEligible
-                ? "Cobrança única mensal de R$ 39,90 programada para o 8º dia. Não existe cobrança diária."
-                : "Assinatura PRO com renovação automática. Acesso imediato liberado após a confirmação do pagamento."}
+            <p className="text-slate-500 text-[9px] uppercase font-black mt-6 px-1 leading-relaxed tracking-wider">
+              {isTrialEligible
+                ? "Garantia de 7 dias grátis. A primeira cobrança de R$ 39,90 só ocorrerá no 8º dia se você mantiver a vitrine ativa. Cancele quando quiser no painel."
+                : "Renovação mensal de R$ 39,90 recorrente. Liberação imediata dos recursos do portal após a aprovação do gateway."}
             </p>
           </div>
         </div>

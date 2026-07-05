@@ -297,10 +297,20 @@ export async function registerUser(formData: FormData) {
     // 3. VALIDAÇÃO UNIVERSAL DE DOCUMENTO (NOVO CNPJ E CPF)
     let cleanDocument = null;
     if (rawDocument) {
-      // 🚀 Agora preservamos letras maiúsculas e números
       cleanDocument = rawDocument.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
       if (!isCpfOrCnpjValid(cleanDocument))
         return { error: "CPF ou CNPJ inválido." };
+
+      // 🛡️ LISTA NEGRA DEFINITIVA: Confere se esse CPF já pertence a um usuário banido
+      const cpfBanido = await db.user.findFirst({
+        where: { document: cleanDocument, isBanned: true },
+      });
+      if (cpfBanido) {
+        return {
+          error:
+            "Este documento possui restrições administrativas de uso na plataforma.",
+        };
+      }
     }
 
     const hashedPassword = await hash(password, 10);
@@ -505,6 +515,16 @@ export async function updateUserProfile(formData: FormData) {
   const sessionUser = await getSafeUser();
   if (!sessionUser) return { error: "Não autorizado." };
   const userId = sessionUser.id;
+
+  // 🛡️ TRAVA WHITE HAT: Se o usuário estiver banido, ele é bloqueado na raiz e não altera o CPF!
+  const checkBan = await db.user.findUnique({
+    where: { id: userId },
+    select: { isBanned: true },
+  });
+  if (checkBan?.isBanned)
+    return {
+      error: "Sua conta possui restrições e não pode alterar dados cadastrais.",
+    };
 
   // 🚀 ESCUDO ANTI-DDoS: Impede ataques de força bruta no banco de dados via atualização de perfil
   if (storeActionRatelimit) {

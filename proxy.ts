@@ -269,24 +269,20 @@ export default auth(async (req) => {
 
     const isPro = isAssinante || isAfiliado || isAdmin || isDono;
 
+    // 🚀 BLINDAGEM ANTI-LOOP FANTASMA:
+    // Adicionamos as rotas "/editar" e "/novo" na lista de liberação da borda (Edge).
+    // A segurança e a checagem de pagamento/recorrência serão feitas em tempo real no servidor (Node.js)
+    // pelas Server Actions e pelas páginas, eliminando o atraso de sincronização de cookies do navegador!
     if (
       pathname === "/dashboard" ||
       pathname.startsWith("/dashboard/favoritos") ||
       pathname.startsWith("/dashboard/parceiro") ||
       pathname.startsWith("/dashboard/perfil") ||
       pathname.startsWith("/dashboard/funil") ||
-      pathname.startsWith("/dashboard/pedidos") // 🚀 CIRURGIA: Libera a catraca do middleware! O Banco fará a escolta.
-    ) {
-      return NextResponse.next();
-    }
-
-    if (
+      pathname.startsWith("/dashboard/pedidos") ||
       pathname.startsWith("/dashboard/editar") ||
       pathname.startsWith("/dashboard/novo")
     ) {
-      if (!isPro) {
-        return NextResponse.redirect(new URL("/checkout", nextUrl));
-      }
       return NextResponse.next();
     }
 

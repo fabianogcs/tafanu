@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Layout,
   Trash2,
   AlignLeft,
   ListChecks,
@@ -13,11 +12,11 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { uploadFiles } from "@/lib/uploadthing"; // 🚀 Importação da função pura
+import { uploadFiles } from "@/lib/uploadthing";
 import { compressImage } from "@/lib/compressImage";
 import { toast } from "sonner";
-import { useState, useRef } from "react"; // 🚀 Adicionado useRef
-import { MenuSection } from "./MenuSection"; // 🚀 Importado para embutir a loja aqui
+import { useState, useRef } from "react";
+import { layoutInfo } from "./constants";
 
 interface ContentSectionProps {
   mediaFeed: { type: "image" | "video"; url: string }[];
@@ -28,14 +27,12 @@ interface ContentSectionProps {
   setFeatures: (val: string[]) => void;
   faqs: { q: string; a: string }[];
   setFaqs: (val: { q: string; a: string }[]) => void;
-  catalogPdf: string | null;
-  setCatalogPdf: (val: string | null) => void;
   isUploadingGallery: boolean;
   setIsUploadingGallery: (val: boolean) => void;
-  menuMode: "PDF" | "DIGITAL";
-  setMenuMode: (val: "PDF" | "DIGITAL") => void;
-  products: any[];
-  setProducts: (val: any[] | ((prev: any[]) => any[])) => void;
+  // 🚀 AS TIPAGENS VOLTARAM PRA CÁ PARA SUMIR COM A LINHA VERMELHA:
+  layoutText: string;
+  setLayoutText: (val: string) => void;
+  selectedLayout: string;
 }
 
 export function ContentSection({
@@ -47,23 +44,17 @@ export function ContentSection({
   setFeatures,
   faqs,
   setFaqs,
-  catalogPdf,
-  setCatalogPdf,
   isUploadingGallery,
   setIsUploadingGallery,
-  menuMode,
-  setMenuMode,
-  products,
-  setProducts,
+  layoutText,
+  setLayoutText,
+  selectedLayout,
 }: ContentSectionProps) {
   const imageCount = mediaFeed.filter((m) => m.type === "image").length;
-
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-
-  // 🚀 O estado da Galeria agora vem do pai (BusinessEditor)!
-  // A linha "useState(false)" foi removida daqui.
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pdfInputRef = useRef<HTMLInputElement>(null); // 🚀 NOVO REF PARA O PDF
+
+  const currentLayoutData = layoutInfo[selectedLayout] || layoutInfo["urban"];
 
   const handleGalleryUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -71,9 +62,6 @@ export function ContentSection({
     let files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // ========================================================
-    // 🛡️ GRADE DE SEGURANÇA 1: Custo (Limite de Vagas)
-    // ========================================================
     const currentImagesCount = mediaFeed.filter(
       (m) => m.type === "image",
     ).length;
@@ -83,7 +71,6 @@ export function ContentSection({
       toast.warning(
         `Sua vitrine só tem mais ${allowedCount} vaga(s). Selecionamos apenas as primeiras.`,
       );
-      // 🚀 CORTA NA RAIZ! Remove o excesso antes de tentar comprimir ou enviar pra nuvem.
       files = files.slice(0, allowedCount);
     }
 
@@ -92,57 +79,41 @@ export function ContentSection({
       return;
     }
 
-    // ========================================================
-    // 🛡️ GRADE DE SEGURANÇA 2: RAM do Celular (Tamanho Máximo)
-    // ========================================================
-    const MAX_MB_PER_FILE = 15; // 15MB é muito seguro. Bloqueia RAWs gigantes, mas passa iPhones novos.
+    const MAX_MB_PER_FILE = 15;
     const MAX_BYTES = MAX_MB_PER_FILE * 1024 * 1024;
-
     const hasGiantFile = files.some((f) => f.size > MAX_BYTES);
+
     if (hasGiantFile) {
       toast.error(
         `Uma das fotos passa de ${MAX_MB_PER_FILE}MB e pode travar seu celular. Escolha fotos mais leves.`,
       );
-      e.target.value = ""; // Limpa a memória
-      return; // 🚀 BLOQUEIA TUDO ANTES DE COMEÇAR
+      e.target.value = "";
+      return;
     }
 
-    // Limpa o input para permitir subir a mesma foto em sequência se necessário
     e.target.value = "";
-
     setIsUploadingGallery(true);
     toast.loading("Preparando imagens...", { id: "upload-gallery" });
 
     try {
       const compressedFiles = [];
-
       for (const file of files) {
         try {
           const compressed = await compressImage(file);
           compressedFiles.push(compressed);
         } catch (error) {
-          console.error("Falha ao comprimir imagem, enviando original", error);
-          compressedFiles.push(file); // Fallback de segurança
+          compressedFiles.push(file);
         }
       }
 
       toast.loading("Enviando para a nuvem...", { id: "upload-gallery" });
-
       const res = await uploadFiles("imageUploader", {
         files: compressedFiles,
       });
 
       if (res && res.length > 0) {
-        const newImages = res.map((r) => ({
-          type: "image",
-          url: r.ufsUrl,
-        }));
-
-        setMediaFeed((prev: any) => {
-          // Agora não precisa mais do "slice" aqui, porque já garantimos o limite lá em cima!
-          return [...prev, ...newImages];
-        });
-
+        const newImages = res.map((r) => ({ type: "image", url: r.ufsUrl }));
+        setMediaFeed((prev: any) => [...prev, ...newImages]);
         toast.success("Fotos adicionadas com sucesso!", {
           id: "upload-gallery",
         });
@@ -164,43 +135,31 @@ export function ContentSection({
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", index.toString());
   };
-
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
-
   const handleDrop = (
     e: React.DragEvent<HTMLDivElement>,
     targetIndex: number,
   ) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === targetIndex) return;
-
     const newFeed = [...mediaFeed];
     const draggedItem = newFeed[draggedIndex];
-
     newFeed.splice(draggedIndex, 1);
     newFeed.splice(targetIndex, 0, draggedItem);
-
     setMediaFeed(newFeed);
     setDraggedIndex(null);
   };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-  };
-
-  const removeItem = (index: number) => {
+  const handleDragEnd = () => setDraggedIndex(null);
+  const removeItem = (index: number) =>
     setMediaFeed((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
   const updateVideoUrl = (index: number, newUrl: string) => {
     const newFeed = [...mediaFeed];
     newFeed[index].url = newUrl;
     setMediaFeed(newFeed);
   };
-
   const moveItemUp = (index: number) => {
     if (index === 0) return;
     const newFeed = [...mediaFeed];
@@ -209,7 +168,6 @@ export function ContentSection({
     newFeed[index - 1] = temp;
     setMediaFeed(newFeed);
   };
-
   const moveItemDown = (index: number) => {
     if (index === mediaFeed.length - 1) return;
     const newFeed = [...mediaFeed];
@@ -221,135 +179,42 @@ export function ContentSection({
 
   return (
     <div className="space-y-8">
-      {/* =========================================================
-          🚀 CARD 1: SELETOR DE LOJA / CARDÁPIO (PRIORIDADE)
-          ========================================================= */}
+      {/* 🚀 1. SOBRE O NEGÓCIO E FRASE DE IMPACTO */}
       <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[10px] font-black uppercase flex items-center gap-2 text-slate-800">
-            <ListChecks size={18} className="text-orange-500" /> Formato da
-            Vitrine
-          </h2>
+        <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 mb-6">
+          <AlignLeft size={16} /> Sobre o Negócio
+        </label>
+        <div className="relative">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={600}
+            rows={6}
+            className="w-full bg-slate-50 p-6 rounded-[1.5rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 transition-all pb-8"
+            placeholder="Conte sua história e a essência da sua marca..."
+          />
+          <span
+            className={`absolute bottom-4 right-6 text-[10px] font-black ${description.length >= 600 ? "text-rose-500" : "text-slate-400"}`}
+          >
+            {description.length} / 600
+          </span>
         </div>
 
-        <p className="text-[10px] text-slate-400 font-bold mb-6">
-          Escolha o formato da sua vitrine. Você pode criar um{" "}
-          <span className="text-orange-500 font-black">
-            Cardápio Digital interativo
-          </span>{" "}
-          ou anexar o seu{" "}
-          <span className="text-emerald-500 font-black">PDF</span>.
-        </p>
-
-        <div className="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-xl">
-          <button
-            onClick={() => setMenuMode("DIGITAL")}
-            type="button"
-            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${menuMode === "DIGITAL" ? "bg-white shadow-sm text-orange-600 ring-1 ring-black/5" : "text-slate-400 hover:text-slate-600"}`}
-          >
-            Loja Digital
-          </button>
-          <button
-            onClick={() => setMenuMode("PDF")}
-            type="button"
-            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${menuMode === "PDF" ? "bg-white shadow-sm text-emerald-600 ring-1 ring-black/5" : "text-slate-400 hover:text-slate-600"}`}
-          >
-            Anexar PDF
-          </button>
+        <div className="mt-6 bg-slate-50 p-6 rounded-[1.5rem] border border-dashed border-slate-200 w-full text-left">
+          <label className="text-[9px] font-black uppercase text-indigo-500 block mb-2">
+            {currentLayoutData.label} - Frase de Impacto
+          </label>
+          <input
+            value={layoutText}
+            maxLength={40}
+            onChange={(e) => setLayoutText(e.target.value.slice(0, 40))}
+            className="w-full h-12 px-5 rounded-xl bg-white border font-bold text-xs shadow-sm outline-none"
+            placeholder={currentLayoutData.placeholder}
+          />
         </div>
-
-        {menuMode === "PDF" ? (
-          <div className="space-y-4 animate-in fade-in duration-500">
-            {catalogPdf ? (
-              <div className="w-full h-14 border border-emerald-200 bg-emerald-50 rounded-xl flex items-center justify-between px-6">
-                <span className="text-xs font-bold text-emerald-700 truncate mr-4">
-                  Catálogo Anexado ✅
-                </span>
-                <div className="flex items-center gap-4 shrink-0">
-                  <button
-                    onClick={() => setCatalogPdf(null)}
-                    className="text-[9px] font-bold text-rose-500 uppercase tracking-widest hover:text-rose-600"
-                  >
-                    Remover
-                  </button>
-                  <a
-                    href={catalogPdf}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 underline"
-                  >
-                    Visualizar
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  onClick={() => pdfInputRef.current?.click()}
-                  className="w-full h-14 border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50 transition-colors group"
-                >
-                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest group-hover:text-emerald-700">
-                    Anexar Arquivo PDF (Max 8MB)
-                  </span>
-                </div>
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    // 🛡️ WHITE HAT FIX: Impede que hackers enviem .exe ou .php disfarçados
-                    if (file.type !== "application/pdf") {
-                      toast.error(
-                        "Formato inválido. Apenas arquivos PDF originais são permitidos.",
-                      );
-                      e.target.value = "";
-                      return;
-                    }
-
-                    // 🛡️ LIMITADOR DE MEMÓRIA DO NAVEGADOR
-                    if (file.size > 8 * 1024 * 1024) {
-                      toast.error(
-                        "O catálogo é muito pesado. Por favor, comprima seu PDF para no máximo 8MB.",
-                      );
-                      e.target.value = "";
-                      return;
-                    }
-                    e.target.value = "";
-                    toast.loading("Enviando PDF...", { id: "upload-pdf" });
-                    try {
-                      const res = await uploadFiles("pdfUploader", {
-                        files: [file],
-                      });
-                      if (res && res[0]) {
-                        setCatalogPdf(res[0].ufsUrl);
-                        toast.success("Catálogo enviado com sucesso!", {
-                          id: "upload-pdf",
-                        });
-                      }
-                    } catch (err: any) {
-                      toast.error(err.message || "Erro ao enviar arquivo.", {
-                        id: "upload-pdf",
-                      });
-                    }
-                  }}
-                />
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="w-full pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <MenuSection products={products} setProducts={setProducts} />
-          </div>
-        )}
       </div>
 
-      {/* =========================================================
-          🚀 CARD 2: THE MASTER MEDIA MANAGER (Mídia e Galeria)
-          ========================================================= */}
+      {/* 🚀 2. MEDIA MANAGER (Galeria de Fotos) */}
       <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-[10px] font-black uppercase flex items-center gap-2 text-slate-800">
@@ -361,12 +226,10 @@ export function ContentSection({
           </span>
         </div>
         <p className="text-[10px] text-slate-400 font-bold mb-6 leading-tight">
-          Faça upload de fotos e cole links do YouTube ou TikTok.{" "}
-          <span className="text-indigo-500">Clique e arraste</span> para
-          organizar.
+          Faça upload de fotos e cole links do YouTube ou TikTok. Clique e
+          arraste para organizar.
         </p>
 
-        {/* 🚀 LISTAGEM DRAG & DROP FÍSICA */}
         <div className="space-y-3">
           {mediaFeed.map((item, i) => (
             <div
@@ -378,11 +241,10 @@ export function ContentSection({
               onDragEnd={handleDragEnd}
               className={`flex gap-3 p-3 rounded-2xl border items-center transition-all ${
                 draggedIndex === i
-                  ? "opacity-50 border-indigo-400 bg-indigo-50 shadow-inner scale-[0.98]"
-                  : "bg-slate-50 border-slate-100 hover:border-slate-200 hover:shadow-sm"
+                  ? "opacity-50 border-indigo-400 bg-indigo-50 scale-[0.98]"
+                  : "bg-slate-50 border-slate-100 hover:border-slate-200"
               }`}
             >
-              {/* O Ícone de Arrastar e Controles Mobile */}
               <div className="flex flex-col items-center justify-center shrink-0 gap-1 bg-white rounded-lg border shadow-sm p-1">
                 <button
                   type="button"
@@ -392,11 +254,9 @@ export function ContentSection({
                 >
                   <ChevronUp size={18} strokeWidth={3} />
                 </button>
-
                 <div className="hidden md:block cursor-grab active:cursor-grabbing text-slate-300 py-1">
                   <GripVertical size={16} strokeWidth={2.5} />
                 </div>
-
                 <button
                   type="button"
                   onClick={() => moveItemDown(i)}
@@ -407,7 +267,6 @@ export function ContentSection({
                 </button>
               </div>
 
-              {/* Preview e Input */}
               <div className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-4">
                 {item.type === "image" ? (
                   <>
@@ -429,7 +288,7 @@ export function ContentSection({
                     </div>
                     <input
                       value={item.url}
-                      maxLength={1000} // 🚀 TRAVA UX (Limite generoso para URLs longas, mas que bloqueia payloads e base64)
+                      maxLength={1000}
                       onChange={(e) => updateVideoUrl(i, e.target.value)}
                       className="w-full md:flex-1 bg-white p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-rose-500/20"
                       placeholder="Cole o link do YouTube, Instagram ou TikTok aqui..."
@@ -437,8 +296,6 @@ export function ContentSection({
                   </>
                 )}
               </div>
-
-              {/* Botão de Excluir */}
               <button
                 onClick={() => removeItem(i)}
                 className="p-4 bg-white text-rose-300 rounded-xl hover:bg-rose-500 hover:text-white transition-all border shadow-sm shrink-0"
@@ -449,7 +306,6 @@ export function ContentSection({
           ))}
         </div>
 
-        {/* 🚀 BOTÕES DE AÇÃO COM NOVO UX RESPONSIVO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
           {imageCount < 12 ? (
             <div
@@ -487,8 +343,6 @@ export function ContentSection({
                   </>
                 )}
               </div>
-
-              {/* O INPUT NATIVO INVISÍVEL */}
               <input
                 type="file"
                 multiple
@@ -515,72 +369,43 @@ export function ContentSection({
         </div>
       </div>
 
-      {/* =========================================================
-          SOBRE O NEGÓCIO
-          ========================================================= */}
+      {/* 🚀 3. DIFERENCIAIS E FAQ */}
       <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
         <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 mb-6">
-          <AlignLeft size={16} /> Sobre o Negócio
+          <ListChecks size={18} /> Diferenciais da Marca
         </label>
-        <div className="relative">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={600} // 🚀 TRAVA NATIVA DO HTML
-            rows={6}
-            className="w-full bg-slate-50 p-6 rounded-[1.5rem] border text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 transition-all pb-8"
-            placeholder="Conte sua história e a essência da sua marca..."
-          />
-          <span
-            className={`absolute bottom-4 right-6 text-[10px] font-black ${description.length >= 600 ? "text-rose-500" : "text-slate-400"}`}
-          >
-            {description.length} / 600
-          </span>
-        </div>
-
-        {/* DIFERENCIAIS */}
-        <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
-          <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-            <ListChecks size={18} /> Diferenciais
-          </label>
-          {features.map((f, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                value={f}
-                onChange={(e) => {
-                  const n = [...features];
-                  n[i] = e.target.value;
-                  setFeatures(n);
-                }}
-                maxLength={60} // 🚀 TRAVA UX AQUI
-                className="flex-1 bg-slate-50 p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-indigo-500/20"
-                placeholder="Ex: Wi-fi Grátis, Pet Friendly, Atendimento Exclusivo..."
-              />
-              <button
-                onClick={() =>
-                  setFeatures(features.filter((_, idx) => idx !== i))
-                }
-                className="p-4 bg-rose-50 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-colors border border-rose-100"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
-          {features.length < 20 ? (
+        {features.map((f, i) => (
+          <div key={i} className="flex items-center gap-2 mb-4">
+            <input
+              value={f}
+              onChange={(e) => {
+                const n = [...features];
+                n[i] = e.target.value;
+                setFeatures(n);
+              }}
+              maxLength={60}
+              className="flex-1 bg-slate-50 p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-indigo-500/20"
+              placeholder="Ex: Wi-fi Grátis, Pet Friendly, Atendimento Exclusivo..."
+            />
             <button
-              onClick={() => setFeatures([...features, ""])}
-              className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+              onClick={() =>
+                setFeatures(features.filter((_, idx) => idx !== i))
+              }
+              className="p-4 bg-rose-50 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-colors border border-rose-100"
             >
-              + Adicionar Diferencial
+              <Trash2 size={18} />
             </button>
-          ) : (
-            <div className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Limite de 20 diferenciais atingido
-            </div>
-          )}
-        </div>
+          </div>
+        ))}
+        {features.length < 20 && (
+          <button
+            onClick={() => setFeatures([...features, ""])}
+            className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+          >
+            + Adicionar Diferencial
+          </button>
+        )}
 
-        {/* FAQ */}
         <div className="mt-10 pt-10 border-t border-slate-50 space-y-4">
           <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
             <HelpCircle size={18} /> FAQ (Perguntas Frequentes)
@@ -597,7 +422,7 @@ export function ContentSection({
                   n[i].q = e.target.value;
                   setFaqs(n);
                 }}
-                maxLength={100} // 🚀 TRAVA UX AQUI
+                maxLength={100}
                 placeholder="Pergunta"
                 className="w-full h-10 px-4 bg-white rounded-lg text-xs font-black border mb-2 outline-none"
               />
@@ -608,7 +433,7 @@ export function ContentSection({
                   n[i].a = e.target.value;
                   setFaqs(n);
                 }}
-                maxLength={500} // 🚀 TRAVA UX AQUI
+                maxLength={500}
                 placeholder="Resposta"
                 rows={3}
                 className="w-full p-3 bg-white rounded-lg text-xs border outline-none resize-none"
@@ -621,17 +446,13 @@ export function ContentSection({
               </button>
             </div>
           ))}
-          {faqs.length < 15 ? (
+          {faqs.length < 15 && (
             <button
               onClick={() => setFaqs([...faqs, { q: "", a: "" }])}
               className="w-full h-14 border-2 border-dashed border-slate-200 rounded-xl text-[9px] font-black text-indigo-400 uppercase hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
             >
               + Nova Pergunta
             </button>
-          ) : (
-            <div className="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Limite de 15 perguntas atingido
-            </div>
           )}
         </div>
       </div>

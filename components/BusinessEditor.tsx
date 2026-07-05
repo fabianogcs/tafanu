@@ -91,7 +91,6 @@ export default function BusinessEditor({
   const [showOfflineWarning, setShowOfflineWarning] = useState(false);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
-  // 🚀 TRAVA DO FUNDO: Impede o scroll da página de trás no mobile
   useEffect(() => {
     if (showMobilePreview) {
       document.body.style.overflow = "hidden";
@@ -152,8 +151,8 @@ export default function BusinessEditor({
     }
   };
 
-  const [name, setName] = useState(safeBusiness.name);
-  const [slug, setSlug] = useState(safeBusiness.slug);
+  const [name, setName] = useState(safeBusiness.name || "");
+  const [slug, setSlug] = useState(safeBusiness.slug || "");
   const [isPublished, setIsPublished] = useState(
     isNew ? false : safeBusiness.published,
   );
@@ -174,26 +173,25 @@ export default function BusinessEditor({
   });
 
   const [profileImage, setProfileImage] = useState<string>(
-    safeBusiness.imageUrl,
+    safeBusiness.imageUrl || "",
   );
   const [coverImage, setCoverImage] = useState<string>(
     safeBusiness.coverImage || "",
   );
 
-  // 🚀 ADICIONADO: ESTADO DO PDF AQUI
   const [catalogPdf, setCatalogPdf] = useState<string | null>(
     safeBusiness.catalogPdf || null,
   );
 
-  // 🚀 ADICIONADO: ESTADO DO CARDÁPIO
   const [products, setProducts] = useState<any[]>(() => {
     return safeBusiness.products
       ? JSON.parse(JSON.stringify(safeBusiness.products))
       : [];
   });
 
+  // 🚀 O PADRÃO AGORA É A LOJA DIGITAL!
   const [menuMode, setMenuMode] = useState<"PDF" | "DIGITAL">(
-    safeBusiness.menuMode || "PDF",
+    safeBusiness.menuMode || "DIGITAL",
   );
 
   const [categoria, setCategoria] = useState(() => {
@@ -208,9 +206,11 @@ export default function BusinessEditor({
   });
 
   const [selectedSubs, setSelectedSubs] = useState<string[]>(
-    safeBusiness.subcategory,
+    safeBusiness.subcategory || [],
   );
-  const [keywords, setKeywords] = useState<string[]>(safeBusiness.keywords);
+  const [keywords, setKeywords] = useState<string[]>(
+    safeBusiness.keywords || [],
+  );
   const [tagInput, setTagInput] = useState("");
 
   const [selectedLayout, setSelectedLayout] = useState(() => {
@@ -228,7 +228,9 @@ export default function BusinessEditor({
     formatPhoneNumber(safeBusiness.phone || ""),
   );
 
-  const [description, setDescription] = useState(safeBusiness.description);
+  const [description, setDescription] = useState(
+    safeBusiness.description || "",
+  );
 
   const [layoutText, setLayoutText] = useState(
     safeBusiness.urban_tag ||
@@ -245,6 +247,7 @@ export default function BusinessEditor({
   const [faqs, setFaqs] = useState<{ q: string; a: string }[]>(
     safeBusiness.faqs ? JSON.parse(JSON.stringify(safeBusiness.faqs)) : [],
   );
+
   const [businessHours, setBusinessHours] = useState<BusinessHour[]>(
     safeBusiness.hours ? JSON.parse(JSON.stringify(safeBusiness.hours)) : [],
   );
@@ -273,14 +276,16 @@ export default function BusinessEditor({
   const [hasDelivery, setHasDelivery] = useState(
     safeBusiness.hasDelivery || false,
   );
-  // 🚀 ESTADO DA TAXA DE ENTREGA
   const [deliveryFee, setDeliveryFee] = useState<number>(
     safeBusiness.deliveryFee || 0,
   );
-  // 🚀 ESTADO DO RAIO DE ENTREGA
   const [deliveryRadius, setDeliveryRadius] = useState<number>(
     safeBusiness.deliveryRadius || 0,
   );
+
+  // =========================================================================
+  // 🛡️ O RADAR DE MUDANÇAS (hasChanges) - BLINDADO CONTRA FALSOS POSITIVOS
+  // =========================================================================
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -318,57 +323,60 @@ export default function BusinessEditor({
             })),
           ];
 
+    // 🚀 A VACINA DOS HORÁRIOS: Mapeamento Seguro
+    const mappedSafeHours = (safeBusiness.hours || []).map((h: any) => ({
+      dayOfWeek: Number(h.dayOfWeek),
+      openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
+      closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
+      isClosed: Boolean(h.isClosed),
+    }));
+
+    const mappedStateHours = businessHours.map((h: any) => ({
+      dayOfWeek: Number(h.dayOfWeek),
+      openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
+      closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
+      isClosed: Boolean(h.isClosed),
+    }));
+
+    const mappedSafeProducts = (safeBusiness.products || []).map((p: any) => ({
+      name: p.name || "",
+      description: p.description || "",
+      price: parseFloat(String(p.price || 0).replace(",", ".")) || 0,
+      oldPrice: parseFloat(String(p.oldPrice || 0).replace(",", ".")) || 0,
+      isActive: p.isActive ?? true,
+      imageUrl: p.imageUrl || "",
+      extras: p.extras || [],
+    }));
+
+    const mappedStateProducts = products.map((p: any) => ({
+      name: p.name || "",
+      description: p.description || "",
+      price: parseFloat(String(p.price || 0).replace(",", ".")) || 0,
+      oldPrice: parseFloat(String(p.oldPrice || 0).replace(",", ".")) || 0,
+      isActive: p.isActive ?? true,
+      imageUrl: p.imageUrl || "",
+      extras: p.extras || [],
+    }));
+
+    // 🚀 COMPARAÇÕES PRIMÁRIAS BLINDADAS COM "" FALLBACKS
     const isBasicDifferent =
-      name !== safeBusiness.name ||
-      slug !== safeBusiness.slug ||
-      isPublished !== safeBusiness.published ||
-      profileImage !== safeBusiness.imageUrl ||
-      coverImage !== (safeBusiness.coverImage || "") ||
-      catalogPdf !== (safeBusiness.catalogPdf || null) || // 🚀 ADICIONADO AQUI
-      menuMode !== (safeBusiness.menuMode || "PDF") ||
+      (name || "") !== (safeBusiness.name || "") ||
+      (slug || "") !== (safeBusiness.slug || "") ||
+      isPublished !== !!safeBusiness.published ||
+      (profileImage || "") !== (safeBusiness.imageUrl || "") ||
+      (coverImage || "") !== (safeBusiness.coverImage || "") ||
+      (catalogPdf || null) !== (safeBusiness.catalogPdf || null) ||
+      menuMode !== (safeBusiness.menuMode || "DIGITAL") ||
       categoria !== initialCategory ||
-      hasDelivery !== (safeBusiness.hasDelivery || false) ||
-      deliveryFee !== (safeBusiness.deliveryFee || 0) || // 🚀 VERIFICA MUDANÇA NA TAXA
+      hasDelivery !== !!safeBusiness.hasDelivery ||
+      deliveryFee !== (safeBusiness.deliveryFee || 0) ||
       deliveryRadius !== (safeBusiness.deliveryRadius || 0) ||
       selectedTheme !== safeBusiness.theme ||
       selectedLayout !== initialLayout ||
-      description !== safeBusiness.description ||
+      (description || "") !== (safeBusiness.description || "") ||
       layoutText !== initialLayoutText ||
       whatsapp !== formatPhoneNumber(safeBusiness.whatsapp || "") ||
       phone !== formatPhoneNumber(safeBusiness.phone || "");
-
-    // 🚀 FILTRO ANTI-FANTASMA: Compara apenas os campos que o lojista edita de forma segura com substituição de vírgula
-    const mappedSafeProducts = (safeBusiness.products || []).map((p: any) => {
-      const parsedPrice = parseFloat(String(p.price || 0).replace(",", "."));
-      const parsedOldPrice = parseFloat(
-        String(p.oldPrice || 0).replace(",", "."),
-      );
-      return {
-        name: p.name,
-        description: p.description || "",
-        price: isNaN(parsedPrice) ? 0 : parsedPrice,
-        oldPrice: isNaN(parsedOldPrice) ? 0 : parsedOldPrice,
-        isActive: p.isActive ?? true,
-        imageUrl: p.imageUrl || "",
-        extras: p.extras || [],
-      };
-    });
-
-    const mappedStateProducts = products.map((p: any) => {
-      const parsedPrice = parseFloat(String(p.price || 0).replace(",", "."));
-      const parsedOldPrice = parseFloat(
-        String(p.oldPrice || 0).replace(",", "."),
-      );
-      return {
-        name: p.name,
-        description: p.description || "",
-        price: isNaN(parsedPrice) ? 0 : parsedPrice,
-        oldPrice: isNaN(parsedOldPrice) ? 0 : parsedOldPrice,
-        isActive: p.isActive ?? true,
-        imageUrl: p.imageUrl || "",
-        extras: p.extras || [],
-      };
-    });
 
     const isArraysDifferent =
       !isDeepEqual(mediaFeed, safeMediaFeed) ||
@@ -376,18 +384,18 @@ export default function BusinessEditor({
       !isDeepEqual(keywords, safeBusiness.keywords || []) ||
       !isDeepEqual(features, safeBusiness.features || []) ||
       !isDeepEqual(faqs, safeBusiness.faqs || []) ||
-      !isDeepEqual(businessHours, safeBusiness.hours || []) ||
-      !isDeepEqual(mappedStateProducts, mappedSafeProducts); // 🚀 USA A LISTA FILTRADA!
+      !isDeepEqual(mappedStateHours, mappedSafeHours) ||
+      !isDeepEqual(mappedStateProducts, mappedSafeProducts);
 
     const isSocialsDifferent =
       socials.instagram !== cleanSocialHandle(safeBusiness.instagram) ||
       socials.tiktok !== cleanSocialHandle(safeBusiness.tiktok) ||
       socials.facebook !== cleanSocialHandle(safeBusiness.facebook) ||
-      socials.shopee !== (safeBusiness.shopee || "") ||
-      socials.ifood !== (safeBusiness.ifood || "") ||
-      socials.mercadoLivre !== (safeBusiness.mercadoLivre || "") ||
-      socials.shein !== (safeBusiness.shein || "") ||
-      socials.website !== (safeBusiness.website || "");
+      (socials.shopee || "") !== (safeBusiness.shopee || "") ||
+      (socials.ifood || "") !== (safeBusiness.ifood || "") ||
+      (socials.mercadoLivre || "") !== (safeBusiness.mercadoLivre || "") ||
+      (socials.shein || "") !== (safeBusiness.shein || "") ||
+      (socials.website || "") !== (safeBusiness.website || "");
 
     const isAddressDifferent =
       (addressData.cep || "") !== (safeBusiness.cep || "") ||
@@ -410,7 +418,7 @@ export default function BusinessEditor({
     isPublished,
     profileImage,
     coverImage,
-    catalogPdf, // 🚀 ADICIONADO AQUI
+    catalogPdf,
     categoria,
     selectedTheme,
     selectedLayout,
@@ -429,26 +437,22 @@ export default function BusinessEditor({
     isNew,
     safeBusiness,
     hasDelivery,
+    deliveryFee,
+    deliveryRadius,
     products,
     menuMode,
   ]);
 
-  // =========================================================================
-  // 🚀 A TRAVA ANTI-F5 (Impede o usuário de perder fotos e dados não salvos)
-  // =========================================================================
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Se houver mudanças (hasChanges) e não for um perfil novo vazio
       if (hasChanges && !isNew) {
         e.preventDefault();
-        e.returnValue = ""; // Faz o navegador exibir o alerta padrão de "Sair do site?"
+        e.returnValue = "";
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasChanges, isNew]);
-  // =========================================================================
 
   const filteredThemeKeys = useMemo(() => {
     return Object.keys(businessThemes).filter(
@@ -487,8 +491,8 @@ export default function BusinessEditor({
 
   useEffect(() => {
     if (!isNew && safeBusiness && !hasInitialized.current) {
-      setName(safeBusiness.name);
-      setSlug(safeBusiness.slug);
+      setName(safeBusiness.name || "");
+      setSlug(safeBusiness.slug || "");
       setMediaFeed(
         safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0
           ? JSON.parse(JSON.stringify(safeBusiness.mediaFeed))
@@ -503,15 +507,17 @@ export default function BusinessEditor({
               })),
             ],
       );
-      setProfileImage(safeBusiness.imageUrl);
+      setProfileImage(safeBusiness.imageUrl || "");
       setCoverImage(safeBusiness.coverImage || "");
-      setCatalogPdf(safeBusiness.catalogPdf || null); // 🚀 ADICIONADO AQUI
-      setMenuMode(safeBusiness.menuMode || "PDF");
+      setCatalogPdf(safeBusiness.catalogPdf || null);
+
+      setMenuMode(safeBusiness.menuMode || "DIGITAL");
+
       setProducts(
         safeBusiness.products
           ? JSON.parse(JSON.stringify(safeBusiness.products))
           : [],
-      ); // 🚀 CARDÁPIO
+      );
       setIsPublished(safeBusiness.published);
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
@@ -537,7 +543,7 @@ export default function BusinessEditor({
         : "urban";
       setSelectedLayout(initialLayout);
       setSelectedTheme(safeBusiness.theme);
-      setDescription(safeBusiness.description);
+      setDescription(safeBusiness.description || "");
       setLayoutText(
         safeBusiness.urban_tag ||
           safeBusiness.luxe_quote ||
@@ -590,7 +596,6 @@ export default function BusinessEditor({
     const confirmDelete = window.confirm(
       "⚠️ ATENÇÃO: Tem certeza que deseja excluir esta vitrine PERMANENTEMENTE?\n\nIsso apagará todos os dados do banco e cancelará assinaturas vinculadas.",
     );
-
     if (!confirmDelete) return;
 
     setIsLoading(true);
@@ -614,7 +619,6 @@ export default function BusinessEditor({
     const confirmReset = window.confirm(
       "⚠️ ATENÇÃO: Isso apagará todas as fotos, vídeos e textos desta vitrine para você recomeçar.\n\nO nome do negócio e o seu link atual serão mantidos. Deseja continuar?",
     );
-
     if (!confirmReset) return;
 
     setIsLoading(true);
@@ -632,6 +636,7 @@ export default function BusinessEditor({
       setIsLoading(false);
     }
   };
+
   const handleSaveClick = () => {
     if (!isPublished) {
       setShowOfflineWarning(true);
@@ -639,6 +644,7 @@ export default function BusinessEditor({
       handleUpdate();
     }
   };
+
   const handleUpdate = async (overridePublished?: boolean) => {
     if (isLoading) return;
     if (!name || name.trim() === "") {
@@ -659,9 +665,7 @@ export default function BusinessEditor({
     ) {
       toast.error(
         "Por favor, escolha uma Segmentação (Ramo Principal) para o seu anúncio.",
-        {
-          id: "erro-categoria-vazia",
-        },
+        { id: "erro-categoria-vazia" },
       );
       document
         .getElementById("segmentation-section")
@@ -672,9 +676,7 @@ export default function BusinessEditor({
     if (!selectedSubs || selectedSubs.length === 0) {
       toast.error(
         "Por favor, escolha pelo menos 1 Nicho dentro da sua segmentação.",
-        {
-          id: "erro-subcategoria-vazia",
-        },
+        { id: "erro-subcategoria-vazia" },
       );
       document
         .getElementById("segmentation-section")
@@ -761,9 +763,9 @@ export default function BusinessEditor({
         ),
         imageUrl: profileImage,
         coverImage: coverImage,
-        catalogPdf: catalogPdf, // 🚀 ADICIONADO AQUI
+        catalogPdf: catalogPdf,
         menuMode: menuMode,
-        products: products.filter((p: any) => p.name.trim() !== ""), // 🚀 CARDÁPIO ENVIADO AO BANCO
+        products: products.filter((p: any) => p.name.trim() !== ""),
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
       };
@@ -987,6 +989,7 @@ export default function BusinessEditor({
 
       <main className="max-w-4xl mx-auto px-4 py-12 space-y-12">
         <div className="space-y-8">
+          {/* 🚀 1. IDENTIDADE VISUAL E CORES */}
           <IdentitySection
             name={name}
             handleNameChange={handleNameChange}
@@ -1007,13 +1010,12 @@ export default function BusinessEditor({
             handleFileChange={handleFileChange}
             selectedLayout={selectedLayout}
             setSelectedLayout={setSelectedLayout}
-            layoutText={layoutText}
-            setLayoutText={setLayoutText}
             selectedTheme={selectedTheme}
             setSelectedTheme={setSelectedTheme}
             filteredThemeKeys={filteredThemeKeys}
           />
 
+          {/* 🚀 2. SEGMENTAÇÃO (Categorias e Palavras-chave) */}
           <div id="segmentation-section">
             <SegmentationSection
               categoria={categoria}
@@ -1028,6 +1030,7 @@ export default function BusinessEditor({
             />
           </div>
 
+          {/* 🚀 3. CONTEÚDO (Sobre o Negócio, Frase de Impacto, Mídia e FAQ) */}
           <ContentSection
             mediaFeed={mediaFeed}
             setMediaFeed={setMediaFeed}
@@ -1037,14 +1040,11 @@ export default function BusinessEditor({
             setFeatures={setFeatures}
             faqs={faqs}
             setFaqs={setFaqs}
-            catalogPdf={catalogPdf}
-            setCatalogPdf={setCatalogPdf}
             isUploadingGallery={isUploadingGallery}
             setIsUploadingGallery={setIsUploadingGallery}
-            menuMode={menuMode}
-            setMenuMode={setMenuMode}
-            products={products}
-            setProducts={setProducts}
+            layoutText={layoutText}
+            setLayoutText={setLayoutText}
+            selectedLayout={selectedLayout}
           />
         </div>
 
@@ -1052,11 +1052,12 @@ export default function BusinessEditor({
           <div className="flex items-center gap-4 py-4">
             <div className="h-px bg-slate-200 flex-1"></div>
             <span className="text-xs font-black text-slate-300 uppercase tracking-widest">
-              Conexões
+              Conexões & Loja
             </span>
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
 
+          {/* 🚀 4. CONEXÕES, FRETE E MARKETPLACES */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 relative overflow-hidden">
             <ConnectionsSection
               socials={socials}
@@ -1067,13 +1068,24 @@ export default function BusinessEditor({
               setPhone={setPhone}
               hasDelivery={hasDelivery}
               setHasDelivery={setHasDelivery}
-              deliveryFee={deliveryFee} // 🚀 PASSA A TAXA
-              setDeliveryFee={setDeliveryFee} // 🚀 PASSA O ATUALIZADOR DA TAXA
-              deliveryRadius={deliveryRadius} // 🚀 MANDA PRA TELA
-              setDeliveryRadius={setDeliveryRadius} // 🚀 MANDA PRA TELA
+              deliveryFee={deliveryFee}
+              setDeliveryFee={setDeliveryFee}
+              deliveryRadius={deliveryRadius}
+              setDeliveryRadius={setDeliveryRadius}
             />
           </div>
 
+          {/* 🚀 5. A LOJA (Cardápio ou PDF) */}
+          <MenuSection
+            menuMode={menuMode}
+            setMenuMode={setMenuMode}
+            catalogPdf={catalogPdf}
+            setCatalogPdf={setCatalogPdf}
+            products={products}
+            setProducts={setProducts}
+          />
+
+          {/* 🚀 6. ENDEREÇO */}
           <div id="address-section">
             <AddressSection
               addressData={addressData}
@@ -1081,6 +1093,7 @@ export default function BusinessEditor({
             />
           </div>
 
+          {/* 🚀 7. HORÁRIOS */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
             <h2 className="text-[10px] font-black uppercase mb-6 flex items-center gap-2 text-slate-800">
               <Clock size={18} className="text-emerald-500" /> Horários de
@@ -1094,6 +1107,7 @@ export default function BusinessEditor({
             />
           </div>
         </div>
+
         <div className="pt-8 flex flex-col items-center sticky bottom-6 md:bottom-8 z-30 gap-3 pointer-events-none px-4">
           <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-lg relative">
             <AnimatePresence mode="wait">
@@ -1215,7 +1229,7 @@ export default function BusinessEditor({
           </div>
         </div>
 
-        {/* 🚀 FAB MOBILE - Botão Flutuante (Fica acima da barra de salvar) */}
+        {/* 🚀 FAB MOBILE */}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -1227,7 +1241,7 @@ export default function BusinessEditor({
         </button>
       </main>
 
-      {/* 🚀 MODAL DO PREVIEW MOBILE (PORTAL PARA SOBREPOR NAVBAR + SCROLL LOCK + TEMAS LATERAIS) */}
+      {/* 🚀 MODAL DO PREVIEW MOBILE */}
       {isMounted && typeof document !== "undefined"
         ? createPortal(
             <AnimatePresence>
@@ -1240,7 +1254,6 @@ export default function BusinessEditor({
                   className="fixed inset-0 z-[999999] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center h-[100dvh] w-screen lg:hidden"
                   onClick={() => setShowMobilePreview(false)}
                 >
-                  {/* Botão Fechar no canto superior direito */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1251,19 +1264,16 @@ export default function BusinessEditor({
                     <X size={24} />
                   </button>
 
-                  {/* Título centralizado no topo */}
                   <div className="absolute top-8 left-0 right-0 flex justify-center pointer-events-none">
                     <h2 className="text-white font-black uppercase tracking-widest text-[10px] drop-shadow-md flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/10">
                       <Smartphone size={14} /> Visualização Real
                     </h2>
                   </div>
 
-                  {/* CONTAINER PRINCIPAL: Lado a Lado (Celular + Paleta de Cores) */}
                   <div
                     className="flex flex-row items-center justify-center w-full mt-8"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* 1. O PREVIEW (Escalado e puxado levemente para a esquerda para caber) */}
                     <div className="scale-[0.70] sm:scale-[0.75] origin-center pointer-events-none flex-shrink-0 -mr-6 sm:-mr-2 ml-[-1rem]">
                       <MobilePreview
                         themeKey={selectedTheme}
@@ -1280,13 +1290,10 @@ export default function BusinessEditor({
                       />
                     </div>
 
-                    {/* 2. O NOVO SELETOR DE TEMAS VERTICAL IDÊNTICO AO IDENTITY SECTION */}
                     <div className="flex flex-col items-center h-[420px] bg-white rounded-[2rem] py-5 px-2 border border-slate-200 shadow-2xl relative z-50">
                       <p className="text-slate-400 text-[8px] font-black uppercase tracking-widest text-center mb-4">
                         Cores
                       </p>
-
-                      {/* Scroll interno para rolar as bolinhas na vertical */}
                       <div className="flex flex-col gap-4 overflow-y-auto w-full flex-1 snap-y no-scrollbar items-center justify-start px-1 pb-4">
                         {filteredThemeKeys.map((key) => {
                           const isActive = selectedTheme === key;
@@ -1299,18 +1306,15 @@ export default function BusinessEditor({
                                 e.stopPropagation();
                                 setSelectedTheme(key);
                               }}
-                              // 🚀 MÁGICA AQUI: Mesmas classes do IdentitySection para seleção
                               className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full shrink-0 transition-all relative flex items-center justify-center ${
                                 isActive
                                   ? "ring-2 ring-offset-2 ring-slate-900 scale-90"
                                   : "hover:scale-110 shadow-sm"
                               }`}
-                              // 🚀 MÁGICA AQUI: Puxando o previewColor oficial do seu tema
                               style={{
                                 background: themeData?.previewColor || "#ccc",
                               }}
                             >
-                              {/* Mantemos o checkmark para dar destaque de que está selecionado na lateral */}
                               {isActive && (
                                 <Check
                                   size={18}
