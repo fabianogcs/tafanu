@@ -190,7 +190,8 @@ export const businessSchema = z.object({
       "Deve ser um link válido",
     ),
   catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
-  menuMode: z.enum(["PDF", "DIGITAL"]).default("PDF"),
+  menuMode: z.enum(["PDF", "DIGITAL", "AGENDA"]).default("PDF"), // 🚀 AGENDA DESTRAVADA NO ENUM
+  agendaConfig: z.any().optional().nullable(), // 🚀 CONFIGURAÇÃO INDEPENDENTE PERMITIDA
 
   // URLs do UploadThing
   imageUrl: z

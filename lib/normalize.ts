@@ -163,6 +163,7 @@ export function normalizeBusiness(raw: any) {
     deliveryRadius: b.deliveryRadius || 0,
     menuMode: b.menuMode || "PDF",
     catalogPdf: b.catalogPdf || "",
+    agendaConfig: b.agendaConfig || null, // 🚀 PRESERVA OS HORÁRIOS DA AGENDA NA TELA DO EDITOR
 
     // 🚀 CTO FIX: Salvando a vida do Cardápio!
     // Se não passarmos os produtos aqui, o painel vai achar que o lojista apagou tudo e vai zerar o cardápio no banco!

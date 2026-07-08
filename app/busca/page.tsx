@@ -873,28 +873,32 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
   if (statusFilter === "open") businesses = businesses.filter((b) => b.isOpen);
 
-  // 🚀 CTO & CFO FIX: O FILTRO DO MODO DELIVERY BLINDADO
-  if (isOnlineMode) {
-    if (userLat && userLng) {
-      // 1. Cliente tem GPS: Calcula o raio de entrega milimetricamente!
-      businesses = businesses.filter((b) => {
-        if (b.deliveryRadius && b.deliveryRadius > 0 && b.distance !== null) {
-          return b.distance <= b.deliveryRadius;
-        }
-        return true; // Raio 0 significa frete nacional (Shopee, Mercado Livre, etc)
-      });
-    } else if (!cityFilter && !stateFilter) {
-      // 2. Cliente NÃO tem GPS e NÃO informou a cidade (O Perigo!):
-      // Para não mostrar pizzarias de outro estado, a gente impõe uma punição na nota de relevância
-      // para lojas locais (que têm raio) se ele não tem cidade. Lojas nacionais (raio 0) ganham prioridade.
-      businesses = businesses.map((b) => ({
-        ...b,
-        score:
-          b.deliveryRadius && b.deliveryRadius > 0
-            ? Math.max(0, b.score - 500)
-            : b.score + 100,
-      }));
-    }
+  // 🚀 CTO & CFO FIX: O FILTRO DO MODO DELIVERY BLINDADO (Agora protege TUDO!)
+  if (userLat && userLng) {
+    // 1. Cliente tem GPS Ligado: A gente arranca da lista quem não entrega na casa dele!
+    businesses = businesses.filter((b) => {
+      // Regra de Ouro: Se a loja não é de Agendamento, e tem Raio de Entrega, cortamos na faca!
+      if (
+        b.menuMode !== "AGENDA" &&
+        b.deliveryRadius &&
+        b.deliveryRadius > 0 &&
+        b.distance !== null
+      ) {
+        return b.distance <= b.deliveryRadius;
+      }
+      return true; // Lojas de serviços (Agenda) ou frete nacional (raio 0) passam direto
+    });
+  } else if (isOnlineMode && !cityFilter && !stateFilter) {
+    // 2. Cliente entrou no Modo Delivery SEM GPS e SEM CIDADE:
+    // A gente derruba a nota de lojas locais (com raio) lá pro fundo, pra evitar que
+    // o cara veja uma pizzaria de outro estado na cara dele.
+    businesses = businesses.map((b) => ({
+      ...b,
+      score:
+        b.deliveryRadius && b.deliveryRadius > 0
+          ? Math.max(0, b.score - 500)
+          : b.score + 100,
+    }));
   }
 
   if (needsJsEngine) {

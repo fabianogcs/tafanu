@@ -10,17 +10,19 @@ import {
   MessageCircle,
   ChevronRight,
   Loader2,
+  ShieldAlert, // 🚀 NOVO ÍCONE DE SEGURANÇA
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getBookedSlots, createOrderAction } from "@/app/actions"; // 🚀 IMPORTAMOS AS AÇÕES REAIS
+import { getBookedSlots, createOrderAction } from "@/app/actions";
+import LoginModal from "./LoginModal"; // 🚀 IMPORTAMOS O LOGIN
 
 interface AgendaModalProps {
   isOpen: boolean;
   onClose: () => void;
   service: any;
   business: {
-    id: string; // 🚀 O NOVO ID
+    id: string;
     name: string;
     whatsapp: string;
     hours: any[];
@@ -40,6 +42,24 @@ const minsToTime = (mins: number) => {
   return `${h}:${m}`;
 };
 
+// 🚀 FORMATADORES DE SEGURANÇA
+const maskPhone = (v: string) => {
+  v = v.replace(/\D/g, "");
+  if (v.length <= 11) {
+    v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+  }
+  return v;
+};
+
+const maskDoc = (v: string) => {
+  v = v.replace(/\D/g, "");
+  if (v.length <= 11) {
+    return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  } else {
+    return v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+  }
+};
+
 export default function AgendaModal({
   isOpen,
   onClose,
@@ -48,16 +68,41 @@ export default function AgendaModal({
 }: AgendaModalProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState(""); // Pegar o telefone é vital para o lojista
 
-  const [bookedSlots, setBookedSlots] = useState<string[]>([]); // 🚀 Guarda os ocupados
+  // 🚀 NOVOS ESTADOS DO CLIENTE
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [documentId, setDocumentId] = useState("");
+
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Gera 15 dias abertos
+  // 🚀 ESTADOS DE SEGURANÇA E UX
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [dataError, setDataError] = useState(false);
+  const [isProfileLocked, setIsProfileLocked] = useState(false); // Trava os campos!
+
+  // 🚀 BUSCA OS DADOS SALVOS ASSIM QUE O MODAL ABRE
+  useEffect(() => {
+    try {
+      const globalProfileStr = localStorage.getItem("tafanu_global_profile");
+      if (globalProfileStr) {
+        const profile = JSON.parse(globalProfileStr);
+        if (profile.clientName) setClientName(profile.clientName);
+        if (profile.customerPhone)
+          setClientPhone(maskPhone(profile.customerPhone));
+        if (profile.documentId) setDocumentId(maskDoc(profile.documentId));
+
+        // Se o cliente já tem os 3 dados, CONGELA OS CAMPOS!
+        if (profile.clientName && profile.customerPhone && profile.documentId) {
+          setIsProfileLocked(true);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   const availableDays = useMemo(() => {
-    // 🚀 Usa a agenda independente. Se não existir (legado), usa o horário da loja.
     const config = business.agendaConfig || {
       duration: 30,
       hours: business.hours || [],
@@ -82,7 +127,6 @@ export default function AgendaModal({
     }
   }, [availableDays]);
 
-  // 🚀 2. O RADAR: Sempre que o usuário clica num dia, pergunta pro banco quem já comprou!
   useEffect(() => {
     if (!selectedDate || !business.id) return;
     const fetchSlots = async () => {
@@ -97,7 +141,6 @@ export default function AgendaModal({
     fetchSlots();
   }, [selectedDate, business.id]);
 
-  // 3. Gera as horas com o tempo dinâmico (Excluindo os ocupados!)
   const availableSlots = useMemo(() => {
     const config = business.agendaConfig || {
       duration: 30,
@@ -120,31 +163,31 @@ export default function AgendaModal({
 
     while (currentMins < closeMins) {
       const timeString = minsToTime(currentMins);
-      // Só mostra se for no futuro e NÃO estiver no banco!
       if (
         (!isToday || currentMins > currentNowMins + 60) &&
         !bookedSlots.includes(timeString)
       ) {
         slots.push(timeString);
       }
-      currentMins += Number(config.duration || 30); // 🚀 O PULO DO GATO QUE GERA 45, 60, 90 MINUTOS AUTOMATICAMENTE!
+      currentMins += Number(config.duration || 30);
     }
     return slots;
   }, [selectedDate, business.hours, business.agendaConfig, bookedSlots]);
 
-  // 🚀 4. A GRAVAÇÃO REAL DO PEDIDO NO KANBAN DO LOJISTA
   const handleConfirmBooking = async () => {
     if (
       !selectedDate ||
       !selectedTime ||
       !clientName.trim() ||
-      !clientPhone.trim()
+      !clientPhone.trim() ||
+      (!isProfileLocked && !documentId.trim()) // Exige o CPF se não estiver travado
     ) {
-      alert("Por favor, preencha todos os dados.");
+      alert("Por favor, preencha todos os dados obrigatórios.");
       return;
     }
 
     setIsSubmitting(true);
+    setDataError(false);
 
     try {
       const payload = {
@@ -152,15 +195,15 @@ export default function AgendaModal({
         businessName: business.name,
         whatsapp: business.whatsapp,
         clientName: clientName,
-        customerPhone: clientPhone.replace(/\D/g, ""), // Limpa o telefone
-        deliveryType: "AGENDA", // 🚀 Diz pro sistema que não tem frete nem rua
+        customerPhone: clientPhone.replace(/\D/g, ""),
+        document: documentId.replace(/\D/g, ""), // 🚀 ENVIA O CPF LIMPO
+        deliveryType: "AGENDA",
         address: null,
-        paymentMethod: "ON_SITE", // Paga lá na hora
+        paymentMethod: "ON_SITE",
         changeFor: "",
         observation: "Agendamento pelo Tafanu Booking",
-        document: "",
-        appointmentDate: selectedDate.toISOString(), // 🚀 SALVA O DIA
-        appointmentTime: selectedTime, // 🚀 SALVA A HORA
+        appointmentDate: selectedDate.toISOString(),
+        appointmentTime: selectedTime,
         cart: [
           {
             productId: service?.id || "agenda_item",
@@ -173,13 +216,36 @@ export default function AgendaModal({
 
       const res = (await createOrderAction(payload)) as any;
 
+      // 🚀 INTERCEPTADOR DE LOGIN!
+      if (res?.error === "AUTH_REQUIRED") {
+        setIsLoginModalOpen(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 🚀 INTERCEPTADOR DE PASSAPORTE TAFANU!
+      if (res?.error === "MISSING_DATA") {
+        setDataError(true);
+        setIsSubmitting(false);
+        return;
+      }
+
       if (res?.error) {
         alert(res.error);
         setIsSubmitting(false);
         return;
       }
 
-      // SUCESSO! Dispara pro WhatsApp avisando o lojista
+      // 🚀 SUCESSO! SALVA OS DADOS NO CACHE E TRAVA PROS PRÓXIMOS
+      localStorage.setItem(
+        "tafanu_global_profile",
+        JSON.stringify({
+          clientName,
+          customerPhone: clientPhone,
+          documentId,
+        }),
+      );
+
       const dataFormatada = format(selectedDate, "dd/MM/yyyy (EEEE)", {
         locale: ptBR,
       });
@@ -193,8 +259,7 @@ export default function AgendaModal({
         );
       }
 
-      onClose(); // Fecha o modal
-      // Se quiser, pode redirecionar para a tela de acompanhamento: window.location.href = `/pedido/${res.orderId}`;
+      onClose();
     } catch (err) {
       alert("Erro ao confirmar reserva. Tente novamente.");
     } finally {
@@ -298,25 +363,60 @@ export default function AgendaModal({
             )}
           </div>
 
-          {/* DADOS DO CLIENTE */}
+          {/* 🚀 DADOS DO CLIENTE BLINDADOS */}
           <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
-              <User size={14} /> 3. Seus Dados
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <User size={14} /> 3. Seus Dados
+              </span>
+              {isProfileLocked && (
+                <span className="text-emerald-500 font-bold tracking-normal flex items-center gap-1">
+                  Verificado <ShieldAlert size={12} />
+                </span>
+              )}
             </label>
+
+            {dataError && (
+              <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl shadow-sm animate-in fade-in zoom-in">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldAlert size={16} className="text-orange-500" />
+                  <span className="text-[10px] font-black uppercase text-orange-700 tracking-widest">
+                    Passaporte Tafanu
+                  </span>
+                </div>
+                <p className="text-[10px] font-bold text-orange-600">
+                  Para sua segurança e do lojista, precisamos do seu CPF e
+                  WhatsApp válidos para confirmar a reserva.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Seu nome completo"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400"
+                disabled={isProfileLocked}
+                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
               />
               <input
                 type="text"
                 placeholder="Seu WhatsApp (Ex: 11 99999-9999)"
                 value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
-                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400"
+                onChange={(e) => setClientPhone(maskPhone(e.target.value))}
+                disabled={isProfileLocked}
+                maxLength={15}
+                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              />
+              <input
+                type="text"
+                placeholder="Seu CPF (Apenas números)"
+                value={documentId}
+                onChange={(e) => setDocumentId(maskDoc(e.target.value))}
+                disabled={isProfileLocked}
+                maxLength={14}
+                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -330,6 +430,7 @@ export default function AgendaModal({
               !selectedTime ||
               !clientName.trim() ||
               !clientPhone.trim() ||
+              (!isProfileLocked && !documentId.trim()) ||
               isSubmitting
             }
             className="w-full h-16 rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
@@ -346,6 +447,12 @@ export default function AgendaModal({
           </button>
         </div>
       </motion.div>
+
+      {/* 🚀 LOGIN MODAL SE PRECISAR */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
     </div>
   );
 }
