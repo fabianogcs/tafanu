@@ -108,8 +108,8 @@ export default function LuxeLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -451,16 +451,20 @@ export default function LuxeLayout({
 
             {/* Botões Mobile */}
             <div className="w-full flex flex-col gap-3 max-w-xs">
-              {/* 🚀 O MOTOR DE DECISÃO MOBILE: LOJA DIGITAL vs PDF */}
+              {/* 🚀 O MOTOR DE DECISÃO MOBILE: LOJA DIGITAL vs PDF vs AGENDA */}
               {((rawBusiness.menuMode === "DIGITAL" &&
                 Array.isArray(rawBusiness.products) &&
                 rawBusiness.products.length > 0) ||
-                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
+                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
+                rawBusiness.menuMode === "AGENDA") && (
                 <button
                   onClick={() => {
-                    if (rawBusiness.menuMode === "DIGITAL") {
+                    if (
+                      rawBusiness.menuMode === "DIGITAL" ||
+                      rawBusiness.menuMode === "AGENDA"
+                    ) {
                       setShowDigitalMenu(true);
-                    } else {
+                    } else if (rawBusiness.menuMode === "PDF") {
                       setIsPdfModalOpen(true);
                     }
                   }}
@@ -468,7 +472,9 @@ export default function LuxeLayout({
                 >
                   {rawBusiness.menuMode === "DIGITAL"
                     ? "Fazer Pedido"
-                    : "Explorar Menu"}{" "}
+                    : rawBusiness.menuMode === "AGENDA"
+                      ? "Agendar Horário"
+                      : "Explorar Menu"}{" "}
                   <ChevronRight size={14} strokeWidth={2} />
                 </button>
               )}
@@ -739,17 +745,20 @@ export default function LuxeLayout({
                 transition={{ duration: 1, delay: 0.4 }}
                 className="flex gap-6"
               >
-                {/* 🚀 O MOTOR DE DECISÃO DESKTOP (Sem Capa): LOJA DIGITAL vs PDF */}
+                {/* 🚀 O MOTOR DE DECISÃO DESKTOP (Sem Capa): LOJA DIGITAL vs PDF vs AGENDA */}
                 {((rawBusiness.menuMode === "DIGITAL" &&
                   Array.isArray(rawBusiness.products) &&
                   rawBusiness.products.length > 0) ||
-                  (rawBusiness.menuMode === "PDF" &&
-                    rawBusiness.catalogPdf)) && (
+                  (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
+                  rawBusiness.menuMode === "AGENDA") && (
                   <button
                     onClick={() => {
-                      if (rawBusiness.menuMode === "DIGITAL") {
+                      if (
+                        rawBusiness.menuMode === "DIGITAL" ||
+                        rawBusiness.menuMode === "AGENDA"
+                      ) {
                         setShowDigitalMenu(true);
-                      } else {
+                      } else if (rawBusiness.menuMode === "PDF") {
                         setIsPdfModalOpen(true);
                       }
                     }}
@@ -757,7 +766,9 @@ export default function LuxeLayout({
                   >
                     {rawBusiness.menuMode === "DIGITAL"
                       ? "Fazer Pedido"
-                      : "Explorar Menu"}{" "}
+                      : rawBusiness.menuMode === "AGENDA"
+                        ? "Agendar Horário"
+                        : "Explorar Menu"}{" "}
                     <ChevronRight size={14} strokeWidth={2} />
                   </button>
                 )}
@@ -1318,10 +1329,10 @@ export default function LuxeLayout({
       </AnimatePresence>
 
       {/* ==========================================
-          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
           ========================================== */}
       <AnimatePresence>
-        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+        {showDigitalMenu && (
           <VitrineCardapio
             businessId={rawBusiness.id}
             businessName={rawBusiness.name}
@@ -1332,9 +1343,11 @@ export default function LuxeLayout({
             isOpen={isOpen}
             hours={rawBusiness.hours}
             deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0} // 🚀 AQUI
-            businessLat={rawBusiness.latitude} // 🚀 AQUI
-            businessLng={rawBusiness.longitude} // 🚀 AQUI
+            deliveryRadius={rawBusiness.deliveryRadius || 0}
+            businessLat={rawBusiness.latitude}
+            businessLng={rawBusiness.longitude}
+            menuMode={rawBusiness.menuMode}
+            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
           />
         )}
       </AnimatePresence>

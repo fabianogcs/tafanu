@@ -44,6 +44,8 @@ interface Order {
   observation?: string;
   status: string;
   createdAt: string;
+  appointmentDate?: string | null; // 🚀 ADICIONADO
+  appointmentTime?: string | null; // 🚀 ADICIONADO
 }
 
 export default function OrderBoard() {
@@ -237,6 +239,7 @@ export default function OrderBoard() {
   };
 
   const getDeliveryName = (type: string) => {
+    if (type === "AGENDA") return "Reserva / Agendamento"; // 🚀 ADICIONADO
     return type === "DELIVERY" ? "Entrega" : "Retirada";
   };
 
@@ -428,6 +431,28 @@ export default function OrderBoard() {
           <Printer size={14} /> Imprimir
         </button>
       </div>
+
+      {/* 🚀 DESTAQUE VISUAL PARA AGENDAMENTOS */}
+      {order.deliveryType === "AGENDA" &&
+        order.appointmentDate &&
+        order.appointmentTime && (
+          <div className="bg-emerald-50 text-emerald-700 p-3 rounded-xl border border-emerald-200 mb-3 flex items-center gap-2 shadow-inner">
+            <div className="bg-emerald-500 text-white w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+              <Clock size={16} />
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                Para quando?
+              </p>
+              <p className="text-xs font-black uppercase tracking-wider">
+                {new Date(order.appointmentDate).toLocaleDateString("pt-BR", {
+                  timeZone: "UTC",
+                })}{" "}
+                às {order.appointmentTime}
+              </p>
+            </div>
+          </div>
+        )}
 
       <div className="space-y-2 mb-3 flex-1">
         {order.items.map((item, idx) => (

@@ -78,9 +78,20 @@ export default function LocationTracker() {
         // 🚀 O BÔNUS CTO: Tenta adivinhar a cidade do usuário via API gratuita para melhorar o UX
         let foundCity = null;
         try {
+          // 🛡️ CTO FIX: O Nominatim bloqueia IPs que não enviam o User-Agent.
+          // Injetamos a identidade do Tafanu para garantir que a API nunca nos bana.
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+            {
+              headers: {
+                "Accept-Language": "pt-BR",
+                "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
+              },
+            },
           );
+
+          if (!res.ok) throw new Error("Falha na API de Mapas");
+
           const data = await res.json();
           foundCity =
             data.address?.city ||

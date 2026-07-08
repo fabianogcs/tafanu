@@ -189,11 +189,22 @@ export default function BusinessEditor({
       : [];
   });
 
-  // 🚀 O PADRÃO AGORA É A LOJA DIGITAL!
-  const [menuMode, setMenuMode] = useState<"PDF" | "DIGITAL">(
+  const [menuMode, setMenuMode] = useState<"PDF" | "DIGITAL" | "AGENDA">(
     safeBusiness.menuMode || "DIGITAL",
   );
-
+  // 🚀 O COFRE INDEPENDENTE DA AGENDA
+  const [agendaConfig, setAgendaConfig] = useState<any>(() => {
+    if (safeBusiness.agendaConfig) return safeBusiness.agendaConfig;
+    return {
+      duration: 30, // Tempo padrão do serviço
+      hours: Array.from({ length: 7 }).map((_, i) => ({
+        dayOfWeek: i,
+        openTime: "09:00",
+        closeTime: "18:00",
+        isClosed: i === 0, // Domingo fechado por padrão
+      })),
+    };
+  });
   const [categoria, setCategoria] = useState(() => {
     if (
       isNew ||
@@ -204,6 +215,23 @@ export default function BusinessEditor({
     }
     return safeBusiness.category;
   });
+
+  // 🚀 O CÉREBRO CAMALEÃO: Agora ele reage à Categoria OU ao botão da Agenda!
+  const isService = useMemo(() => {
+    // 1. Se o dono clicou no botão "Agenda", automaticamente vira um serviço!
+    if (menuMode === "AGENDA") return true;
+
+    // 2. Ou se a categoria for de serviços...
+    const serviceCategories = [
+      "Beleza",
+      "Educacao",
+      "Eventos",
+      "Profissionais",
+      "Saude",
+      "Servicos",
+    ];
+    return serviceCategories.includes(categoria);
+  }, [categoria, menuMode]); // 🚀 Colocamos o menuMode aqui para ele escutar o clique
 
   const [selectedSubs, setSelectedSubs] = useState<string[]>(
     safeBusiness.subcategory || [],
@@ -283,9 +311,6 @@ export default function BusinessEditor({
     safeBusiness.deliveryRadius || 0,
   );
 
-  // =========================================================================
-  // 🛡️ O RADAR DE MUDANÇAS (hasChanges) - BLINDADO CONTRA FALSOS POSITIVOS
-  // =========================================================================
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -323,20 +348,24 @@ export default function BusinessEditor({
             })),
           ];
 
-    // 🚀 A VACINA DOS HORÁRIOS: Mapeamento Seguro
-    const mappedSafeHours = (safeBusiness.hours || []).map((h: any) => ({
-      dayOfWeek: Number(h.dayOfWeek),
-      openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
-      closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
-      isClosed: Boolean(h.isClosed),
-    }));
+    // 🚀 A VACINA DA ORDENAÇÃO DE HORÁRIOS
+    const mappedSafeHours = (safeBusiness.hours || [])
+      .map((h: any) => ({
+        dayOfWeek: Number(h.dayOfWeek),
+        openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
+        closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
+        isClosed: !!h.isClosed,
+      }))
+      .sort((a: any, b: any) => a.dayOfWeek - b.dayOfWeek);
 
-    const mappedStateHours = businessHours.map((h: any) => ({
-      dayOfWeek: Number(h.dayOfWeek),
-      openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
-      closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
-      isClosed: Boolean(h.isClosed),
-    }));
+    const mappedStateHours = businessHours
+      .map((h: any) => ({
+        dayOfWeek: Number(h.dayOfWeek),
+        openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
+        closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
+        isClosed: !!h.isClosed,
+      }))
+      .sort((a: any, b: any) => a.dayOfWeek - b.dayOfWeek);
 
     const mappedSafeProducts = (safeBusiness.products || []).map((p: any) => ({
       name: p.name || "",
@@ -358,7 +387,6 @@ export default function BusinessEditor({
       extras: p.extras || [],
     }));
 
-    // 🚀 COMPARAÇÕES PRIMÁRIAS BLINDADAS COM "" FALLBACKS
     const isBasicDifferent =
       (name || "") !== (safeBusiness.name || "") ||
       (slug || "") !== (safeBusiness.slug || "") ||
@@ -510,9 +538,7 @@ export default function BusinessEditor({
       setProfileImage(safeBusiness.imageUrl || "");
       setCoverImage(safeBusiness.coverImage || "");
       setCatalogPdf(safeBusiness.catalogPdf || null);
-
       setMenuMode(safeBusiness.menuMode || "DIGITAL");
-
       setProducts(
         safeBusiness.products
           ? JSON.parse(JSON.stringify(safeBusiness.products))
@@ -765,6 +791,7 @@ export default function BusinessEditor({
         coverImage: coverImage,
         catalogPdf: catalogPdf,
         menuMode: menuMode,
+        agendaConfig: agendaConfig,
         products: products.filter((p: any) => p.name.trim() !== ""),
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
@@ -784,11 +811,21 @@ export default function BusinessEditor({
             });
             slugRef.current?.focus();
             setTimeout(() => setSlugError(false), 4000);
-            return;
+            return; // 🚀 BARREIRA DE SEGURANÇA: Se der erro, ele PARA AQUI.
           }
           throw new Error(result.error);
         }
+
+        // 🚀 SUCESSO VERDADEIRO (LOJA NOVA)
+        const fireConfetti = (await import("canvas-confetti")).default;
+        fireConfetti();
+        toast.success("Seu negócio foi criado com sucesso!");
+        router.push("/dashboard");
+        router.refresh();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return; // Finaliza o processo com sucesso real.
       } else {
+        // --- FLUXO DE EDIÇÃO DE UMA LOJA JÁ EXISTENTE ---
         payload.faqs = faqs.filter(
           (f) => f.q.trim() !== "" && f.a.trim() !== "",
         );
@@ -797,7 +834,6 @@ export default function BusinessEditor({
 
         if (!updateResult.success) {
           setIsLoading(false);
-
           toast.error("Não foi possível salvar", {
             description:
               updateResult.error || "Verifique os dados e tente novamente.",
@@ -805,7 +841,6 @@ export default function BusinessEditor({
           });
 
           const errorMessage = updateResult.error?.toLowerCase() || "";
-
           if (
             errorMessage.includes("endereço") ||
             errorMessage.includes("mapa")
@@ -815,7 +850,6 @@ export default function BusinessEditor({
               block: "center",
             });
           }
-
           if (errorMessage.includes("link") || errorMessage.includes("slug")) {
             setSlugError(true);
             slugRef.current?.scrollIntoView({
@@ -825,10 +859,10 @@ export default function BusinessEditor({
             slugRef.current?.focus();
             setTimeout(() => setSlugError(false), 4000);
           }
-
-          return;
+          return; // 🚀 BARREIRA DE SEGURANÇA: Se der erro, ele PARA AQUI. Não tem confete fantasma.
         }
 
+        // 🚀 SUCESSO VERDADEIRO (EDIÇÃO)
         const fireConfetti = (await import("canvas-confetti")).default;
         fireConfetti();
         toast.success("Alterações salvas com sucesso!");
@@ -840,16 +874,8 @@ export default function BusinessEditor({
         } else {
           router.refresh();
         }
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
-
-      if (isNew) {
-        const fireConfetti = (await import("canvas-confetti")).default;
-        fireConfetti();
-        toast.success("Seu negócio foi criado com sucesso!");
-        router.push("/dashboard");
-        router.refresh();
-      }
-      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       toast.error(
         `Ops! ${err.message || "Ocorreu um erro desconhecido ao salvar."}`,
@@ -1072,6 +1098,7 @@ export default function BusinessEditor({
               setDeliveryFee={setDeliveryFee}
               deliveryRadius={deliveryRadius}
               setDeliveryRadius={setDeliveryRadius}
+              isService={isService}
             />
           </div>
 
@@ -1083,6 +1110,9 @@ export default function BusinessEditor({
             setCatalogPdf={setCatalogPdf}
             products={products}
             setProducts={setProducts}
+            isService={isService}
+            agendaConfig={agendaConfig} // 🚀 ENVIA PARA A TELA
+            setAgendaConfig={setAgendaConfig}
           />
 
           {/* 🚀 6. ENDEREÇO */}

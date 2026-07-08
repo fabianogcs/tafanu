@@ -106,8 +106,8 @@ export default function ShowroomLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -384,16 +384,20 @@ export default function ShowroomLayout({
 
         {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
         <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
-          {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF INTEGRADO AOS ÍCONES REDONDOS */}
+          {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF vs AGENDA INTEGRADO AOS ÍCONES REDONDOS */}
           {((rawBusiness.menuMode === "DIGITAL" &&
             Array.isArray(rawBusiness.products) &&
             rawBusiness.products.length > 0) ||
-            (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
+            (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
+            rawBusiness.menuMode === "AGENDA") && (
             <button
               onClick={() => {
-                if (rawBusiness.menuMode === "DIGITAL") {
+                if (
+                  rawBusiness.menuMode === "DIGITAL" ||
+                  rawBusiness.menuMode === "AGENDA"
+                ) {
                   setShowDigitalMenu(true);
-                } else {
+                } else if (rawBusiness.menuMode === "PDF") {
                   setIsPdfModalOpen(true);
                 }
               }}
@@ -405,7 +409,11 @@ export default function ShowroomLayout({
                 <Layout size={20} />
               </div>
               <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100 text-center">
-                {rawBusiness.menuMode === "DIGITAL" ? "Pedido" : "Menu"}
+                {rawBusiness.menuMode === "DIGITAL"
+                  ? "Pedido"
+                  : rawBusiness.menuMode === "AGENDA"
+                    ? "Agendar"
+                    : "Menu"}
               </span>
             </button>
           )}
@@ -818,10 +826,10 @@ export default function ShowroomLayout({
       </AnimatePresence>
 
       {/* ==========================================
-          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
           ========================================== */}
       <AnimatePresence>
-        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+        {showDigitalMenu && (
           <VitrineCardapio
             businessId={rawBusiness.id}
             businessName={rawBusiness.name}
@@ -832,13 +840,14 @@ export default function ShowroomLayout({
             isOpen={isOpen}
             hours={rawBusiness.hours}
             deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0} // 🚀 AQUI
-            businessLat={rawBusiness.latitude} // 🚀 AQUI
-            businessLng={rawBusiness.longitude} // 🚀 AQUI
+            deliveryRadius={rawBusiness.deliveryRadius || 0}
+            businessLat={rawBusiness.latitude}
+            businessLng={rawBusiness.longitude}
+            menuMode={rawBusiness.menuMode}
+            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
           />
         )}
       </AnimatePresence>
-
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;

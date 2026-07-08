@@ -10,7 +10,8 @@ import {
   Image as ImageIcon,
   Tag,
   X,
-  ListChecks, // 🚀 Importado para o cabeçalho
+  ListChecks,
+  Clock, // 🚀 AGORA O RELÓGIO ESTÁ AQUI!
 } from "lucide-react";
 import { uploadFiles } from "@/lib/uploadthing";
 import { compressImage } from "@/lib/compressImage";
@@ -18,14 +19,17 @@ import { toast } from "sonner";
 import { ProductData } from "./types";
 
 interface MenuSectionProps {
-  menuMode: "PDF" | "DIGITAL";
-  setMenuMode: (val: "PDF" | "DIGITAL") => void;
+  menuMode: "PDF" | "DIGITAL" | "AGENDA";
+  setMenuMode: (val: "PDF" | "DIGITAL" | "AGENDA") => void;
   catalogPdf: string | null;
   setCatalogPdf: (val: string | null) => void;
   products: ProductData[];
   setProducts: (
     val: ProductData[] | ((prev: ProductData[]) => ProductData[]),
   ) => void;
+  isService: boolean;
+  agendaConfig?: any; // 🚀 RECEBE AQUI
+  setAgendaConfig?: (val: any) => void;
 }
 
 export function MenuSection({
@@ -35,6 +39,9 @@ export function MenuSection({
   setCatalogPdf,
   products = [],
   setProducts,
+  isService,
+  agendaConfig, // 🚀 PUXA AQUI
+  setAgendaConfig,
 }: MenuSectionProps) {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -158,23 +165,210 @@ export function MenuSection({
         .
       </p>
 
-      <div className="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-xl">
+      <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6">
         <button
+          type="button"
           onClick={() => setMenuMode("DIGITAL")}
-          type="button"
-          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${menuMode === "DIGITAL" ? "bg-white shadow-sm text-orange-600 ring-1 ring-black/5" : "text-slate-400 hover:text-slate-600"}`}
+          className={`py-3 px-2 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+            menuMode === "DIGITAL"
+              ? "bg-white text-orange-600 shadow-sm ring-1 ring-black/5"
+              : "text-slate-400 hover:text-slate-600"
+          }`}
         >
-          Loja Digital
+          <span className="text-sm sm:text-base">🛍️</span> Catálogo
         </button>
+
         <button
-          onClick={() => setMenuMode("PDF")}
           type="button"
-          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${menuMode === "PDF" ? "bg-white shadow-sm text-emerald-600 ring-1 ring-black/5" : "text-slate-400 hover:text-slate-600"}`}
+          onClick={() => setMenuMode("PDF")}
+          className={`py-3 px-2 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+            menuMode === "PDF"
+              ? "bg-white text-emerald-600 shadow-sm ring-1 ring-black/5"
+              : "text-slate-400 hover:text-slate-600"
+          }`}
         >
-          Anexar PDF
+          <span className="text-sm sm:text-base">📄</span> Menu PDF
+        </button>
+
+        <button
+          type="button"
+          // @ts-ignore: AGENDA será adicionado ao Prisma na próxima migração
+          onClick={() => setMenuMode("AGENDA")}
+          className={`py-3 px-2 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-wider transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+            menuMode === "AGENDA"
+              ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30 scale-[1.02]"
+              : "text-slate-400 hover:text-slate-600"
+          }`}
+        >
+          <span className="text-sm sm:text-base">📅</span> Agenda
         </button>
       </div>
 
+      {/* 🚀 AVISO INTELIGENTE DE UX PARA O MODO AGENDA */}
+      {menuMode === "AGENDA" && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 animate-in fade-in zoom-in duration-300 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+            <span className="text-xl">💡</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-[11px] font-black text-emerald-800 uppercase tracking-widest mb-1.5">
+              A sua Agenda Mágica
+            </h3>
+            <p className="text-[10px] font-medium text-emerald-700 leading-relaxed max-w-2xl">
+              1. Crie seus <strong>Serviços</strong> na lista abaixo.
+              <br />
+              2. Defina logo abaixo o <strong>
+                Tempo de cada atendimento
+              </strong>{" "}
+              e a <strong>Sua Grade Semanal</strong> (Independente do horário de
+              abertura da loja!).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 O NOVO CONSTRUTOR DE AGENDA INDEPENDENTE */}
+      {menuMode === "AGENDA" && agendaConfig && setAgendaConfig && (
+        <div className="mb-8 bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 shadow-sm animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
+              <Clock size={18} />
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase text-slate-800 tracking-widest">
+                Grade da Agenda Semanal
+              </h3>
+              <p className="text-[10px] font-bold text-slate-400 mt-1">
+                Configure os dias e intervalos exatos que você atende seus
+                clientes.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">
+                ⏳ Tempo padrão de cada serviço
+              </label>
+              <select
+                value={agendaConfig.duration}
+                onChange={(e) =>
+                  setAgendaConfig({
+                    ...agendaConfig,
+                    duration: Number(e.target.value),
+                  })
+                }
+                className="w-full md:w-64 h-14 px-4 bg-slate-50 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-2 ring-indigo-500/20 text-slate-700 cursor-pointer"
+              >
+                <option value={15}>15 Minutos (Rápido)</option>
+                <option value={30}>30 Minutos (Padrão)</option>
+                <option value={45}>45 Minutos</option>
+                <option value={60}>1 Hora</option>
+                <option value={90}>1 Hora e Meia</option>
+                <option value={120}>2 Horas</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 block">
+                📅 Dias e Horários de Trabalho
+              </label>
+              <div className="space-y-3">
+                {[
+                  "Domingo",
+                  "Segunda",
+                  "Terça",
+                  "Quarta",
+                  "Quinta",
+                  "Sexta",
+                  "Sábado",
+                ].map((dia, index) => {
+                  const dayData = agendaConfig.hours.find(
+                    (h: any) => h.dayOfWeek === index,
+                  ) || {
+                    dayOfWeek: index,
+                    openTime: "09:00",
+                    closeTime: "18:00",
+                    isClosed: true,
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 rounded-2xl border transition-all ${dayData.isClosed ? "bg-slate-50 border-slate-100 opacity-60" : "bg-white border-indigo-100 shadow-sm"}`}
+                    >
+                      <div className="flex items-center gap-4 mb-4 sm:mb-0 w-32 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={!dayData.isClosed}
+                          onChange={(e) => {
+                            const newHours = [...agendaConfig.hours];
+                            const idx = newHours.findIndex(
+                              (h: any) => h.dayOfWeek === index,
+                            );
+                            if (idx >= 0)
+                              newHours[idx].isClosed = !e.target.checked;
+                            setAgendaConfig({
+                              ...agendaConfig,
+                              hours: newHours,
+                            });
+                          }}
+                          className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <span className="text-[11px] md:text-xs font-black uppercase tracking-wider text-slate-700">
+                          {dia}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`flex flex-1 sm:justify-end items-center gap-3 ${dayData.isClosed ? "pointer-events-none" : ""}`}
+                      >
+                        <input
+                          type="time"
+                          value={dayData.openTime}
+                          onChange={(e) => {
+                            const newHours = [...agendaConfig.hours];
+                            const idx = newHours.findIndex(
+                              (h: any) => h.dayOfWeek === index,
+                            );
+                            if (idx >= 0)
+                              newHours[idx].openTime = e.target.value;
+                            setAgendaConfig({
+                              ...agendaConfig,
+                              hours: newHours,
+                            });
+                          }}
+                          className="w-24 md:w-32 h-12 px-3 bg-slate-50 rounded-xl text-xs font-bold border border-slate-200 text-center outline-none focus:ring-2 ring-indigo-500/20"
+                        />
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                          até
+                        </span>
+                        <input
+                          type="time"
+                          value={dayData.closeTime}
+                          onChange={(e) => {
+                            const newHours = [...agendaConfig.hours];
+                            const idx = newHours.findIndex(
+                              (h: any) => h.dayOfWeek === index,
+                            );
+                            if (idx >= 0)
+                              newHours[idx].closeTime = e.target.value;
+                            setAgendaConfig({
+                              ...agendaConfig,
+                              hours: newHours,
+                            });
+                          }}
+                          className="w-24 md:w-32 h-12 px-3 bg-slate-50 rounded-xl text-xs font-bold border border-slate-200 text-center outline-none focus:ring-2 ring-indigo-500/20"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {menuMode === "PDF" ? (
         <div className="space-y-4 animate-in fade-in duration-500">
           {catalogPdf ? (
@@ -321,7 +515,11 @@ export function MenuSection({
                           handleUpdateProduct(i, "name", e.target.value)
                         }
                         maxLength={60}
-                        placeholder="Ex: X-Bacon Artesanal"
+                        placeholder={
+                          isService
+                            ? "Ex: Corte de Cabelo / Consulta"
+                            : "Ex: X-Bacon Artesanal"
+                        }
                         className="flex-1 h-10 px-3 bg-white rounded-lg text-xs font-black border outline-none text-slate-800 placeholder:text-slate-300"
                       />
                       <div className="flex items-center gap-2 shrink-0">
@@ -440,7 +638,11 @@ export function MenuSection({
                       }
                       maxLength={250}
                       rows={2}
-                      placeholder="Descrição curta (Ex: Pão brioche... Pressione Enter para pular linha!)"
+                      placeholder={
+                        isService
+                          ? "Descrição curta (Ex: Duração aprox. 45 min... Pressione Enter para pular linha!)"
+                          : "Descrição curta (Ex: Pão brioche... Pressione Enter para pular linha!)"
+                      }
                       className="w-full p-3 bg-white rounded-lg text-xs font-medium border outline-none text-slate-600 placeholder:text-slate-300 resize-none min-h-[60px]"
                     />
 
@@ -457,7 +659,11 @@ export function MenuSection({
                           >
                             <input
                               type="text"
-                              placeholder="Ex: Bacon Extra"
+                              placeholder={
+                                isService
+                                  ? "Ex: Lavagem Especial"
+                                  : "Ex: Bacon Extra"
+                              }
                               value={extra.name}
                               onChange={(e) =>
                                 handleUpdateExtra(
@@ -540,7 +746,10 @@ export function MenuSection({
                   onClick={handleAddProduct}
                   className="w-full h-14 border-2 border-dashed border-orange-200 bg-orange-50/50 rounded-xl text-[10px] font-black text-orange-500 uppercase hover:bg-orange-50 hover:border-orange-400 transition-all flex items-center justify-center gap-2 tracking-widest mt-4"
                 >
-                  <Plus size={16} strokeWidth={2.5} /> Adicionar Novo Produto
+                  <Plus size={16} strokeWidth={2.5} />{" "}
+                  {isService
+                    ? "Adicionar Novo Serviço"
+                    : "Adicionar Novo Produto"}
                 </button>
               )}
             </div>

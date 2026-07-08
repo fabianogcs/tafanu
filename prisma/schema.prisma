@@ -49,6 +49,7 @@ enum PlanType {
 enum MenuMode {
   PDF
   DIGITAL
+  AGENDA
 }
 
 // --- TABELA DE USUÁRIOS ---
@@ -158,6 +159,7 @@ model Business {
   deliveryFee    Float    @default(0)
   deliveryRadius Float    @default(0) // 🚀 NOVO: Raio máximo em Km (0 = sem limite)
   menuMode       MenuMode @default(PDF)
+  agendaConfig   Json?
 
   // 💰 Dados da Assinatura Deste Negócio Específico
   planType           PlanType? // ⬅️ NOVO: Transferido do User
@@ -408,48 +410,57 @@ model Product {
 
 // --- SISTEMA DE PEDIDOS (MOTOR iFOOD) ---
 
+// --- SISTEMA DE PEDIDOS E RESERVAS (MOTOR HÍBRIDO) ---
+
 enum OrderStatus {
-  PENDING // Novo pedido, apitando na tela do lojista
-  PREPARING // Lojista aceitou e está fazendo
-  DISPATCHED // Saiu para entrega ou pronto para retirar
-  COMPLETED // Finalizado com sucesso
-  CANCELLED // Lojista recusou ou cliente cancelou
+  PENDING    // Novo pedido/agendamento, apitando na tela do lojista
+  PREPARING  // Lojista aceitou/confirmou a reserva
+  DISPATCHED // Saiu para entrega / Cliente chegou no salão
+  COMPLETED  // Finalizado com sucesso
+  CANCELLED  // Lojista recusou ou cliente cancelou (Libera a vaga!)
 }
 
 model Order {
   id          String @id @default(cuid())
-  orderNumber String @unique // 🚀 Gerado pelo backend (Ex: A4F8B2) para evitar numeração pulada
+  orderNumber String @unique // 🚀 Gerado pelo backend (Ex: A4F8B2)
 
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Restrict) // 🚀 Impede que a exclusão da loja apague o faturamento global da plataforma
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
 
   customerName  String
   customerPhone String?
-  customerId    String? // 🚀 Vínculo para a tela "Meus Pedidos" do cliente
+  customerId    String? 
   customer      User?   @relation("UserOrders", fields: [customerId], references: [id], onDelete: SetNull)
 
-  items       Json // 🚀 Cofre Blindado: Salva o array de lanches e adicionais exatamente como foram vendidos
-  totalAmount Float // Valor real recalculado pelo servidor
+  items       Json  // 🚀 Guarda o lanche OU o Serviço que foi agendado
+  totalAmount Float 
 
-  deliveryType String // "DELIVERY" ou "PICKUP"
-  address      Json? // { street, number, neighborhood, cep, complement, reference }
+  deliveryType String // "DELIVERY", "PICKUP" ou "AGENDA" (🚀 NOVO MODO)
+  address      Json?  // Endereço de entrega (se houver)
 
-  paymentMethod String // "PIX", "CASH", "CREDIT", "DEBIT"
-  changeFor     String? // Troco para
+  paymentMethod String  // "PIX", "CASH", "CREDIT", "DEBIT", ou "ON_SITE" (Pagar no local)
+  changeFor     String? 
   observation   String? @db.Text
+
+  // ==========================================
+  // 🚀 TAFANU BOOKING: O MOTOR DE TEMPO
+  // ==========================================
+  appointmentDate DateTime? // Salva o dia exato da reserva (Ex: 2026-07-15)
+  appointmentTime String?   // Salva a hora exata da trava (Ex: "14:30")
+  // ==========================================
 
   status OrderStatus @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  // 🚀 MÁQUINA DE VENDAS: Regista se o lojista já foi alertado sobre a demora
+  
   alertEmailSent Boolean @default(false)
 
-  // 🚀 NOVO: Permite que este pedido receba denúncias
   reports Report[]
 
-  @@index([businessId, status]) // 🚀 Índice de Alta Performance para o Kanban do Lojista carregar na velocidade da luz
+  @@index([businessId, status]) 
   @@index([createdAt])
+  @@index([businessId, appointmentDate, status]) // 🚀 O SEGREDO DA VELOCIDADE: O calendário busca as vagas usando esse índice!
 }
 
 // 🚀 BLINDAGEM DE WEBHOOK: Evita que o Mercado Pago duplique meses de assinatura

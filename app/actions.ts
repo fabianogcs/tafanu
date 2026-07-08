@@ -849,6 +849,7 @@ export async function createBusiness(payload: any) {
           deliveryFee: validatedData.deliveryFee || 0,
           deliveryRadius: validatedData.deliveryRadius || 0, // 🚀 SALVA O RAIO NO BANCO
           menuMode: validatedData.menuMode || "PDF",
+          agendaConfig: payload.agendaConfig || null,
           urban_tag: validatedData.urban_tag || "",
           luxe_quote: validatedData.luxe_quote || "",
           showroom_collection: validatedData.showroom_collection || "",
@@ -1103,6 +1104,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
           deliveryFee: validatedData.deliveryFee || 0,
           deliveryRadius: validatedData.deliveryRadius || 0, // 🚀 SALVA O RAIO NO BANCO
           menuMode: validatedData.menuMode || "PDF",
+          agendaConfig: payload.agendaConfig || null,
           urban_tag: validatedData.urban_tag || "",
           luxe_quote: validatedData.luxe_quote || "",
           showroom_collection: validatedData.showroom_collection || "",
@@ -4452,6 +4454,13 @@ export async function createOrderAction(payload: any) {
             paymentMethod: payload.paymentMethod,
             changeFor: payload.changeFor || null,
             observation: finalObservation,
+
+            // 🚀 TAFANU BOOKING: GRAVA O HORÁRIO NO BANCO DE DADOS
+            appointmentDate: payload.appointmentDate
+              ? new Date(payload.appointmentDate)
+              : null,
+            appointmentTime: payload.appointmentTime || null,
+
             status: "PENDING",
           },
         });
@@ -4750,5 +4759,35 @@ export async function reportOrderAction(
   } catch (error) {
     console.error("Erro ao reportar pedido:", error);
     return { error: "Erro interno. Tente novamente mais tarde." };
+  }
+}
+// ==========================================
+// 🚀 TAFANU BOOKING: RADAR DE HORÁRIOS
+// ==========================================
+export async function getBookedSlots(businessId: string, dateIso: string) {
+  try {
+    // Pega o início e o fim do dia selecionado
+    const startOfDay = new Date(dateIso);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(dateIso);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const orders = await db.order.findMany({
+      where: {
+        businessId,
+        appointmentDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: { not: "CANCELLED" }, // 🚀 A MÁGICA: Se o pedido for CANCELLED, a vaga é liberada automaticamente!
+      },
+      select: { appointmentTime: true },
+    });
+
+    return orders.map((o) => o.appointmentTime).filter(Boolean) as string[];
+  } catch (error) {
+    console.error("Erro ao buscar vagas:", error);
+    return [];
   }
 }

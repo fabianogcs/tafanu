@@ -116,8 +116,9 @@ export default function ComercialLayout({
 
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
+
   // 🚀 O filtro agora começa nulo para a IA decidir o que mostrar depois
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -404,17 +405,21 @@ export default function ComercialLayout({
         </div>
       </header>
 
-      {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF */}
+      {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF vs AGENDA */}
       {((rawBusiness.menuMode === "DIGITAL" &&
         Array.isArray(rawBusiness.products) &&
         rawBusiness.products.length > 0) ||
-        (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
+        (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
+        rawBusiness.menuMode === "AGENDA") && (
         <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
           <button
             onClick={() => {
-              if (rawBusiness.menuMode === "DIGITAL") {
-                setShowDigitalMenu(true);
-              } else {
+              if (
+                rawBusiness.menuMode === "DIGITAL" ||
+                rawBusiness.menuMode === "AGENDA"
+              ) {
+                setShowDigitalMenu(true); // 🚀 AMBOS ABREM A VITRINE DE ITENS!
+              } else if (rawBusiness.menuMode === "PDF") {
                 setIsPdfModalOpen(true);
               }
             }}
@@ -426,7 +431,9 @@ export default function ComercialLayout({
             <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
               {rawBusiness.menuMode === "DIGITAL"
                 ? "Fazer Pedido"
-                : "Explorar Menu"}
+                : rawBusiness.menuMode === "AGENDA"
+                  ? "Agendar Horário"
+                  : "Explorar Menu"}
               <ChevronRight size={16} strokeWidth={2} />
             </span>
           </button>
@@ -987,10 +994,10 @@ export default function ComercialLayout({
       </AnimatePresence>
 
       {/* ==========================================
-          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
           ========================================== */}
       <AnimatePresence>
-        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+        {showDigitalMenu && (
           <VitrineCardapio
             businessId={rawBusiness.id}
             businessName={rawBusiness.name}
@@ -1001,9 +1008,11 @@ export default function ComercialLayout({
             isOpen={isOpen}
             hours={rawBusiness.hours}
             deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0} // 🚀 AQUI
-            businessLat={rawBusiness.latitude} // 🚀 AQUI
-            businessLng={rawBusiness.longitude} // 🚀 AQUI
+            deliveryRadius={rawBusiness.deliveryRadius || 0}
+            businessLat={rawBusiness.latitude}
+            businessLng={rawBusiness.longitude}
+            menuMode={rawBusiness.menuMode}
+            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
           />
         )}
       </AnimatePresence>

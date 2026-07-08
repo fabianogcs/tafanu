@@ -21,7 +21,7 @@ export default function Hero() {
     }
     setIsGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         const params = new URLSearchParams();
         params.set("lat", latitude.toString());
@@ -30,10 +30,34 @@ export default function Hero() {
         params.set("status", "open");
         params.set("page", "1");
 
-        // 🚀 GRAVA O CACHE ANTES DE IR
+        // 🚀 CTO FIX: Puxando o nome da cidade usando a API Blindada
+        let foundCity = null;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+            {
+              headers: {
+                "Accept-Language": "pt-BR",
+                "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
+              },
+            },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            foundCity =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.municipality ||
+              null;
+          }
+        } catch (e) {
+          // Segue o jogo se a API de mapas falhar
+        }
+
+        // 🚀 GRAVA O CACHE COMPLETO (Com a cidade) ANTES DE IR
         localStorage.setItem(
           "tafanu_user_coords",
-          JSON.stringify({ lat: latitude, lng: longitude }),
+          JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
         );
 
         router.push(`/busca?${params.toString()}`);

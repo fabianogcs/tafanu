@@ -65,9 +65,8 @@ export default function UrbanLayout({
   } = useBusiness(rawBusiness, rawHours);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false); // 🚀 ESTADO DO MODAL DE PDF
-  // 🚀 O filtro inteligente começa nulo
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false); // 🚀 ESTADO DA LOJA DIGITAL
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
   >(null);
@@ -412,16 +411,20 @@ export default function UrbanLayout({
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF */}
+              {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF vs AGENDA */}
               {((rawBusiness.menuMode === "DIGITAL" &&
                 Array.isArray(rawBusiness.products) &&
                 rawBusiness.products.length > 0) ||
-                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
+                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
+                rawBusiness.menuMode === "AGENDA") && (
                 <button
                   onClick={() => {
-                    if (rawBusiness.menuMode === "DIGITAL") {
+                    if (
+                      rawBusiness.menuMode === "DIGITAL" ||
+                      rawBusiness.menuMode === "AGENDA"
+                    ) {
                       setShowDigitalMenu(true);
-                    } else {
+                    } else if (rawBusiness.menuMode === "PDF") {
                       setIsPdfModalOpen(true);
                     }
                   }}
@@ -431,7 +434,9 @@ export default function UrbanLayout({
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {rawBusiness.menuMode === "DIGITAL"
                       ? "Fazer Pedido"
-                      : "Catálogo Visual"}
+                      : rawBusiness.menuMode === "AGENDA"
+                        ? "Agendar Horário"
+                        : "Catálogo Visual"}
                     <ChevronRight size={20} strokeWidth={2.5} />
                   </span>
                 </button>
@@ -903,10 +908,10 @@ export default function UrbanLayout({
       </AnimatePresence>
 
       {/* ==========================================
-          🚀 MODAL DO CARRINHO (LOJA DIGITAL WHATSAPP)
+          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
           ========================================== */}
       <AnimatePresence>
-        {showDigitalMenu && rawBusiness.menuMode === "DIGITAL" && (
+        {showDigitalMenu && (
           <VitrineCardapio
             businessId={rawBusiness.id}
             businessName={rawBusiness.name}
@@ -917,13 +922,14 @@ export default function UrbanLayout({
             isOpen={isOpen}
             hours={rawBusiness.hours}
             deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0} // 🚀 AQUI
-            businessLat={rawBusiness.latitude} // 🚀 AQUI
-            businessLng={rawBusiness.longitude} // 🚀 AQUI
+            deliveryRadius={rawBusiness.deliveryRadius || 0}
+            businessLat={rawBusiness.latitude}
+            businessLng={rawBusiness.longitude}
+            menuMode={rawBusiness.menuMode}
+            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
           />
         )}
       </AnimatePresence>
-
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;

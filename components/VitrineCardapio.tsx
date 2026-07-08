@@ -20,6 +20,7 @@ import {
 import { ProductData } from "./business-editor/types";
 import { createOrderAction } from "@/app/actions";
 import LoginModal from "./LoginModal";
+import AgendaModal from "./AgendaModal"; // 🚀 MOTOR DE AGENDAMENTO
 
 interface CartItem {
   id: string;
@@ -42,6 +43,8 @@ interface VitrineCardapioProps {
   deliveryRadius?: number;
   businessLat?: number | null;
   businessLng?: number | null;
+  menuMode?: string;
+  agendaConfig?: any;
 }
 // 🚀 FASE 3: FÓRMULA DE HAVERSINE (Distância entre dois pontos na Terra em KM)
 function getDistanceFromLatLonInKm(
@@ -157,11 +160,15 @@ const ProductItem = ({
   cart,
   onAddToCart,
   onAdjustQuantity,
+  isAgenda, // 🚀 ADICIONADO AQUI
+  onOpenAgenda, // 🚀 ADICIONADO AQUI
 }: {
   product: ProductData;
   cart: CartItem[];
   onAddToCart: (product: ProductData, extras: any[]) => void;
   onAdjustQuantity: (cartId: string, delta: number) => void;
+  isAgenda?: boolean; // 🚀 ADICIONADO AQUI
+  onOpenAgenda?: (product: ProductData) => void; // 🚀 ADICIONADO AQUI
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedExtras, setSelectedExtras] = useState<number[]>([]);
@@ -231,7 +238,16 @@ const ProductItem = ({
 
             {!isExpanded && (
               <div className="shrink-0">
-                {hasExtras ? (
+                {isAgenda ? (
+                  // 🚀 BOTÃO EXCLUSIVO DE AGENDAMENTO
+                  <button
+                    onClick={() => onOpenAgenda && onOpenAgenda(product)}
+                    className="h-8 px-4 rounded-xl text-[10px] font-black uppercase transition-all bg-emerald-500 text-white shadow-md hover:bg-emerald-600 active:scale-95 flex items-center gap-1"
+                  >
+                    Agendar
+                  </button>
+                ) : hasExtras ? (
+                  // 🚀 BOTÕES ORIGINAIS DO CARRINHO (COM EXTRAS)
                   <div className="flex items-center gap-2">
                     {totalQuantity > 0 && (
                       <span className="bg-indigo-50 text-indigo-600 text-[9px] font-black px-2 py-1 rounded-lg border border-indigo-100 animate-in zoom-in">
@@ -246,6 +262,7 @@ const ProductItem = ({
                     </button>
                   </div>
                 ) : totalQuantity === 0 ? (
+                  // 🚀 BOTÃO ORIGINAL DE ADICIONAR (SEM EXTRAS)
                   <button
                     onClick={() => onAddToCart(product, [])}
                     className="h-8 px-4 rounded-xl text-[10px] font-black uppercase transition-all bg-slate-900 text-white shadow-md hover:bg-indigo-600 active:scale-95"
@@ -253,6 +270,7 @@ const ProductItem = ({
                     Add
                   </button>
                 ) : (
+                  // 🚀 BOTÕES ORIGINAIS DE MAIS E MENOS
                   <div className="flex items-center gap-1.5 bg-slate-50 rounded-xl px-1 h-8 border border-slate-200 shadow-inner">
                     <button
                       onClick={() => onAdjustQuantity(`${product.name}__`, -1)}
@@ -358,12 +376,23 @@ export default function VitrineCardapio({
   deliveryRadius = 0, // 🚀 RECEBE O RAIO
   businessLat, // 🚀 RECEBE A LATITUDE DA LOJA
   businessLng, // 🚀 RECEBE A LONGITUDE DA LOJA
+  menuMode = "DIGITAL",
+  agendaConfig,
 }: VitrineCardapioProps) {
   const { isReallyOpen, nextOpenMsg } = getStoreStatus(hours);
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [step, setStep] = useState<"CART" | "CHECKOUT">("CART");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 🚀 ADICIONADO: Estados para controlar a abertura da Agenda
+  const [showAgenda, setShowAgenda] = useState(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
+
+  const handleOpenAgenda = (product: ProductData) => {
+    setSelectedService(product);
+    setShowAgenda(true);
+  };
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [dataError, setDataError] = useState(false);
@@ -841,6 +870,8 @@ export default function VitrineCardapio({
                         cart={cart}
                         onAddToCart={handleAddToCart}
                         onAdjustQuantity={handleAdjustQuantity}
+                        isAgenda={menuMode === "AGENDA"} // 🚀 CHAVE 1
+                        onOpenAgenda={handleOpenAgenda} // 🚀 CHAVE 2
                       />
                     ))
                 )}
@@ -1137,7 +1168,7 @@ export default function VitrineCardapio({
         </div>
 
         {/* RODAPÉ E FINALIZAÇÃO */}
-        {cart.length > 0 && (
+        {cart.length > 0 && menuMode !== "AGENDA" && (
           <div className="bg-white p-4 md:p-6 border-t border-slate-100 shrink-0 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-30">
             {step === "CART" ? (
               <button
@@ -1203,6 +1234,22 @@ export default function VitrineCardapio({
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
       />
+
+      {/* 🚀 MODAL DE AGENDAMENTO (SOBREPOSTO AO CARDÁPIO) */}
+      {showAgenda && (
+        <AgendaModal
+          isOpen={showAgenda}
+          onClose={() => setShowAgenda(false)}
+          service={selectedService}
+          business={{
+            id: businessId,
+            name: businessName,
+            whatsapp: whatsapp,
+            hours: hours,
+            agendaConfig: agendaConfig,
+          }}
+        />
+      )}
     </div>
   );
 }

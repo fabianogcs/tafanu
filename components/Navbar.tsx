@@ -112,9 +112,9 @@ export default function Navbar({
               {(isVisitor || isSubscriber) && (
                 <Link
                   href="/meus-pedidos"
-                  className="flex items-center gap-2 px-5 py-2 text-rose-50 hover:text-white font-black text-[11px] uppercase tracking-widest transition-all bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 rounded-xl"
+                  className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
                 >
-                  <Clock size={14} /> Meus Pedidos
+                  <Clock size={14} className="text-amber-400" /> Meus Pedidos
                 </Link>
               )}
 

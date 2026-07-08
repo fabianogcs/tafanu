@@ -38,12 +38,12 @@ export function AddressSection({
 
     const timeoutId = setTimeout(() => {
       if (cep.length === 8) {
-        // 🚀 O SEGREDO: Se for a primeira vez (tela carregando), busca sem focar.
         if (isFirstRender.current) {
-          fetchAddress(cep, false);
-          isFirstRender.current = false; // Desliga a trava
+          // 🚀 CTO FIX: Se é a primeira vez que a tela abre, confia no Banco de Dados.
+          // NÃO chama o ViaCEP para não sobrescrever as edições manuais que o usuário já tinha feito (ex: tirar a palavra 'Rua').
+          isFirstRender.current = false;
         } else {
-          // Se não for a primeira vez (usuário digitando), busca e foca!
+          // Só busca nos Correios se o usuário ativamente digitar/alterar o CEP
           fetchAddress(cep, true);
         }
       }
@@ -55,7 +55,6 @@ export function AddressSection({
     };
   }, [addressData.cep]);
 
-  // 🚀 AQUI: Adicionamos o parâmetro shouldFocus (padrão true pra quando ele digitar manual)
   const fetchAddress = async (cep: string, shouldFocus: boolean = true) => {
     setIsSearching(true);
     const controller = new AbortController();
@@ -74,20 +73,13 @@ export function AddressSection({
 
       setAddressData((prev) => ({
         ...prev,
-        // 🚀 OTIMIZAÇÃO: Removemos caracteres especiais que o Google Maps odeia (como símbolos de pontuação repetidos)
-        address: (data.logradouro || "")
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .slice(0, 150),
-        neighborhood: (data.bairro || "")
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .slice(0, 100),
-        city: (data.localidade || "")
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .slice(0, 100),
+        // 🚀 UX/UI FIX: Removemos o Regex que destruía as letras com acentos (ç, ã, é).
+        address: (data.logradouro || "").slice(0, 150),
+        neighborhood: (data.bairro || "").slice(0, 100),
+        city: (data.localidade || "").slice(0, 100),
         state: (data.uf || "").toUpperCase().slice(0, 2),
       }));
 
-      // 🚀 AQUI: Só foca se a trava estiver liberada
       if (shouldFocus) {
         requestAnimationFrame(() => {
           numberInputRef.current?.focus();

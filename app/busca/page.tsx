@@ -1,3 +1,4 @@
+import React from "react";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import LocationTracker from "@/components/LocationTracker";
@@ -8,7 +9,7 @@ import { auth } from "@/auth";
 import Link from "next/link";
 import { normalizeText } from "@/lib/normalize";
 import { unstable_cache } from "next/cache";
-import { SearchX } from "lucide-react";
+import { SearchX, Plus, TrendingUp, ArrowRight } from "lucide-react";
 
 const PAGE_SIZE = 12;
 const STOPWORDS = ["na", "no", "em", "de", "do", "da", "com", "para", "o", "a"];
@@ -947,7 +948,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               availableCategories={orderedFilterMap}
               locationData={locationData}
               currentSort={sort}
-              isDisabled={effectiveTotal === 0 && !isOnlineMode}
             />
           </div>
           <div className="w-full">
@@ -988,28 +988,88 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             )}
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
               {paginatedResults.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-4">
-                  <div className="bg-gray-50 p-6 rounded-full mb-6">
-                    <SearchX size={48} className="text-gray-300" />
+                <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-4 animate-in fade-in zoom-in duration-500">
+                  <div className="bg-orange-50 p-6 rounded-full mb-6 shadow-inner border border-orange-100">
+                    <SearchX size={48} className="text-orange-400" />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-black text-slate-800 mb-3 tracking-tight">
-                    Estamos mapeando novos negócios!
+                  <h3 className="text-2xl md:text-3xl font-black text-[#023059] mb-3 tracking-tight uppercase italic">
+                    Oportunidade{" "}
+                    <span className="text-emerald-500">Aberta!</span>
                   </h3>
-                  <p className="text-gray-500 text-base md:text-lg max-w-lg leading-relaxed">
+                  <p className="text-slate-500 text-sm md:text-base max-w-lg leading-relaxed mb-8">
                     {isOnlineMode
-                      ? "Ainda não temos lojas com delivery ou venda online cadastradas para esta busca. Nossa vitrine cresce todos os dias, volte em breve!"
-                      : "Ainda não temos exatamente o que você procura. Nossa vitrine está em rápida expansão e novos comércios locais chegam ao Tafanu todos os dias!"}
+                      ? "Os clientes estão buscando delivery para isso na sua região. Cadastre sua loja agora e saia na frente da concorrência!"
+                      : "Milhares de pessoas buscam por negócios assim todos os dias. Coloque sua empresa no topo do Tafanu e capture esses clientes primeiro!"}
                   </p>
+
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
+                    <Link
+                      href="/"
+                      className="w-full sm:w-auto px-6 py-4 bg-slate-100 text-slate-500 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 hover:text-slate-700 transition-colors flex items-center justify-center"
+                    >
+                      Ver Lojas em Alta
+                    </Link>
+                    <Link
+                      href="/anunciar"
+                      className="w-full sm:w-auto px-6 py-4 bg-emerald-500 text-white rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
+                    >
+                      <Plus size={16} strokeWidth={3} /> Dominar Esta Busca
+                    </Link>
+                  </div>
                 </div>
               ) : (
-                paginatedResults.map((item) => (
-                  <BusinessCard
-                    key={item.id}
-                    business={item}
-                    isLoggedIn={!!userId}
-                    showDistance={sort === "distance"}
-                  />
-                ))
+                paginatedResults.map((item, index) => {
+                  // 🚀 A LÓGICA DO CAVALO DE TRÓIA (Card de Vendas Nativo)
+                  // 1. Se tem menos de 10 negócios, coloca o Card de Vendas no último espaço.
+                  // 2. Se tem mais de 10 negócios, injeta o Card de Vendas exatamente na posição 10 (após o index 8).
+                  // 3. Isso só aparece na primeira página (page === 1) para não irritar o usuário nas páginas seguintes.
+                  const isLastItemAndLessThan10 =
+                    paginatedResults.length < 10 &&
+                    index === paginatedResults.length - 1;
+                  const isTenthPosition =
+                    paginatedResults.length >= 10 && index === 8;
+                  const showCtaCard =
+                    page === 1 && (isLastItemAndLessThan10 || isTenthPosition);
+
+                  return (
+                    <React.Fragment key={item.id}>
+                      <BusinessCard
+                        business={item}
+                        isLoggedIn={!!userId}
+                        showDistance={sort === "distance"}
+                      />
+
+                      {/* INJEÇÃO DO CARD DE VENDAS */}
+                      {showCtaCard && (
+                        <Link
+                          href="/anunciar"
+                          className="group relative bg-[#0f172a] p-6 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col h-full overflow-hidden shadow-xl hover:-translate-y-2 transition-all duration-500 border border-slate-800 justify-center items-center text-center"
+                        >
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-tafanu-action opacity-10 rounded-full blur-3xl group-hover:opacity-20 transition-opacity duration-700" />
+                          <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500 opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity duration-700" />
+
+                          <div className="w-14 h-14 bg-tafanu-action rounded-full flex items-center justify-center text-[#0f172a] mb-5 shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform duration-500 relative z-10">
+                            <TrendingUp size={24} strokeWidth={2.5} />
+                          </div>
+
+                          <h3 className="font-black text-white text-lg md:text-xl uppercase tracking-tighter mb-2 leading-tight relative z-10">
+                            Sua Empresa{" "}
+                            <span className="text-tafanu-action">Aqui</span>
+                          </h3>
+
+                          <p className="text-slate-400 text-[10px] md:text-xs font-medium mb-6 relative z-10 max-w-[200px] leading-relaxed">
+                            Crie sua Vitrine Digital em 2 minutos e venda para
+                            clientes da sua região.
+                          </p>
+
+                          <span className="mt-auto inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-tafanu-action group-hover:text-emerald-300 transition-colors relative z-10">
+                            Ver Planos <ArrowRight size={14} strokeWidth={3} />
+                          </span>
+                        </Link>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               )}
             </div>
 
