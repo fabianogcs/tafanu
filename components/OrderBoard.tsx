@@ -661,7 +661,7 @@ export default function OrderBoard() {
             onClick={toggleSound}
             className="w-full md:w-auto px-6 py-3.5 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shrink-0 shadow-md animate-pulse flex items-center justify-center gap-2"
           >
-            <Volume2 size={16} /> Destravar Som
+            <Volume2 size={16} /> Ativar Som
           </button>
         </div>
       )}

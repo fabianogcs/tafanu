@@ -588,11 +588,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     ...(category
       ? [{ category: { equals: category, mode: "insensitive" as const } }]
       : []),
-    ...(sort === "distance" && userLat && userLng
+    ...(userLat && userLng
       ? [
           {
-            // 🚀 CTO FIX: Bounding Box ampliado para 1 grau (~110km).
-            // O JavaScript no final fará a filtragem fina usando o raio de entrega exato do lojista!
             latitude: { gte: userLat - 1.0, lte: userLat + 1.0 },
             longitude: { gte: userLng - 1.0, lte: userLng + 1.0 },
           },
@@ -829,7 +827,19 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       });
       score += Math.min(termScore, 200);
 
-      if (distanceValue !== null) score += Math.max(0, 50 - distanceValue);
+      // 🚀 CTO FIX: ZONAS DE CALOR (Proximidade é Rei no SEO Local)
+      if (distanceValue !== null) {
+        if (distanceValue <= 2) {
+          score += 250; // 🎯 Super Quente (Até 2km - "No meu bairro")
+        } else if (distanceValue <= 5) {
+          score += 150; // 🔥 Quente (Até 5km - "Bairros vizinhos")
+        } else if (distanceValue <= 10) {
+          score += 70; // 🟡 Morno (Até 10km - "Na minha cidade")
+        } else if (distanceValue <= 20) {
+          score += 20; // 🔵 Frio (Até 20km - "Região metropolitana")
+        }
+        // Mais de 20km não ganha bônus de proximidade.
+      }
       if (b.keywords.length === 0) score -= 10;
 
       // 3. O FILTRO ANTI-LIXO MULTI-TERMO
