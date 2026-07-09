@@ -4095,13 +4095,19 @@ export async function transferBusinessToUser(
           shein: vitrinePronta.shein,
           ifood: vitrinePronta.ifood,
 
-          // Flags Visuais
+          // Flags Visuais e Configurações Híbridas
           urban_tag: vitrinePronta.urban_tag,
           luxe_quote: vitrinePronta.luxe_quote,
           comercial_badge: vitrinePronta.comercial_badge,
           showroom_collection: vitrinePronta.showroom_collection,
           hasDelivery: vitrinePronta.hasDelivery,
           menuMode: vitrinePronta.menuMode,
+
+          deliveryFee: vitrinePronta.deliveryFee,
+          deliveryRadius: vitrinePronta.deliveryRadius,
+          agendaConfig: vitrinePronta.agendaConfig
+            ? (vitrinePronta.agendaConfig as any)
+            : null,
 
           // O Transplante foi um sucesso, ativamos a loja pro mundo!
           published: true,

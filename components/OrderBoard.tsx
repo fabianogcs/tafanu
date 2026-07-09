@@ -534,12 +534,14 @@ export default function OrderBoard() {
               ) : (
                 <CheckCircle2 size={14} />
               )}{" "}
-              Aceitar
+              {order.deliveryType === "AGENDA"
+                ? "Confirmar Reserva"
+                : "Aceitar Pedido"}
             </button>
             <button
               disabled={isUpdating === order.id}
               onClick={() => {
-                if (window.confirm("Recusar este pedido?"))
+                if (window.confirm("Recusar/Cancelar esta solicitação?"))
                   handleStatusChange(order.id, "CANCELLED");
               }}
               className="px-3 bg-rose-50 text-rose-500 border border-rose-200 text-[10px] font-black uppercase py-2.5 rounded-xl hover:bg-rose-100 transition flex justify-center items-center"
@@ -553,16 +555,20 @@ export default function OrderBoard() {
           <button
             disabled={isUpdating === order.id}
             onClick={() => handleStatusChange(order.id, "DISPATCHED")}
-            className="w-full bg-emerald-500 text-white text-[10px] font-black uppercase py-2.5 rounded-xl hover:bg-emerald-600 transition flex justify-center items-center gap-2"
+            className={`w-full text-white text-[10px] font-black uppercase py-2.5 rounded-xl transition flex justify-center items-center gap-2 ${order.deliveryType === "AGENDA" ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-500 hover:bg-emerald-600"}`}
           >
             {isUpdating === order.id ? (
               <Loader2 size={14} className="animate-spin" />
+            ) : order.deliveryType === "AGENDA" ? (
+              <Clock size={14} />
             ) : (
               <Truck size={14} />
             )}{" "}
-            {order.deliveryType === "DELIVERY"
-              ? "Despachar"
-              : "Pronto p/ Retirar"}
+            {order.deliveryType === "AGENDA"
+              ? "Iniciar Atendimento"
+              : order.deliveryType === "DELIVERY"
+                ? "Despachar (A Caminho)"
+                : "Pronto p/ Retirar"}
           </button>
         )}
 
@@ -577,7 +583,9 @@ export default function OrderBoard() {
             ) : (
               <CheckCircle2 size={14} />
             )}{" "}
-            Finalizar (Arquivar)
+            {order.deliveryType === "AGENDA"
+              ? "Finalizar Serviço"
+              : "Finalizar (Arquivar)"}
           </button>
         )}
 
@@ -715,7 +723,7 @@ export default function OrderBoard() {
             <div className="flex items-center justify-between mb-2 px-2">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2">
                 <AlertCircle size={14} className="text-rose-500" /> Novos
-                Pedidos
+                (Pedidos/Reservas)
               </h2>
               <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-1 rounded-full">
                 {pendingOrders.length}
@@ -751,7 +759,8 @@ export default function OrderBoard() {
           <div className="bg-slate-100/50 rounded-[2rem] p-4 min-h-[500px] border border-slate-200">
             <div className="flex items-center justify-between mb-4 px-2">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2">
-                <Clock size={14} className="text-amber-500" /> Em Preparo
+                <Clock size={14} className="text-amber-500" /> Em Preparo /
+                Confirmados
               </h2>
               <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-1 rounded-full">
                 {preparingOrders.length}
@@ -773,7 +782,8 @@ export default function OrderBoard() {
           <div className="bg-slate-100/50 rounded-[2rem] p-4 min-h-[500px] border border-slate-200">
             <div className="flex items-center justify-between mb-4 px-2">
               <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-600 flex items-center gap-2">
-                <Truck size={14} className="text-emerald-500" /> Despachados
+                <Truck size={14} className="text-emerald-500" /> A Caminho / Em
+                Atendimento
               </h2>
               <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-1 rounded-full">
                 {dispatchedOrders.length}

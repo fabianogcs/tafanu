@@ -175,14 +175,15 @@ export default function AgendaModal({
   }, [selectedDate, business.hours, business.agendaConfig, bookedSlots]);
 
   const handleConfirmBooking = async () => {
-    if (
-      !selectedDate ||
-      !selectedTime ||
-      !clientName.trim() ||
-      !clientPhone.trim() ||
-      (!isProfileLocked && !documentId.trim()) // Exige o CPF se não estiver travado
-    ) {
-      alert("Por favor, preencha todos os dados obrigatórios.");
+    // 1. Só exige a data, hora e o NOME no primeiro clique.
+    if (!selectedDate || !selectedTime || !clientName.trim()) {
+      alert("Por favor, preencha a data, o horário e o seu nome.");
+      return;
+    }
+
+    // 2. Só exige WhatsApp e CPF SE o backend acusou que eles faltam (dataError).
+    if (dataError && (!clientPhone.trim() || !documentId.trim())) {
+      alert("Por favor, preencha seu WhatsApp e CPF para confirmar a reserva.");
       return;
     }
 
@@ -249,17 +250,40 @@ export default function AgendaModal({
       const dataFormatada = format(selectedDate, "dd/MM/yyyy (EEEE)", {
         locale: ptBR,
       });
-      const text = `Olá, fiz uma reserva na vitrine!\n\n*Serviço:* ${service?.name}\n*Data:* ${dataFormatada}\n*Horário:* ${selectedTime}\n*Cliente:* ${clientName}\n\nO pedido já está no seu painel Kanban!`;
+      let text = `Olá, fiz uma reserva na vitrine!\n\n*Serviço:* ${service?.name}\n*Data:* ${dataFormatada}\n*Horário:* ${selectedTime}\n*Cliente:* ${clientName}\n\nO pedido já está no seu painel Kanban!`;
 
-      const cleanPhone = business.whatsapp?.replace(/\D/g, "");
-      if (cleanPhone) {
-        window.open(
-          `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`,
-          "_blank",
+      if (res.orderId) {
+        const trackingUrl = `${window.location.origin}/pedido/${res.orderId}`;
+        text += `\n*🔍 Acompanhe sua reserva aqui:*\n${trackingUrl}`;
+
+        const existingOrdersStr = localStorage.getItem("tafanu_active_orders");
+        let activeOrders: string[] = [];
+        if (existingOrdersStr) {
+          try {
+            activeOrders = JSON.parse(existingOrdersStr);
+          } catch (e) {}
+        }
+
+        if (!activeOrders.includes(res.orderId)) {
+          activeOrders.push(res.orderId);
+        }
+        localStorage.setItem(
+          "tafanu_active_orders",
+          JSON.stringify(activeOrders),
         );
-      }
 
-      onClose();
+        const cleanPhone = business.whatsapp?.replace(/\D/g, "");
+        if (cleanPhone) {
+          window.open(
+            `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(text)}`,
+            "_blank",
+          );
+        }
+
+        window.location.href = `/pedido/${res.orderId}`;
+      } else {
+        onClose();
+      }
     } catch (err) {
       alert("Erro ao confirmar reserva. Tente novamente.");
     } finally {
@@ -363,62 +387,59 @@ export default function AgendaModal({
             )}
           </div>
 
-          {/* 🚀 DADOS DO CLIENTE BLINDADOS */}
+          {/* 🚀 DADOS DO CLIENTE (COLETA PREGUIÇOSA) */}
           <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <User size={14} /> 3. Seus Dados
-              </span>
-              {isProfileLocked && (
-                <span className="text-emerald-500 font-bold tracking-normal flex items-center gap-1">
-                  Verificado <ShieldAlert size={12} />
-                </span>
-              )}
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+              <User size={14} /> 3. Seus Dados
             </label>
 
+            <input
+              type="text"
+              placeholder="Seu nome completo"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              maxLength={60}
+              className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400"
+            />
+
+            {/* SÓ APARECE SE O SERVIDOR PEDIR O CPF/WHATSAPP */}
             {dataError && (
-              <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl shadow-sm animate-in fade-in zoom-in">
+              <div className="bg-orange-50 border border-orange-200 p-5 rounded-2xl shadow-sm animate-in fade-in zoom-in mt-4">
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldAlert size={16} className="text-orange-500" />
                   <span className="text-[10px] font-black uppercase text-orange-700 tracking-widest">
                     Passaporte Tafanu
                   </span>
                 </div>
-                <p className="text-[10px] font-bold text-orange-600">
-                  Para sua segurança e do lojista, precisamos do seu CPF e
-                  WhatsApp válidos para confirmar a reserva.
+                <p className="text-[10px] font-bold text-orange-600 mb-4 leading-relaxed">
+                  Para sua segurança, informe seu WhatsApp e CPF para
+                  confirmarmos a reserva. <br />
+                  <span className="opacity-80">
+                    🔒 Seu CPF é protegido e não será enviado ao
+                    estabelecimento.
+                  </span>
                 </p>
+
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Seu WhatsApp (Ex: 11 99999-9999)"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(maskPhone(e.target.value))}
+                    maxLength={15}
+                    className="w-full h-12 px-4 bg-white rounded-xl text-xs font-bold border border-orange-200 outline-none focus:ring-2 ring-orange-500/20 text-orange-800 placeholder:text-orange-300"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Seu CPF (Apenas números)"
+                    value={documentId}
+                    onChange={(e) => setDocumentId(maskDoc(e.target.value))}
+                    maxLength={14}
+                    className="w-full h-12 px-4 bg-white rounded-xl text-xs font-bold border border-orange-200 outline-none focus:ring-2 ring-orange-500/20 text-orange-800 placeholder:text-orange-300"
+                  />
+                </div>
               </div>
             )}
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Seu nome completo"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                disabled={isProfileLocked}
-                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-              <input
-                type="text"
-                placeholder="Seu WhatsApp (Ex: 11 99999-9999)"
-                value={clientPhone}
-                onChange={(e) => setClientPhone(maskPhone(e.target.value))}
-                disabled={isProfileLocked}
-                maxLength={15}
-                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-              <input
-                type="text"
-                placeholder="Seu CPF (Apenas números)"
-                value={documentId}
-                onChange={(e) => setDocumentId(maskDoc(e.target.value))}
-                disabled={isProfileLocked}
-                maxLength={14}
-                className="w-full h-14 px-5 bg-slate-50 rounded-2xl text-sm font-bold border border-slate-200 outline-none focus:ring-2 ring-emerald-500/20 text-slate-800 placeholder:text-slate-400 disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-            </div>
           </div>
         </div>
 
@@ -429,8 +450,7 @@ export default function AgendaModal({
               !selectedDate ||
               !selectedTime ||
               !clientName.trim() ||
-              !clientPhone.trim() ||
-              (!isProfileLocked && !documentId.trim()) ||
+              (dataError && (!clientPhone.trim() || !documentId.trim())) ||
               isSubmitting
             }
             className="w-full h-16 rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"

@@ -1,7 +1,15 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { CheckCircle2, ChefHat, FileText, Bike } from "lucide-react";
-import OrderCleanupScript from "./OrderCleanupScript"; // 🚀 Injetor de Limpeza
+import {
+  CheckCircle2,
+  ChefHat,
+  FileText,
+  Bike,
+  CalendarCheck,
+  PlaySquare,
+  Clock,
+} from "lucide-react";
+import OrderCleanupScript from "./OrderCleanupScript";
 import ReportOrderButton from "@/components/ReportOrderButton";
 import CancelOrderButton from "@/components/CancelOrderButton";
 
@@ -21,6 +29,8 @@ export default async function RastreioPedidoPage({
 
   if (!order) return notFound();
 
+  const isAgenda = order.deliveryType === "AGENDA";
+
   const statuses = ["PENDING", "PREPARING", "DISPATCHED", "COMPLETED"];
   const currentStepIndex = statuses.indexOf(order.status);
 
@@ -34,55 +44,81 @@ export default async function RastreioPedidoPage({
       {isFinished && <OrderCleanupScript orderId={order.id} />}
 
       <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-xl border border-slate-200 p-8 md:p-12">
-        <div className="text-center mb-10">
-          <span className="bg-indigo-100 text-indigo-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block">
-            Status do Pedido
+        <div className="text-center mb-8">
+          <span
+            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block ${isAgenda ? "bg-emerald-100 text-emerald-600" : "bg-indigo-100 text-indigo-600"}`}
+          >
+            {isAgenda ? "Status do Agendamento" : "Status do Pedido"}
           </span>
           <h1 className="text-3xl font-black text-slate-900 uppercase italic">
-            Pedido #{order.orderNumber}
+            #{order.orderNumber}
           </h1>
           <p className="text-sm font-bold text-slate-400 mt-2">
             {order.business.name}
           </p>
         </div>
 
+        {/* 🚀 DESTAQUE EXCLUSIVO PARA AGENDAMENTOS */}
+        {isAgenda && order.appointmentDate && order.appointmentTime && (
+          <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 mb-8 flex items-center justify-center gap-3 shadow-inner">
+            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shrink-0 shadow-md">
+              <Clock size={18} />
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/70">
+                Reserva para
+              </p>
+              <p className="text-sm font-black uppercase tracking-widest text-emerald-800">
+                {new Date(order.appointmentDate).toLocaleDateString("pt-BR", {
+                  timeZone: "UTC",
+                })}{" "}
+                às {order.appointmentTime}
+              </p>
+            </div>
+          </div>
+        )}
+
         {isCancelled ? (
           <div className="bg-rose-50 border-2 border-rose-200 p-6 rounded-2xl text-center mb-8">
             <h2 className="text-lg font-black text-rose-600 uppercase">
-              Pedido Cancelado
+              {isAgenda ? "Reserva Cancelada" : "Pedido Cancelado"}
             </h2>
             <p className="text-xs font-bold text-rose-400 mt-2">
-              Infelizmente o estabelecimento precisou cancelar seu pedido. Entre
-              em contato para mais detalhes.
+              Infelizmente o estabelecimento precisou cancelar esta solicitação.
+              Entre em contato para mais detalhes.
             </p>
           </div>
         ) : (
           <div className="relative flex justify-between items-center mb-12">
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 -z-10" />
             <div
-              className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-indigo-500 transition-all duration-1000 -z-10`}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 transition-all duration-1000 -z-10 ${isAgenda ? "bg-emerald-500" : "bg-indigo-500"}`}
               style={{ width: `${(currentStepIndex / 3) * 100}%` }}
             />
 
             <Step
-              icon={<FileText />}
-              label="Recebido"
+              icon={isAgenda ? <CalendarCheck /> : <FileText />}
+              label={isAgenda ? "Solicitado" : "Recebido"}
               active={currentStepIndex >= 0}
+              isAgenda={isAgenda}
             />
             <Step
-              icon={<ChefHat />}
-              label="Preparando"
+              icon={isAgenda ? <CheckCircle2 /> : <ChefHat />}
+              label={isAgenda ? "Confirmado" : "Preparando"}
               active={currentStepIndex >= 1}
+              isAgenda={isAgenda}
             />
             <Step
-              icon={<Bike />}
-              label="A Caminho"
+              icon={isAgenda ? <PlaySquare /> : <Bike />}
+              label={isAgenda ? "Atendimento" : "A Caminho"}
               active={currentStepIndex >= 2}
+              isAgenda={isAgenda}
             />
             <Step
               icon={<CheckCircle2 />}
-              label="Entregue"
+              label={isAgenda ? "Concluído" : "Entregue"}
               active={currentStepIndex >= 3}
+              isAgenda={isAgenda}
             />
           </div>
         )}
@@ -110,7 +146,9 @@ export default async function RastreioPedidoPage({
             <span className="text-xs font-black uppercase text-slate-500">
               Total
             </span>
-            <span className="text-lg font-black text-indigo-600">
+            <span
+              className={`text-lg font-black ${isAgenda ? "text-emerald-600" : "text-indigo-600"}`}
+            >
               R$ {Number(order.totalAmount).toFixed(2)}
             </span>
           </div>
@@ -118,7 +156,7 @@ export default async function RastreioPedidoPage({
 
         {/* GRUPO DE BOTÕES DE AÇÃO */}
         <div className="space-y-3">
-          {/* 🚀 O CANCELAMENTO DE FRICÇÃO ZERO (Só aparece enquanto não estiver em preparo) */}
+          {/* 🚀 O CANCELAMENTO DE FRICÇÃO ZERO (Só aparece enquanto não estiver em preparo/confirmado) */}
           {order.status === "PENDING" && (
             <CancelOrderButton orderId={order.id} />
           )}
@@ -144,20 +182,22 @@ function Step({
   icon,
   label,
   active,
+  isAgenda,
 }: {
   icon: any;
   label: string;
   active: boolean;
+  isAgenda?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center gap-2 bg-white px-2">
       <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 shadow-sm border-2 ${active ? "bg-indigo-500 border-indigo-500 text-white scale-110" : "bg-white border-slate-200 text-slate-300"}`}
+        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 shadow-sm border-2 ${active ? (isAgenda ? "bg-emerald-500 border-emerald-500 text-white scale-110" : "bg-indigo-500 border-indigo-500 text-white scale-110") : "bg-white border-slate-200 text-slate-300"}`}
       >
         {icon}
       </div>
       <span
-        className={`text-[9px] font-black uppercase tracking-widest absolute -bottom-6 text-center w-20 -ml-5 ${active ? "text-indigo-600" : "text-slate-400"}`}
+        className={`text-[9px] font-black uppercase tracking-widest absolute -bottom-6 text-center w-20 -ml-5 ${active ? (isAgenda ? "text-emerald-600" : "text-indigo-600") : "text-slate-400"}`}
       >
         {label}
       </span>
