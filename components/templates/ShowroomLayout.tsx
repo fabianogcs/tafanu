@@ -126,6 +126,14 @@ export default function ShowroomLayout({
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
 
+  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
+  const temServicoOuProdutoAtivo =
+    business.products && business.products.some((p: any) => p.isActive);
+
+  // 🚀 O RADAR DO LINK EXTERNO:
+  const isExternalLink = !!business.isExternalLink;
+  const actionLink = business.actionLink || "";
+
   const salesChannels = [
     {
       key: "mercadoLivre",
@@ -384,14 +392,24 @@ export default function ShowroomLayout({
 
         {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
         <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
-          {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF vs AGENDA INTEGRADO AOS ÍCONES REDONDOS */}
-          {((rawBusiness.menuMode === "DIGITAL" &&
-            Array.isArray(rawBusiness.products) &&
-            rawBusiness.products.length > 0) ||
+          {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
+          {((rawBusiness.menuMode === "DIGITAL" && temServicoOuProdutoAtivo) ||
             (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-            rawBusiness.menuMode === "AGENDA") && (
+            (rawBusiness.menuMode === "AGENDA" && temServicoOuProdutoAtivo) ||
+            (isExternalLink && actionLink)) && (
             <button
               onClick={() => {
+                // 🚀 SE FOR LINK EXTERNO (CAVALO DE TRÓIA), REDIRECIONA E REGISTRA O CLIQUE!
+                if (isExternalLink && actionLink) {
+                  Actions.registerClickEvent(business.id, "WEBSITE");
+                  window.open(
+                    formatExternalLink(actionLink),
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                  return;
+                }
+
                 if (
                   rawBusiness.menuMode === "DIGITAL" ||
                   rawBusiness.menuMode === "AGENDA"

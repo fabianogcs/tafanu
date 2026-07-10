@@ -104,6 +104,14 @@ export default function UrbanLayout({
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
 
+  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
+  const temServicoOuProdutoAtivo =
+    business.products && business.products.some((p: any) => p.isActive);
+
+  // 🚀 O RADAR DO LINK EXTERNO:
+  const isExternalLink = !!business.isExternalLink;
+  const actionLink = business.actionLink || "";
+
   const salesChannels = [
     {
       key: "mercadoLivre",
@@ -411,14 +419,26 @@ export default function UrbanLayout({
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF vs AGENDA */}
+              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
               {((rawBusiness.menuMode === "DIGITAL" &&
-                Array.isArray(rawBusiness.products) &&
-                rawBusiness.products.length > 0) ||
+                temServicoOuProdutoAtivo) ||
                 (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-                rawBusiness.menuMode === "AGENDA") && (
+                (rawBusiness.menuMode === "AGENDA" &&
+                  temServicoOuProdutoAtivo) ||
+                (isExternalLink && actionLink)) && (
                 <button
                   onClick={() => {
+                    // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
+                    if (isExternalLink && actionLink) {
+                      Actions.registerClickEvent(business.id, "WEBSITE");
+                      window.open(
+                        formatExternalLink(actionLink),
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                      return;
+                    }
+
                     if (
                       rawBusiness.menuMode === "DIGITAL" ||
                       rawBusiness.menuMode === "AGENDA"

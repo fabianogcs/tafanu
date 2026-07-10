@@ -201,6 +201,8 @@ export default async function BusinessPage({
         deliveryFee: true,
         deliveryRadius: true, // 🚀 FASE 3: PUXA O RAIO
         menuMode: true,
+        isExternalLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND
+        actionLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND
         agendaConfig: true,
         products: {
           where: { isActive: true }, // 🚀 Filtra os inativos

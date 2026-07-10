@@ -139,6 +139,10 @@ export default function ComercialLayout({
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
 
+  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
+  const temServicoOuProdutoAtivo =
+    business.products && business.products.some((p: any) => p.isActive);
+
   const rawFeed = useMemo(() => {
     if (business.mediaFeed && business.mediaFeed.length > 0)
       return business.mediaFeed;
@@ -183,6 +187,10 @@ export default function ComercialLayout({
   // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
+
+  // 🚀 O RADAR DO LINK EXTERNO:
+  const isExternalLink = !!business.isExternalLink;
+  const actionLink = business.actionLink || "";
 
   const salesChannels = [
     {
@@ -405,20 +413,30 @@ export default function ComercialLayout({
         </div>
       </header>
 
-      {/* 🚀 O MOTOR DE DECISÃO: LOJA DIGITAL vs PDF vs AGENDA */}
-      {((rawBusiness.menuMode === "DIGITAL" &&
-        Array.isArray(rawBusiness.products) &&
-        rawBusiness.products.length > 0) ||
+      {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: LOJA DIGITAL vs PDF vs AGENDA vs LINK EXTERNO */}
+      {((rawBusiness.menuMode === "DIGITAL" && temServicoOuProdutoAtivo) ||
         (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-        rawBusiness.menuMode === "AGENDA") && (
+        (rawBusiness.menuMode === "AGENDA" && temServicoOuProdutoAtivo) ||
+        (isExternalLink && actionLink)) && (
         <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
           <button
             onClick={() => {
+              // 🚀 SE FOR LINK EXTERNO (CAVALO DE TRÓIA), MANDA PRA FORA E REGISTRA O CLIQUE!
+              if (isExternalLink && actionLink) {
+                Actions.registerClickEvent(business.id, "WEBSITE");
+                window.open(
+                  formatExternalLink(actionLink),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+                return;
+              }
+
               if (
                 rawBusiness.menuMode === "DIGITAL" ||
                 rawBusiness.menuMode === "AGENDA"
               ) {
-                setShowDigitalMenu(true); // 🚀 AMBOS ABREM A VITRINE DE ITENS!
+                setShowDigitalMenu(true);
               } else if (rawBusiness.menuMode === "PDF") {
                 setIsPdfModalOpen(true);
               }

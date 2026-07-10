@@ -5,11 +5,9 @@ import {
   Music2,
   Facebook,
   Globe,
-  ShoppingCart,
   MessageCircle,
   PhoneCall,
   Truck,
-  Coins, // 🚀 NOVO ÍCONE DE MOEDA
 } from "lucide-react";
 import { contactPlaceholders } from "./constants";
 import { formatPhoneNumber, cleanSocialHandle } from "@/lib/normalize";
@@ -19,10 +17,6 @@ interface Socials {
   facebook: string;
   tiktok: string;
   website: string;
-  shopee: string;
-  mercadoLivre: string;
-  shein: string;
-  ifood: string;
 }
 
 interface ConnectionsSectionProps {
@@ -50,10 +44,10 @@ export function ConnectionsSection({
   setPhone,
   hasDelivery,
   setHasDelivery,
-  deliveryFee, // 🚀 NOVO
-  setDeliveryFee, // 🚀
-  deliveryRadius, // 🚀 AQUI
-  setDeliveryRadius, // 🚀 AQUI
+  deliveryFee,
+  setDeliveryFee,
+  deliveryRadius,
+  setDeliveryRadius,
   isService,
 }: ConnectionsSectionProps) {
   const updateSocial = (id: keyof Socials, value: string) => {
@@ -64,7 +58,6 @@ export function ConnectionsSection({
     <div className="space-y-8">
       {/* CONTATOS PRINCIPAIS */}
       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-        {/* WhatsApp (Layout alinhado com as Redes Sociais) */}
         <label className="flex-1 flex items-center gap-3 p-2 bg-emerald-50/30 rounded-2xl border border-emerald-100 transition-all focus-within:bg-emerald-50 focus-within:ring-4 ring-emerald-100/50 focus-within:border-transparent group cursor-text">
           <div className="w-12 h-12 shrink-0 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-sm transition-transform group-focus-within:scale-105">
             <MessageCircle size={22} fill="currentColor" />
@@ -83,7 +76,6 @@ export function ConnectionsSection({
           </div>
         </label>
 
-        {/* Telefone (Layout alinhado com as Redes Sociais) */}
         <label className="flex-1 flex items-center gap-3 p-2 bg-indigo-50/30 rounded-2xl border border-indigo-100 transition-all focus-within:bg-indigo-50 focus-within:ring-4 ring-indigo-100/50 focus-within:border-transparent group cursor-text">
           <div className="w-12 h-12 shrink-0 bg-indigo-500 text-white rounded-xl flex items-center justify-center shadow-sm transition-transform group-focus-within:scale-105">
             <PhoneCall size={20} />
@@ -103,7 +95,7 @@ export function ConnectionsSection({
         </label>
       </div>
 
-      {/* REDES SOCIAIS (Com Máscara Inteligente) */}
+      {/* REDES SOCIAIS E SITE OFICIAL */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           {
@@ -181,26 +173,16 @@ export function ConnectionsSection({
         ))}
       </div>
 
-      {/* ===============================================================
-          🚀 BLOCO DO DELIVERY: AGORA COM A TAXA INCLUÍDA ANIMADA
-          =============================================================== */}
+      {/* BLOCO DO DELIVERY */}
       {!isService && (
         <div className="space-y-3">
           <div
             onClick={() => setHasDelivery(!hasDelivery)}
-            className={`cursor-pointer rounded-[2.5rem] p-6 border-2 transition-all flex items-center justify-between ${
-              hasDelivery
-                ? "bg-emerald-50 border-emerald-400 shadow-[0_8px_30px_rgb(16,185,129,0.15)]"
-                : "bg-white border-slate-200 hover:border-slate-300"
-            }`}
+            className={`cursor-pointer rounded-[2.5rem] p-6 border-2 transition-all flex items-center justify-between ${hasDelivery ? "bg-emerald-50 border-emerald-400 shadow-sm" : "bg-white border-slate-200"}`}
           >
             <div className="flex items-center gap-4">
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
-                  hasDelivery
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
-                    : "bg-slate-100 text-slate-400"
-                }`}
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${hasDelivery ? "bg-emerald-500 text-white shadow-md" : "bg-slate-100 text-slate-400"}`}
               >
                 <Truck size={28} />
               </div>
@@ -211,8 +193,7 @@ export function ConnectionsSection({
                   Fazemos Entregas (Delivery)
                 </h3>
                 <p className="text-xs font-medium text-slate-500 mt-0.5">
-                  O seu negócio aparecerá na Vitrine Digital para compras
-                  online.
+                  Sua loja aparecerá nas buscas para envio online.
                 </p>
               </div>
             </div>
@@ -225,20 +206,17 @@ export function ConnectionsSection({
             </div>
           </div>
 
-          {/* 🚀 CAIXA DE TAXA DE ENTREGA E RAIO MÁXIMO */}
           {hasDelivery && (
             <div className="bg-white border border-emerald-200 p-5 rounded-3xl shadow-sm animate-in slide-in-from-top-4 fade-in duration-300 ml-0 md:ml-8 mt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* CAMPO 1: TAXA DE ENTREGA */}
                 <div>
                   <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest block mb-1">
-                    Taxa Fixa de Entrega
+                    Taxa de Entrega
                   </label>
-                  <p className="text-[9px] text-slate-400 font-bold mb-2 leading-tight">
-                    Valor cobrado. Deixe R$ 0,00 se for frete Grátis ou a
-                    combinar.
+                  <p className="text-[9px] text-slate-400 font-bold mb-2">
+                    R$ 0 para Frete Grátis.
                   </p>
-                  <div className="flex items-center w-full border-2 border-emerald-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-emerald-400 transition-colors h-12">
+                  <div className="flex items-center w-full border-2 border-emerald-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-emerald-400 h-12">
                     <span className="bg-emerald-50 text-emerald-600 font-black text-xs px-4 flex items-center border-r border-emerald-100 h-full">
                       R$
                     </span>
@@ -247,40 +225,34 @@ export function ConnectionsSection({
                       min="0"
                       step="0.01"
                       value={deliveryFee || ""}
-                      onChange={(e) => {
-                        const val = Math.max(
-                          0,
-                          parseFloat(e.target.value) || 0,
-                        );
-                        setDeliveryFee(val);
-                      }}
+                      onChange={(e) =>
+                        setDeliveryFee(
+                          Math.max(0, parseFloat(e.target.value) || 0),
+                        )
+                      }
                       className="w-full h-full px-3 text-sm font-black text-slate-700 bg-transparent outline-none"
                       placeholder="0.00"
                     />
                   </div>
                 </div>
-
-                {/* CAMPO 2: RAIO MÁXIMO DE ENTREGA */}
                 <div>
-                  <label className="text-[10px] font-black uppercase text-indigo-500 tracking-widest block mb-1 flex items-center gap-1.5">
-                    Distância Máxima
+                  <label className="text-[10px] font-black uppercase text-indigo-500 tracking-widest block mb-1">
+                    Distância Máx.
                   </label>
-                  <p className="text-[9px] text-slate-400 font-bold mb-2 leading-tight">
-                    Até quantos Km você entrega? Deixe 0 para Sem Limites.
+                  <p className="text-[9px] text-slate-400 font-bold mb-2">
+                    Em KM. Deixe 0 para Sem Limite.
                   </p>
-                  <div className="flex items-center w-full border-2 border-indigo-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-indigo-400 transition-colors h-12">
+                  <div className="flex items-center w-full border-2 border-indigo-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-indigo-400 h-12">
                     <input
                       type="number"
                       min="0"
                       step="0.1"
                       value={deliveryRadius || ""}
-                      onChange={(e) => {
-                        const val = Math.max(
-                          0,
-                          parseFloat(e.target.value) || 0,
-                        );
-                        setDeliveryRadius(val);
-                      }}
+                      onChange={(e) =>
+                        setDeliveryRadius(
+                          Math.max(0, parseFloat(e.target.value) || 0),
+                        )
+                      }
                       className="w-full h-full px-4 text-sm font-black text-slate-700 bg-transparent outline-none"
                       placeholder="Ex: 5"
                     />
@@ -294,69 +266,6 @@ export function ConnectionsSection({
           )}
         </div>
       )}
-      {/* MARKETPLACES */}
-      <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
-        <h2 className="text-[10px] font-black uppercase mb-8 flex items-center gap-2 text-slate-400 tracking-[0.2em]">
-          <ShoppingCart size={16} /> Marketplaces & Apps
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            {
-              key: "shopee",
-              label: "Shopee",
-              color: "bg-[#EE4D2D] text-white",
-              icon: "S",
-              placeholder: "shopee.com.br/...",
-            },
-            {
-              key: "ifood",
-              label: "iFood",
-              color: "bg-[#EA1D2C] text-white",
-              icon: "i",
-              placeholder: "ifood.com.br/...",
-            },
-            {
-              key: "mercadoLivre",
-              label: "M. Livre",
-              color: "bg-[#FFF159] text-slate-900",
-              icon: "M",
-              placeholder: "mercadolivre.com.br/...",
-            },
-            {
-              key: "shein",
-              label: "Shein",
-              color: "bg-black text-white",
-              icon: "S",
-              placeholder: "shein.com/...",
-            },
-          ].map((store) => (
-            <label
-              key={store.key}
-              className="flex items-center gap-3 p-2 bg-slate-50 rounded-2xl border border-slate-100 transition-all focus-within:bg-white focus-within:ring-4 focus-within:border-transparent group cursor-text"
-            >
-              <div
-                className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-black text-xl shadow-sm transition-transform group-focus-within:scale-105 ${store.color}`}
-              >
-                {store.icon}
-              </div>
-              <div className="flex-1 pr-4">
-                <span className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">
-                  {store.label}
-                </span>
-                <input
-                  value={(socials as any)[store.key]}
-                  maxLength={255}
-                  onChange={(e) =>
-                    updateSocial(store.key as any, e.target.value)
-                  }
-                  placeholder={store.placeholder}
-                  className="bg-transparent w-full text-[11px] font-bold text-slate-700 outline-none placeholder:font-normal placeholder:opacity-30"
-                />
-              </div>
-            </label>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

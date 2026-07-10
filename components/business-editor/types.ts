@@ -10,10 +10,6 @@ export interface SocialLinks {
   facebook: string;
   tiktok: string;
   website: string;
-  shopee: string;
-  mercadoLivre: string;
-  shein: string;
-  ifood: string;
 }
 
 export interface AddressData {

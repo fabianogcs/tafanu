@@ -192,6 +192,15 @@ export default function BusinessEditor({
   const [menuMode, setMenuMode] = useState<"PDF" | "DIGITAL" | "AGENDA">(
     safeBusiness.menuMode || "DIGITAL",
   );
+
+  // 🚀 O NOVO COFRE DE LINK EXTERNO
+  const [isExternalLink, setIsExternalLink] = useState<boolean>(
+    !!safeBusiness.isExternalLink,
+  );
+  const [actionLink, setActionLink] = useState<string>(
+    safeBusiness.actionLink || "",
+  );
+
   // 🚀 O COFRE INDEPENDENTE DA AGENDA
   const [agendaConfig, setAgendaConfig] = useState<any>(() => {
     if (safeBusiness.agendaConfig) return safeBusiness.agendaConfig;
@@ -205,6 +214,7 @@ export default function BusinessEditor({
       })),
     };
   });
+
   const [categoria, setCategoria] = useState(() => {
     if (
       isNew ||
@@ -231,7 +241,7 @@ export default function BusinessEditor({
       "Servicos",
     ];
     return serviceCategories.includes(categoria);
-  }, [categoria, menuMode]); // 🚀 Colocamos o menuMode aqui para ele escutar o clique
+  }, [categoria, menuMode]);
 
   const [selectedSubs, setSelectedSubs] = useState<string[]>(
     safeBusiness.subcategory || [],
@@ -295,10 +305,6 @@ export default function BusinessEditor({
     facebook: cleanSocialHandle(safeBusiness.facebook),
     tiktok: cleanSocialHandle(safeBusiness.tiktok),
     website: safeBusiness.website || "",
-    shopee: safeBusiness.shopee || "",
-    mercadoLivre: safeBusiness.mercadoLivre || "",
-    shein: safeBusiness.shein || "",
-    ifood: safeBusiness.ifood || "",
   });
 
   const [hasDelivery, setHasDelivery] = useState(
@@ -348,7 +354,6 @@ export default function BusinessEditor({
             })),
           ];
 
-    // 🚀 A VACINA DA ORDENAÇÃO DE HORÁRIOS
     const mappedSafeHours = (safeBusiness.hours || [])
       .map((h: any) => ({
         dayOfWeek: Number(h.dayOfWeek),
@@ -395,6 +400,8 @@ export default function BusinessEditor({
       (coverImage || "") !== (safeBusiness.coverImage || "") ||
       (catalogPdf || null) !== (safeBusiness.catalogPdf || null) ||
       menuMode !== (safeBusiness.menuMode || "DIGITAL") ||
+      isExternalLink !== !!safeBusiness.isExternalLink ||
+      actionLink !== (safeBusiness.actionLink || "") ||
       categoria !== initialCategory ||
       hasDelivery !== !!safeBusiness.hasDelivery ||
       deliveryFee !== (safeBusiness.deliveryFee || 0) ||
@@ -419,10 +426,6 @@ export default function BusinessEditor({
       socials.instagram !== cleanSocialHandle(safeBusiness.instagram) ||
       socials.tiktok !== cleanSocialHandle(safeBusiness.tiktok) ||
       socials.facebook !== cleanSocialHandle(safeBusiness.facebook) ||
-      (socials.shopee || "") !== (safeBusiness.shopee || "") ||
-      (socials.ifood || "") !== (safeBusiness.ifood || "") ||
-      (socials.mercadoLivre || "") !== (safeBusiness.mercadoLivre || "") ||
-      (socials.shein || "") !== (safeBusiness.shein || "") ||
       (socials.website || "") !== (safeBusiness.website || "");
 
     const isAddressDifferent =
@@ -469,6 +472,8 @@ export default function BusinessEditor({
     deliveryRadius,
     products,
     menuMode,
+    isExternalLink,
+    actionLink,
   ]);
 
   useEffect(() => {
@@ -539,6 +544,8 @@ export default function BusinessEditor({
       setCoverImage(safeBusiness.coverImage || "");
       setCatalogPdf(safeBusiness.catalogPdf || null);
       setMenuMode(safeBusiness.menuMode || "DIGITAL");
+      setIsExternalLink(!!safeBusiness.isExternalLink);
+      setActionLink(safeBusiness.actionLink || "");
       setProducts(
         safeBusiness.products
           ? JSON.parse(JSON.stringify(safeBusiness.products))
@@ -593,10 +600,6 @@ export default function BusinessEditor({
         facebook: cleanSocialHandle(safeBusiness.facebook),
         tiktok: cleanSocialHandle(safeBusiness.tiktok),
         website: safeBusiness.website || "",
-        shopee: safeBusiness.shopee || "",
-        mercadoLivre: safeBusiness.mercadoLivre || "",
-        shein: safeBusiness.shein || "",
-        ifood: safeBusiness.ifood || "",
       });
 
       setAddressData({
@@ -764,21 +767,19 @@ export default function BusinessEditor({
           ? `https://facebook.com/${socials.facebook}`
           : "",
         tiktok: socials.tiktok ? `https://tiktok.com/@${socials.tiktok}` : "",
-        shopee: socials.shopee?.trim()
-          ? `https://${socials.shopee.trim().replace(/^(https?:\/\/)+/gi, "")}`
-          : "",
-        mercadoLivre: socials.mercadoLivre?.trim()
-          ? `https://${socials.mercadoLivre.trim().replace(/^(https?:\/\/)+/gi, "")}`
-          : "",
-        shein: socials.shein?.trim()
-          ? `https://${socials.shein.trim().replace(/^(https?:\/\/)+/gi, "")}`
-          : "",
-        ifood: socials.ifood?.trim()
-          ? `https://${socials.ifood.trim().replace(/^(https?:\/\/)+/gi, "")}`
-          : "",
         website: socials.website?.trim()
           ? `https://${socials.website.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
+
+        // 🚀 O CAVALO DE TRÓIA ENTRA AQUI NO BANCO DE DADOS
+        isExternalLink: isExternalLink,
+        actionLink: isExternalLink ? actionLink.trim() : "",
+
+        // Zera os marketplaces velhos pra limpar o banco no futuro
+        shopee: "",
+        mercadoLivre: "",
+        shein: "",
+        ifood: "",
 
         hasDelivery: hasDelivery,
         deliveryFee: deliveryFee,
@@ -1083,7 +1084,7 @@ export default function BusinessEditor({
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
 
-          {/* 🚀 4. CONEXÕES, FRETE E MARKETPLACES */}
+          {/* 🚀 4. CONEXÕES E FRETE (Agora limpo sem os marketplaces antigos) */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 relative overflow-hidden">
             <ConnectionsSection
               socials={socials}
@@ -1102,7 +1103,7 @@ export default function BusinessEditor({
             />
           </div>
 
-          {/* 🚀 5. A LOJA (Cardápio ou PDF) */}
+          {/* 🚀 5. A LOJA (Cardápio, Agenda ou Link Externo) */}
           <MenuSection
             menuMode={menuMode}
             setMenuMode={setMenuMode}
@@ -1111,8 +1112,13 @@ export default function BusinessEditor({
             products={products}
             setProducts={setProducts}
             isService={isService}
-            agendaConfig={agendaConfig} // 🚀 ENVIA PARA A TELA
+            agendaConfig={agendaConfig}
             setAgendaConfig={setAgendaConfig}
+            // 🚀 NOVOS CAMPOS INJETADOS NO COMPONENTE DA TELA!
+            isExternalLink={isExternalLink}
+            setIsExternalLink={setIsExternalLink}
+            actionLink={actionLink}
+            setActionLink={setActionLink}
           />
 
           {/* 🚀 6. ENDEREÇO */}
@@ -1228,6 +1234,7 @@ export default function BusinessEditor({
             </AnimatePresence>
           </div>
         </div>
+
         {rawImageSrc && (
           <ImageCropperModal
             imageSrc={rawImageSrc}
@@ -1238,6 +1245,7 @@ export default function BusinessEditor({
             }}
           />
         )}
+
         <div className="hidden lg:flex fixed bottom-8 right-6 2xl:right-16 origin-bottom-right scale-[0.55] hover:scale-[0.85] transition-all duration-500 z-50 flex-col items-center gap-4 bg-white/70 backdrop-blur-2xl p-5 rounded-[3.5rem] shadow-2xl border border-white/80">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white px-4 py-2 rounded-full shadow-sm">
             Visualização Real

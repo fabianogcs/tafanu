@@ -189,6 +189,19 @@ export const businessSchema = z.object({
       (val) => !val || /^https?:\/\//i.test(val),
       "Deve ser um link válido",
     ),
+
+  // 🚀 NOVOS CAMPOS: LINK EXTERNO INTELIGENTE
+  actionLink: z
+    .string()
+    .max(1000)
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .refine(
+      (val) => !val || val === "" || /^https?:\/\//i.test(val),
+      "Cole o link completo começando com https://",
+    ),
+  isExternalLink: z.boolean().default(false).optional(),
   catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
   menuMode: z.enum(["PDF", "DIGITAL", "AGENDA"]).default("PDF"), // 🚀 AGENDA DESTRAVADA NO ENUM
   agendaConfig: z.any().optional().nullable(), // 🚀 CONFIGURAÇÃO INDEPENDENTE PERMITIDA

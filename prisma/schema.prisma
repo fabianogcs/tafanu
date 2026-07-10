@@ -161,6 +161,10 @@ model Business {
   menuMode       MenuMode @default(PDF)
   agendaConfig   Json?
 
+  // 🚀 O CAVALO DE TRÓIA (LINK EXTERNO DO LOJISTA)
+  actionLink      String?   @db.Text
+  isExternalLink  Boolean   @default(false)
+
   // 💰 Dados da Assinatura Deste Negócio Específico
   planType           PlanType? // ⬅️ NOVO: Transferido do User
   subscriptionStatus String?   @default("inactive") // ⬅️ NOVO: 'active', 'past_due', 'cancelled'

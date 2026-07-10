@@ -163,6 +163,11 @@ export function normalizeBusiness(raw: any) {
     deliveryRadius: b.deliveryRadius || 0,
     menuMode: b.menuMode || "PDF",
     catalogPdf: b.catalogPdf || "",
+
+    // 🚀 O CAVALO DE TRÓIA PRECISA PASSAR NA ADUANA AQUI
+    isExternalLink: !!b.isExternalLink,
+    actionLink: b.actionLink || "",
+
     agendaConfig: b.agendaConfig || null, // 🚀 PRESERVA OS HORÁRIOS DA AGENDA NA TELA DO EDITOR
 
     // 🚀 CTO FIX: Salvando a vida do Cardápio!

@@ -207,6 +207,10 @@ export default function LuxeLayout({
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
 
+  // 🚀 O RADAR DO LINK EXTERNO:
+  const isExternalLink = !!business.isExternalLink;
+  const actionLink = business.actionLink || "";
+
   const safeSetIndex = useCallback(
     (next: number) => {
       if (lightboxImages.length === 0) return;
@@ -217,6 +221,10 @@ export default function LuxeLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
+
+  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
+  const temServicoOuProdutoAtivo =
+    business.products && business.products.some((p: any) => p.isActive);
 
   const salesChannels = [
     {
@@ -291,6 +299,7 @@ export default function LuxeLayout({
       document.body.style.overflow = "";
     };
   }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E PRO CARRINHO
+
   // 🚀 MÁGICA DA CONVERSÃO: Abre o carrinho automaticamente se o cliente voltar de um login!
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -310,7 +319,7 @@ export default function LuxeLayout({
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
       : `${business.address || ""}, ${business.city || ""}, ${business.state || ""}`.trim();
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=$${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
 
@@ -451,14 +460,26 @@ export default function LuxeLayout({
 
             {/* Botões Mobile */}
             <div className="w-full flex flex-col gap-3 max-w-xs">
-              {/* 🚀 O MOTOR DE DECISÃO MOBILE: LOJA DIGITAL vs PDF vs AGENDA */}
+              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE MOBILE: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
               {((rawBusiness.menuMode === "DIGITAL" &&
-                Array.isArray(rawBusiness.products) &&
-                rawBusiness.products.length > 0) ||
+                temServicoOuProdutoAtivo) ||
                 (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-                rawBusiness.menuMode === "AGENDA") && (
+                (rawBusiness.menuMode === "AGENDA" &&
+                  temServicoOuProdutoAtivo) ||
+                (isExternalLink && actionLink)) && (
                 <button
                   onClick={() => {
+                    // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
+                    if (isExternalLink && actionLink) {
+                      Actions.registerClickEvent(business.id, "WEBSITE");
+                      window.open(
+                        formatExternalLink(actionLink),
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                      return;
+                    }
+
                     if (
                       rawBusiness.menuMode === "DIGITAL" ||
                       rawBusiness.menuMode === "AGENDA"
@@ -602,17 +623,33 @@ export default function LuxeLayout({
                   transition={{ duration: 1, delay: 0.4 }}
                   className="w-full max-w-xs flex flex-col gap-4"
                 >
-                  {/* 🚀 O MOTOR DE DECISÃO DESKTOP (Com Capa): LOJA DIGITAL vs PDF */}
+                  {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DESKTOP: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
                   {((rawBusiness.menuMode === "DIGITAL" &&
-                    Array.isArray(rawBusiness.products) &&
-                    rawBusiness.products.length > 0) ||
+                    temServicoOuProdutoAtivo) ||
                     (rawBusiness.menuMode === "PDF" &&
-                      rawBusiness.catalogPdf)) && (
+                      rawBusiness.catalogPdf) ||
+                    (rawBusiness.menuMode === "AGENDA" &&
+                      temServicoOuProdutoAtivo) ||
+                    (isExternalLink && actionLink)) && (
                     <button
                       onClick={() => {
-                        if (rawBusiness.menuMode === "DIGITAL") {
+                        // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
+                        if (isExternalLink && actionLink) {
+                          Actions.registerClickEvent(business.id, "WEBSITE");
+                          window.open(
+                            formatExternalLink(actionLink),
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
+                          return;
+                        }
+
+                        if (
+                          rawBusiness.menuMode === "DIGITAL" ||
+                          rawBusiness.menuMode === "AGENDA"
+                        ) {
                           setShowDigitalMenu(true);
-                        } else {
+                        } else if (rawBusiness.menuMode === "PDF") {
                           setIsPdfModalOpen(true);
                         }
                       }}
@@ -620,7 +657,9 @@ export default function LuxeLayout({
                     >
                       {rawBusiness.menuMode === "DIGITAL"
                         ? "Fazer Pedido"
-                        : "Explorar Menu"}{" "}
+                        : rawBusiness.menuMode === "AGENDA"
+                          ? "Agendar Horário"
+                          : "Explorar Menu"}{" "}
                       <ChevronRight size={14} strokeWidth={2} />
                     </button>
                   )}
@@ -745,14 +784,26 @@ export default function LuxeLayout({
                 transition={{ duration: 1, delay: 0.4 }}
                 className="flex gap-6"
               >
-                {/* 🚀 O MOTOR DE DECISÃO DESKTOP (Sem Capa): LOJA DIGITAL vs PDF vs AGENDA */}
+                {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DESKTOP (Sem Capa): LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
                 {((rawBusiness.menuMode === "DIGITAL" &&
-                  Array.isArray(rawBusiness.products) &&
-                  rawBusiness.products.length > 0) ||
+                  temServicoOuProdutoAtivo) ||
                   (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-                  rawBusiness.menuMode === "AGENDA") && (
+                  (rawBusiness.menuMode === "AGENDA" &&
+                    temServicoOuProdutoAtivo) ||
+                  (isExternalLink && actionLink)) && (
                   <button
                     onClick={() => {
+                      // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
+                      if (isExternalLink && actionLink) {
+                        Actions.registerClickEvent(business.id, "WEBSITE");
+                        window.open(
+                          formatExternalLink(actionLink),
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                        return;
+                      }
+
                       if (
                         rawBusiness.menuMode === "DIGITAL" ||
                         rawBusiness.menuMode === "AGENDA"

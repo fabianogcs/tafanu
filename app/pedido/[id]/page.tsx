@@ -158,7 +158,7 @@ export default async function RastreioPedidoPage({
         <div className="space-y-3">
           {/* 🚀 O CANCELAMENTO DE FRICÇÃO ZERO (Só aparece enquanto não estiver em preparo/confirmado) */}
           {order.status === "PENDING" && (
-            <CancelOrderButton orderId={order.id} />
+            <CancelOrderButton orderId={order.id} isAgenda={isAgenda} />
           )}
 
           <a

@@ -5,12 +5,21 @@ import { XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cancelOrderByCustomer } from "@/app/actions";
 
-export default function CancelOrderButton({ orderId }: { orderId: string }) {
+export default function CancelOrderButton({
+  orderId,
+  isAgenda, // 🚀 NOVO: O botão agora sabe se é lanche ou se é reserva!
+}: {
+  orderId: string;
+  isAgenda?: boolean;
+}) {
   const [isCancelling, setIsCancelling] = useState(false);
 
   const handleCancel = async () => {
+    // 🚀 UX: Pergunta dinâmica!
     const confirmCancel = window.confirm(
-      "Tem certeza que deseja cancelar este pedido?",
+      isAgenda
+        ? "Tem certeza que deseja cancelar esta reserva?"
+        : "Tem certeza que deseja cancelar este pedido?",
     );
     if (!confirmCancel) return;
 
@@ -19,7 +28,7 @@ export default function CancelOrderButton({ orderId }: { orderId: string }) {
 
     if (res.success) {
       toast.success(res.message);
-      // Opcional: Recarrega a página para atualizar o status visualmente
+      // Recarrega a página para atualizar o status visualmente
       window.location.reload();
     } else {
       toast.error(res.error);
@@ -38,7 +47,8 @@ export default function CancelOrderButton({ orderId }: { orderId: string }) {
       ) : (
         <XCircle size={16} />
       )}
-      Cancelar Pedido
+      {/* 🚀 UX: Texto dinâmico! */}
+      {isAgenda ? "Cancelar Reserva" : "Cancelar Pedido"}
     </button>
   );
 }

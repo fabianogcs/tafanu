@@ -821,29 +821,11 @@ export async function createBusiness(payload: any) {
             "facebook",
           ),
           tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
-          shopee:
-            validatedData.shopee &&
-            /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
-              ? validatedData.shopee.trim()
-              : "",
-          mercadoLivre:
-            validatedData.mercadoLivre &&
-            /^(https?:\/\/)?(www\.)?mercadolivre\.com/i.test(
-              validatedData.mercadoLivre,
-            )
-              ? validatedData.mercadoLivre.trim()
-              : "",
-          shein:
-            validatedData.shein &&
-            /^(https?:\/\/)?(www\.)?shein\.com/i.test(validatedData.shein)
-              ? validatedData.shein.trim()
-              : "",
-          ifood:
-            validatedData.ifood &&
-            /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
-              ? validatedData.ifood.trim()
-              : "",
           website: validatedData.website || "",
+
+          // 🚀 O CAVALO DE TRÓIA ENTRA AQUI NO BANCO
+          isExternalLink: validatedData.isExternalLink || false,
+          actionLink: validatedData.actionLink || "",
           published: validatedData.published ?? false,
           hasDelivery: validatedData.hasDelivery || false,
           deliveryFee: validatedData.deliveryFee || 0,
@@ -1102,35 +1084,22 @@ export async function updateFullBusiness(slug: string, payload: any) {
           published: validatedData.published,
           hasDelivery: validatedData.hasDelivery || false,
           deliveryFee: validatedData.deliveryFee || 0,
-          deliveryRadius: validatedData.deliveryRadius || 0, // 🚀 SALVA O RAIO NO BANCO
+          deliveryRadius: validatedData.deliveryRadius || 0,
           menuMode: validatedData.menuMode || "PDF",
           agendaConfig: payload.agendaConfig || null,
           urban_tag: validatedData.urban_tag || "",
           luxe_quote: validatedData.luxe_quote || "",
           showroom_collection: validatedData.showroom_collection || "",
           comercial_badge: validatedData.comercial_badge || "",
-          shopee:
-            validatedData.shopee &&
-            /^(https?:\/\/)?(www\.)?shopee\.com/i.test(validatedData.shopee)
-              ? validatedData.shopee.trim()
-              : "",
-          mercadoLivre:
-            validatedData.mercadoLivre &&
-            /^(https?:\/\/)?(www\.)?mercadolivre\.com/i.test(
-              validatedData.mercadoLivre,
-            )
-              ? validatedData.mercadoLivre.trim()
-              : "",
-          shein:
-            validatedData.shein &&
-            /^(https?:\/\/)?(www\.)?shein\.com/i.test(validatedData.shein)
-              ? validatedData.shein.trim()
-              : "",
-          ifood:
-            validatedData.ifood &&
-            /^(https?:\/\/)?(www\.)?ifood\.com/i.test(validatedData.ifood)
-              ? validatedData.ifood.trim()
-              : "",
+
+          // 🚀 O CAVALO DE TRÓIA + FAXINA VELHA
+          isExternalLink: validatedData.isExternalLink || false,
+          actionLink: validatedData.actionLink || "",
+          shopee: "",
+          mercadoLivre: "",
+          shein: "",
+          ifood: "",
+
           mediaFeed: validatedData.mediaFeed as any,
           gallery: (validatedData.mediaFeed || [])
             .filter((m: any) => m && m.type === "image" && m.url)
@@ -1500,6 +1469,8 @@ export async function resetBusiness(slug: string) {
           facebook: "",
           tiktok: "",
           website: "",
+          isExternalLink: false,
+          actionLink: "",
           shopee: "",
           mercadoLivre: "",
           shein: "",
@@ -3860,11 +3831,9 @@ export async function getOnlineMarketplaceMetadata() {
           },
           {
             OR: [
-              { shopee: { not: "" } },
-              { mercadoLivre: { not: "" } },
-              { shein: { not: "" } },
-              { ifood: { not: "" } },
-              { hasDelivery: true },
+              { isExternalLink: true }, // Se usa link de fora
+              { menuMode: "DIGITAL" }, // Ou se usa nossa Loja Digital Interna
+              { hasDelivery: true }, // Ou se ativou Delivery
             ],
           },
         ],
