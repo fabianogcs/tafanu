@@ -30,6 +30,8 @@ interface ConnectionsSectionProps {
   setHasDelivery: (val: boolean) => void;
   deliveryFee: number;
   setDeliveryFee: (val: number) => void;
+  deliveryFeeNegotiable: boolean; // 🚀 NOVO
+  setDeliveryFeeNegotiable: (val: boolean) => void; // 🚀 NOVO
   deliveryRadius: number;
   setDeliveryRadius: (val: number) => void;
   isService: boolean;
@@ -46,6 +48,8 @@ export function ConnectionsSection({
   setHasDelivery,
   deliveryFee,
   setDeliveryFee,
+  deliveryFeeNegotiable, // 🚀 AQUI!
+  setDeliveryFeeNegotiable, // 🚀 AQUI!
   deliveryRadius,
   setDeliveryRadius,
   isService,
@@ -174,98 +178,113 @@ export function ConnectionsSection({
       </div>
 
       {/* BLOCO DO DELIVERY */}
-      {!isService && (
-        <div className="space-y-3">
-          <div
-            onClick={() => setHasDelivery(!hasDelivery)}
-            className={`cursor-pointer rounded-[2.5rem] p-6 border-2 transition-all flex items-center justify-between ${hasDelivery ? "bg-emerald-50 border-emerald-400 shadow-sm" : "bg-white border-slate-200"}`}
-          >
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${hasDelivery ? "bg-emerald-500 text-white shadow-md" : "bg-slate-100 text-slate-400"}`}
-              >
-                <Truck size={28} />
-              </div>
-              <div>
-                <h3
-                  className={`font-black text-sm md:text-base uppercase tracking-tight ${hasDelivery ? "text-emerald-700" : "text-slate-700"}`}
-                >
-                  Fazemos Entregas (Delivery)
-                </h3>
-                <p className="text-xs font-medium text-slate-500 mt-0.5">
-                  Sua loja aparecerá nas buscas para envio online.
-                </p>
-              </div>
-            </div>
+      <div className="space-y-3">
+        <div
+          onClick={() => setHasDelivery(!hasDelivery)}
+          className={`cursor-pointer rounded-[2.5rem] p-6 border-2 transition-all flex items-center justify-between ${hasDelivery ? "bg-emerald-50 border-emerald-400 shadow-sm" : "bg-white border-slate-200"}`}
+        >
+          <div className="flex items-center gap-4">
             <div
-              className={`w-14 h-8 rounded-full p-1 transition-colors shrink-0 ${hasDelivery ? "bg-emerald-500" : "bg-slate-200"}`}
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${hasDelivery ? "bg-emerald-500 text-white shadow-md" : "bg-slate-100 text-slate-400"}`}
             >
-              <div
-                className={`w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${hasDelivery ? "translate-x-6" : "translate-x-0"}`}
-              />
+              <Truck size={28} />
+            </div>
+            <div>
+              <h3
+                className={`font-black text-sm md:text-base uppercase tracking-tight ${hasDelivery ? "text-emerald-700" : "text-slate-700"}`}
+              >
+                Fazemos Entregas (Delivery)
+              </h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">
+                Sua loja aparecerá nas buscas para envio online.
+              </p>
             </div>
           </div>
+          <div
+            className={`w-14 h-8 rounded-full p-1 transition-colors shrink-0 ${hasDelivery ? "bg-emerald-500" : "bg-slate-200"}`}
+          >
+            <div
+              className={`w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${hasDelivery ? "translate-x-6" : "translate-x-0"}`}
+            />
+          </div>
+        </div>
 
-          {hasDelivery && (
-            <div className="bg-white border border-emerald-200 p-5 rounded-3xl shadow-sm animate-in slide-in-from-top-4 fade-in duration-300 ml-0 md:ml-8 mt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest block mb-1">
-                    Taxa de Entrega
+        {hasDelivery && (
+          <div className="bg-white border border-emerald-200 p-5 rounded-3xl shadow-sm animate-in slide-in-from-top-4 fade-in duration-300 ml-0 md:ml-8 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest block mb-1">
+                  Taxa de Entrega
+                </label>
+
+                {/* 🚀 O NOVO CHECKBOX DE FRETE A COMBINAR */}
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="frete-combinar"
+                    checked={deliveryFeeNegotiable}
+                    onChange={(e) => setDeliveryFeeNegotiable(e.target.checked)}
+                    className="w-4 h-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="frete-combinar"
+                    className="text-[9px] text-slate-500 font-bold uppercase tracking-wider cursor-pointer select-none"
+                  >
+                    A combinar no WhatsApp
                   </label>
-                  <p className="text-[9px] text-slate-400 font-bold mb-2">
-                    R$ 0 para Frete Grátis.
-                  </p>
-                  <div className="flex items-center w-full border-2 border-emerald-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-emerald-400 h-12">
-                    <span className="bg-emerald-50 text-emerald-600 font-black text-xs px-4 flex items-center border-r border-emerald-100 h-full">
-                      R$
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={deliveryFee || ""}
-                      onChange={(e) =>
-                        setDeliveryFee(
-                          Math.max(0, parseFloat(e.target.value) || 0),
-                        )
-                      }
-                      className="w-full h-full px-3 text-sm font-black text-slate-700 bg-transparent outline-none"
-                      placeholder="0.00"
-                    />
-                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-indigo-500 tracking-widest block mb-1">
-                    Distância Máx.
-                  </label>
-                  <p className="text-[9px] text-slate-400 font-bold mb-2">
-                    Em KM. Deixe 0 para Sem Limite.
-                  </p>
-                  <div className="flex items-center w-full border-2 border-indigo-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-indigo-400 h-12">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={deliveryRadius || ""}
-                      onChange={(e) =>
-                        setDeliveryRadius(
-                          Math.max(0, parseFloat(e.target.value) || 0),
-                        )
-                      }
-                      className="w-full h-full px-4 text-sm font-black text-slate-700 bg-transparent outline-none"
-                      placeholder="Ex: 5"
-                    />
-                    <span className="bg-indigo-50 text-indigo-500 font-black text-xs px-4 flex items-center border-l border-indigo-100 h-full">
-                      KM
-                    </span>
-                  </div>
+
+                <div
+                  className={`flex items-center w-full border-2 border-emerald-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-emerald-400 h-12 transition-all ${deliveryFeeNegotiable ? "opacity-40 pointer-events-none grayscale" : ""}`}
+                >
+                  <span className="bg-emerald-50 text-emerald-600 font-black text-xs px-4 flex items-center border-r border-emerald-100 h-full">
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={deliveryFee || ""}
+                    onChange={(e) =>
+                      setDeliveryFee(
+                        Math.max(0, parseFloat(e.target.value) || 0),
+                      )
+                    }
+                    className="w-full h-full px-3 text-sm font-black text-slate-700 bg-transparent outline-none"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-indigo-500 tracking-widest block mb-1">
+                  Distância Máx.
+                </label>
+                <p className="text-[9px] text-slate-400 font-bold mb-2">
+                  Em KM. Deixe 0 para Sem Limite.
+                </p>
+                <div className="flex items-center w-full border-2 border-indigo-100 bg-slate-50 rounded-xl overflow-hidden focus-within:border-indigo-400 h-12">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={deliveryRadius || ""}
+                    onChange={(e) =>
+                      setDeliveryRadius(
+                        Math.max(0, parseFloat(e.target.value) || 0),
+                      )
+                    }
+                    className="w-full h-full px-4 text-sm font-black text-slate-700 bg-transparent outline-none"
+                    placeholder="Ex: 5"
+                  />
+                  <span className="bg-indigo-50 text-indigo-500 font-black text-xs px-4 flex items-center border-l border-indigo-100 h-full">
+                    KM
+                  </span>
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

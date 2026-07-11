@@ -157,6 +157,7 @@ model Business {
 
   hasDelivery    Boolean  @default(false)
   deliveryFee    Float    @default(0)
+  deliveryFeeNegotiable Boolean  @default(false)
   deliveryRadius Float    @default(0) // 🚀 NOVO: Raio máximo em Km (0 = sem limite)
   menuMode       MenuMode @default(PDF)
   agendaConfig   Json?

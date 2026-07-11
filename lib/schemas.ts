@@ -88,7 +88,8 @@ export const businessSchema = z.object({
   published: z.preprocess((val) => val === "true" || val === true, z.boolean()),
   hasDelivery: z.boolean().default(false).optional(),
   deliveryFee: z.coerce.number().min(0).optional().default(0),
-  deliveryRadius: z.coerce.number().min(0).max(500).optional().default(0), // 🚀 RAIO MÁXIMO (Ex: 500km)
+  deliveryFeeNegotiable: z.boolean().default(false).optional(), // 🚀 NOVO
+  deliveryRadius: z.coerce.number().min(0).max(500).optional().default(0),
 
   // --- Campos de Texto Especial dos Layouts ---
 

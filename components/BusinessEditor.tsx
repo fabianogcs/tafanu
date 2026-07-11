@@ -201,9 +201,19 @@ export default function BusinessEditor({
     safeBusiness.actionLink || "",
   );
 
-  // 🚀 O COFRE INDEPENDENTE DA AGENDA
+  // 🚀 O COFRE INDEPENDENTE DA AGENDA (AGORA COM EXCEÇÕES)
   const [agendaConfig, setAgendaConfig] = useState<any>(() => {
-    if (safeBusiness.agendaConfig) return safeBusiness.agendaConfig;
+    if (safeBusiness.agendaConfig) {
+      // 🚀 HACKER FIX: Garante que o objeto venha com 'exceptions' para não quebrar a tela nova!
+      const existing = safeBusiness.agendaConfig;
+      if (existing.hours) {
+        existing.hours = existing.hours.map((h: any) => ({
+          ...h,
+          exceptions: h.exceptions || [],
+        }));
+      }
+      return existing;
+    }
     return {
       duration: 30, // Tempo padrão do serviço
       hours: Array.from({ length: 7 }).map((_, i) => ({
@@ -211,6 +221,7 @@ export default function BusinessEditor({
         openTime: "09:00",
         closeTime: "18:00",
         isClosed: i === 0, // Domingo fechado por padrão
+        exceptions: [], // 🚀 A array que armazena os horários riscados!
       })),
     };
   });
@@ -316,7 +327,10 @@ export default function BusinessEditor({
   const [deliveryRadius, setDeliveryRadius] = useState<number>(
     safeBusiness.deliveryRadius || 0,
   );
-
+  // 🚀 O NOVO COFRE AQUI
+  const [deliveryFeeNegotiable, setDeliveryFeeNegotiable] = useState<boolean>(
+    !!safeBusiness.deliveryFeeNegotiable,
+  );
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -406,6 +420,7 @@ export default function BusinessEditor({
       hasDelivery !== !!safeBusiness.hasDelivery ||
       deliveryFee !== (safeBusiness.deliveryFee || 0) ||
       deliveryRadius !== (safeBusiness.deliveryRadius || 0) ||
+      deliveryFeeNegotiable !== (safeBusiness.deliveryFeeNegotiable ?? false) ||
       selectedTheme !== safeBusiness.theme ||
       selectedLayout !== initialLayout ||
       (description || "") !== (safeBusiness.description || "") ||
@@ -784,6 +799,7 @@ export default function BusinessEditor({
         hasDelivery: hasDelivery,
         deliveryFee: deliveryFee,
         deliveryRadius: deliveryRadius,
+        deliveryFeeNegotiable: deliveryFeeNegotiable,
 
         mediaFeed: mediaFeed.filter(
           (m: any) => typeof m.url === "string" && m.url.trim() !== "",
@@ -1099,6 +1115,8 @@ export default function BusinessEditor({
               setDeliveryFee={setDeliveryFee}
               deliveryRadius={deliveryRadius}
               setDeliveryRadius={setDeliveryRadius}
+              deliveryFeeNegotiable={deliveryFeeNegotiable} // 🚀 ENVIA A VARIÁVEL
+              setDeliveryFeeNegotiable={setDeliveryFeeNegotiable} // 🚀 ENVIA A FUNÇÃO
               isService={isService}
             />
           </div>

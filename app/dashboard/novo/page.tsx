@@ -49,7 +49,7 @@ export default async function NewBusinessPage() {
     subcategory: [],
     layout: "influencer",
     theme: "carbon",
-    published: false, // 🚀 AGORA O PADRÃO É NASCER PAUSADO!
+    published: false,
     address: "",
     city: "",
     state: "SP",
@@ -59,6 +59,14 @@ export default async function NewBusinessPage() {
     features: [],
     faqs: [],
     hours: [],
+    isExternalLink: false,
+    actionLink: "",
+    menuMode: "PDF",
+    // 🚀 ADICIONE ESTAS 4 LINHAS ABAIXO POR SEGURANÇA!
+    hasDelivery: false,
+    deliveryFee: 0,
+    deliveryFeeNegotiable: false,
+    deliveryRadius: 0,
   };
 
   return (

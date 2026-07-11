@@ -199,6 +199,7 @@ export default async function BusinessPage({
         ifood: true,
         hasDelivery: true,
         deliveryFee: true,
+        deliveryFeeNegotiable: true, // 🚀 AQUI: Puxa o 'A Combinar' do banco!
         deliveryRadius: true, // 🚀 FASE 3: PUXA O RAIO
         menuMode: true,
         isExternalLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND

@@ -152,23 +152,45 @@ export default function AgendaModal({
     const dayConfig = config.hours?.find(
       (h: any) => Number(h.dayOfWeek) === dayOfWeek,
     );
-    if (!dayConfig || !dayConfig.openTime || !dayConfig.closeTime) return [];
+
+    if (
+      !dayConfig ||
+      dayConfig.isClosed ||
+      !dayConfig.openTime ||
+      !dayConfig.closeTime
+    )
+      return [];
+
+    // 🚀 Lemos as exceções que o Lojista bloqueou lá no painel!
+    const exceptions = dayConfig.exceptions || [];
 
     const slots: string[] = [];
     let currentMins = timeToMins(dayConfig.openTime);
     const closeMins = timeToMins(dayConfig.closeTime);
     const now = new Date();
     const isToday = selectedDate.toDateString() === now.toDateString();
+
+    // Calcula os minutos atuais (com uma margem de segurança de 30 min)
     const currentNowMins = now.getHours() * 60 + now.getMinutes();
+    const margemSeguranca = 30; // Cliente só agenda se for daqui a pelo menos meia hora
 
     while (currentMins < closeMins) {
       const timeString = minsToTime(currentMins);
-      if (
-        (!isToday || currentMins > currentNowMins + 60) &&
-        !bookedSlots.includes(timeString)
-      ) {
+
+      // 🚀 A GRANDE TRAVA TRIPLA:
+      // 1. Já passou do horário de hoje? (Com margem de meia hora pra ele chegar)
+      // 2. Alguém já agendou nesse horário? (bookedSlots)
+      // 3. O dono da loja riscou esse horário da agenda manualmente? (exceptions)
+
+      const isPastToday =
+        isToday && currentMins <= currentNowMins + margemSeguranca;
+      const isBooked = bookedSlots.includes(timeString);
+      const isManuallyBlockedByOwner = exceptions.includes(timeString);
+
+      if (!isPastToday && !isBooked && !isManuallyBlockedByOwner) {
         slots.push(timeString);
       }
+
       currentMins += Number(config.duration || 30);
     }
     return slots;

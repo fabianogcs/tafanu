@@ -160,6 +160,7 @@ export function normalizeBusiness(raw: any) {
     longitude: b.longitude || null,
     hasDelivery: b.hasDelivery ?? false,
     deliveryFee: b.deliveryFee || 0,
+    deliveryFeeNegotiable: b.deliveryFeeNegotiable || false, // 🚀 NOVO
     deliveryRadius: b.deliveryRadius || 0,
     menuMode: b.menuMode || "PDF",
     catalogPdf: b.catalogPdf || "",

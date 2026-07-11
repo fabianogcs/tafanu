@@ -828,6 +828,7 @@ export async function createBusiness(payload: any) {
           actionLink: validatedData.actionLink || "",
           published: validatedData.published ?? false,
           hasDelivery: validatedData.hasDelivery || false,
+          deliveryFeeNegotiable: validatedData.deliveryFeeNegotiable || false,
           deliveryFee: validatedData.deliveryFee || 0,
           deliveryRadius: validatedData.deliveryRadius || 0, // 🚀 SALVA O RAIO NO BANCO
           menuMode: validatedData.menuMode || "PDF",
@@ -1083,6 +1084,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
           features: validatedData.features,
           published: validatedData.published,
           hasDelivery: validatedData.hasDelivery || false,
+          deliveryFeeNegotiable: validatedData.deliveryFeeNegotiable || false,
           deliveryFee: validatedData.deliveryFee || 0,
           deliveryRadius: validatedData.deliveryRadius || 0,
           menuMode: validatedData.menuMode || "PDF",
@@ -1471,6 +1473,7 @@ export async function resetBusiness(slug: string) {
           website: "",
           isExternalLink: false,
           actionLink: "",
+          deliveryFeeNegotiable: false, // 🚀 A VASSOURA TAMBÉM LIMPA ISSO AGORA
           shopee: "",
           mercadoLivre: "",
           shein: "",
@@ -4401,8 +4404,12 @@ export async function createOrderAction(payload: any) {
       }
     }
 
-    // 🚀 O ESCUDO FINANCEIRO: Adiciona a taxa de entrega real do banco se for Delivery!
-    if (payload.deliveryType === "DELIVERY" && business.deliveryFee > 0) {
+    // 🚀 O ESCUDO FINANCEIRO: Só adiciona a taxa se não for A COMBINAR!
+    if (
+      payload.deliveryType === "DELIVERY" &&
+      business.deliveryFee > 0 &&
+      !business.deliveryFeeNegotiable
+    ) {
       totalAmount += business.deliveryFee;
     }
 

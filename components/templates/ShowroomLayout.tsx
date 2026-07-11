@@ -859,6 +859,7 @@ export default function ShowroomLayout({
             hours={rawBusiness.hours}
             deliveryFee={rawBusiness.deliveryFee || 0}
             deliveryRadius={rawBusiness.deliveryRadius || 0}
+            deliveryFeeNegotiable={rawBusiness.deliveryFeeNegotiable}
             businessLat={rawBusiness.latitude}
             businessLng={rawBusiness.longitude}
             menuMode={rawBusiness.menuMode}

@@ -39,6 +39,7 @@ interface VitrineCardapioProps {
   isOpen: boolean;
   hours: any[];
   deliveryFee?: number;
+  deliveryFeeNegotiable?: boolean; // 🚀 NOVO CAMPO AQUI
   // 🚀 FASE 3: AS NOVAS VARIÁVEIS AQUI
   deliveryRadius?: number;
   businessLat?: number | null;
@@ -373,6 +374,7 @@ export default function VitrineCardapio({
   isOpen,
   hours,
   deliveryFee = 0,
+  deliveryFeeNegotiable = false, // 🚀 PUXA AQUI
   deliveryRadius = 0, // 🚀 RECEBE O RAIO
   businessLat, // 🚀 RECEBE A LATITUDE DA LOJA
   businessLng, // 🚀 RECEBE A LONGITUDE DA LOJA
@@ -577,7 +579,9 @@ export default function VitrineCardapio({
     return acc + itemTotal * item.quantity;
   }, 0);
 
-  const taxaEntrega = deliveryType === "DELIVERY" ? deliveryFee : 0;
+  // 🚀 SE FOR A COMBINAR, O SISTEMA NÃO SOMA A TAXA!
+  const taxaEntrega =
+    deliveryType === "DELIVERY" && !deliveryFeeNegotiable ? deliveryFee : 0;
   const totalPedido = totalCart + taxaEntrega;
 
   const handleSendWhatsApp = async () => {
@@ -737,7 +741,11 @@ export default function VitrineCardapio({
       // 🚀 WHATSAPP COM O TOTAL EXATO E O FRETE DISCRIMINADO
       text += `\n*💰 Subtotal: R$ ${totalCart.toFixed(2)}*\n`;
       if (deliveryType === "DELIVERY") {
-        text += `*🛵 Taxa de Entrega: ${deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : "Grátis"}*\n`;
+        if (deliveryFeeNegotiable) {
+          text += `*🛵 Taxa de Entrega: A combinar*\n`;
+        } else {
+          text += `*🛵 Taxa de Entrega: ${deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : "Grátis"}*\n`;
+        }
       }
 
       text += `*💵 TOTAL A PAGAR: R$ ${totalPedido.toFixed(2)}*\n`;
@@ -1107,10 +1115,20 @@ export default function VitrineCardapio({
                 {deliveryType === "DELIVERY" && (
                   <div className="flex justify-between text-slate-500 text-xs font-black uppercase tracking-widest">
                     <span>Taxa de Entrega</span>
-                    <span className={deliveryFee > 0 ? "" : "text-emerald-500"}>
-                      {deliveryFee && deliveryFee > 0
-                        ? `R$ ${deliveryFee.toFixed(2)}`
-                        : "Grátis"}
+                    <span
+                      className={
+                        deliveryFeeNegotiable
+                          ? "text-indigo-500"
+                          : deliveryFee > 0
+                            ? ""
+                            : "text-emerald-500"
+                      }
+                    >
+                      {deliveryFeeNegotiable
+                        ? "A Combinar"
+                        : deliveryFee > 0
+                          ? `R$ ${deliveryFee.toFixed(2)}`
+                          : "Grátis"}
                     </span>
                   </div>
                 )}

@@ -552,41 +552,79 @@ export default function OrderBoard() {
         )}
 
         {order.status === "PREPARING" && (
-          <button
-            disabled={isUpdating === order.id}
-            onClick={() => handleStatusChange(order.id, "DISPATCHED")}
-            className={`w-full text-white text-[10px] font-black uppercase py-2.5 rounded-xl transition flex justify-center items-center gap-2 ${order.deliveryType === "AGENDA" ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-500 hover:bg-emerald-600"}`}
-          >
-            {isUpdating === order.id ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : order.deliveryType === "AGENDA" ? (
-              <Clock size={14} />
-            ) : (
-              <Truck size={14} />
-            )}{" "}
-            {order.deliveryType === "AGENDA"
-              ? "Iniciar Atendimento"
-              : order.deliveryType === "DELIVERY"
-                ? "Despachar (A Caminho)"
-                : "Pronto p/ Retirar"}
-          </button>
+          <div className="flex gap-2 w-full">
+            <button
+              disabled={isUpdating === order.id}
+              onClick={() => handleStatusChange(order.id, "DISPATCHED")}
+              className={`flex-1 text-white text-[10px] font-black uppercase py-2.5 rounded-xl transition flex justify-center items-center gap-2 ${order.deliveryType === "AGENDA" ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-500 hover:bg-emerald-600"}`}
+            >
+              {isUpdating === order.id ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : order.deliveryType === "AGENDA" ? (
+                <Clock size={14} />
+              ) : (
+                <Truck size={14} />
+              )}{" "}
+              {order.deliveryType === "AGENDA"
+                ? "Iniciar Atendimento"
+                : order.deliveryType === "DELIVERY"
+                  ? "Despachar (A Caminho)"
+                  : "Pronto p/ Retirar"}
+            </button>
+
+            {/* 🚀 BOTÃO DE CANCELAMENTO DE EMERGÊNCIA */}
+            <button
+              disabled={isUpdating === order.id}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "⚠️ Houve um imprevisto? Deseja realmente CANCELAR este pedido/reserva em andamento?",
+                  )
+                )
+                  handleStatusChange(order.id, "CANCELLED");
+              }}
+              className="px-3 bg-rose-50 text-rose-500 border border-rose-200 text-[10px] font-black uppercase py-2.5 rounded-xl hover:bg-rose-100 transition flex justify-center items-center shrink-0"
+              title="Cancelar Operação"
+            >
+              <XCircle size={14} />
+            </button>
+          </div>
         )}
 
         {order.status === "DISPATCHED" && (
-          <button
-            disabled={isUpdating === order.id}
-            onClick={() => handleStatusChange(order.id, "COMPLETED")}
-            className="w-full bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-black uppercase py-2.5 rounded-xl hover:bg-slate-200 hover:text-slate-800 transition flex justify-center items-center gap-2"
-          >
-            {isUpdating === order.id ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <CheckCircle2 size={14} />
-            )}{" "}
-            {order.deliveryType === "AGENDA"
-              ? "Finalizar Serviço"
-              : "Finalizar (Arquivar)"}
-          </button>
+          <div className="flex gap-2 w-full">
+            <button
+              disabled={isUpdating === order.id}
+              onClick={() => handleStatusChange(order.id, "COMPLETED")}
+              className="flex-1 bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-black uppercase py-2.5 rounded-xl hover:bg-slate-200 hover:text-slate-800 transition flex justify-center items-center gap-2"
+            >
+              {isUpdating === order.id ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <CheckCircle2 size={14} />
+              )}{" "}
+              {order.deliveryType === "AGENDA"
+                ? "Finalizar Serviço"
+                : "Finalizar (Arquivar)"}
+            </button>
+
+            {/* 🚀 BOTÃO DE CANCELAMENTO DE EMERGÊNCIA */}
+            <button
+              disabled={isUpdating === order.id}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "⚠️ Ocorreu um problema na entrega ou finalização? Deseja CANCELAR?",
+                  )
+                )
+                  handleStatusChange(order.id, "CANCELLED");
+              }}
+              className="px-3 bg-rose-50 text-rose-500 border border-rose-200 text-[10px] font-black uppercase py-2.5 rounded-xl hover:bg-rose-100 transition flex justify-center items-center shrink-0"
+              title="Cancelar Operação"
+            >
+              <XCircle size={14} />
+            </button>
+          </div>
         )}
 
         {activeTab === "ARCHIVED" && (
