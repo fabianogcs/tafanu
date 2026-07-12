@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { MessageSquare, Trash2, Flag, Send, User, Loader2 } from "lucide-react";
+import {
+  MessageSquare,
+  Trash2,
+  Flag,
+  Send,
+  User,
+  Loader2,
+  Star,
+} from "lucide-react";
 import { toast } from "sonner";
 import { addComment, deleteComment, flagComment } from "@/app/actions";
 import { formatDistanceToNow } from "date-fns";
@@ -33,6 +41,8 @@ export default function CommentsSection({
 
   const [isPending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
+  const [rating, setRating] = useState<number>(5); // 🚀 NOTA PADRÃO: 5 Estrelas
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -40,7 +50,6 @@ export default function CommentsSection({
     id: string;
     name: string;
   } | null>(null);
-
   const mainComments = comments.filter((c) => !c.parentId);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,26 +59,23 @@ export default function CommentsSection({
       return toast.error("Faça login para comentar!");
     }
     if (!emailVerified) return toast.error("Verifique seu e-mail primeiro!");
-
-    // 🚀 AVISO CLARO AO USUÁRIO
-    if (!newComment.trim()) {
-      toast.warning("O comentário não pode estar vazio.");
-      return;
-    }
+    if (!newComment.trim())
+      return toast.warning("O comentário não pode estar vazio.");
 
     setIsSubmitting(true);
     try {
-      // 🚀 TRATAMENTO DE ERRO PARA NÃO TRAVAR O BOTÃO DE ENVIAR
       const result = await addComment(
         businessId,
         newComment.trim(),
         replyingTo?.id,
+        rating, // 🚀 ENVIA A NOTA SELECIONADA
       );
 
       if (result.success) {
         setNewComment("");
+        setRating(5); // Reseta para 5 estrelas
         setReplyingTo(null);
-        toast.success("Comentário publicado!");
+        toast.success("Avaliação publicada!");
         router.refresh();
       } else {
         toast.error(result.error || "Erro ao comentar.");
@@ -77,7 +83,7 @@ export default function CommentsSection({
     } catch (err) {
       toast.error("Ocorreu um erro interno. Tente novamente.");
     } finally {
-      setIsSubmitting(false); // 🚀 GARANTE QUE O BOTÃO VOLTE A FUNCIONAR SEMPRE
+      setIsSubmitting(false);
     }
   };
 
@@ -107,15 +113,31 @@ export default function CommentsSection({
     });
   };
 
+  // Renderizador de Estrelas Estáticas Compacto
+  const RenderStars = ({ count }: { count: number }) => {
+    if (!count || count < 1) return null;
+    return (
+      <div className="flex gap-0.5 items-center ml-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            size={12}
+            className={
+              i < count ? "fill-amber-400 text-amber-400" : "text-slate-200"
+            }
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <section className="w-full max-w-4xl mx-auto">
-      {/* ⬅️ O MODAL FICA AQUI */}
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
       />
 
-      {/* CAMPO DE ENVIO COM HEADER EMBUTIDO */}
       <div
         ref={commentFormRef}
         className="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 mb-12 mt-8"
@@ -138,7 +160,7 @@ export default function CommentsSection({
 
         {currentUserId ? (
           emailVerified ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {replyingTo && (
                 <div className="flex items-center justify-between bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-500 uppercase">
@@ -155,15 +177,52 @@ export default function CommentsSection({
                 </div>
               )}
 
+              {/* 🚀 COMPONENTE DE ESTRELAS INTERATIVO DE ALTA CONVERSÃO */}
+              {!replyingTo && (
+                <div className="flex flex-col items-start gap-1.5 p-1 px-2 animate-in fade-in duration-300">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                    Sua nota para este estabelecimento:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const starValue = i + 1;
+                      const active =
+                        hoverRating !== null
+                          ? starValue <= hoverRating
+                          : starValue <= rating;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setRating(starValue)}
+                          onMouseEnter={() => setHoverRating(starValue)}
+                          onMouseLeave={() => setHoverRating(null)}
+                          className="text-slate-200 transition-transform active:scale-90 outline-none p-0.5"
+                        >
+                          <Star
+                            size={24}
+                            className={
+                              active
+                                ? "fill-amber-400 text-amber-400 transform scale-105 transition-all"
+                                : "text-slate-200"
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="relative">
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  maxLength={500} // 🚀 BLOQUEIO NATIVO
+                  maxLength={500}
                   placeholder={
                     replyingTo
                       ? "Escreva sua resposta..."
-                      : "Como foi sua experiência?"
+                      : "Como foi sua experiência de consumo?"
                   }
                   className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all min-h-[120px] pb-8 resize-none"
                   disabled={isSubmitting}
@@ -211,7 +270,6 @@ export default function CommentsSection({
             <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-2">
               Quer deixar sua avaliação?
             </p>
-            {/* ⬅️ AÇÃO DO BOTÃO ALTERADA AQUI */}
             <button
               onClick={() => setIsLoginModalOpen(true)}
               className="text-slate-900 font-black text-sm border-b-2 border-slate-900 pb-1 hover:text-emerald-500 hover:border-emerald-500 transition-all cursor-pointer"
@@ -222,7 +280,6 @@ export default function CommentsSection({
         )}
       </div>
 
-      {/* LISTA DE COMENTÁRIOS */}
       <div className="space-y-8 px-2">
         {mainComments.map((comment) => (
           <div
@@ -245,10 +302,13 @@ export default function CommentsSection({
 
             <div className="flex-1 bg-white p-5 md:p-6 rounded-[2rem] rounded-tl-none border border-slate-100 shadow-sm transition-all group-hover:shadow-md">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-black text-[13px] md:text-sm text-slate-900 uppercase italic tracking-tight">
-                  {comment.user?.name || "Visitante"}
-                </h4>
-                {/* 🚀 HYDRATION FIX AQUI */}
+                <div className="flex items-center flex-wrap gap-1.5">
+                  <h4 className="font-black text-[13px] md:text-sm text-slate-900 uppercase italic tracking-tight">
+                    {comment.user?.name || "Visitante"}
+                  </h4>
+                  {/* 🚀 INJETA AS ESTRELAS DOURADAS AQUI NO CARD */}
+                  <RenderStars count={comment.rating} />
+                </div>
                 <span
                   suppressHydrationWarning
                   className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter"
@@ -273,7 +333,6 @@ export default function CommentsSection({
                           id: comment.id,
                           name: comment.user?.name || "Visitante",
                         });
-
                         commentFormRef.current?.scrollIntoView({
                           behavior: "smooth",
                           block: "center",
@@ -316,7 +375,6 @@ export default function CommentsSection({
                       className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 relative group/reply"
                     >
                       <div className="absolute -left-[1.6rem] top-6 w-4 h-0.5 bg-orange-500/20" />
-
                       <div className="flex justify-between items-center mb-1">
                         <div className="flex items-center gap-2">
                           <span className="font-black text-[10px] text-slate-900 uppercase italic">
@@ -326,9 +384,7 @@ export default function CommentsSection({
                             DONO
                           </span>
                         </div>
-
                         <div className="flex items-center gap-3">
-                          {/* 🚀 HYDRATION FIX AQUI TAMBÉM */}
                           <span
                             suppressHydrationWarning
                             className="text-[8px] font-bold text-slate-400 uppercase"
@@ -338,13 +394,11 @@ export default function CommentsSection({
                               addSuffix: true,
                             })}
                           </span>
-
                           {(currentUserId === reply.userId || isAdmin) && (
                             <button
                               onClick={() => handleDelete(reply.id)}
                               disabled={isPending}
                               className="text-rose-400 hover:text-rose-600 transition-colors opacity-0 group-hover/reply:opacity-100"
-                              title="Apagar resposta"
                             >
                               {isPending ? (
                                 <Loader2 size={10} className="animate-spin" />
@@ -355,7 +409,6 @@ export default function CommentsSection({
                           )}
                         </div>
                       </div>
-
                       <p className="text-xs text-slate-600 font-medium leading-relaxed">
                         {reply.content}
                       </p>

@@ -209,17 +209,29 @@ export default function BusinessCard({ business, showDistance }: any) {
           </div>
         </div>
 
-        {/* --- 2. CORPO DE TEXTO (ALINHADO À ESQUERDA, FÁCIL DE LER) --- */}
+        {/* --- 2. CORPO DE TEXTO --- */}
         <div className="p-4 flex flex-col flex-1 text-left justify-start">
-          {/* --- Categoria Fixa e Subcategorias em Rolagem Automática --- */}
+          {/* --- Categoria Fixa, Estrelas e Subcategorias --- */}
           <div className="flex items-center w-full mb-2 overflow-hidden relative">
-            {/* Categoria fixa na esquerda com fundo branco para sobrepor o texto que rola */}
-            <div className="shrink-0 bg-white pr-2 z-10 flex items-center">
+            <div className="shrink-0 bg-white pr-2 z-10 flex items-center gap-1.5">
               <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">
                 {business.category}
               </span>
+
+              {/* 🚀 ULTRA PREMIUM NOTA: Só injeta na busca se a loja tiver nota > 0 */}
+              {business.rating && business.rating > 0 && (
+                <div className="flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 text-amber-600 shrink-0 ml-1">
+                  <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                  </svg>
+                  <span className="text-[9px] font-black">
+                    {business.rating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+
               {allSubcategories.length > 0 && (
-                <span className="text-slate-300 ml-2">•</span>
+                <span className="text-slate-300 ml-0.5">•</span>
               )}
             </div>
 

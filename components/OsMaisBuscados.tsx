@@ -95,12 +95,23 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
                 {biz.name}
               </h3>
 
-              <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[8px] md:text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-4">
+              <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[8px] md:text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">
                 <span className="text-[#F28705]">{biz.category}</span>
+
+                {/* 🚀 ESTRELAS NO GRID DE TENDÊNCIAS */}
+                {biz.rating && biz.rating > 0 && (
+                  <>
+                    <span className="text-slate-200">•</span>
+                    <span className="text-amber-500 flex items-center gap-0.5">
+                      ★ <span>{biz.rating.toFixed(1)}</span>
+                    </span>
+                  </>
+                )}
+
                 {biz.city && (
                   <>
                     <span className="text-slate-200">•</span>
-                    <span className="flex items-center gap-1 truncate">
+                    <span className="flex items-center gap-1 truncate text-slate-400 font-bold">
                       <MapPin
                         size={10}
                         className="text-slate-400 flex-shrink-0"

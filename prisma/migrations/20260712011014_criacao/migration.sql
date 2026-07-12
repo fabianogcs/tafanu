@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Business" ADD COLUMN     "rating" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+ADD COLUMN     "reviewCount" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "Comment" ADD COLUMN     "rating" INTEGER DEFAULT 0;

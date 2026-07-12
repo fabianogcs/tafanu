@@ -459,16 +459,25 @@ export async function loginUser(formData: FormData) {
   try {
     let destino = callbackUrl || "/";
 
-    // 🛡️ TRAVA ANTI-OPEN REDIRECT: Impede redirecionamentos maliciosos (Phishing) para sites externos
+    // 🛡️ TRAVA ANTI-OPEN REDIRECT BLINDADA (Validação de Hostname Real)
     if (callbackUrl) {
-      const isRelative =
-        callbackUrl.startsWith("/") && !callbackUrl.startsWith("//");
-      const isOfficialDomain =
-        callbackUrl.startsWith("https://tafanu.com.br") ||
-        callbackUrl.startsWith("http://localhost:3000");
+      try {
+        const isRelative =
+          callbackUrl.startsWith("/") && !callbackUrl.startsWith("//");
+        let isOfficialDomain = false;
 
-      if (!isRelative && !isOfficialDomain) {
-        destino = "/"; // Link suspeito externo é limpo e resetado para a Home com segurança
+        if (!isRelative) {
+          const urlUrl = new URL(callbackUrl);
+          isOfficialDomain =
+            urlUrl.hostname === "tafanu.com.br" ||
+            urlUrl.hostname === "localhost";
+        }
+
+        if (!isRelative && !isOfficialDomain) {
+          destino = "/";
+        }
+      } catch (e) {
+        destino = "/"; // Se o link for malformado, força reset seguro para a Home
       }
     }
 
@@ -3659,8 +3668,9 @@ export async function addComment(
   businessId: string,
   content: string,
   parentId?: string,
+  rating: number = 0, // 🚀 NOVO PARAMETRO INJETADO
 ) {
-  // 🚀 O ESCUDO ANTI-SPAM DE MEMÓRIA (Limita a 500 letras antes de bater no banco)
+  // 🚀 O ESCUDO ANTI-SPAM DE MEMÓRIA
   if (!content || content.trim().length === 0) {
     return { success: false, error: "O comentário não pode estar vazio." };
   }
@@ -3671,13 +3681,15 @@ export async function addComment(
     };
   }
 
+  // 🚀 Valida limite de nota (Só exige nota se NÃO for uma resposta ao cliente)
+  if (!parentId && (rating < 1 || rating > 5)) {
+    return { success: false, error: "Avaliação por estrelas inválida." };
+  }
+
   try {
     // 1. 🛡️ Segurança: Pega o ID direto da sessão autenticada do servidor
     const session = await auth();
-    if (!session?.user?.id) {
-      return { success: false, error: "Não autorizado." };
-    }
-
+    if (!session?.user?.id) return { success: false, error: "Não autorizado." };
     const userId = session.user.id;
 
     // 🚀 O PASSAPORTE: Exige CPF e Telefone para comentar
@@ -3694,16 +3706,14 @@ export async function addComment(
       };
     }
 
-    // 2. ⏳ TRAVA ANTI-FLOOD (Bloqueio de Spam)
-    // Define uma janela de 15 segundos de carência entre comentários
+    // 2. ⏳ TRAVA ANTI-FLOOD (Bloqueio de Spam de 15s)
     const quinzeSegundosAtras = new Date(Date.now() - 15 * 1000);
-
     const comentarioRecente = await db.comment.findFirst({
       where: {
         userId: userId,
         createdAt: { gte: quinzeSegundosAtras },
       },
-      select: { id: true }, // Traz apenas o ID para a consulta ser extremamente leve
+      select: { id: true },
     });
 
     if (comentarioRecente) {
@@ -3713,7 +3723,7 @@ export async function addComment(
       };
     }
 
-    // 🚀 BLINDAGEM ANTI-XSS: Neutraliza tags HTML antes de salvar no banco de dados
+    // 🚀 BLINDAGEM ANTI-XSS
     const cleanContent = content
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -3721,18 +3731,49 @@ export async function addComment(
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#x27;");
 
-    // 3. Criação do comentário se passou na barreira
-    const newComment = await db.comment.create({
-      data: {
-        content: cleanContent,
-        businessId,
-        userId,
-        parentId: parentId || null,
-      },
+    // 3. 🚀 TRANSAÇÃO ATÔMICA: Salva o comentário e atualiza a média da loja de uma vez
+    const comment = await db.$transaction(async (tx) => {
+      const newComment = await tx.comment.create({
+        data: {
+          content: cleanContent,
+          businessId,
+          userId,
+          parentId: parentId || null,
+          rating: parentId ? null : rating, // Respostas (dono) não ganham nota
+        },
+      });
+
+      // 🚀 RECALCULO DE ALTA PERFORMANCE (Processado direto no PostgreSQL via Agregadores)
+      if (!parentId) {
+        const aggregation = await tx.comment.aggregate({
+          where: { businessId, parentId: null, rating: { gte: 1 } },
+          _count: { rating: true },
+          _sum: { rating: true },
+        });
+
+        const reviewCount = aggregation._count.rating || 0;
+        const sumRatings = Number(aggregation._sum.rating) || 0;
+        const finalAverage =
+          reviewCount > 0
+            ? parseFloat((sumRatings / reviewCount).toFixed(1))
+            : 0;
+
+        await tx.business.update({
+          where: { id: businessId },
+          data: {
+            rating: finalAverage,
+            reviewCount: reviewCount,
+          },
+        });
+      }
+
+      return newComment;
     });
 
     revalidatePath(`/site/[slug]`, "page");
-    return { success: true, comment: newComment };
+    revalidatePath("/busca"); // Atualiza as estrelinhas na busca também!
+
+    return { success: true, comment };
   } catch (error) {
     console.error("Erro ao adicionar comentário:", error);
     return { success: false, error: "Falha ao adicionar comentário." };
@@ -3932,6 +3973,7 @@ export const getTrendingBusinesses = unstable_cache(
           luxe_quote: true,
           neighborhood: true,
           city: true,
+          rating: true,
         },
       });
 

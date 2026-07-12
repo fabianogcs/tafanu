@@ -94,15 +94,15 @@ model User {
 
 // --- TABELA DE NEGÓCIOS ---
 model Business {
-  id          String     @id @default(cuid())
-  name        String
-  slug        String     @unique
-  description String?    @db.Text
-  theme       String     @default("showroom_clean")
-  layout      LayoutType @default(showroom)
-  category    String
-  subcategory String[]   @default([])
-  keywords    String[]   @default([])
+  id                  String     @id @default(cuid())
+  name                String
+  slug                String     @unique
+  description         String?    @db.Text
+  theme               String     @default("showroom_clean")
+  layout              LayoutType @default(showroom)
+  category            String
+  subcategory         String[]   @default([])
+  keywords            String[]   @default([])
 
   // Contadores Desnormalizados (Performance)
   whatsapp_clicks     Int @default(0)
@@ -116,7 +116,9 @@ model Business {
   shein_clicks        Int @default(0)
   ifood_clicks        Int @default(0)
   map_clicks          Int @default(0)
-  views               Int @default(0) // Centralizado aqui
+  views               Int @default(0)
+  rating              Float @default(0.0) // 🚀 NOVO: Nota média calculada (Ex: 4.7)
+  reviewCount         Int @default(0)     // 🚀 NOVO: Quantidade total de avaliações com nota
 
   // Mídia
   imageUrl   String?  @db.Text
@@ -299,6 +301,7 @@ model PasswordResetToken {
   @@unique([email, token])
 }
 
+// No model Comment
 model Comment {
   id         String    @id @default(cuid())
   content    String    @db.Text
@@ -306,6 +309,7 @@ model Comment {
   updatedAt  DateTime  @updatedAt
   isFlagged  Boolean   @default(false)
   flaggedBy  String?
+  rating     Int?      @default(0) // 🚀 NOVO: Nota individual (1 a 5). Respostas ganham null ou 0.
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessId String
