@@ -35,9 +35,9 @@ export default function MainLayoutSwitcher({
   const safeTheme =
     business && businessThemes[business.theme]
       ? businessThemes[business.theme]
-      : businessThemes.showroom_clean; // ✅ Trocado por um tema que existe no banco!
+      : businessThemes.showroom_clean;
 
-  // TRAVA DE SEGURANÇA: Só barra se não houver os dados do business
+  // TRAVA DE SEGURANÇA
   if (!business) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-white">
@@ -48,87 +48,33 @@ export default function MainLayoutSwitcher({
     );
   }
 
-  // Lógica de seleção passando o safeTheme (nosso tema oficial garantido) e os estados de Favorito
+  // 🚀 AGRUPADOR DE PROPS: Repassa tudo, incluindo nota, avaliações e status para as vitrines públicas
+  const sharedProps = {
+    business,
+    theme: safeTheme,
+    realHours,
+    fullAddress,
+    isLoggedIn,
+    isFavorited,
+    emailVerified,
+    currentUserId,
+    isAdmin,
+    isOpen,
+  };
+
   switch (business.layout) {
     case "editorial":
-      return (
-        <LuxeLayout
-          business={business}
-          theme={safeTheme}
-          realHours={realHours}
-          fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn}
-          isFavorited={isFavorited}
-          emailVerified={emailVerified}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          isOpen={isOpen}
-        />
-      );
+      return <LuxeLayout {...sharedProps} />;
 
     case "influencer":
     case "urban":
-      return (
-        <UrbanLayout
-          business={business}
-          theme={safeTheme}
-          realHours={realHours}
-          fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn}
-          isFavorited={isFavorited}
-          emailVerified={emailVerified}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          isOpen={isOpen}
-        />
-      );
+      return <UrbanLayout {...sharedProps} />;
 
     case "businessList":
-      return (
-        <ComercialLayout
-          business={business}
-          theme={safeTheme}
-          realHours={realHours}
-          fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn}
-          isFavorited={isFavorited}
-          emailVerified={emailVerified}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          isOpen={isOpen}
-        />
-      );
+      return <ComercialLayout {...sharedProps} />;
 
     case "showroom":
-      return (
-        <ShowroomLayout
-          business={business}
-          theme={safeTheme}
-          realHours={realHours}
-          fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn}
-          isFavorited={isFavorited}
-          emailVerified={emailVerified}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          isOpen={isOpen}
-        />
-      );
-
     default:
-      return (
-        <ShowroomLayout
-          business={business}
-          theme={safeTheme}
-          realHours={realHours}
-          fullAddress={fullAddress}
-          isLoggedIn={isLoggedIn}
-          isFavorited={isFavorited}
-          emailVerified={emailVerified}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
-          isOpen={isOpen}
-        />
-      );
+      return <ShowroomLayout {...sharedProps} />;
   }
 }

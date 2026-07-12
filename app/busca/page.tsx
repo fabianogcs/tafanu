@@ -383,6 +383,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     latitude: true,
     longitude: true,
     views: true,
+    rating: true, // 🚀 ADICIONADO AQUI PARA PUXAR A NOTA DA LOJA NA BUSCA
     createdAt: true,
     whatsapp: true,
     phone: true,

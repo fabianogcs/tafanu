@@ -235,6 +235,7 @@ export default async function BusinessPage({
             userId: true,
             businessId: true,
             parentId: true,
+            rating: true, // 🚀 ADICIONE APENAS ESTA LINHA AQUI!
             user: { select: { name: true, image: true, role: true } },
             replies: {
               select: {
