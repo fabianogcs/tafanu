@@ -8,6 +8,7 @@ import { Redis } from "@upstash/redis";
 let generalRatelimit: Ratelimit | null = null;
 let uploadRatelimit: Ratelimit | null = null;
 let authRatelimit: Ratelimit | null = null;
+let searchRatelimit: Ratelimit | null = null;
 
 if (
   process.env.UPSTASH_REDIS_REST_URL &&
@@ -23,7 +24,12 @@ if (
     limiter: Ratelimit.slidingWindow(100, "1 m"),
     prefix: "ratelimit_general",
   });
-
+  // 🚀 NOVO LEÃO DE CHÁCARA PARA A BUSCA
+  searchRatelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(300, "1 m"), // 300 por minuto! (Amigável para prefetches do Next.js)
+    prefix: "ratelimit_search",
+  });
   uploadRatelimit = new Ratelimit({
     redis: redis,
     limiter: Ratelimit.slidingWindow(30, "1 m"),
@@ -102,12 +108,15 @@ export default auth(async (req) => {
       const isPostRequest = req.method === "POST";
       const isCreationRoute = pathname.startsWith("/dashboard/novo");
 
+      // 🚀 A MÁGICA: Aplicamos o Leão mais leve (searchRatelimit) na rota de Busca!
       const activeRatelimit = isUploadRoute
         ? uploadRatelimit
-        : (isSensitivePage || isApiAuthRoute || isCreationRoute) &&
-            isPostRequest
-          ? authRatelimit
-          : generalRatelimit;
+        : isSearchRoute
+          ? searchRatelimit // 🚀 Atribui a regra de 300/minuto
+          : (isSensitivePage || isApiAuthRoute || isCreationRoute) &&
+              isPostRequest
+            ? authRatelimit
+            : generalRatelimit;
 
       if (!activeRatelimit) {
         return NextResponse.next();

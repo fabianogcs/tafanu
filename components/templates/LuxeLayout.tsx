@@ -1309,6 +1309,7 @@ export default function LuxeLayout({
             emailVerified={emailVerified}
             themeColor={theme.primary}
             comments={rawBusiness.comments || []}
+            businessRating={business.rating}
           />
         </div>
       </div>

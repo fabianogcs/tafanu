@@ -780,6 +780,7 @@ export default function ShowroomLayout({
           emailVerified={emailVerified}
           themeColor={theme.primary}
           comments={rawBusiness.comments || []}
+          businessRating={business.rating}
         />
       </div>
 

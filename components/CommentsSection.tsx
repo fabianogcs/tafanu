@@ -25,6 +25,7 @@ interface CommentsSectionProps {
   emailVerified?: boolean;
   themeColor?: string;
   comments: any[];
+  businessRating?: number;
 }
 
 export default function CommentsSection({
@@ -35,6 +36,7 @@ export default function CommentsSection({
   emailVerified,
   themeColor = "#0f172a",
   comments = [],
+  businessRating = 0,
 }: CommentsSectionProps) {
   const router = useRouter();
   const commentFormRef = useRef<HTMLDivElement>(null);
@@ -54,12 +56,8 @@ export default function CommentsSection({
   const mainComments = comments.filter((c) => !c.parentId);
 
   // 🚀 CÁLCULO DA MÉDIA GERAL DA LOJA
-  const averageRating = useMemo(() => {
-    const validRatings = mainComments.filter((c) => c.rating && c.rating > 0);
-    if (validRatings.length === 0) return 0;
-    const sum = validRatings.reduce((acc, curr) => acc + curr.rating!, 0);
-    return (sum / validRatings.length).toFixed(1);
-  }, [mainComments]);
+  // APAGUE ESTE BLOCO DO useMemo INTEIRO E USE APENAS:
+  const averageRating = businessRating > 0 ? businessRating.toFixed(1) : 0;
 
   // Controle de paginação
   const [visibleCount, setVisibleCount] = useState(5);

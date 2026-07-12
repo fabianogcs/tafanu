@@ -3706,7 +3706,24 @@ export async function addComment(
       };
     }
 
-    // 2. ⏳ TRAVA ANTI-FLOOD (Bloqueio de Spam de 15s)
+    // 🚀 O ESCUDO ANTI-REVIEW BOMBING (Apenas 1 Avaliação por Loja)
+    // Se não for uma resposta (parentId nulo), verificamos se o cliente já avaliou a loja
+    if (!parentId) {
+      const avaliacaoExistente = await db.comment.findFirst({
+        where: { businessId, userId, parentId: null },
+        select: { id: true },
+      });
+
+      if (avaliacaoExistente) {
+        return {
+          success: false,
+          error:
+            "Você já avaliou este estabelecimento. Se desejar alterar sua nota, apague a avaliação anterior.",
+        };
+      }
+    }
+
+    // 2. ⏳ TRAVA ANTI-FLOOD (Bloqueio de Spam de 15s para respostas)
     const quinzeSegundosAtras = new Date(Date.now() - 15 * 1000);
     const comentarioRecente = await db.comment.findFirst({
       where: {

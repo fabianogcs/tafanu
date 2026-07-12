@@ -942,6 +942,7 @@ export default function ComercialLayout({
             emailVerified={emailVerified}
             themeColor={theme.primary}
             comments={rawBusiness.comments || []}
+            businessRating={business.rating} // 🚀 INSERIR APENAS ESTA LINHA AQUI!
           />
         </div>
         <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
