@@ -20,6 +20,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Cafeteria",
     "Padaria",
     "Adega",
+    "Esfiharia",
   ].sort(),
 
   Automotivo: [
