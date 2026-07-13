@@ -13,52 +13,8 @@ const hourSchema = z.object({
   closeTime: z.string().optional().or(z.literal("")),
   isClosed: z.boolean().optional(),
 });
-// 🚀 MOLDE DE SEGURANÇA PARA O CARDÁPIO DIGITAL
-const productSchema = z.object({
-  id: z.string().optional(),
-  name: z
-    .string()
-    .min(1, "O nome do produto é obrigatório")
-    .max(60, "Nome muito longo"),
-  description: z
-    .string()
-    .max(250, "A descrição do lanche deve ter no máximo 250 caracteres")
-    .optional()
-    .or(z.literal("")),
-  price: z.coerce.number().min(0, "O preço não pode ser negativo"),
-  oldPrice: z.coerce.number().optional().nullable(),
-  imageUrl: z.string().max(1000).optional().nullable().or(z.literal("")),
-  isActive: z.boolean().default(true),
-  // 🚀 HACKER FIX: Tipagem estrita. Impede o envio de payloads maliciosos gigantes disfarçados de extras.
-  extras: z
-    .array(
-      z.object({
-        name: z.string().max(60, "O nome do adicional é muito longo"),
-        price: z.coerce
-          .number()
-          .min(0, "Preço inválido")
-          .max(1000, "Valor surreal"),
-      }),
-    )
-    .optional(),
-});
+
 export const businessSchema = z.object({
-  // 🚀 BLINDAGEM DO CARDÁPIO: Máximo de 50 itens para não estourar o banco de dados.
-  products: z
-    .preprocess(
-      (val) => {
-        if (typeof val === "string") {
-          try {
-            return JSON.parse(val);
-          } catch {
-            return [];
-          }
-        }
-        return val || [];
-      },
-      z.array(productSchema).max(50, "O limite é de 50 produtos no cardápio"),
-    )
-    .default([]),
   // --- Identificação Básica ---
   // 🚀 BLINDAGEM: Nome não pode ser um livro.
   name: z
@@ -86,12 +42,6 @@ export const businessSchema = z.object({
     .enum(["urban", "editorial", "businessList", "showroom", "influencer"])
     .default("urban"),
   published: z.preprocess((val) => val === "true" || val === true, z.boolean()),
-  hasDelivery: z.boolean().default(false).optional(),
-  deliveryFee: z.coerce.number().min(0).optional().default(0),
-  deliveryFeeNegotiable: z.boolean().default(false).optional(), // 🚀 NOVO
-  deliveryRadius: z.coerce.number().min(0).max(500).optional().default(0),
-
-  // --- Campos de Texto Especial dos Layouts ---
 
   // --- Campos de Texto Especial dos Layouts ---
   // 🚀 BLINDAGEM: O Slogan não pode quebrar o layout da vitrine (Máx 40 caracteres, como no front).
@@ -191,7 +141,7 @@ export const businessSchema = z.object({
       "Deve ser um link válido",
     ),
 
-  // 🚀 NOVOS CAMPOS: LINK EXTERNO INTELIGENTE
+  // 🚀 NOVOS CAMPOS: LINK EXTERNO INTELIGENTE (Mantidos para o novo Hub)
   actionLink: z
     .string()
     .max(1000)
@@ -204,8 +154,7 @@ export const businessSchema = z.object({
     ),
   isExternalLink: z.boolean().default(false).optional(),
   catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
-  menuMode: z.enum(["PDF", "DIGITAL", "AGENDA"]).default("PDF"), // 🚀 AGENDA DESTRAVADA NO ENUM
-  agendaConfig: z.any().optional().nullable(), // 🚀 CONFIGURAÇÃO INDEPENDENTE PERMITIDA
+  menuMode: z.enum(["PDF", "DIGITAL", "AGENDA"]).default("PDF"), // AGENDA mantida aqui para servir de chave de link
 
   // URLs do UploadThing
   imageUrl: z
@@ -268,7 +217,7 @@ export const businessSchema = z.object({
     .max(3, "O limite é de 3 nichos")
     .default([]),
 
-  // 🚀 BLINDAGEM CRÍTICA: Palavras-chave agora têm limite de quantidade (10) E limite de caracteres por palavra (30).
+  // 🚀 BLINDAGEM CRÍTICA: Palavras-chave limitadas (10) e tamanho (30).
   keywords: z
     .array(z.string().max(30, "Palavra-chave muito longa"))
     .max(10, "Limite de 10 palavras-chave")
@@ -291,7 +240,6 @@ export const businessSchema = z.object({
       },
       z
         .array(
-          // 🚀 BLINDAGEM: FAQs com limite de tamanho para a pergunta e resposta!
           z.object({
             q: z
               .string()
@@ -304,7 +252,7 @@ export const businessSchema = z.object({
           }),
         )
         .max(15),
-    ) // Máximo de 15 FAQs por loja
+    )
     .default([]),
 
   hours: z
@@ -317,9 +265,10 @@ export const businessSchema = z.object({
         }
       }
       return val || [];
-    }, z.array(hourSchema).max(7)) // 7 Dias na semana no máximo!
+    }, z.array(hourSchema).max(7))
     .default([]),
 });
+
 // ==========================================================
 // 🛡️ REGRA DE VALIDAÇÃO DO PERFIL DO USUÁRIO
 // ==========================================================

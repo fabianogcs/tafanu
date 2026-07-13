@@ -201,8 +201,6 @@ export default auth(async (req) => {
     pathname.startsWith("/busca") ||
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||
-    pathname.startsWith("/pedido") || // 🚀 CIRURGIA: Libera a tela de rastreio ao vivo para o cliente!
-    pathname.startsWith("/meus-pedidos") || // 🚀 CIRURGIA: Libera o histórico de pedidos!
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhook") ||
     pathname.startsWith("/api/uploadthing") ||
@@ -288,7 +286,6 @@ export default auth(async (req) => {
       pathname.startsWith("/dashboard/parceiro") ||
       pathname.startsWith("/dashboard/perfil") ||
       pathname.startsWith("/dashboard/funil") ||
-      pathname.startsWith("/dashboard/pedidos") ||
       pathname.startsWith("/dashboard/editar") ||
       pathname.startsWith("/dashboard/novo")
     ) {

@@ -34,6 +34,25 @@ export default function SearchBar({
     }
 
     params.delete("page");
+
+    // 🚀 FASE 3: PERSISTÊNCIA INVISÍVEL (O CONCIERGE)
+    // Se o usuário tem o GPS salvo e NÃO está explorando outra cidade ativamente,
+    // nós injetamos o GPS para ele cair direto na zona de calor!
+    const isExploreMode = params.has("city") || params.has("state");
+
+    if (!isExploreMode) {
+      try {
+        const cachedCoords = localStorage.getItem("tafanu_user_coords");
+        if (cachedCoords) {
+          const { lat, lng } = JSON.parse(cachedCoords);
+          if (!params.has("lat") && lat) params.set("lat", lat);
+          if (!params.has("lng") && lng) params.set("lng", lng);
+        }
+      } catch (err) {
+        // Ignora silenciosamente se o cache estiver corrompido
+      }
+    }
+
     router.push(`/busca?${params.toString()}`);
   };
 
@@ -59,7 +78,6 @@ export default function SearchBar({
         recognition.interimResults = false;
 
         recognition.onstart = () => setIsListening(true);
-
         recognition.onend = () => setIsListening(false);
 
         recognition.onresult = (event: any) => {
@@ -143,7 +161,7 @@ export default function SearchBar({
         </button>
       </form>
 
-      {/* 🚀 MODAL MOVIDO PARA FORA DO FORMULÁRIO (Livre da gaiola do CSS) */}
+      {/* 🚀 MODAL MOVIDO PARA FORA DO FORMULÁRIO */}
       {isListening && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">

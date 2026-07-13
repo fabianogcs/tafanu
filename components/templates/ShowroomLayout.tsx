@@ -18,7 +18,7 @@ import {
   Navigation,
   Info,
   ChevronRight,
-  Layout, // 🚀 ÍCONE DE MENU ADICIONADO AQUI!
+  Layout,
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -38,7 +38,6 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-import VitrineCardapio from "../VitrineCardapio"; // 🚀 O MOTOR DA MÁQUINA DE VENDAS
 
 const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -107,7 +106,7 @@ export default function ShowroomLayout({
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
+
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -125,10 +124,6 @@ export default function ShowroomLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-
-  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
-  const temServicoOuProdutoAtivo =
-    business.products && business.products.some((p: any) => p.isActive);
 
   // 🚀 O RADAR DO LINK EXTERNO:
   const isExternalLink = !!business.isExternalLink;
@@ -199,14 +194,10 @@ export default function ShowroomLayout({
       .map((item: any) => item.url);
   }, [cleanFeed]);
 
-  // ==========================================
-  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL E TÍTULO
-  // ==========================================
   const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
   const hasVideos = cleanFeed.some((item: any) =>
     ["video", "video_v", "video_h"].includes(item.type),
   );
-  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
 
@@ -239,10 +230,8 @@ export default function ShowroomLayout({
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         if (type === "whatsapp") {
-          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         } else {
-          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
           window.location.href = targetUrl;
         }
       }
@@ -251,7 +240,7 @@ export default function ShowroomLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -259,22 +248,8 @@ export default function ShowroomLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E LOJA
-  // 🚀 MÁGICA DA CONVERSÃO: Abre o carrinho automaticamente se o cliente voltar de um login!
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // 🧹 EXORCISMO: Deleta o carrinho antigo que ficou preso no navegador
-      sessionStorage.removeItem("tafanu_cart");
+  }, [selectedIndex, isPdfModalOpen]);
 
-      const isCartPending = window.location.search.includes("cart=true");
-      // 🚀 Atualizado para ler o NOVO cofre super seguro
-      const savedCart = sessionStorage.getItem("tafanu_pending_checkout");
-
-      if (isCartPending || savedCart) {
-        setShowDigitalMenu(true);
-      }
-    }
-  }, []);
   const addressPartsForMap = [
     business.address,
     business.number,
@@ -374,7 +349,6 @@ export default function ShowroomLayout({
                 </span>
               )}
 
-              {/* Lógica Corrigida para evitar frase duplicada! */}
               {business.comercial_badge &&
                 business.comercial_badge !== business.urban_tag && (
                   <>
@@ -392,14 +366,11 @@ export default function ShowroomLayout({
 
         {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
         <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
-          {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
-          {((rawBusiness.menuMode === "DIGITAL" && temServicoOuProdutoAtivo) ||
-            (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-            (rawBusiness.menuMode === "AGENDA" && temServicoOuProdutoAtivo) ||
-            (isExternalLink && actionLink)) && (
+          {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: EXTERNO vs PDF */}
+          {((isExternalLink && actionLink) ||
+            (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
             <button
               onClick={() => {
-                // 🚀 SE FOR LINK EXTERNO (CAVALO DE TRÓIA), REDIRECIONA E REGISTRA O CLIQUE!
                 if (isExternalLink && actionLink) {
                   Actions.registerClickEvent(business.id, "WEBSITE");
                   window.open(
@@ -409,13 +380,7 @@ export default function ShowroomLayout({
                   );
                   return;
                 }
-
-                if (
-                  rawBusiness.menuMode === "DIGITAL" ||
-                  rawBusiness.menuMode === "AGENDA"
-                ) {
-                  setShowDigitalMenu(true);
-                } else if (rawBusiness.menuMode === "PDF") {
+                if (rawBusiness.menuMode === "PDF") {
                   setIsPdfModalOpen(true);
                 }
               }}
@@ -428,10 +393,10 @@ export default function ShowroomLayout({
               </div>
               <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100 text-center">
                 {rawBusiness.menuMode === "DIGITAL"
-                  ? "Pedido"
+                  ? "Acessar Loja"
                   : rawBusiness.menuMode === "AGENDA"
                     ? "Agendar"
-                    : "Menu"}
+                    : "Catálogo"}
               </span>
             </button>
           )}
@@ -509,12 +474,10 @@ export default function ShowroomLayout({
               className={`p-6 pb-2 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
             >
               <div className="flex items-center justify-between mb-4">
-                {/* 🚀 TÍTULO FIXO E CLEAN */}
                 <h2 className="text-base font-bold flex items-center gap-2 opacity-90">
                   Galeria
                 </h2>
 
-                {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS */}
                 {hasPhotos && hasVideos && (
                   <div className="flex items-center p-0.5 bg-black/5 rounded-full">
                     <button
@@ -561,7 +524,6 @@ export default function ShowroomLayout({
                   .filter(Boolean)
                   .map((f: string, i: number) => (
                     <div key={i} className="flex items-start gap-3">
-                      {/* O shrink-0 garante que o ícone nunca perca o seu tamanho original */}
                       <CheckCircle2
                         size={18}
                         className={`shrink-0 ${theme.primary} mt-0.5`}
@@ -625,7 +587,6 @@ export default function ShowroomLayout({
                     {business.state ? `— ${business.state}` : ""}
                   </p>
 
-                  {/* Botão de navegação integrado no próprio cartão de endereço */}
                   <a
                     href={mapsUrl}
                     target="_blank"
@@ -786,7 +747,7 @@ export default function ShowroomLayout({
 
       <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
 
-      {/* --- WHATSAPP FLUTUANTE UNIVERSAL (Estilo App/Flutuante em todas as telas) --- */}
+      {/* --- WHATSAPP FLUTUANTE UNIVERSAL --- */}
       {hasWhatsapp && (
         <motion.button
           aria-label="Abrir WhatsApp"
@@ -841,31 +802,6 @@ export default function ShowroomLayout({
               </div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ==========================================
-          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
-          ========================================== */}
-      <AnimatePresence>
-        {showDigitalMenu && (
-          <VitrineCardapio
-            businessId={rawBusiness.id}
-            businessName={rawBusiness.name}
-            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
-            themeColor={theme.previewColor}
-            products={rawBusiness.products || []}
-            onClose={() => setShowDigitalMenu(false)}
-            isOpen={isOpen}
-            hours={rawBusiness.hours}
-            deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0}
-            deliveryFeeNegotiable={rawBusiness.deliveryFeeNegotiable}
-            businessLat={rawBusiness.latitude}
-            businessLng={rawBusiness.longitude}
-            menuMode={rawBusiness.menuMode}
-            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
-          />
         )}
       </AnimatePresence>
       <style jsx global>{`

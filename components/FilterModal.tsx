@@ -17,6 +17,7 @@ import {
   RotateCcw,
   MapPin,
   CalendarDays,
+  Map, // 🚀 NOVO ÍCONE PARA EXPLORAÇÃO
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -48,6 +49,9 @@ export default function FilterModal({
   const [draftSubs, setDraftSubs] = useState<string[]>([]);
   const [draftStatus, setDraftStatus] = useState("all");
   const [draftSort, setDraftSort] = useState("popular");
+
+  // 🚀 O NOVO MOTOR DE INTENÇÃO (GPS vs EXPLORAR)
+  const [locationMode, setLocationMode] = useState<"gps" | "explore">("gps");
   const [draftState, setDraftState] = useState("");
   const [draftCity, setDraftCity] = useState("");
   const [draftNeighborhood, setDraftNeighborhood] = useState("");
@@ -72,9 +76,22 @@ export default function FilterModal({
       setDraftSubs(subsParam ? subsParam.split(",") : []);
       setDraftStatus(searchParams.get("status") || "all");
       setDraftSort(currentSort || searchParams.get("sort") || "popular");
-      setDraftState(searchParams.get("state") || "");
-      setDraftCity(searchParams.get("city") || "");
-      setDraftNeighborhood(searchParams.get("neighborhood") || "");
+
+      const st = searchParams.get("state") || "";
+      const ct = searchParams.get("city") || "";
+      const nb = searchParams.get("neighborhood") || "";
+
+      setDraftState(st);
+      setDraftCity(ct);
+      setDraftNeighborhood(nb);
+
+      // Se houver qualquer cidade/estado na URL, a intenção do usuário é EXPLORAR
+      if (st || ct || nb) {
+        setLocationMode("explore");
+      } else {
+        setLocationMode("gps");
+      }
+
       setCatStep("main");
     }
   }, [isOpen, searchParams, currentSort]);
@@ -107,15 +124,22 @@ export default function FilterModal({
     if (draftSubs.length > 0) params.set("subcategory", draftSubs.join(","));
     else params.delete("subcategory");
 
-    // 🚀 GPS DESTRANCADO: Já não tem "!isOnlineMode" a bloquear
-    if (draftState) params.set("state", draftState);
-    else params.delete("state");
+    // 🚀 LÓGICA DO AIRBNB APLICADA:
+    // Se escolheu Perto de Mim, DELETA os filtros textuais para o GPS assumir.
+    if (locationMode === "gps") {
+      params.delete("state");
+      params.delete("city");
+      params.delete("neighborhood");
+    } else {
+      if (draftState) params.set("state", draftState);
+      else params.delete("state");
 
-    if (draftCity) params.set("city", draftCity);
-    else params.delete("city");
+      if (draftCity) params.set("city", draftCity);
+      else params.delete("city");
 
-    if (draftNeighborhood) params.set("neighborhood", draftNeighborhood);
-    else params.delete("neighborhood");
+      if (draftNeighborhood) params.set("neighborhood", draftNeighborhood);
+      else params.delete("neighborhood");
+    }
 
     params.set("status", draftStatus);
     params.set("sort", draftSort);
@@ -129,6 +153,9 @@ export default function FilterModal({
     setDraftSubs([]);
     setDraftStatus("all");
     setDraftSort("popular");
+
+    // Limpeza Profunda Geográfica
+    setLocationMode("gps");
     setDraftState("");
     setDraftCity("");
     setDraftNeighborhood("");
@@ -136,18 +163,21 @@ export default function FilterModal({
 
     setIsOpen(false);
 
-    // 🚀 CIRURGIA 1: Agora o "Limpar" respeita se o usuário está no Modo Shopping!
     const params = new URLSearchParams();
     const query = searchParams.get("q");
     const modo = searchParams.get("modo");
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
 
     if (query) params.set("q", query);
     if (modo) params.set("modo", modo);
+    // 🚀 Preservamos o GPS puro se houver, para a busca em ondas funcionar na raiz
+    if (lat) params.set("lat", lat);
+    if (lng) params.set("lng", lng);
 
     router.push(`/busca?${params.toString()}`);
   };
 
-  // 🚀 CIRURGIA 2: O "ponto azul" agora enxerga Subcategorias e Cidades!
   const isFilterActive =
     !!searchParams.get("category") ||
     !!searchParams.get("subcategory") ||
@@ -157,6 +187,7 @@ export default function FilterModal({
     (searchParams.get("sort") !== "distance" &&
       searchParams.get("sort") !== "popular" &&
       searchParams.get("sort") !== "relevance");
+
   const availableStates = Object.keys(locationData).sort();
   const availableCitiesForState = draftState
     ? Object.keys(locationData[draftState] || {}).sort()
@@ -221,62 +252,115 @@ export default function FilterModal({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-10 pb-36 no-scrollbar">
-                  {/* 🚀 O SEGREDO: O GPS agora aparece SEMPRE, mesmo no modo Vitrine! */}
+                  {/* ==========================================
+                      🚀 O MOTOR GEOGRÁFICO HÍBRIDO (GMB vs AIRBNB)
+                      ========================================== */}
                   <section className="space-y-4">
                     <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                      <MapPin size={14} className="text-rose-500" /> Onde você
-                      procura?
+                      <MapPin size={14} className="text-tafanu-action" /> Onde
+                      você procura?
                     </label>
-                    <div className="space-y-3">
-                      <select
-                        value={draftState}
-                        onChange={(e) => handleStateChange(e.target.value)}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer"
-                      >
-                        <option value="">Todos os Estados</option>
-                        {availableStates.map((state) => (
-                          <option key={state} value={state}>
-                            {state}
-                          </option>
-                        ))}
-                      </select>
 
-                      <select
-                        value={draftCity}
-                        onChange={(e) => handleCityChange(e.target.value)}
-                        disabled={!draftState}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-50"
+                    {/* ABAS DE INTENÇÃO */}
+                    <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1 mb-2">
+                      <button
+                        onClick={() => {
+                          setLocationMode("gps");
+                          setDraftState("");
+                          setDraftCity("");
+                          setDraftNeighborhood("");
+                        }}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${locationMode === "gps" ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600"}`}
                       >
-                        <option value="">
-                          {draftState
-                            ? "Todas as Cidades"
-                            : "Selecione um Estado primeiro"}
-                        </option>
-                        {availableCitiesForState.map((city) => (
-                          <option key={city} value={city}>
-                            {city}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={draftNeighborhood}
-                        onChange={(e) => setDraftNeighborhood(e.target.value)}
-                        disabled={!draftCity}
-                        className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-50"
+                        <Navigation
+                          size={14}
+                          className={
+                            locationMode === "gps" ? "text-tafanu-action" : ""
+                          }
+                        />
+                        Perto de Mim
+                      </button>
+                      <button
+                        onClick={() => setLocationMode("explore")}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${locationMode === "explore" ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600"}`}
                       >
-                        <option value="">
-                          {draftCity
-                            ? "Todos os Bairros"
-                            : "Selecione uma Cidade primeiro"}
-                        </option>
-                        {availableNeighborhoodsForCity.map((neighborhood) => (
-                          <option key={neighborhood} value={neighborhood}>
-                            {neighborhood}
-                          </option>
-                        ))}
-                      </select>
+                        <Map
+                          size={14}
+                          className={
+                            locationMode === "explore" ? "text-blue-500" : ""
+                          }
+                        />
+                        Explorar Região
+                      </button>
                     </div>
+
+                    {/* CONTEÚDO CONDICIONAL DA LOCALIZAÇÃO */}
+                    {locationMode === "gps" ? (
+                      <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-300">
+                        <MapPin
+                          size={24}
+                          className="text-emerald-500 mb-2 animate-bounce"
+                        />
+                        <p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 mb-1">
+                          Modo GPS Ativo
+                        </p>
+                        <p className="text-xs font-medium text-emerald-600/80 leading-snug">
+                          Mostraremos as melhores opções ordenadas pela
+                          proximidade real de onde você está.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                        <select
+                          value={draftState}
+                          onChange={(e) => handleStateChange(e.target.value)}
+                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer focus:border-blue-400 transition-colors"
+                        >
+                          <option value="">Todos os Estados</option>
+                          {availableStates.map((state) => (
+                            <option key={state} value={state}>
+                              {state}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={draftCity}
+                          onChange={(e) => handleCityChange(e.target.value)}
+                          disabled={!draftState}
+                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-50 focus:border-blue-400 transition-colors"
+                        >
+                          <option value="">
+                            {draftState
+                              ? "Todas as Cidades"
+                              : "Selecione um Estado primeiro"}
+                          </option>
+                          {availableCitiesForState.map((city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={draftNeighborhood}
+                          onChange={(e) => setDraftNeighborhood(e.target.value)}
+                          disabled={!draftCity}
+                          className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-50 focus:border-blue-400 transition-colors"
+                        >
+                          <option value="">
+                            {draftCity
+                              ? "Todos os Bairros"
+                              : "Selecione uma Cidade primeiro"}
+                          </option>
+                          {availableNeighborhoodsForCity.map((neighborhood) => (
+                            <option key={neighborhood} value={neighborhood}>
+                              {neighborhood}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </section>
 
                   <section className="space-y-4">
@@ -287,7 +371,7 @@ export default function FilterModal({
                     <div className="grid grid-cols-1 gap-2">
                       <button
                         onClick={() => setDraftSort("popular")}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "popular" ? "border-tafanu-action bg-orange-50 text-tafanu-blue" : "border-slate-100 text-slate-400"}`}
+                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "popular" ? "border-tafanu-action bg-orange-50 text-tafanu-blue" : "border-slate-100 text-slate-400 hover:border-slate-200"}`}
                       >
                         <div className="flex items-center gap-3">
                           <Zap size={18} />
@@ -305,7 +389,7 @@ export default function FilterModal({
 
                       <button
                         onClick={() => setDraftSort("recent")}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "recent" ? "border-tafanu-blue bg-blue-50 text-tafanu-blue" : "border-slate-100 text-slate-400"}`}
+                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${draftSort === "recent" ? "border-tafanu-blue bg-blue-50 text-tafanu-blue" : "border-slate-100 text-slate-400 hover:border-slate-200"}`}
                       >
                         <div className="flex items-center gap-3">
                           <CalendarDays size={18} />
@@ -331,13 +415,13 @@ export default function FilterModal({
                     <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
                       <button
                         onClick={() => setDraftStatus("all")}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-400"}`}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "all" ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600"}`}
                       >
                         Todos
                       </button>
                       <button
                         onClick={() => setDraftStatus("open")}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "open" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400"}`}
+                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${draftStatus === "open" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
                       >
                         Abertos
                       </button>
@@ -354,7 +438,6 @@ export default function FilterModal({
                           <button
                             key={cat}
                             onClick={() => {
-                              // 🚀 TRAVA ANTI-FANTASMA: Se ele mudou de categoria, apagamos os nichos antigos!
                               if (draftCategory !== cat) {
                                 setDraftSubs([]);
                               }
@@ -362,7 +445,7 @@ export default function FilterModal({
                               setTempCat(cat);
                               setCatStep("sub");
                             }}
-                            className={`w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${draftCategory === cat ? "border-tafanu-blue bg-blue-50/50 text-tafanu-blue" : "border-slate-50 bg-slate-50/50 text-slate-600"}`}
+                            className={`w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${draftCategory === cat ? "border-tafanu-blue bg-blue-50/50 text-tafanu-blue" : "border-slate-50 bg-slate-50/50 text-slate-600 hover:bg-slate-100"}`}
                           >
                             <span className="font-black text-[11px] uppercase italic">
                               {cat}
@@ -375,7 +458,7 @@ export default function FilterModal({
                       <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                         <button
                           onClick={() => setCatStep("main")}
-                          className="flex items-center gap-2 text-[10px] font-black text-tafanu-blue uppercase"
+                          className="flex items-center gap-2 text-[10px] font-black text-tafanu-blue uppercase hover:opacity-70 transition-opacity"
                         >
                           <ChevronLeft size={14} /> Voltar
                         </button>
@@ -392,7 +475,7 @@ export default function FilterModal({
                                       : [...prev, sub],
                                   )
                                 }
-                                className={`w-full text-left p-4 rounded-xl text-xs font-bold transition-all flex items-center gap-3 border-2 ${isSelected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-50 text-slate-500 bg-slate-50/30"}`}
+                                className={`w-full text-left p-4 rounded-xl text-xs font-bold transition-all flex items-center gap-3 border-2 ${isSelected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-50 text-slate-500 bg-slate-50/30 hover:bg-slate-100"}`}
                               >
                                 {isSelected ? (
                                   <CheckSquare
@@ -415,7 +498,7 @@ export default function FilterModal({
                 <div className="absolute bottom-0 left-0 right-0 p-8 bg-white border-t border-slate-100 flex gap-4">
                   <button
                     onClick={clearAll}
-                    className="p-5 bg-slate-100 text-slate-400 rounded-2xl hover:text-rose-500 transition-all"
+                    className="p-5 bg-slate-100 text-slate-400 rounded-2xl hover:text-rose-500 hover:bg-rose-50 transition-all"
                   >
                     <RotateCcw size={22} />
                   </button>

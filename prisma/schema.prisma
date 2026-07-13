@@ -87,7 +87,7 @@ model User {
   favorites  Favorite[]
   comments   Comment[]
   reports    Report[] // 🚀 ADICIONE ESTA LINHA AQUI!
-  orders     Order[]    @relation("UserOrders") // 🚀 Permite que o cliente tenha histórico de compras
+  magicToken CheckoutToken? // 🚀 O Passe-Livre do Link Mágico
 
   @@index([email]) // 🚀 Acelera o Auth.js e impede gargalos de login
 }
@@ -157,12 +157,7 @@ model Business {
   shein        String?
   ifood        String?
 
-  hasDelivery    Boolean  @default(false)
-  deliveryFee    Float    @default(0)
-  deliveryFeeNegotiable Boolean  @default(false)
-  deliveryRadius Float    @default(0) // 🚀 NOVO: Raio máximo em Km (0 = sem limite)
   menuMode       MenuMode @default(PDF)
-  agendaConfig   Json?
 
   // 🚀 O CAVALO DE TRÓIA (LINK EXTERNO DO LOJISTA)
   actionLink      String?   @db.Text
@@ -191,8 +186,6 @@ model Business {
   analytics   AnalyticsEvent[]
   commissions Commission[]
 
-  products          Product[]
-  orders            Order[]
   // 🚀 MÁQUINA DE VENDAS: Regista se o email de recuperação de assinatura já foi enviado
   recoveryEmailSent Boolean   @default(false)
 
@@ -249,13 +242,8 @@ model Report {
 business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   reporter User?    @relation(fields: [reportedBy], references: [id], onDelete: SetNull)
 
-  // 🚀 NOVO: Vínculo da denúncia com o Pedido
-  orderId    String?
-  order      Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-
   @@index([businessId])
   @@index([reportedBy])
-  @@index([orderId]) // 🚀 NOVO: Acelera as buscas do Admin
 }
 
 model Account {
@@ -396,84 +384,19 @@ model Withdrawal {
   @@index([affiliateId])
 }
 
-// --- TABELA DE PRODUTOS / CARDÁPIO (MÁQUINA DE VENDAS) ---
-model Product {
-  id          String  @id @default(cuid())
-  name        String
-  description String? @db.Text
-  price       Float // O valor em reais
-  oldPrice    Float?
-  imageUrl    String? @db.Text // A foto apetitosa do lanche
-  isActive    Boolean @default(true) // O lojista pode pausar um lanche se acabar o estoque
-
-  extras Json? @default("[]")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  @@index([businessId]) // 🚀 Índice para a vitrine carregar o cardápio num piscar de olhos
-}
-
-// --- SISTEMA DE PEDIDOS (MOTOR iFOOD) ---
-
-// --- SISTEMA DE PEDIDOS E RESERVAS (MOTOR HÍBRIDO) ---
-
-enum OrderStatus {
-  PENDING    // Novo pedido/agendamento, apitando na tela do lojista
-  PREPARING  // Lojista aceitou/confirmou a reserva
-  DISPATCHED // Saiu para entrega / Cliente chegou no salão
-  COMPLETED  // Finalizado com sucesso
-  CANCELLED  // Lojista recusou ou cliente cancelou (Libera a vaga!)
-}
-
-model Order {
-  id          String @id @default(cuid())
-  orderNumber String @unique // 🚀 Gerado pelo backend (Ex: A4F8B2)
-
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
-
-  customerName  String
-  customerPhone String?
-  customerId    String? 
-  customer      User?   @relation("UserOrders", fields: [customerId], references: [id], onDelete: SetNull)
-
-  items       Json  // 🚀 Guarda o lanche OU o Serviço que foi agendado
-  totalAmount Float 
-
-  deliveryType String // "DELIVERY", "PICKUP" ou "AGENDA" (🚀 NOVO MODO)
-  address      Json?  // Endereço de entrega (se houver)
-
-  paymentMethod String  // "PIX", "CASH", "CREDIT", "DEBIT", ou "ON_SITE" (Pagar no local)
-  changeFor     String? 
-  observation   String? @db.Text
-
-  // ==========================================
-  // 🚀 TAFANU BOOKING: O MOTOR DE TEMPO
-  // ==========================================
-  appointmentDate DateTime? // Salva o dia exato da reserva (Ex: 2026-07-15)
-  appointmentTime String?   // Salva a hora exata da trava (Ex: "14:30")
-  // ==========================================
-
-  status OrderStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  alertEmailSent Boolean @default(false)
-
-  reports Report[]
-
-  @@index([businessId, status]) 
-  @@index([createdAt])
-  @@index([businessId, appointmentDate, status]) // 🚀 O SEGREDO DA VELOCIDADE: O calendário busca as vagas usando esse índice!
-}
-
 // 🚀 BLINDAGEM DE WEBHOOK: Evita que o Mercado Pago duplique meses de assinatura
 model ProcessedWebhook {
   id        String   @id // O ID do evento do Mercado Pago
   createdAt DateTime @default(now())
+}
+
+// ==========================================
+// 🚀 LINK MÁGICO (CORTINA DE FUMAÇA PARA APP STORE)
+// ==========================================
+model CheckoutToken {
+  id        String   @id @default(cuid()) // O "Token" imortal (Ex: clwq7...)
+  userId    String   @unique              // Um usuário só pode ter 1 passe-livre de cada vez
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime                      // 15 minutos e o link se autodestrói
 }

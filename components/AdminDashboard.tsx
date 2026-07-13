@@ -1311,24 +1311,6 @@ export default function AdminDashboard({
                         </p>
                       )}
 
-                      {/* 🚀 DADOS DO PEDIDO PARA O JUIZ (Você) */}
-                      {r.order && (
-                        <div className="mt-2 mb-2 p-2 bg-white rounded-lg border border-orange-100 inline-block">
-                          <p className="text-[10px] font-bold text-slate-500">
-                            <span className="text-slate-700">Comprador:</span>{" "}
-                            {r.order.customerName}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-500">
-                            <span className="text-slate-700">Loja:</span>{" "}
-                            {r.business?.name}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-500">
-                            <span className="text-slate-700">Valor:</span> R${" "}
-                            {r.order.totalAmount.toFixed(2)}
-                          </p>
-                        </div>
-                      )}
-
                       {/* EXIBE QUEM FEZ A DENÚNCIA */}
                       {r.reporter ? (
                         <p className="text-[10px] text-amber-600 mt-1 font-bold">
@@ -1353,33 +1335,17 @@ export default function AdminDashboard({
                       )}
 
                       {/* 🚀 O BOTÃO DE BANIR INTELIGENTE */}
-                      {r.order &&
-                      r.order.customerId &&
-                      r.reporter?.id !== r.order.customerId ? (
-                        // Se tem um pedido e quem denunciou NÃO foi o comprador, então o comprador é o fraudador!
+                      {r.reporter && (
                         <button
                           onClick={() =>
-                            handleBan(r.order.customerId, r.order.customerName)
+                            handleBan(r.reporter.id, r.reporter.name)
                           }
                           disabled={isPending}
                           className="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1.5 border border-rose-100"
+                          title="Banir usuário"
                         >
-                          <UserX size={13} /> Banir Comprador
+                          <UserX size={13} /> Banir Autor
                         </button>
-                      ) : (
-                        r.reporter && (
-                          // Se não é pedido, ou se o próprio comprador denunciou a loja fraudulenta, bane quem foi denunciado (ou o autor do spam)
-                          <button
-                            onClick={() =>
-                              handleBan(r.reporter.id, r.reporter.name)
-                            }
-                            disabled={isPending}
-                            className="px-3 py-2 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1.5 border border-rose-100"
-                            title="Banir usuário"
-                          >
-                            <UserX size={13} /> Banir Autor
-                          </button>
-                        )
                       )}
 
                       <button

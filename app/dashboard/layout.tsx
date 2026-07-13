@@ -12,7 +12,6 @@ import {
   Lock,
   Briefcase,
   Target,
-  Package, // 🚀 NOVO ÍCONE DE PEDIDOS
 } from "lucide-react";
 import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
@@ -189,21 +188,6 @@ export default async function DashboardLayout({
                       {isAssinante ? "Minha Vitrine" : "Meus Negócios"}
                     </span>
                   </Link>
-                  {isAssinante && (
-                    <Link
-                      href="/dashboard/pedidos"
-                      className="flex items-center justify-between px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Package
-                          size={20}
-                          className="text-orange-400 group-hover:scale-110 transition-transform"
-                        />
-                        <span className="text-sm">Gestão de Pedidos</span>
-                      </div>
-                      {/* O componente da bolinha piscando de notificações virá aqui depois */}
-                    </Link>
-                  )}
 
                   {/* ... Links do Funil Admin ... */}
 

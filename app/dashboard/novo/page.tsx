@@ -62,11 +62,6 @@ export default async function NewBusinessPage() {
     isExternalLink: false,
     actionLink: "",
     menuMode: "PDF",
-    // 🚀 ADICIONE ESTAS 4 LINHAS ABAIXO POR SEGURANÇA!
-    hasDelivery: false,
-    deliveryFee: 0,
-    deliveryFeeNegotiable: false,
-    deliveryRadius: 0,
   };
 
   return (

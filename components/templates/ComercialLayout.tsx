@@ -40,7 +40,6 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-import VitrineCardapio from "../VitrineCardapio"; // 🚀 O MOTOR DA MÁQUINA DE VENDAS AQUI!
 
 const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -102,8 +101,6 @@ export default function ComercialLayout({
   const {
     business,
     realHours,
-    isFavorite,
-    setIsFavorite,
     hasWhatsapp,
     hasPhone,
     hasFaqs,
@@ -117,7 +114,6 @@ export default function ComercialLayout({
   const [activeTab, setActiveTab] = useState<"perfil" | "infos">("perfil");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
 
   // 🚀 O filtro agora começa nulo para a IA decidir o que mostrar depois
   const [userMediaFilter, setUserMediaFilter] = useState<
@@ -138,10 +134,6 @@ export default function ComercialLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-
-  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
-  const temServicoOuProdutoAtivo =
-    business.products && business.products.some((p: any) => p.isActive);
 
   const rawFeed = useMemo(() => {
     if (business.mediaFeed && business.mediaFeed.length > 0)
@@ -177,14 +169,10 @@ export default function ComercialLayout({
       .map((item: any) => item.url);
   }, [cleanFeed]);
 
-  // ==========================================
-  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL
-  // ==========================================
   const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
   const hasVideos = cleanFeed.some((item: any) =>
     ["video", "video_v", "video_h"].includes(item.type),
   );
-  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
 
@@ -256,10 +244,8 @@ export default function ComercialLayout({
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         if (type === "whatsapp") {
-          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         } else {
-          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
           window.location.href = targetUrl;
         }
       }
@@ -268,7 +254,7 @@ export default function ComercialLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -276,23 +262,7 @@ export default function ComercialLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E PRO CARRINHO
-
-  // 🚀 MÁGICA DA CONVERSÃO: Abre o carrinho automaticamente se o cliente voltar de um login!
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // 🧹 EXORCISMO: Deleta o carrinho antigo que ficou preso no navegador
-      sessionStorage.removeItem("tafanu_cart");
-
-      const isCartPending = window.location.search.includes("cart=true");
-      // 🚀 Atualizado para ler o NOVO cofre super seguro
-      const savedCart = sessionStorage.getItem("tafanu_pending_checkout");
-
-      if (isCartPending || savedCart) {
-        setShowDigitalMenu(true);
-      }
-    }
-  }, []);
+  }, [selectedIndex, isPdfModalOpen]);
 
   const addressPartsForMap = [
     business.address,
@@ -307,7 +277,7 @@ export default function ComercialLayout({
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
       : completeAddressForMap;
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=$${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
 
@@ -353,7 +323,7 @@ export default function ComercialLayout({
         className={`relative w-full max-w-6xl mx-auto px-6 -mt-20 md:-mt-24 z-10 flex flex-col items-start text-left mb-8`}
       >
         <div className="flex flex-col md:flex-row items-start gap-6 w-full">
-          {/* Avatar Flutuante Premium - Puxa a borda do tema para dar harmonia */}
+          {/* Avatar Flutuante Premium */}
           {business.imageUrl && (
             <div
               className={`relative w-36 h-36 md:w-44 md:h-44 rounded-[2.5rem] border-[6px] md:border-[8px] ${theme.border} backdrop-blur-md shadow-2xl overflow-hidden ${theme.cardBg} shrink-0`}
@@ -368,9 +338,7 @@ export default function ComercialLayout({
               />
             </div>
           )}
-          {/* pt-32 empurra o texto para baixo apenas no desktop */}
           <div className="flex flex-col items-start pt-4 md:pt-32">
-            {/* Evitando Duplicação de Badge e Urban Tag */}
             {business.comercial_badge &&
               business.comercial_badge !== business.urban_tag && (
                 <span
@@ -413,15 +381,12 @@ export default function ComercialLayout({
         </div>
       </header>
 
-      {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: LOJA DIGITAL vs PDF vs AGENDA vs LINK EXTERNO */}
-      {((rawBusiness.menuMode === "DIGITAL" && temServicoOuProdutoAtivo) ||
-        (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-        (rawBusiness.menuMode === "AGENDA" && temServicoOuProdutoAtivo) ||
-        (isExternalLink && actionLink)) && (
+      {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE */}
+      {((isExternalLink && actionLink) ||
+        (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
         <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
           <button
             onClick={() => {
-              // 🚀 SE FOR LINK EXTERNO (CAVALO DE TRÓIA), MANDA PRA FORA E REGISTRA O CLIQUE!
               if (isExternalLink && actionLink) {
                 Actions.registerClickEvent(business.id, "WEBSITE");
                 window.open(
@@ -431,21 +396,13 @@ export default function ComercialLayout({
                 );
                 return;
               }
-
-              if (
-                rawBusiness.menuMode === "DIGITAL" ||
-                rawBusiness.menuMode === "AGENDA"
-              ) {
-                setShowDigitalMenu(true);
-              } else if (rawBusiness.menuMode === "PDF") {
+              if (rawBusiness.menuMode === "PDF") {
                 setIsPdfModalOpen(true);
               }
             }}
             className={`relative overflow-hidden flex w-full md:w-[320px] justify-center items-center gap-3 px-8 py-4 rounded-full text-[11px] md:text-xs font-black tracking-[0.2em] uppercase text-white ${theme.bgAction} shadow-md border border-white/20 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95`}
           >
-            {/* Máscara de Degradê Translúcido para dar o efeito "Estilizado/3D" */}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/20 pointer-events-none" />
-
             <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
               {rawBusiness.menuMode === "DIGITAL"
                 ? "Fazer Pedido"
@@ -458,7 +415,7 @@ export default function ComercialLayout({
         </div>
       )}
 
-      {/* --- MENU TABS (Glassmorphism e z-20 para não conflitar com a Navbar) --- */}
+      {/* --- MENU TABS --- */}
       <div className="sticky top-6 z-20 px-4 mb-10 flex justify-center">
         <div
           className={`bg-white/80 backdrop-blur-xl p-1.5 rounded-full border ${theme.border} shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] flex gap-1`}
@@ -616,7 +573,7 @@ export default function ComercialLayout({
                 </section>
               )}
 
-              {/* DUVIDAS FREQUENTES (MOVIDO PARA AQUI) */}
+              {/* DUVIDAS FREQUENTES */}
               {faqs.length > 0 && (
                 <section
                   className={`${theme.cardBg} border ${theme.border} rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-black/5 transition-all hover:shadow-2xl hover:-translate-y-1`}
@@ -656,7 +613,7 @@ export default function ComercialLayout({
               className="space-y-8 md:space-y-12"
             >
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* COLUNA ESQUERDA (Atendimento, Social, Lojas) */}
+                {/* COLUNA ESQUERDA */}
                 <div className="lg:col-span-7 flex flex-col gap-8">
                   {/* ATENDIMENTO ONLINE */}
                   {(hasWhatsapp || hasPhone) && (
@@ -831,9 +788,8 @@ export default function ComercialLayout({
                   )}
                 </div>
 
-                {/* COLUNA DIREITA (Endereço, Horários) */}
+                {/* COLUNA DIREITA */}
                 <div className="lg:col-span-5 flex flex-col gap-8">
-                  {/* LOCALIZAÇÃO E HORÁRIOS */}
                   {(hasAddress || hasHours) && (
                     <div
                       className={`${theme.cardBg} p-8 md:p-10 rounded-[2.5rem] border ${theme.border} shadow-xl shadow-black/5 flex flex-col gap-8 hover:-translate-y-1 transition-transform`}
@@ -870,7 +826,6 @@ export default function ComercialLayout({
                             {business.cep && ` • CEP: ${business.cep}`}
                           </p>
 
-                          {/* LINK DIRETO DE NAVEGAÇÃO */}
                           <a
                             href={mapsUrl}
                             target="_blank"
@@ -942,7 +897,7 @@ export default function ComercialLayout({
             emailVerified={emailVerified}
             themeColor={theme.primary}
             comments={rawBusiness.comments || []}
-            businessRating={business.rating} // 🚀 INSERIR APENAS ESTA LINHA AQUI!
+            businessRating={business.rating}
           />
         </div>
         <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
@@ -1009,31 +964,6 @@ export default function ComercialLayout({
               </div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ==========================================
-          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
-          ========================================== */}
-      <AnimatePresence>
-        {showDigitalMenu && (
-          <VitrineCardapio
-            businessId={rawBusiness.id}
-            businessName={rawBusiness.name}
-            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
-            themeColor={theme.previewColor}
-            products={rawBusiness.products || []}
-            onClose={() => setShowDigitalMenu(false)}
-            isOpen={isOpen}
-            hours={rawBusiness.hours}
-            deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0}
-            deliveryFeeNegotiable={rawBusiness.deliveryFeeNegotiable}
-            businessLat={rawBusiness.latitude}
-            businessLng={rawBusiness.longitude}
-            menuMode={rawBusiness.menuMode}
-            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
-          />
         )}
       </AnimatePresence>
 

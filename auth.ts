@@ -14,6 +14,37 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // Removemos o spread global ...authConfig daqui
   providers: [
     ...authConfig.providers, // Trazemos o Google do auth.config.ts
+    {
+      id: "magic-login",
+      name: "Magic Login",
+      type: "credentials",
+      credentials: { token: { type: "text" } },
+      async authorize(credentials) {
+        if (!credentials?.token) return null;
+
+        // Verifica se o token existe, se o usuário está ativo e se não expirou
+        const tokenValido = await db.checkoutToken.findUnique({
+          where: { id: credentials.token as string },
+          include: { user: true },
+        });
+
+        if (!tokenValido || new Date() > tokenValido.expiresAt) {
+          return null; // Forjado ou vencido? Corta na alfândega!
+        }
+
+        const user = tokenValido.user;
+
+        // CONSUMO ATÔMICO: Destrói o token após o primeiro uso (Impede reutilização do link)
+        await db.checkoutToken.delete({ where: { id: tokenValido.id } });
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
+      },
+    },
     Credentials({
       name: "Credentials",
       async authorize(credentials) {

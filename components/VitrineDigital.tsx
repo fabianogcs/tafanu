@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-// 🚀 INTEGRADO COM SEU CONSTANTS: 11 Categorias Oficiais compactadas
 const CATEGORIES_SHOWCASE = [
   {
     id: "Alimentacao",
@@ -109,6 +109,18 @@ const CATEGORIES_SHOWCASE = [
 
 export default function VitrineDigital() {
   const router = useRouter();
+  const [userCity, setUserCity] = useState<string | null>(null);
+
+  // 🚀 O MISTÉRIO REVELADO: Ele puxa a cidade assim que a Home carrega
+  useEffect(() => {
+    try {
+      const cachedCoords = localStorage.getItem("tafanu_user_coords");
+      if (cachedCoords) {
+        const { city } = JSON.parse(cachedCoords);
+        if (city) setUserCity(city);
+      }
+    } catch (err) {}
+  }, []);
 
   const handleMoodClick = (e: React.MouseEvent, baseUrl: string) => {
     e.preventDefault();
@@ -128,40 +140,49 @@ export default function VitrineDigital() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-6 pt-12 md:pt-16 pb-8 relative z-10">
-      {/* CABEÇALHO */}
-      <div className="mb-6 md:mb-10 text-center flex flex-col items-center">
+      {/* CABEÇALHO INTELIGENTE */}
+      <div className="mb-6 md:mb-10 text-center flex flex-col items-center animate-in fade-in duration-500">
         <div className="flex items-center gap-2 mb-3">
           <span className="bg-emerald-100 text-emerald-600 p-1.5 rounded-xl shadow-sm">
-            <Sparkles size={14} strokeWidth={2.5} />
+            {userCity ? (
+              <MapPin size={14} strokeWidth={2.5} />
+            ) : (
+              <Sparkles size={14} strokeWidth={2.5} />
+            )}
           </span>
           <span className="text-emerald-600 font-black text-[10px] md:text-[11px] uppercase tracking-[0.25em]">
-            Busca Rápida
+            {userCity ? "Perto de Você" : "Busca Rápida"}
           </span>
         </div>
+
         <h2 className="text-2xl md:text-4xl font-black text-[#023059] uppercase italic tracking-tighter leading-tight mb-2">
-          O Que Você <span className="text-emerald-500">Quer Hoje?</span>
+          {userCity ? (
+            <>
+              Opções em{" "}
+              <span className="text-emerald-500 truncate">{userCity}</span>
+            </>
+          ) : (
+            <>
+              O Que Você <span className="text-emerald-500">Quer Hoje?</span>
+            </>
+          )}
         </h2>
       </div>
 
-      {/* 🚀 NOVA GRELHA: 4 Colunas no Mobile / 5 Colunas no Desktop */}
       <div className="grid grid-cols-4 md:grid-cols-5 gap-2 md:gap-4">
         {CATEGORIES_SHOWCASE.map((mood) => (
           <Link
             key={mood.id}
             href={mood.url}
             onClick={(e) => handleMoodClick(e, mood.url)}
-            /* 🚀 CARDS COMPACTOS: Menos padding no mobile (p-2.5) e altura fixa no desktop */
             className={`group relative overflow-hidden rounded-[1rem] md:rounded-[1.5rem] p-2.5 md:p-5 flex flex-col justify-between aspect-square md:aspect-auto md:h-36 lg:h-40 bg-gradient-to-br ${mood.bgClass} shadow-sm hover:shadow-md hover:${mood.shadowClass} hover:-translate-y-1 transition-all duration-300`}
           >
-            {/* Efeito de Reflexo no Vidro */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <div className="flex justify-between items-start w-full relative z-10">
-              {/* Emojis Menores para caber na tela */}
               <span className="text-2xl md:text-3xl lg:text-4xl drop-shadow-sm group-hover:scale-110 transition-transform duration-300 origin-top-left">
                 {mood.icon}
               </span>
-              {/* A setinha só aparece no computador para não poluir o celular */}
               <div className="hidden md:flex w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
                 <ArrowRight size={12} strokeWidth={3} />
               </div>
@@ -171,7 +192,6 @@ export default function VitrineDigital() {
               <h3 className="text-white font-black text-[9px] md:text-xs lg:text-sm uppercase tracking-wide md:tracking-widest leading-tight drop-shadow-sm mb-0.5 md:mb-1 break-words">
                 {mood.title}
               </h3>
-              {/* Subtítulo escondido no celular (hidden md:block) para não vazar o texto */}
               <p className="hidden md:block text-white/80 font-bold text-[8px] lg:text-[10px] tracking-wider truncate">
                 {mood.subtitle}
               </p>

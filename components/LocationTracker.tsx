@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Navigation, Loader2, MapPin } from "lucide-react";
+import { Navigation, Loader2, MapPin, Map } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LocationTracker() {
@@ -10,8 +10,12 @@ export default function LocationTracker() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [deviceEnv, setDeviceEnv] = useState({ isPwa: false, isMobile: false });
-  // 🚀 NOVO ESTADO: Guarda a última cidade achada para dar segurança ao cliente
   const [cachedCity, setCachedCity] = useState<string | null>(null);
+
+  // 🚀 O RASTREADOR DE INTENÇÃO (Fase 3): Detecta se o usuário está viajando (Airbnb Mode)
+  const isExploreMode = searchParams.has("city") || searchParams.has("state");
+  const exploreCity = searchParams.get("city");
+  const exploreState = searchParams.get("state");
 
   useEffect(() => {
     const isPwa =
@@ -23,7 +27,6 @@ export default function LocationTracker() {
       );
     setDeviceEnv({ isPwa, isMobile });
 
-    // 🚀 LÊ O CACHE PARA EXIBIR A CIDADE DE FORMA AMIGÁVEL
     try {
       const coords = localStorage.getItem("tafanu_user_coords");
       if (coords) {
@@ -36,6 +39,13 @@ export default function LocationTracker() {
   const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
   const handleToggleLocation = () => {
+    if (isExploreMode) {
+      toast.info("Modo Exploração Ativo", {
+        description: "Remova o filtro de cidade/estado para usar o GPS local.",
+      });
+      return;
+    }
+
     if (isGpsActive) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("lat");
@@ -75,11 +85,8 @@ export default function LocationTracker() {
         params.set("sort", "distance");
         params.set("page", "1");
 
-        // 🚀 O BÔNUS CTO: Tenta adivinhar a cidade do usuário via API gratuita para melhorar o UX
         let foundCity = null;
         try {
-          // 🛡️ CTO FIX: O Nominatim bloqueia IPs que não enviam o User-Agent.
-          // Injetamos a identidade do Tafanu para garantir que a API nunca nos bana.
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
             {
@@ -168,6 +175,35 @@ export default function LocationTracker() {
     );
   };
 
+  // 🚀 INTERFACE DO MODO EXPLORAR (AIRBNB MODE)
+  if (isExploreMode) {
+    return (
+      <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 shadow-inner">
+            <Map size={18} />
+          </div>
+          <div>
+            <h4 className="text-xs font-black text-blue-900 uppercase italic leading-tight">
+              Explorando Região
+            </h4>
+            <p className="text-[10px] font-bold uppercase italic mt-0.5 text-blue-600 truncate max-w-[150px]">
+              {exploreCity || exploreState}
+            </p>
+          </div>
+        </div>
+
+        <button
+          disabled
+          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed"
+        >
+          GPS Pausado
+        </button>
+      </div>
+    );
+  }
+
+  // 🚀 INTERFACE DO MODO GPS NORMAL
   return (
     <div
       className={`w-full bg-white rounded-2xl p-4 shadow-sm border transition-colors duration-500 flex items-center justify-between ${isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-gray-100 mb-6"}`}

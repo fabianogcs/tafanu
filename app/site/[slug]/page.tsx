@@ -197,27 +197,9 @@ export default async function BusinessPage({
         mercadoLivre: true,
         shein: true,
         ifood: true,
-        hasDelivery: true,
-        deliveryFee: true,
-        deliveryFeeNegotiable: true, // 🚀 AQUI: Puxa o 'A Combinar' do banco!
-        deliveryRadius: true, // 🚀 FASE 3: PUXA O RAIO
         menuMode: true,
         isExternalLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND
         actionLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND
-        agendaConfig: true,
-        products: {
-          where: { isActive: true }, // 🚀 Filtra os inativos
-          select: {
-            id: true, // 🚀 A CHAVE MESTRA: Traz o ID oficial do banco para blindar o pedido!
-            name: true,
-            description: true,
-            price: true,
-            oldPrice: true,
-            imageUrl: true,
-            isActive: true,
-            extras: true, // 🚀 A CHAVE MESTRA: Libera os adicionais para o cliente ver!
-          },
-        },
         published: true,
         isActive: true,
         expiresAt: true,

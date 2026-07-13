@@ -183,12 +183,6 @@ export default function BusinessEditor({
     safeBusiness.catalogPdf || null,
   );
 
-  const [products, setProducts] = useState<any[]>(() => {
-    return safeBusiness.products
-      ? JSON.parse(JSON.stringify(safeBusiness.products))
-      : [];
-  });
-
   const [menuMode, setMenuMode] = useState<"PDF" | "DIGITAL" | "AGENDA">(
     safeBusiness.menuMode || "DIGITAL",
   );
@@ -201,31 +195,6 @@ export default function BusinessEditor({
     safeBusiness.actionLink || "",
   );
 
-  // 🚀 O COFRE INDEPENDENTE DA AGENDA (AGORA COM EXCEÇÕES)
-  const [agendaConfig, setAgendaConfig] = useState<any>(() => {
-    if (safeBusiness.agendaConfig) {
-      // 🚀 HACKER FIX: Garante que o objeto venha com 'exceptions' para não quebrar a tela nova!
-      const existing = safeBusiness.agendaConfig;
-      if (existing.hours) {
-        existing.hours = existing.hours.map((h: any) => ({
-          ...h,
-          exceptions: h.exceptions || [],
-        }));
-      }
-      return existing;
-    }
-    return {
-      duration: 30, // Tempo padrão do serviço
-      hours: Array.from({ length: 7 }).map((_, i) => ({
-        dayOfWeek: i,
-        openTime: "09:00",
-        closeTime: "18:00",
-        isClosed: i === 0, // Domingo fechado por padrão
-        exceptions: [], // 🚀 A array que armazena os horários riscados!
-      })),
-    };
-  });
-
   const [categoria, setCategoria] = useState(() => {
     if (
       isNew ||
@@ -236,23 +205,6 @@ export default function BusinessEditor({
     }
     return safeBusiness.category;
   });
-
-  // 🚀 O CÉREBRO CAMALEÃO: Agora ele reage à Categoria OU ao botão da Agenda!
-  const isService = useMemo(() => {
-    // 1. Se o dono clicou no botão "Agenda", automaticamente vira um serviço!
-    if (menuMode === "AGENDA") return true;
-
-    // 2. Ou se a categoria for de serviços...
-    const serviceCategories = [
-      "Beleza",
-      "Educacao",
-      "Eventos",
-      "Profissionais",
-      "Saude",
-      "Servicos",
-    ];
-    return serviceCategories.includes(categoria);
-  }, [categoria, menuMode]);
 
   const [selectedSubs, setSelectedSubs] = useState<string[]>(
     safeBusiness.subcategory || [],
@@ -318,19 +270,6 @@ export default function BusinessEditor({
     website: safeBusiness.website || "",
   });
 
-  const [hasDelivery, setHasDelivery] = useState(
-    safeBusiness.hasDelivery || false,
-  );
-  const [deliveryFee, setDeliveryFee] = useState<number>(
-    safeBusiness.deliveryFee || 0,
-  );
-  const [deliveryRadius, setDeliveryRadius] = useState<number>(
-    safeBusiness.deliveryRadius || 0,
-  );
-  // 🚀 O NOVO COFRE AQUI
-  const [deliveryFeeNegotiable, setDeliveryFeeNegotiable] = useState<boolean>(
-    !!safeBusiness.deliveryFeeNegotiable,
-  );
   const hasChanges = useMemo(() => {
     if (isNew) return true;
 
@@ -386,26 +325,6 @@ export default function BusinessEditor({
       }))
       .sort((a: any, b: any) => a.dayOfWeek - b.dayOfWeek);
 
-    const mappedSafeProducts = (safeBusiness.products || []).map((p: any) => ({
-      name: p.name || "",
-      description: p.description || "",
-      price: parseFloat(String(p.price || 0).replace(",", ".")) || 0,
-      oldPrice: parseFloat(String(p.oldPrice || 0).replace(",", ".")) || 0,
-      isActive: p.isActive ?? true,
-      imageUrl: p.imageUrl || "",
-      extras: p.extras || [],
-    }));
-
-    const mappedStateProducts = products.map((p: any) => ({
-      name: p.name || "",
-      description: p.description || "",
-      price: parseFloat(String(p.price || 0).replace(",", ".")) || 0,
-      oldPrice: parseFloat(String(p.oldPrice || 0).replace(",", ".")) || 0,
-      isActive: p.isActive ?? true,
-      imageUrl: p.imageUrl || "",
-      extras: p.extras || [],
-    }));
-
     const isBasicDifferent =
       (name || "") !== (safeBusiness.name || "") ||
       (slug || "") !== (safeBusiness.slug || "") ||
@@ -417,10 +336,6 @@ export default function BusinessEditor({
       isExternalLink !== !!safeBusiness.isExternalLink ||
       actionLink !== (safeBusiness.actionLink || "") ||
       categoria !== initialCategory ||
-      hasDelivery !== !!safeBusiness.hasDelivery ||
-      deliveryFee !== (safeBusiness.deliveryFee || 0) ||
-      deliveryRadius !== (safeBusiness.deliveryRadius || 0) ||
-      deliveryFeeNegotiable !== (safeBusiness.deliveryFeeNegotiable ?? false) ||
       selectedTheme !== safeBusiness.theme ||
       selectedLayout !== initialLayout ||
       (description || "") !== (safeBusiness.description || "") ||
@@ -434,8 +349,7 @@ export default function BusinessEditor({
       !isDeepEqual(keywords, safeBusiness.keywords || []) ||
       !isDeepEqual(features, safeBusiness.features || []) ||
       !isDeepEqual(faqs, safeBusiness.faqs || []) ||
-      !isDeepEqual(mappedStateHours, mappedSafeHours) ||
-      !isDeepEqual(mappedStateProducts, mappedSafeProducts);
+      !isDeepEqual(mappedStateHours, mappedSafeHours);
 
     const isSocialsDifferent =
       socials.instagram !== cleanSocialHandle(safeBusiness.instagram) ||
@@ -482,10 +396,6 @@ export default function BusinessEditor({
     addressData,
     isNew,
     safeBusiness,
-    hasDelivery,
-    deliveryFee,
-    deliveryRadius,
-    products,
     menuMode,
     isExternalLink,
     actionLink,
@@ -561,11 +471,6 @@ export default function BusinessEditor({
       setMenuMode(safeBusiness.menuMode || "DIGITAL");
       setIsExternalLink(!!safeBusiness.isExternalLink);
       setActionLink(safeBusiness.actionLink || "");
-      setProducts(
-        safeBusiness.products
-          ? JSON.parse(JSON.stringify(safeBusiness.products))
-          : [],
-      );
       setIsPublished(safeBusiness.published);
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
@@ -627,9 +532,6 @@ export default function BusinessEditor({
         complement: safeBusiness.complement || "",
       });
 
-      setHasDelivery(safeBusiness.hasDelivery || false);
-      setDeliveryFee(safeBusiness.deliveryFee || 0);
-      setDeliveryRadius(safeBusiness.deliveryRadius || 0);
       hasInitialized.current = true;
     }
   }, [safeBusiness, isNew]);
@@ -790,17 +692,6 @@ export default function BusinessEditor({
         isExternalLink: isExternalLink,
         actionLink: isExternalLink ? actionLink.trim() : "",
 
-        // Zera os marketplaces velhos pra limpar o banco no futuro
-        shopee: "",
-        mercadoLivre: "",
-        shein: "",
-        ifood: "",
-
-        hasDelivery: hasDelivery,
-        deliveryFee: deliveryFee,
-        deliveryRadius: deliveryRadius,
-        deliveryFeeNegotiable: deliveryFeeNegotiable,
-
         mediaFeed: mediaFeed.filter(
           (m: any) => typeof m.url === "string" && m.url.trim() !== "",
         ),
@@ -808,8 +699,6 @@ export default function BusinessEditor({
         coverImage: coverImage,
         catalogPdf: catalogPdf,
         menuMode: menuMode,
-        agendaConfig: agendaConfig,
-        products: products.filter((p: any) => p.name.trim() !== ""),
         hours: businessHours,
         faqs: faqs.filter((f) => f.q.trim() !== "" && f.a.trim() !== ""),
       };
@@ -828,7 +717,7 @@ export default function BusinessEditor({
             });
             slugRef.current?.focus();
             setTimeout(() => setSlugError(false), 4000);
-            return; // 🚀 BARREIRA DE SEGURANÇA: Se der erro, ele PARA AQUI.
+            return;
           }
           throw new Error(result.error);
         }
@@ -840,7 +729,7 @@ export default function BusinessEditor({
         router.push("/dashboard");
         router.refresh();
         window.scrollTo({ top: 0, behavior: "smooth" });
-        return; // Finaliza o processo com sucesso real.
+        return;
       } else {
         // --- FLUXO DE EDIÇÃO DE UMA LOJA JÁ EXISTENTE ---
         payload.faqs = faqs.filter(
@@ -876,7 +765,7 @@ export default function BusinessEditor({
             slugRef.current?.focus();
             setTimeout(() => setSlugError(false), 4000);
           }
-          return; // 🚀 BARREIRA DE SEGURANÇA: Se der erro, ele PARA AQUI. Não tem confete fantasma.
+          return;
         }
 
         // 🚀 SUCESSO VERDADEIRO (EDIÇÃO)
@@ -1100,7 +989,7 @@ export default function BusinessEditor({
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
 
-          {/* 🚀 4. CONEXÕES E FRETE (Agora limpo sem os marketplaces antigos) */}
+          {/* 🚀 4. CONEXÕES (Agora limpo sem os marketplaces antigos e sem Delivery nativo) */}
           <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200 relative overflow-hidden">
             <ConnectionsSection
               socials={socials}
@@ -1109,34 +998,18 @@ export default function BusinessEditor({
               setWhatsapp={setWhatsapp}
               phone={phone}
               setPhone={setPhone}
-              hasDelivery={hasDelivery}
-              setHasDelivery={setHasDelivery}
-              deliveryFee={deliveryFee}
-              setDeliveryFee={setDeliveryFee}
-              deliveryRadius={deliveryRadius}
-              setDeliveryRadius={setDeliveryRadius}
-              deliveryFeeNegotiable={deliveryFeeNegotiable} // 🚀 ENVIA A VARIÁVEL
-              setDeliveryFeeNegotiable={setDeliveryFeeNegotiable} // 🚀 ENVIA A FUNÇÃO
-              isService={isService}
             />
           </div>
 
-          {/* 🚀 5. A LOJA (Cardápio, Agenda ou Link Externo) */}
+          {/* 🚀 5. A LOJA (Link Externo, PDF ou Agenda) */}
           <MenuSection
             menuMode={menuMode}
             setMenuMode={setMenuMode}
             catalogPdf={catalogPdf}
             setCatalogPdf={setCatalogPdf}
-            products={products}
-            setProducts={setProducts}
-            isService={isService}
-            agendaConfig={agendaConfig}
-            setAgendaConfig={setAgendaConfig}
-            // 🚀 NOVOS CAMPOS INJETADOS NO COMPONENTE DA TELA!
-            isExternalLink={isExternalLink}
-            setIsExternalLink={setIsExternalLink}
             actionLink={actionLink}
             setActionLink={setActionLink}
+            setIsExternalLink={setIsExternalLink}
           />
 
           {/* 🚀 6. ENDEREÇO */}

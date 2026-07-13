@@ -37,7 +37,6 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-import VitrineCardapio from "../VitrineCardapio"; // 🚀 Importa a Máquina de Vendas
 
 export default function UrbanLayout({
   business: rawBusiness,
@@ -49,7 +48,7 @@ export default function UrbanLayout({
   emailVerified,
   currentUserId,
   isAdmin,
-  isOpen, // 🚀 ADICIONADO AQUI!
+  isOpen,
 }: any) {
   const {
     business,
@@ -66,7 +65,6 @@ export default function UrbanLayout({
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
   >(null);
@@ -94,7 +92,7 @@ export default function UrbanLayout({
   const addressBase = business?.address || "";
   const hasNumberInAddress =
     business?.number && addressBase.includes(business.number);
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
       : `${business.address || ""}, ${business.city || ""}, ${business.state || ""}`.trim(),
@@ -103,10 +101,6 @@ export default function UrbanLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-
-  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
-  const temServicoOuProdutoAtivo =
-    business.products && business.products.some((p: any) => p.isActive);
 
   // 🚀 O RADAR DO LINK EXTERNO:
   const isExternalLink = !!business.isExternalLink;
@@ -182,9 +176,6 @@ export default function UrbanLayout({
       .map((item: any) => item.url);
   }, [cleanFeed]);
 
-  // ==========================================
-  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL
-  // ==========================================
   const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
   const hasVideos = cleanFeed.some((item: any) =>
     ["video", "video_v", "video_h"].includes(item.type),
@@ -222,10 +213,8 @@ export default function UrbanLayout({
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         if (type === "whatsapp") {
-          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         } else {
-          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
           window.location.href = targetUrl;
         }
       }
@@ -234,7 +223,7 @@ export default function UrbanLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -242,30 +231,14 @@ export default function UrbanLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E LOJA DIGITAL
+  }, [selectedIndex, isPdfModalOpen]);
 
-  // 🚀 MÁGICA DA CONVERSÃO: Abre o carrinho automaticamente se o cliente voltar de um login!
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // 🧹 EXORCISMO: Deleta o carrinho antigo que ficou preso no navegador
-      sessionStorage.removeItem("tafanu_cart");
-
-      const isCartPending = window.location.search.includes("cart=true");
-      // 🚀 Atualizado para ler o NOVO cofre super seguro
-      const savedCart = sessionStorage.getItem("tafanu_pending_checkout");
-
-      if (isCartPending || savedCart) {
-        setShowDigitalMenu(true);
-      }
-    }
-  }, []);
   if (!theme) return null;
 
   return (
     <div
       className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-current selection:text-white`}
     >
-      {/* --- HEADER LANDING PAGE (NOVA ORDEM MOBILE & DESKTOP) --- */}
       <header
         className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20 overflow-hidden text-white`}
       >
@@ -341,7 +314,6 @@ export default function UrbanLayout({
               <div className="relative w-56 h-56 md:w-80 md:h-80 lg:w-96 lg:h-96">
                 <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/30 rotate-6 scale-105 transition-transform" />
                 <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/20 -rotate-6 scale-105 transition-transform" />
-                {/* ✅ TAG IMAGE OTIMIZADA (Com priority para carregar rápido!) */}
                 <Image
                   src={business.imageUrl}
                   alt={`Logotipo da empresa ${business.name}`}
@@ -365,7 +337,6 @@ export default function UrbanLayout({
                   {business.urban_tag}
                 </span>
               )}
-              {/* 🚀 BADGE ON/OFF (Desktop) */}
               {realHours.length > 0 && (
                 <span
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
@@ -419,16 +390,12 @@ export default function UrbanLayout({
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
-              {((rawBusiness.menuMode === "DIGITAL" &&
-                temServicoOuProdutoAtivo) ||
-                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-                (rawBusiness.menuMode === "AGENDA" &&
-                  temServicoOuProdutoAtivo) ||
-                (isExternalLink && actionLink)) && (
+              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DO BOTÃO DE AÇÃO */}
+              {((isExternalLink && actionLink) ||
+                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
                 <button
                   onClick={() => {
-                    // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
+                    // SE FOR LINK EXTERNO (Loja Digital/Agenda/Site) -> Manda o cliente pra fora
                     if (isExternalLink && actionLink) {
                       Actions.registerClickEvent(business.id, "WEBSITE");
                       window.open(
@@ -439,12 +406,8 @@ export default function UrbanLayout({
                       return;
                     }
 
-                    if (
-                      rawBusiness.menuMode === "DIGITAL" ||
-                      rawBusiness.menuMode === "AGENDA"
-                    ) {
-                      setShowDigitalMenu(true);
-                    } else if (rawBusiness.menuMode === "PDF") {
+                    // SE FOR PDF -> Abre o arquivo aqui mesmo
+                    if (rawBusiness.menuMode === "PDF") {
                       setIsPdfModalOpen(true);
                     }
                   }}
@@ -453,7 +416,7 @@ export default function UrbanLayout({
                   <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {rawBusiness.menuMode === "DIGITAL"
-                      ? "Fazer Pedido"
+                      ? "Acessar Loja"
                       : rawBusiness.menuMode === "AGENDA"
                         ? "Agendar Horário"
                         : "Catálogo Visual"}
@@ -531,6 +494,7 @@ export default function UrbanLayout({
                 })}
               </div>
             )}
+
             {/* Sobre — visível no scroll para quem não leu o hero */}
             {hasDescription && !business.imageUrl && (
               <section
@@ -547,6 +511,7 @@ export default function UrbanLayout({
                 </p>
               </section>
             )}
+
             {/* Destaques */}
             {hasFeatures && (
               <section className="space-y-6">
@@ -597,7 +562,6 @@ export default function UrbanLayout({
                 return (
                   <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
-                      {/* O título original é mantido intacto */}
                       <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center gap-3">
                         <Camera
                           className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
@@ -639,6 +603,7 @@ export default function UrbanLayout({
                   </section>
                 );
               })()}
+
             {/* FAQ */}
             {hasFaqs && (
               <section className="space-y-6 pt-6">
@@ -894,7 +859,7 @@ export default function UrbanLayout({
       />
 
       {/* ==========================================
-          🚀 MODAL DE PDF (CARDÁPIO/CATÁLOGO)
+          🚀 MODAL DE PDF (CATÁLOGO VIRTUAL)
           ========================================== */}
       <AnimatePresence>
         {isPdfModalOpen && rawBusiness.catalogPdf && (
@@ -925,31 +890,6 @@ export default function UrbanLayout({
               </div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ==========================================
-          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
-          ========================================== */}
-      <AnimatePresence>
-        {showDigitalMenu && (
-          <VitrineCardapio
-            businessId={rawBusiness.id}
-            businessName={rawBusiness.name}
-            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
-            themeColor={theme.previewColor}
-            products={rawBusiness.products || []}
-            onClose={() => setShowDigitalMenu(false)}
-            isOpen={isOpen}
-            hours={rawBusiness.hours}
-            deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0}
-            deliveryFeeNegotiable={rawBusiness.deliveryFeeNegotiable}
-            businessLat={rawBusiness.latitude}
-            businessLng={rawBusiness.longitude}
-            menuMode={rawBusiness.menuMode}
-            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
-          />
         )}
       </AnimatePresence>
       <style jsx global>{`

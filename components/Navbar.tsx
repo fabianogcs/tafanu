@@ -18,9 +18,9 @@ import {
   Smartphone,
   Download,
   Briefcase,
-  Clock, // 🚀 NOVO ÍCONE PARA O RASTREIO
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import LoginModal from "@/components/LoginModal";
 
 export default function Navbar({
   isLoggedIn,
@@ -30,6 +30,7 @@ export default function Navbar({
   userRole: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -107,15 +108,6 @@ export default function Navbar({
                 >
                   Baixar App
                 </button>
-              )}
-              {/* 🚀 BOTÃO DE MEUS PEDIDOS (Visível para usuários logados não-admins) */}
-              {(isVisitor || isSubscriber) && (
-                <Link
-                  href="/meus-pedidos"
-                  className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
-                >
-                  <Clock size={14} className="text-amber-400" /> Meus Pedidos
-                </Link>
               )}
 
               <Link
@@ -195,13 +187,13 @@ export default function Navbar({
                   >
                     Entrar
                   </Link>
-                  <Link
-                    href="/anunciar"
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
                     className="flex items-center gap-1.5 md:gap-2 bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue px-4 md:px-6 py-3 md:py-3.5 rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-widest md:tracking-wider hover:scale-105 transition-all shadow-xl shadow-tafanu-action/20 border-t border-white/20 whitespace-nowrap"
                   >
                     <Sparkles size={16} className="hidden md:block" /> Vitrine
                     em 5 min
-                  </Link>
+                  </button>
                 </>
               ) : (
                 <div className="flex items-center gap-3">
@@ -273,17 +265,6 @@ export default function Navbar({
           )}
 
           <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
-            {/* 🚀 RASTREIO MOBILE OFICIAL */}
-            {(isVisitor || isSubscriber) && (
-              <MobileLink
-                href="/meus-pedidos"
-                icon={<Clock size={20} />}
-                label="Meus Pedidos"
-                color="text-rose-400"
-                onClick={() => setIsOpen(false)}
-              />
-            )}
-
             <MobileLink
               href="/"
               icon={<Home size={20} />}
@@ -362,14 +343,20 @@ export default function Navbar({
 
           <div className="mt-auto pt-6 border-t border-white/10 space-y-4">
             {(isGuest || isVisitor) && (
-              <Link
-                href="/anunciar"
-                onClick={() => setIsOpen(false)}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  if (isGuest) {
+                    setIsLoginModalOpen(true);
+                  } else {
+                    window.location.href = "/anunciar"; // Se for Visitor (já logado), ele passa!
+                  }
+                }}
                 className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue font-black p-5 rounded-2xl shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-[0.98] transition-all uppercase text-[12px] tracking-widest"
               >
                 <Sparkles size={20} className="animate-pulse" /> Sua Vitrine em
                 5 Minutos
-              </Link>
+              </button>
             )}
             {isLoggedIn && (
               <button
@@ -385,6 +372,10 @@ export default function Navbar({
           </div>
         </div>
       </div>
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
     </nav>
   );
 }

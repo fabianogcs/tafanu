@@ -34,21 +34,8 @@ export default async function DashboardPage() {
         orderBy: { createdAt: "desc" },
         include: {
           _count: {
-            select: { favorites: true, orders: true }, // 🚀 ADICIONAMOS A CONTAGEM DE PEDIDOS
+            select: { favorites: true }, // 🚀 APAGAMOS O 'orders: true' DAQUI!
           },
-          // 🚀 CFO: Puxamos os pedidos para calcular o faturamento e reter o cliente
-          orders: {
-            where: {
-              status: "COMPLETED", // 🚀 HACKER FIX: Conta APENAS dinheiro real que já está no bolso! Ignora trotes e pendentes.
-            },
-            select: {
-              totalAmount: true,
-              createdAt: true,
-              status: true,
-            },
-          },
-          // 🚀 CTO FIX: Substituímos o 'include' implícito por uma seleção estrita.
-          // Trazemos apenas a Data e o Tipo de Evento. Removemos IDs e IDs da loja para poupar 80% do payload!
           analytics: {
             where: {
               createdAt: {
@@ -233,56 +220,7 @@ export default async function DashboardPage() {
 
                       {/* LADO DIREITO: MÉTRICAS PADRONIZADAS E GRÁFICOS */}
                       <div className="w-full lg:w-2/3 flex flex-col gap-8">
-                        {/* 🚀 CÁLCULO DE CFO: Soma todo o faturamento da vitrine */}
-                        {(() => {
-                          const validOrders = business.orders || [];
-                          const totalRevenue = validOrders.reduce(
-                            (acc, o) => acc + (o.totalAmount || 0),
-                            0,
-                          );
-                          const totalOrdersCount =
-                            business._count?.orders || validOrders.length || 0;
-
-                          return (
-                            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 rounded-[35px] p-6 md:p-8 text-white shadow-xl border border-slate-800 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-                              <div>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest mb-3">
-                                  <Zap size={12} className="fill-emerald-400" />{" "}
-                                  Retorno Gerado (Motor de Vendas)
-                                </span>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                  Volume Total em Pedidos & Orçamentos
-                                </p>
-                                <h3 className="text-3xl md:text-5xl font-black italic tracking-tighter text-emerald-400 mt-1">
-                                  {new Intl.NumberFormat("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  }).format(totalRevenue)}
-                                </h3>
-                              </div>
-
-                              <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-slate-800 gap-4 shrink-0">
-                                <div className="text-left md:text-right">
-                                  <span className="text-2xl md:text-3xl font-black text-white">
-                                    {totalOrdersCount}
-                                  </span>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    Pedidos Recebidos
-                                  </p>
-                                </div>
-                                <Link
-                                  href="/dashboard/pedidos"
-                                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg flex items-center gap-1.5"
-                                >
-                                  Ver Kanban <ArrowRight size={14} />
-                                </Link>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
+                        {/* 🚀 APAGAMOS O CARD DE "VOLUME DE PEDIDOS" AQUI */}
                         <div className="flex items-center justify-between bg-white border border-slate-200 rounded-full px-6 py-4 shadow-sm">
                           <div>
                             <h2 className="text-xl font-black text-slate-900 uppercase italic leading-none">

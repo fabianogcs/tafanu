@@ -30,7 +30,6 @@ export default function Hero() {
         params.set("status", "open");
         params.set("page", "1");
 
-        // 🚀 CTO FIX: Puxando o nome da cidade usando a API Blindada
         let foundCity = null;
         try {
           const res = await fetch(
@@ -79,6 +78,17 @@ export default function Hero() {
     const params = new URLSearchParams();
     const finalQuery = voiceQuery || query;
     if (finalQuery) params.append("q", finalQuery);
+
+    // 🚀 O CONCIERGE DA HOME: Se já temos o GPS salvo no bolso, aplicamos na busca silenciosamente!
+    try {
+      const cachedCoords = localStorage.getItem("tafanu_user_coords");
+      if (cachedCoords) {
+        const { lat, lng } = JSON.parse(cachedCoords);
+        if (lat) params.set("lat", lat);
+        if (lng) params.set("lng", lng);
+      }
+    } catch (err) {}
+
     router.push(`/busca?${params.toString()}`);
   };
 
@@ -104,7 +114,6 @@ export default function Hero() {
         recognition.interimResults = false;
 
         recognition.onstart = () => setIsListening(true);
-
         recognition.onend = () => setIsListening(false);
 
         recognition.onresult = (event: any) => {
@@ -192,7 +201,7 @@ export default function Hero() {
               }
               className="w-full h-full !bg-transparent border-none outline-none focus:ring-0 text-slate-800 placeholder-slate-400 font-bold text-sm md:text-lg appearance-none shadow-none"
               value={query}
-              maxLength={80} // 🚀 TRAVA UX (Impede injetar um livro na URL)
+              maxLength={80}
               onChange={(e) => setQuery(e.target.value)}
               disabled={isSearching || isListening}
             />
@@ -232,6 +241,7 @@ export default function Hero() {
             )}
           </button>
         </form>
+
         {/* 🚀 BOTÃO ÚNICO DE AÇÃO RÁPIDA (Foco e Conversão) */}
         <div className="relative z-30 w-full flex justify-center mt-8 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
           <button
@@ -260,7 +270,6 @@ export default function Hero() {
         </button>
       </div>
 
-      {/* 🚀 MODAL DE GRAVAÇÃO DE VOZ AQUI NO FINAL */}
       {isListening && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050B14]/80 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">

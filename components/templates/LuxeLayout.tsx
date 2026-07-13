@@ -34,7 +34,6 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
-import VitrineCardapio from "../VitrineCardapio"; // 🚀 MOTOR DA MÁQUINA DE VENDAS
 
 // --- ACORDEÃO LUXO ---
 const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
@@ -109,7 +108,7 @@ export default function LuxeLayout({
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [showDigitalMenu, setShowDigitalMenu] = useState(false);
+
   // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
@@ -155,13 +154,11 @@ export default function LuxeLayout({
     fullAddress ||
     `${addressBase}${!hasNumberInAddress && business?.number ? `, ${business.number}` : ""} ${business?.complement || ""}`;
 
-  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED (Puxa direto do banco a ordem do cliente!)
+  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED
   const rawFeed = useMemo(() => {
-    // Se ele usou o novo painel, pega a ordem que ele fez lá
     if (business.mediaFeed && business.mediaFeed.length > 0) {
       return business.mediaFeed;
     }
-    // Se ele é um usuário velho que não atualizou o perfil ainda, junta as fotos e vídeos avulsos
     const oldGallery = (business.gallery || []).map((url: string) => ({
       type: "image",
       url,
@@ -173,7 +170,6 @@ export default function LuxeLayout({
     return [...oldGallery, ...oldVideos];
   }, [business.mediaFeed, business.gallery, business.videos]);
 
-  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
   const cleanFeed = useMemo(() => {
     let imgIndexCounter = 0;
     return rawFeed
@@ -189,21 +185,16 @@ export default function LuxeLayout({
       });
   }, [rawFeed]);
 
-  // Lista pura de imagens pro Lightbox (Modal tela cheia)
   const lightboxImages = useMemo(() => {
     return cleanFeed
       .filter((item: any) => item.type === "image")
       .map((item: any) => item.url);
   }, [cleanFeed]);
 
-  // ==========================================
-  // 🚀 CÉREBRO DA GALERIA: LÓGICA CONDICIONAL
-  // ==========================================
   const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
   const hasVideos = cleanFeed.some((item: any) =>
     ["video", "video_v", "video_h"].includes(item.type),
   );
-  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
 
@@ -221,10 +212,6 @@ export default function LuxeLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-
-  // 🚀 RADAR DE ESTOQUE/AGENDA: Checa se tem pelo menos 1 item ou serviço configurado
-  const temServicoOuProdutoAtivo =
-    business.products && business.products.some((p: any) => p.isActive);
 
   const salesChannels = [
     {
@@ -278,10 +265,8 @@ export default function LuxeLayout({
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
         if (type === "whatsapp") {
-          // 🚀 SEGURO E LUCRATIVO: Abre a conversa de vendas Noutra Janela e não "mata" a Vitrine Digital
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         } else {
-          // O comando nativo 'tel:' nos telemóveis não destrói a aba, chama apenas o discador.
           window.location.href = targetUrl;
         }
       }
@@ -290,7 +275,7 @@ export default function LuxeLayout({
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen || showDigitalMenu) {
+    if (selectedIndex !== null || isPdfModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -298,23 +283,8 @@ export default function LuxeLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isPdfModalOpen, showDigitalMenu]); // 🚀 TRAVA A TELA PRO PDF E PRO CARRINHO
+  }, [selectedIndex, isPdfModalOpen]);
 
-  // 🚀 MÁGICA DA CONVERSÃO: Abre o carrinho automaticamente se o cliente voltar de um login!
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // 🧹 EXORCISMO: Deleta o carrinho antigo que ficou preso no navegador
-      sessionStorage.removeItem("tafanu_cart");
-
-      const isCartPending = window.location.search.includes("cart=true");
-      // 🚀 Atualizado para ler o NOVO cofre super seguro
-      const savedCart = sessionStorage.getItem("tafanu_pending_checkout");
-
-      if (isCartPending || savedCart) {
-        setShowDigitalMenu(true);
-      }
-    }
-  }, []);
   const mapDestination =
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
@@ -359,7 +329,7 @@ export default function LuxeLayout({
                 className="object-cover object-center"
               />
             ) : (
-              /* Fundo limpo com degradê quando não há foto (sem monogramas) */
+              /* Fundo limpo com degradê quando não há foto */
               <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
             )}
 
@@ -395,7 +365,6 @@ export default function LuxeLayout({
           </div>
 
           {/* 2. O Cartão Flutuante de Texto Mobile */}
-          {/* Se não tem foto, o cartão fica transparente e mescla com o fundo, criando uma tela limpa */}
           <div
             className={`relative z-20 w-full px-6 pt-16 pb-14 rounded-t-[2.5rem] flex flex-col items-center text-center ${
               business.coverImage
@@ -449,7 +418,7 @@ export default function LuxeLayout({
                 </div>
               )}
             </div>
-            {/* 🚀 AJUSTE 1: BIO DO MOBILE MAIOR E MAIS PRESENTE */}
+
             {hasDescription && (
               <p
                 className={`text-sm md:text-base font-medium opacity-80 ${theme.textColor} leading-[1.7] mb-8 max-w-sm text-balance drop-shadow-sm`}
@@ -460,16 +429,12 @@ export default function LuxeLayout({
 
             {/* Botões Mobile */}
             <div className="w-full flex flex-col gap-3 max-w-xs">
-              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE MOBILE: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
-              {((rawBusiness.menuMode === "DIGITAL" &&
-                temServicoOuProdutoAtivo) ||
-                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-                (rawBusiness.menuMode === "AGENDA" &&
-                  temServicoOuProdutoAtivo) ||
-                (isExternalLink && actionLink)) && (
+              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE MOBILE: PDF vs EXTERNO */}
+              {((isExternalLink && actionLink) ||
+                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
                 <button
                   onClick={() => {
-                    // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
+                    // SE FOR LINK EXTERNO, REDIRECIONA
                     if (isExternalLink && actionLink) {
                       Actions.registerClickEvent(business.id, "WEBSITE");
                       window.open(
@@ -480,22 +445,18 @@ export default function LuxeLayout({
                       return;
                     }
 
-                    if (
-                      rawBusiness.menuMode === "DIGITAL" ||
-                      rawBusiness.menuMode === "AGENDA"
-                    ) {
-                      setShowDigitalMenu(true);
-                    } else if (rawBusiness.menuMode === "PDF") {
+                    // SE FOR PDF
+                    if (rawBusiness.menuMode === "PDF") {
                       setIsPdfModalOpen(true);
                     }
                   }}
                   className={`w-full h-12 flex items-center justify-center gap-2 text-[10px] font-black tracking-[0.2em] uppercase rounded-full ${bgAction} shadow-md active:scale-[0.98] transition-all`}
                 >
                   {rawBusiness.menuMode === "DIGITAL"
-                    ? "Fazer Pedido"
+                    ? "Acessar Loja"
                     : rawBusiness.menuMode === "AGENDA"
                       ? "Agendar Horário"
-                      : "Explorar Menu"}{" "}
+                      : "Catálogo de Itens"}{" "}
                   <ChevronRight size={14} strokeWidth={2} />
                 </button>
               )}
@@ -604,7 +565,6 @@ export default function LuxeLayout({
                   )}
                 </motion.div>
 
-                {/* 🚀 AJUSTE 2: BIO DO DESKTOP (COM CAPA) MAIOR E MAIS PRESENTE */}
                 {hasDescription && (
                   <motion.p
                     initial={{ opacity: 0 }}
@@ -623,17 +583,12 @@ export default function LuxeLayout({
                   transition={{ duration: 1, delay: 0.4 }}
                   className="w-full max-w-xs flex flex-col gap-4"
                 >
-                  {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DESKTOP: LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
-                  {((rawBusiness.menuMode === "DIGITAL" &&
-                    temServicoOuProdutoAtivo) ||
+                  {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DESKTOP: EXTERNO vs PDF */}
+                  {((isExternalLink && actionLink) ||
                     (rawBusiness.menuMode === "PDF" &&
-                      rawBusiness.catalogPdf) ||
-                    (rawBusiness.menuMode === "AGENDA" &&
-                      temServicoOuProdutoAtivo) ||
-                    (isExternalLink && actionLink)) && (
+                      rawBusiness.catalogPdf)) && (
                     <button
                       onClick={() => {
-                        // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
                         if (isExternalLink && actionLink) {
                           Actions.registerClickEvent(business.id, "WEBSITE");
                           window.open(
@@ -644,29 +599,24 @@ export default function LuxeLayout({
                           return;
                         }
 
-                        if (
-                          rawBusiness.menuMode === "DIGITAL" ||
-                          rawBusiness.menuMode === "AGENDA"
-                        ) {
-                          setShowDigitalMenu(true);
-                        } else if (rawBusiness.menuMode === "PDF") {
+                        if (rawBusiness.menuMode === "PDF") {
                           setIsPdfModalOpen(true);
                         }
                       }}
-                      className={`w-full h-14 flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase rounded-full ${bgAction} shadow-lg hover:-translate-y-0.5 transition-all`}
+                      className={`flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase px-10 py-5 rounded-full ${bgAction} shadow-lg hover:-translate-y-1 transition-all`}
                     >
                       {rawBusiness.menuMode === "DIGITAL"
-                        ? "Fazer Pedido"
+                        ? "Acessar Loja"
                         : rawBusiness.menuMode === "AGENDA"
                           ? "Agendar Horário"
-                          : "Explorar Menu"}{" "}
+                          : "Catálogo de Itens"}{" "}
                       <ChevronRight size={14} strokeWidth={2} />
                     </button>
                   )}
                   {hasWhatsapp && (
                     <button
                       onClick={() => handleTrackLead("whatsapp")}
-                      className={`w-full h-14 flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase rounded-full text-current bg-white/60 dark:bg-black/40 backdrop-blur-md border border-current/30 shadow-sm hover:bg-white/80 dark:hover:bg-black/60 hover:-translate-y-0.5 transition-all`}
+                      className={`flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase px-10 py-5 rounded-full text-current bg-white/60 dark:bg-black/40 backdrop-blur-md border border-current/30 shadow-lg hover:bg-white/80 dark:hover:bg-black/60 hover:-translate-y-1 transition-all`}
                     >
                       Contato Rápido{" "}
                       <Sparkles
@@ -766,7 +716,6 @@ export default function LuxeLayout({
                 )}
               </motion.div>
 
-              {/* 🚀 AJUSTE 3: BIO DO DESKTOP CENTRALIZADO (SEM CAPA) ENORME E IMPONENTE */}
               {hasDescription && (
                 <motion.p
                   initial={{ opacity: 0 }}
@@ -784,16 +733,12 @@ export default function LuxeLayout({
                 transition={{ duration: 1, delay: 0.4 }}
                 className="flex gap-6"
               >
-                {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DESKTOP (Sem Capa): LOJA DIGITAL vs PDF vs AGENDA vs EXTERNO */}
-                {((rawBusiness.menuMode === "DIGITAL" &&
-                  temServicoOuProdutoAtivo) ||
-                  (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf) ||
-                  (rawBusiness.menuMode === "AGENDA" &&
-                    temServicoOuProdutoAtivo) ||
-                  (isExternalLink && actionLink)) && (
+                {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DESKTOP (Sem Capa): EXTERNO vs PDF */}
+                {((isExternalLink && actionLink) ||
+                  (rawBusiness.menuMode === "PDF" &&
+                    rawBusiness.catalogPdf)) && (
                   <button
                     onClick={() => {
-                      // 🚀 SE FOR LINK EXTERNO, REDIRECIONA!
                       if (isExternalLink && actionLink) {
                         Actions.registerClickEvent(business.id, "WEBSITE");
                         window.open(
@@ -804,22 +749,17 @@ export default function LuxeLayout({
                         return;
                       }
 
-                      if (
-                        rawBusiness.menuMode === "DIGITAL" ||
-                        rawBusiness.menuMode === "AGENDA"
-                      ) {
-                        setShowDigitalMenu(true);
-                      } else if (rawBusiness.menuMode === "PDF") {
+                      if (rawBusiness.menuMode === "PDF") {
                         setIsPdfModalOpen(true);
                       }
                     }}
                     className={`flex items-center justify-center gap-3 text-[11px] font-black tracking-[0.2em] uppercase px-10 py-5 rounded-full ${bgAction} shadow-lg hover:-translate-y-1 transition-all`}
                   >
                     {rawBusiness.menuMode === "DIGITAL"
-                      ? "Fazer Pedido"
+                      ? "Acessar Loja"
                       : rawBusiness.menuMode === "AGENDA"
                         ? "Agendar Horário"
-                        : "Explorar Menu"}{" "}
+                        : "Catálogo de Itens"}{" "}
                     <ChevronRight size={14} strokeWidth={2} />
                   </button>
                 )}
@@ -837,11 +777,11 @@ export default function LuxeLayout({
           )}
         </div>
       </header>
+
       {/* ==========================================
           🚀 THE MASTER RUNWAY (Edge-to-Edge Luxe)
           ========================================== */}
       <section className="w-full pt-2 md:pt-20 pb-6 md:pb-10 relative z-20 overflow-hidden bg-gradient-to-b from-transparent via-current/[0.02] to-transparent">
-        {/* Ambient Glow no fundo da galeria para não ficar um branco morto */}
         <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
         {cleanFeed.length > 0 && (
@@ -904,7 +844,7 @@ export default function LuxeLayout({
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true, margin: "-50px" }}
-              className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${theme.cardBg} border ${theme.border} shadow-lg flex flex-col lg:flex-row items-start lg:items-center justify-start gap-8 md:gap-12`}
+              className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${glassBg} ${glassBorder} ${cardShadow} flex flex-col lg:flex-row items-start lg:items-center justify-start gap-8 md:gap-12 backdrop-blur-md`}
             >
               <div className="shrink-0 text-left flex flex-col items-start">
                 <span
@@ -944,7 +884,6 @@ export default function LuxeLayout({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 w-full items-start">
             {/* ==========================================
                 COLUNA ESQUERDA (Atendimento e Compras)
-                -> Inteligência: Se a direita estiver vazia, ocupa 12 colunas.
                 ========================================== */}
             {(hasWhatsapp ||
               hasPhone ||
@@ -960,7 +899,7 @@ export default function LuxeLayout({
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.1 }}
                     viewport={{ once: true }}
-                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${theme.cardBg} border ${theme.border} shadow-lg flex flex-col`}
+                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${glassBg} ${glassBorder} ${cardShadow} flex flex-col backdrop-blur-md`}
                   >
                     <span
                       className={`text-[9px] font-sans font-bold tracking-[0.4em] uppercase ${primary} mb-3`}
@@ -977,18 +916,14 @@ export default function LuxeLayout({
                         {hasWhatsapp && (
                           <button
                             onClick={() => handleTrackLead("whatsapp")}
-                            className={`flex items-center gap-3 px-6 py-3.5 rounded-full border border-current/10 ${theme.bgSecondary} hover:-translate-y-1 transition-all shadow-sm group`}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-full border border-current/10 hover:-translate-y-1 transition-all shadow-sm group bg-white dark:bg-black/20`}
                           >
                             <div
-                              className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center bg-current/5 group-hover:bg-current/10 transition-colors`}
+                              className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600 transition-colors`}
                             >
-                              <MessageCircle
-                                size={16}
-                                strokeWidth={1.5}
-                                className={primary}
-                              />
+                              <MessageCircle size={16} strokeWidth={1.5} />
                             </div>
-                            <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase mt-0.5">
+                            <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase mt-0.5 text-emerald-600">
                               WhatsApp
                             </span>
                           </button>
@@ -996,7 +931,7 @@ export default function LuxeLayout({
                         {hasPhone && (
                           <button
                             onClick={() => handleTrackLead("phone")}
-                            className={`flex items-center gap-3 px-6 py-3.5 rounded-full border border-current/10 ${theme.bgSecondary} hover:-translate-y-1 transition-all shadow-sm group`}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-full border border-current/10 hover:-translate-y-1 transition-all shadow-sm group bg-white/50 dark:bg-black/10`}
                           >
                             <div
                               className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center bg-current/5 group-hover:bg-current/10 transition-colors`}
@@ -1007,7 +942,7 @@ export default function LuxeLayout({
                                 className={primary}
                               />
                             </div>
-                            <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase mt-0.5">
+                            <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase mt-0.5 opacity-80">
                               Ligar Agora
                             </span>
                           </button>
@@ -1050,7 +985,7 @@ export default function LuxeLayout({
                                     s.toUpperCase(),
                                   )
                                 }
-                                className={`w-12 h-12 rounded-full flex items-center justify-center border border-current/10 ${theme.bgSecondary} shadow-sm hover:-translate-y-1 transition-all group`}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center border border-current/10 bg-white/50 dark:bg-black/10 shadow-sm hover:-translate-y-1 transition-all group`}
                               >
                                 <div className="opacity-70 group-hover:opacity-100 transition-opacity">
                                   {s === "instagram" ? (
@@ -1088,7 +1023,7 @@ export default function LuxeLayout({
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
                     viewport={{ once: true }}
-                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${theme.cardBg} border ${theme.border} shadow-lg`}
+                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${glassBg} ${glassBorder} ${cardShadow} backdrop-blur-md`}
                   >
                     <span
                       className={`text-[9px] font-sans font-bold tracking-[0.4em] uppercase ${primary} mb-3 block`}
@@ -1111,7 +1046,7 @@ export default function LuxeLayout({
                               channel.key.toUpperCase(),
                             )
                           }
-                          className={`flex items-center gap-3 px-6 py-3.5 rounded-full border border-current/10 ${theme.bgSecondary} hover:-translate-y-1 transition-all shadow-sm group`}
+                          className={`flex items-center gap-3 px-6 py-3.5 rounded-full border border-current/10 bg-white/50 dark:bg-black/10 hover:-translate-y-1 transition-all shadow-sm group`}
                         >
                           <div
                             className={`opacity-80 group-hover:opacity-100 transition-opacity ${channel.hover}`}
@@ -1131,24 +1066,23 @@ export default function LuxeLayout({
 
             {/* ==========================================
                 COLUNA DIREITA (Horários e Localização)
-                -> Inteligência: Se a esquerda estiver vazia, ocupa 12 colunas.
                 ========================================== */}
             {(hasHours || hasAddress) && (
               <div
                 className={`flex flex-col gap-5 md:gap-6 ${hasWhatsapp || hasPhone || availableSocials.length > 0 || salesChannels.length > 0 ? "lg:col-span-5" : "lg:col-span-12"}`}
               >
-                {/* Horários Otimizados - Fim do "Buraco Branco" */}
+                {/* Horários Otimizados */}
                 {hasHours && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.3 }}
                     viewport={{ once: true }}
-                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${theme.cardBg} border ${theme.border} shadow-lg flex flex-col`}
+                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${glassBg} ${glassBorder} ${cardShadow} flex flex-col backdrop-blur-md`}
                   >
                     <div className="flex items-center gap-4 mb-8">
                       <div
-                        className={`w-12 h-12 shrink-0 rounded-full border border-current/10 flex items-center justify-center ${theme.bgSecondary}`}
+                        className={`w-12 h-12 shrink-0 rounded-full border border-current/10 flex items-center justify-center bg-white/50 dark:bg-black/20`}
                       >
                         <Clock
                           size={18}
@@ -1167,7 +1101,6 @@ export default function LuxeLayout({
                         </h2>
                       </div>
                     </div>
-                    {/* Agora flui naturalmente, sem ser forçado a esticar */}
                     <div className="flex flex-col gap-4 w-full">
                       {realHours.map((h: any, i: number) => (
                         <div
@@ -1195,18 +1128,18 @@ export default function LuxeLayout({
                   </motion.div>
                 )}
 
-                {/* Localização Compacta (Abaixo dos horários) */}
+                {/* Localização Compacta */}
                 {hasAddress && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4 }}
                     viewport={{ once: true }}
-                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${theme.cardBg} border ${theme.border} shadow-lg flex flex-col gap-6 group`}
+                    className={`w-full p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] ${glassBg} ${glassBorder} ${cardShadow} flex flex-col gap-6 group backdrop-blur-md`}
                   >
                     <div className="flex items-start gap-4 w-full">
                       <div
-                        className={`w-12 h-12 shrink-0 rounded-full border border-current/10 flex items-center justify-center ${theme.bgSecondary} group-hover:scale-110 transition-transform`}
+                        className={`w-12 h-12 shrink-0 rounded-full border border-current/10 flex items-center justify-center bg-white/50 dark:bg-black/20 group-hover:scale-110 transition-transform`}
                       >
                         <Globe
                           size={20}
@@ -1264,7 +1197,7 @@ export default function LuxeLayout({
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
                 viewport={{ once: true }}
-                className={`col-span-1 lg:col-span-12 p-8 md:p-12 rounded-[2rem] md:rounded-[2.5rem] ${theme.cardBg} border ${theme.border} shadow-lg mt-2 w-full`}
+                className={`col-span-1 lg:col-span-12 p-8 md:p-12 rounded-[2rem] md:rounded-[2.5rem] ${glassBg} ${glassBorder} ${cardShadow} mt-2 w-full backdrop-blur-md`}
               >
                 <div className="flex flex-col items-center text-center mb-10">
                   <span
@@ -1294,13 +1227,11 @@ export default function LuxeLayout({
       </main>
 
       {/* 🚀 AJUSTE DE ESPAÇAMENTO CIRÚRGICO */}
-      <div className={`w-full ${theme.bgPage}`}>
+      <div className={`w-full ${theme.bgPage} relative z-10`}>
         <div className="max-w-5xl mx-auto px-6 md:px-12 pb-12">
-          {/* Reduzi o py-10 para py-6 e tirei o mt-6 */}
-          <div className="w-full flex justify-center py-6 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10">
+          <div className="w-full flex justify-center py-6 opacity-20 hover:opacity-100 transition-opacity border-t border-current/10 mt-4">
             <ReportModal businessSlug={business.slug} />
           </div>
-          {/* As avaliações agora sobem e colam mais perto do botão */}
           <CommentsSection
             businessId={rawBusiness.id}
             businessOwnerId={rawBusiness.userId}
@@ -1316,6 +1247,7 @@ export default function LuxeLayout({
 
       <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
 
+      {/* --- WHATSAPP FLUTUANTE UNIVERSAL --- */}
       {hasWhatsapp && (
         <motion.button
           aria-label="Abrir WhatsApp Flutuante"
@@ -1354,7 +1286,6 @@ export default function LuxeLayout({
             className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
           >
             <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
-              {/* Barra de Topo com Botão de Fechar */}
               <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
                 <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
                   Visualização de Documento
@@ -1366,8 +1297,6 @@ export default function LuxeLayout({
                   <Plus className="rotate-45" size={20} strokeWidth={2} />
                 </button>
               </div>
-
-              {/* O Coração: O Leitor de PDF nativo do navegador */}
               <div className="flex-1 w-full bg-slate-200/50">
                 <iframe
                   src={`${rawBusiness.catalogPdf}#toolbar=0`}
@@ -1377,31 +1306,6 @@ export default function LuxeLayout({
               </div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ==========================================
-          🚀 MODAL DE ITENS (CARRINHO OU LISTA DE SERVIÇOS)
-          ========================================== */}
-      <AnimatePresence>
-        {showDigitalMenu && (
-          <VitrineCardapio
-            businessId={rawBusiness.id}
-            businessName={rawBusiness.name}
-            whatsapp={rawBusiness.whatsapp || rawBusiness.phone}
-            themeColor={theme.previewColor}
-            products={rawBusiness.products || []}
-            onClose={() => setShowDigitalMenu(false)}
-            isOpen={isOpen}
-            hours={rawBusiness.hours}
-            deliveryFee={rawBusiness.deliveryFee || 0}
-            deliveryRadius={rawBusiness.deliveryRadius || 0}
-            deliveryFeeNegotiable={rawBusiness.deliveryFeeNegotiable}
-            businessLat={rawBusiness.latitude}
-            businessLng={rawBusiness.longitude}
-            menuMode={rawBusiness.menuMode}
-            agendaConfig={rawBusiness.agendaConfig} // 🚀 ENVIANDO A NOVA GRADE DE AGENDAS INDEPENDENTE!
-          />
         )}
       </AnimatePresence>
 
