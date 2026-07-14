@@ -13,15 +13,26 @@ export default function CheckoutButton({ userId }: { userId: string }) {
     if (isProcessing) return;
 
     setIsProcessing(true);
-    // Faz o navegador ir para a rota mágica silenciosamente
-    router.push(`/api/checkout-magico?uid=${userId}`);
+
+    // 🛡️ DRIBLE DA PLAY STORE: Detecta se está rodando dentro do App (PWA Standalone)
+    const isRunningInApp =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+
+    if (isRunningInApp) {
+      // 🎁 SE ESTIVER NO APP: Dispara o link mágico por e-mail para esconder a rota da Google/Apple
+      router.push(`/api/checkout-magico?uid=${userId}`);
+    } else {
+      // ⚡ SE ESTIVER NO DESKTOP / NAVEGADOR: Vai direto para a tela de pagamento do Mercado Pago
+      router.push("/checkout");
+    }
   };
 
   return (
     <button
       onClick={handleCreateVitrine}
       disabled={isProcessing}
-      className="w-full bg-emerald-500 text-[#050814] font-black text-sm md:text-base lg:text-lg px-8 py-5 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest disabled:opacity-80 disabled:hover:scale-100"
+      className="w-full bg-tafanu-action text-white font-black text-sm md:text-base lg:text-lg px-8 py-5 rounded-2xl shadow-[0_5px_20px_rgba(0,168,107,0.3)] hover:bg-[#00c27a] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest disabled:opacity-80 disabled:hover:scale-100"
     >
       {isProcessing ? (
         <>

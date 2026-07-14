@@ -4,7 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, Sparkles, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  ShieldCheck,
+  MessageCircle,
+} from "lucide-react";
 import {
   createSubscription,
   getAuthSession,
@@ -32,7 +38,7 @@ export default function CheckoutPage() {
 
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isTrialEligible, setIsTrialEligible] = useState(true); // 🚀 Confere se o cliente é elegível ao trial
+  const [isTrialEligible, setIsTrialEligible] = useState(true);
 
   const hasFetched = useRef(false);
 
@@ -131,8 +137,8 @@ export default function CheckoutPage() {
     (session?.user?.role === "ASSINANTE" && isPlanoAtivoRender)
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050B14]">
-        <Loader2 className="animate-spin text-emerald-500" size={40} />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-tafanu-action" size={40} />
       </div>
     );
   }
@@ -140,37 +146,50 @@ export default function CheckoutPage() {
   const plan = PLANS[selectedPlan];
 
   return (
-    <div className="bg-[#050B14] min-h-screen pb-20 font-sans">
+    <div className="bg-slate-50 min-h-screen pb-20 font-sans relative">
+      {/* 🚀 CIRURGIA 1: BOTÃO WHATSAPP FLUTUANTE DE VENDAS */}
+      <a
+        href="https://wa.me/5514991406618?text=Ol%C3%A1!%20Estou%20na%20p%C3%A1gina%20de%20Checkout%20do%20Tafanu%20e%20fiquei%20com%20uma%20d%C3%BAvida%20antes%20de%20assinar."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-24 md:bottom-8 right-4 md:right-8 bg-[#25D366] text-white p-4 rounded-full shadow-[0_10px_25px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all z-[100] flex items-center justify-center group"
+        title="Falar com Atendimento"
+      >
+        <MessageCircle size={28} />
+        <span className="absolute right-full mr-4 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none hidden md:block">
+          Dúvida no Pagamento?
+        </span>
+      </a>
+
+      {/* CABEÇALHO LIGHT THEME */}
       <div className="max-w-7xl mx-auto pt-10 pb-6 px-6 text-center">
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tighter uppercase italic">
-          Ative seu plano <span className="text-emerald-500">Tafanu PRO</span>
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">
+          Ative seu plano <span className="text-tafanu-action">Tafanu PRO</span>
         </h1>
-        <p className="text-slate-400 font-medium mt-3">
+        <p className="text-slate-500 font-medium mt-3">
           Acesso imediato ao painel. Cancele quando quiser diretamente pela
           plataforma.
         </p>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mt-6">
-        {/* COLUNA 1: CARD DINÂMICO DE SELEÇÃO */}
+        {/* COLUNA 1: CARD DE SELEÇÃO */}
         <div className="lg:col-span-4 flex flex-col gap-4">
           <button
             onClick={handlePayment}
             disabled={isProcessing}
-            className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-500 bg-[#0D172A] shadow-2xl shadow-emerald-900/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
+            className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-400 bg-white shadow-xl shadow-emerald-900/5 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
           >
-            {/* TAG DINÂMICA BASEADA NO HISTÓRICO DO CLIENTE */}
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-[#050B14] text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-lg">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-tafanu-action text-white text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-md">
               {isTrialEligible
                 ? "🎁 7 Dias Grátis Inclusos"
                 : "⚡ Ativação Imediata"}
             </div>
 
-            <h3 className="font-black uppercase italic text-xl text-emerald-500">
+            <h3 className="font-black uppercase italic text-xl text-slate-900">
               {plan.name}
             </h3>
 
-            {/* PREÇO COMPORTAMENTAL */}
             <div className="flex flex-col items-center mt-4">
               {isTrialEligible ? (
                 <>
@@ -178,10 +197,10 @@ export default function CheckoutPage() {
                     R$ 39,90
                   </p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-black text-white">
+                    <span className="text-5xl font-black text-tafanu-action">
                       R$ 0,00
                     </span>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider ml-1">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">
                       hoje
                     </span>
                   </div>
@@ -189,7 +208,7 @@ export default function CheckoutPage() {
               ) : (
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm font-bold text-slate-500">R$</span>
-                  <span className="text-5xl font-black text-white">
+                  <span className="text-5xl font-black text-tafanu-action">
                     {plan.price}
                   </span>
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
@@ -199,12 +218,11 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <p className="text-xs font-bold text-slate-400 mt-4 uppercase tracking-wider bg-white/5 px-4 py-1.5 rounded-full">
+            <p className="text-[10px] font-bold text-slate-500 mt-4 uppercase tracking-widest bg-slate-50 px-4 py-1.5 rounded-full">
               {plan.description}
             </p>
 
-            {/* CTA INTERESSANTE E TRANSPARENTE */}
-            <div className="mt-8 w-full py-4 rounded-xl bg-emerald-500 text-[#050B14] font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg group-hover:bg-emerald-400 transition-colors">
+            <div className="mt-8 w-full py-4 rounded-xl bg-tafanu-action text-white font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg group-hover:bg-[#00c27a] transition-colors">
               {isProcessing ? (
                 <Loader2 size={20} className="animate-spin" />
               ) : (
@@ -219,11 +237,11 @@ export default function CheckoutPage() {
           </button>
         </div>
 
-        {/* COLUNA 2: RECURSOS INCLUSOS */}
-        <div className="lg:col-span-4 bg-[#0A1220] rounded-[2rem] p-6 border border-white/5 shadow-xl flex flex-col justify-center">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500 mb-6 flex items-center gap-3 px-2">
-            <Sparkles className="text-emerald-500 w-4 h-4 shrink-0" />O que você
-            recebe:
+        {/* COLUNA 2: RECURSOS INCLUSOS (LIGHT THEME) */}
+        <div className="lg:col-span-4 bg-white rounded-[2rem] p-6 border border-slate-200 shadow-md flex flex-col justify-center">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6 flex items-center gap-3 px-2">
+            <Sparkles className="text-tafanu-action w-4 h-4 shrink-0" />O que
+            você recebe:
           </h2>
           <div className="flex flex-col gap-3">
             {[
@@ -250,17 +268,17 @@ export default function CheckoutPage() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/5 transition-colors hover:bg-emerald-500/5"
+                className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 transition-colors hover:bg-emerald-50"
               >
                 <CheckCircle2
-                  className="text-emerald-500 shrink-0 w-4 h-4 mt-0.5"
+                  className="text-tafanu-action shrink-0 w-4 h-4 mt-0.5"
                   strokeWidth={2.5}
                 />
                 <div className="flex flex-col text-left">
-                  <span className="text-xs font-black text-white uppercase tracking-wider mb-0.5">
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider mb-0.5">
                     {item.title}
                   </span>
-                  <span className="text-[10px] font-medium text-slate-400 leading-relaxed">
+                  <span className="text-[10px] font-medium text-slate-500 leading-relaxed">
                     {item.desc}
                   </span>
                 </div>
@@ -270,24 +288,24 @@ export default function CheckoutPage() {
         </div>
 
         {/* COLUNA 3: CAIXA CENTRAL DO MERCADO PAGO */}
-        <div className="lg:col-span-4 bg-[#050814] rounded-[2.5rem] shadow-2xl overflow-hidden text-white border border-white/10">
-          <div className="bg-gradient-to-r from-blue-600 to-sky-500 py-3 px-6 flex items-center justify-between">
+        <div className="lg:col-span-4 bg-white rounded-[2.5rem] shadow-xl overflow-hidden text-slate-900 border border-slate-200">
+          <div className="bg-[#009EE3] py-3 px-6 flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/90">
               Resumo do Pedido
             </span>
-            <span className="font-mono text-[10px] font-bold tracking-widest text-white/80">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-white/90">
               MERCADO PAGO
             </span>
           </div>
-          <div className="p-8 text-center">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+          <div className="p-8 text-center bg-slate-50/50">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
               Total a pagar hoje
             </p>
             <div className="flex items-start justify-center gap-1">
-              <span className="text-xl font-black mt-2 text-emerald-500">
+              <span className="text-xl font-black mt-2 text-tafanu-action">
                 R$
               </span>
-              <span className="text-6xl font-black italic leading-none drop-shadow-md">
+              <span className="text-6xl font-black italic leading-none text-slate-900 drop-shadow-sm">
                 {isTrialEligible ? "0,00" : plan.price}
               </span>
             </div>
@@ -295,7 +313,7 @@ export default function CheckoutPage() {
             <button
               onClick={handlePayment}
               disabled={isProcessing}
-              className="mt-8 group w-full h-16 bg-emerald-500 hover:bg-emerald-400 text-[#050814] rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all transform hover:scale-[1.01] active:scale-95"
+              className="mt-8 group w-full h-16 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_5px_20px_rgba(0,168,107,0.3)] transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
             >
               {isProcessing ? (
                 <Loader2 className="animate-spin" size={24} />
