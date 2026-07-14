@@ -3922,7 +3922,7 @@ export async function transferBusinessToUser(
 }
 
 // ==============================================================================
-// 🚀 O DRIBLE DO APLICATIVO (E-mail de Checkout)
+// 🚀 O DRIBLE DO APLICATIVO (E-mail de Checkout com Auto-Login)
 // ==============================================================================
 export async function sendCheckoutEmail(userId: string) {
   try {
@@ -3933,23 +3933,35 @@ export async function sendCheckoutEmail(userId: string) {
 
     if (!user || !user.email) return { error: "Usuário não encontrado." };
 
-    // 1. Gera ou recupera o link do Mercado Pago em background!
-    // Simulamos o PlanType (Vamos assumir 'monthly' como padrão para o app)
-    const subscriptionResult = await createSubscription(
-      userId,
-      user.email,
-      "", // Deixa a função achar ou criar a gaveta
-      "monthly",
-    );
+    // 1. Gera o Token Mágico de Auto-Login
+    // Isso garante que quando o cliente clicar no e-mail, o Chrome vai logar ele automaticamente!
+    const tokenAleatorio = crypto.randomUUID();
+    const umaHoraNoFuturo = new Date(Date.now() + 60 * 60 * 1000);
 
-    if (subscriptionResult.error || !subscriptionResult.init_point) {
-      console.error("Falha ao gerar link do MP:", subscriptionResult.error);
-      return { error: "Não foi possível gerar a assinatura." };
-    }
+    // Registra o passe livre do usuário no banco
+    await db.checkoutToken.upsert({
+      where: { userId },
+      update: {
+        id: tokenAleatorio,
+        createdAt: new Date(),
+        expiresAt: umaHoraNoFuturo,
+      },
+      create: {
+        id: tokenAleatorio,
+        userId,
+        expiresAt: umaHoraNoFuturo,
+      },
+    });
 
-    const checkoutUrl = subscriptionResult.init_point;
+    // 2. Monta o Link Mágico (Que joga ele para a tela de /checkout logado)
+    const domain =
+      process.env.NODE_ENV === "production"
+        ? "https://tafanu.com.br"
+        : "http://localhost:3000";
 
-    // 2. Dispara o E-mail usando o Resend!
+    const magicLink = `${domain}/api/auth/callback/magic-login?token=${tokenAleatorio}&callbackUrl=/checkout`;
+
+    // 3. Dispara o E-mail usando o Resend!
     await resend.emails.send({
       from: "Equipe Tafanu <sistema@tafanu.com.br>",
       to: user.email,
@@ -3959,10 +3971,9 @@ export async function sendCheckoutEmail(userId: string) {
           <h2 style="color: #0f172a;">Olá, ${user.name || "Parceiro"}!</h2>
           <p>Para concluir a configuração da sua vitrine e ativar seu plano Tafanu PRO (Teste Grátis de 7 dias), clique no botão seguro abaixo.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${checkoutUrl}" target="_blank" style="background-color: #10b981; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Finalizar Ativação da Vitrine</a>
+            <a href="${magicLink}" target="_blank" style="background-color: #10b981; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Ir para o Checkout Seguro</a>
           </div>
           <p style="font-size: 14px; color: #666;">Se você não solicitou isso, apenas ignore este e-mail.</p>
-          <p style="font-size: 12px; color: #999;">O pagamento é processado com segurança pelo Mercado Pago.</p>
         </div>
       `,
     });

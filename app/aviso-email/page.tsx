@@ -17,7 +17,7 @@ export default function AvisoEmailPage() {
         </div>
 
         <h1 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter mb-3">
-          Prase <span className="text-emerald-500">Enviado!</span>
+          Link <span className="text-emerald-500">Enviado!</span>
         </h1>
 
         <p className="text-slate-400 text-sm md:text-base font-medium leading-relaxed mb-8">
