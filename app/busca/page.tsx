@@ -554,12 +554,11 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       : []),
   ];
 
-  // 🚀 A INTELIGÊNCIA: Se ele filtrou uma cidade textual, nós CANCELAMOS o bloqueio do GPS!
   const useGpsRestrict = userLat && userLng && !cityFilter && !stateFilter;
   const gpsBoundingBox: Prisma.BusinessWhereInput[] = useGpsRestrict
     ? [
         {
-          latitude: { gte: userLat - 0.2, lte: userLat + 0.2 }, // Raio dinâmico flexível (~22km)
+          latitude: { gte: userLat - 0.2, lte: userLat + 0.2 },
           longitude: { gte: userLng - 0.2, lte: userLng + 0.2 },
         },
       ]
@@ -621,11 +620,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   let businessesData: any[] = [];
   let totalCount = 0;
   let paginatedResults: any[] = [];
-  let didExpandSearch = false; // 🚀 Flag para avisar a tela que expandimos a busca
+  let didExpandSearch = false;
 
   if (hasSearchTarget) {
     if (needsJsEngine) {
-      // ONDA 1: Busca Hiperlocal Estrita
       let currentWhereClause: Prisma.BusinessWhereInput = {
         isActive: true,
         published: true,
@@ -639,7 +637,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         select: optimizedSelect,
       });
 
-      // ONDA 2: Se achou menos de 4, flexibilizamos a busca mantendo o GPS
       if (dbResult.length < 4 && parsedTerms.length > 0) {
         currentWhereClause.AND = [
           ...commonWhere,
@@ -653,10 +650,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         });
       }
 
-      // ONDA 3: Se CONTINUA com menos de 4 E o usuário estava restrito pelo GPS -> QUEBRA A BARREIRA DO GPS!
       if (dbResult.length < 4 && useGpsRestrict) {
-        didExpandSearch = true; // Avisa o UI!
-        currentWhereClause.AND = [...commonWhere, ...looseSearchBlock]; // 🚀 Removemos o gpsBoundingBox
+        didExpandSearch = true;
+        currentWhereClause.AND = [...commonWhere, ...looseSearchBlock];
         dbResult = await db.business.findMany({
           where: currentWhereClause,
           take: 400,
@@ -667,7 +663,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       totalCount = await db.business.count({ where: currentWhereClause });
       businessesData = dbResult;
     } else {
-      // Busca Padrão (Sem intenção JS complexa)
       let currentWhereClause: Prisma.BusinessWhereInput = {
         isActive: true,
         published: true,
@@ -687,10 +682,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         select: optimizedSelect,
       });
 
-      // Expansão padrão caso a lista venha vazia pelo GPS
       if (dbResult.length < 4 && useGpsRestrict) {
         didExpandSearch = true;
-        currentWhereClause.AND = [...commonWhere]; // Sem GPS Box
+        currentWhereClause.AND = [...commonWhere];
         dbResult = await db.business.findMany({
           where: currentWhereClause,
           skip: skip,
@@ -799,7 +793,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       });
       score += Math.min(termScore, 200);
 
-      // ZONAS DE CALOR SEO LOCAL (Premia distância exata se GPS ativo)
       if (distanceValue !== null) {
         if (distanceValue <= 2) score += 250;
         else if (distanceValue <= 5) score += 150;
@@ -808,7 +801,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       }
       if (b.keywords.length === 0) score -= 10;
 
-      // 🚀 ALGORITMO DE REPUTAÇÃO (Boost de Estrelas)
       if (b.rating && b.rating > 0) {
         score += Math.round(b.rating * 10);
       }
@@ -867,54 +859,68 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const totalPages = Math.ceil(effectiveTotal / PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-[#0f172a] text-white py-8 md:py-10 px-4 shadow-xl relative overflow-hidden z-10">
-        <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-            <div className="space-y-1">
-              <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
-                {isOnlineMode ? (
-                  <>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-action to-emerald-400">
-                      Marketplace
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* 🚀 CIRURGIA FOCADA: O CABEÇALHO REORGANIZADO E INTUITIVO */}
+      {/* Removi o overflow-hidden para o menu do filtro não ser cortado! */}
+      <div className="bg-white border-b border-slate-200 py-6 md:py-8 px-4 shadow-sm relative z-30">
+        <div className="max-w-7xl mx-auto flex flex-col gap-5 md:gap-6 relative z-10">
+          {/* TÍTULO E SUBTÍTULO (Sempre no topo esquerdo) */}
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter flex flex-wrap items-center gap-2 md:gap-3 text-slate-900">
+              {isOnlineMode ? (
+                <>
+                  <span className="text-tafanu-action">Marketplace</span>
+                  {rawQuery ? (
+                    <span className="text-slate-500 tracking-normal text-xl md:text-3xl">
+                      • "{rawQuery}"
                     </span>
-                    {rawQuery ? `• "${rawQuery}"` : ""}
-                  </>
-                ) : rawQuery ? (
-                  `${rawQuery}`
-                ) : (
-                  "Explorar"
-                )}
-              </h1>
-              <p className="text-gray-400 font-medium text-sm">
-                {statusFilter === "open" ? (
-                  <>
-                    Exibindo{" "}
-                    <strong className="text-white">{effectiveTotal}</strong>{" "}
-                    abertos
-                  </>
-                ) : (
-                  <>
-                    Encontramos{" "}
-                    <strong className="text-white">{effectiveTotal}</strong>{" "}
-                    resultados {isOnlineMode && "online"}
-                  </>
-                )}
-              </p>
-            </div>
-            <FilterModal
-              availableCategories={orderedFilterMap}
-              locationData={locationData}
-              currentSort={sort}
-            />
+                  ) : (
+                    ""
+                  )}
+                </>
+              ) : rawQuery ? (
+                `"${rawQuery}"`
+              ) : (
+                "Explorar"
+              )}
+            </h1>
+            <p className="text-slate-500 font-medium text-sm">
+              {statusFilter === "open" ? (
+                <>
+                  Exibindo{" "}
+                  <strong className="text-slate-800">{effectiveTotal}</strong>{" "}
+                  abertos
+                </>
+              ) : (
+                <>
+                  Encontramos{" "}
+                  <strong className="text-slate-800">{effectiveTotal}</strong>{" "}
+                  resultados {isOnlineMode && "online"}
+                </>
+              )}
+            </p>
           </div>
-          <div className="w-full">
-            <SearchBar initialQuery={rawQuery} />
+
+          {/* 🚀 A MÁGICA: BARRA DE BUSCA + BOTÃO FILTRO LADO A LADO */}
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+            {/* A barra de busca ocupa o máximo de espaço possível */}
+            <div className="w-full flex-1">
+              <SearchBar initialQuery={rawQuery} />
+            </div>
+
+            {/* O Filtro fica colado nela. O truque [&>button] injeta cor e altura no componente Modal sem precisar alterar o arquivo do modal! */}
+            <div className="w-full md:w-auto shrink-0 flex items-center [&>button]:w-full md:[&>button]:w-auto [&>button]:h-12 md:[&>button]:h-[56px] [&>button]:bg-slate-100 [&>button]:border-slate-200 [&>button]:text-slate-700 [&>button]:hover:bg-slate-200 [&>button]:shadow-inner [&>button]:transition-all [&>button]:font-bold [&>button]:tracking-widest">
+              <FilterModal
+                availableCategories={orderedFilterMap}
+                locationData={locationData}
+                currentSort={sort}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 mt-4 md:mt-8">
+      <div className="max-w-7xl mx-auto px-4 mt-6 md:mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
           <aside className="w-full lg:col-span-1">
             <LocationTracker />
@@ -943,7 +949,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               </div>
             )}
 
-            {/* 🚀 O AVISO DE EXPANSÃO INTELIGENTE */}
+            {/* Aviso de Expansão */}
             {didExpandSearch && (
               <div className="bg-blue-50 border border-blue-200 p-4 md:p-5 rounded-2xl mb-6 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
@@ -961,15 +967,16 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               </div>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {paginatedResults.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-4 animate-in fade-in zoom-in duration-500">
-                  <div className="bg-orange-50 p-6 rounded-full mb-6 shadow-inner border border-orange-100">
-                    <SearchX size={48} className="text-orange-400" />
+                // O BLOCO VAZIO (OPORTUNIDADE ABERTA) REFINADO
+                <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-4 animate-in fade-in zoom-in duration-500">
+                  <div className="bg-emerald-50 p-6 rounded-full mb-6 shadow-inner border border-emerald-100">
+                    <SearchX size={48} className="text-tafanu-action" />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-black text-[#023059] mb-3 tracking-tight uppercase italic">
+                  <h3 className="text-2xl md:text-3xl font-black text-slate-900 mb-3 tracking-tight uppercase italic">
                     Oportunidade{" "}
-                    <span className="text-emerald-500">Aberta!</span>
+                    <span className="text-tafanu-action">Aberta!</span>
                   </h3>
                   <p className="text-slate-500 text-sm md:text-base max-w-lg leading-relaxed mb-8">
                     {isOnlineMode
@@ -980,13 +987,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                   <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
                     <Link
                       href="/"
-                      className="w-full sm:w-auto px-6 py-4 bg-slate-100 text-slate-500 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 hover:text-slate-700 transition-colors flex items-center justify-center"
+                      className="w-full sm:w-auto px-6 py-4 bg-slate-50 border border-slate-200 text-slate-600 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 hover:text-slate-900 transition-colors flex items-center justify-center"
                     >
                       Ver Lojas em Alta
                     </Link>
                     <Link
                       href="/anunciar"
-                      className="w-full sm:w-auto px-6 py-4 bg-emerald-500 text-white rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
+                      className="w-full sm:w-auto px-6 py-4 bg-tafanu-action text-white rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-[#00c27a] transition-all shadow-[0_5px_15px_rgba(0,168,107,0.3)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
                     >
                       <Plus size={16} strokeWidth={3} /> Dominar Esta Busca
                     </Link>
@@ -1004,21 +1011,22 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
                   return (
                     <React.Fragment key={item.id}>
+                      {/* O Card do Lojista (Ele já puxa a cor branca do BusinessCard.tsx) */}
                       <BusinessCard
                         business={item}
                         isLoggedIn={!!userId}
                         showDistance={sort === "distance"}
                       />
 
+                      {/* O CARD "OUTDOOR" NO MEIO DA BUSCA (O ÚNICO ESCURO) */}
                       {showCtaCard && (
                         <Link
                           href="/anunciar"
-                          className="group relative bg-[#0f172a] p-6 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col h-full overflow-hidden shadow-xl hover:-translate-y-2 transition-all duration-500 border border-slate-800 justify-center items-center text-center"
+                          className="group relative bg-slate-900 p-6 md:p-8 rounded-[1.5rem] flex flex-col h-full overflow-hidden shadow-xl hover:-translate-y-2 transition-all duration-500 border border-slate-800 justify-center items-center text-center"
                         >
                           <div className="absolute top-0 right-0 w-32 h-32 bg-tafanu-action opacity-10 rounded-full blur-3xl group-hover:opacity-20 transition-opacity duration-700" />
-                          <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500 opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity duration-700" />
 
-                          <div className="w-14 h-14 bg-tafanu-action rounded-full flex items-center justify-center text-[#0f172a] mb-5 shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover:scale-110 transition-transform duration-500 relative z-10">
+                          <div className="w-14 h-14 bg-tafanu-action rounded-full flex items-center justify-center text-white mb-5 shadow-[0_0_20px_rgba(0,168,107,0.3)] group-hover:scale-110 transition-transform duration-500 relative z-10">
                             <TrendingUp size={24} strokeWidth={2.5} />
                           </div>
 
@@ -1043,6 +1051,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               )}
             </div>
 
+            {/* Paginação */}
             {totalPages > 1 && (
               <div className="flex gap-2 mt-12 justify-center flex-wrap">
                 {Array.from({ length: totalPages }).map((_, i) => {
@@ -1058,7 +1067,11 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     <Link
                       key={pNum}
                       href={`/busca?${urlParams.toString()}`}
-                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-black transition-all ${active ? "bg-tafanu-action text-white scale-110 shadow-lg" : "bg-white text-gray-400 hover:bg-gray-100"}`}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl font-black transition-all border ${
+                        active
+                          ? "bg-tafanu-action border-tafanu-action text-white scale-110 shadow-lg"
+                          : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                      }`}
                     >
                       {pNum}
                     </Link>

@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image"; // 🚀 Importação do Image do Next.js
-import { TrendingUp, MapPin, ArrowUpRight } from "lucide-react";
+import Image from "next/image";
+import { TrendingUp, MapPin, ArrowUpRight, Star } from "lucide-react";
 import { useState } from "react";
 
-// 🚀 O COLETE À PROVA DE BALAS DEFINITIVO (Design Elegante e Proposital)
+// 🚀 LOGO INTELIGENTE: Padrão Minimalista e Elegante
 function SmartLogo({ biz }: { biz: any }) {
   const [imgError, setImgError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // 🎨 DESIGN PREMIUM: Apenas a primeira letra, usando o laranja oficial do site
+  // 🎨 DESIGN PREMIUM: Iniciais em tons de prata/grafite para não poluir o card
   const renderInitials = () => (
-    <div className="w-full h-full bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center text-[#F28705] font-black text-2xl md:text-4xl select-none">
+    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400 font-black text-2xl md:text-4xl select-none">
       {biz.name.charAt(0).toUpperCase()}
     </div>
   );
@@ -22,11 +22,8 @@ function SmartLogo({ biz }: { biz: any }) {
   }
 
   return (
-    <div className="w-full h-full relative">
-      {/* CAMADA 1 (Fundo Elegante): O monograma laranja que o usuário vê instantaneamente */}
+    <div className="w-full h-full relative bg-slate-50">
       <div className="absolute inset-0 z-0">{renderInitials()}</div>
-
-      {/* CAMADA 2 (Frente): O <Image> do Next.js super otimizado */}
       <Image
         src={biz.imageUrl}
         alt={biz.name}
@@ -34,7 +31,7 @@ function SmartLogo({ biz }: { biz: any }) {
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         onLoad={() => setIsLoaded(true)}
         onError={() => setImgError(true)}
-        className={`object-cover group-hover:scale-105 transition-all duration-700 ease-in-out z-10 ${
+        className={`object-cover group-hover:scale-110 transition-transform duration-700 ease-out z-10 ${
           isLoaded ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -43,79 +40,79 @@ function SmartLogo({ biz }: { biz: any }) {
 }
 
 export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
-  // 🚀 O CALÇO INVISÍVEL: Se o banco estiver zerado, ele não mostra lojas,
-  // mas mantém a distância correta para a Vitrine não bater no teto!
   if (!businesses || businesses.length === 0) {
     return <div className="w-full pt-24 md:pt-40 lg:pt-24" />;
   }
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-8 pt-8 pb-4 md:pt-12 md:pb-8 lg:pt-12 animate-in fade-in duration-700 delay-400">
-      {" "}
-      {/* CABEÇALHO DA SESSÃO */}
-      <div className="flex items-center gap-3 md:gap-4 mb-8 md:mb-10">
-        <div className="bg-orange-100 p-2.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm">
-          <TrendingUp className="text-[#F28705] w-6 h-6 md:w-7 md:h-7" />
+    <section className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-8 pt-8 pb-4 md:pt-12 md:pb-8 lg:pt-16 animate-in fade-in duration-700 delay-200">
+      {/* 🚀 CABEÇALHO DA SEÇÃO (Nova Identidade) */}
+      <div className="flex items-center gap-4 mb-8 md:mb-12">
+        <div className="bg-emerald-50 p-3 md:p-4 rounded-2xl shadow-sm border border-emerald-100/50">
+          <TrendingUp className="text-tafanu-action w-6 h-6 md:w-8 md:h-8" />
         </div>
         <div>
-          <h2 className="text-xl md:text-3xl font-black text-[#023059] uppercase tracking-tighter italic leading-none mb-1">
-            Os Mais <span className="text-[#F28705]">Buscados</span>
+          <h2 className="text-2xl md:text-4xl font-black text-slate-800 uppercase tracking-tighter italic leading-none mb-1">
+            Os Mais <span className="text-tafanu-action">Buscados</span>
           </h2>
-          <p className="text-slate-400 font-medium text-[10px] md:text-sm">
-            As vitrines que estão bombando no TAFANU.
+          <p className="text-slate-500 font-medium text-xs md:text-sm">
+            A curadoria das vitrines que estão bombando na sua região.
           </p>
         </div>
       </div>
-      {/* GRID DE CARTÕES SÓLIDA */}
+
+      {/* 🚀 GRID DE CARTÕES: Estilo "Bento Grid" de Alto Padrão */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         {businesses.map((biz) => (
           <Link
             href={`/site/${biz.slug}`}
             key={biz.id}
-            className="group relative bg-white border border-slate-100 p-4 md:p-8 rounded-2xl md:rounded-[2rem] flex flex-col h-full overflow-hidden shadow-sm hover:border-slate-200 hover:-translate-y-2 transition-all duration-500"
+            className="group relative bg-white border border-slate-200/70 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex flex-col h-full overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.06)] hover:border-emerald-200 hover:-translate-y-1.5 transition-all duration-500"
           >
-            <div className="flex justify-between items-start mb-4 md:mb-6">
-              <div className="w-14 h-14 md:w-20 md:h-20 bg-white rounded-xl md:rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm group-hover:shadow-md group-hover:border-[#F28705]/30 transition-all duration-300 p-0.5">
-                <div className="w-full h-full rounded-[10px] md:rounded-[14px] overflow-hidden bg-slate-50 relative">
-                  {/* 🚀 O COMPONENTE INTELIGENTE ENTRA AQUI */}
+            {/* TOPO DO CARD: Logo + Seta Direcionamento */}
+            <div className="flex justify-between items-start mb-5 md:mb-6">
+              {/* O Quadro da Logo */}
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-[1rem] md:rounded-[1.25rem] overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm group-hover:shadow-md group-hover:border-tafanu-action/30 transition-all duration-500 p-1">
+                <div className="w-full h-full rounded-[0.75rem] md:rounded-[1rem] overflow-hidden relative">
                   <SmartLogo biz={biz} />
                 </div>
               </div>
 
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-[#F28705] group-hover:border-[#F28705] group-hover:text-white transition-all duration-300 shadow-sm">
+              {/* Botão de Ação Redondo */}
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-tafanu-action group-hover:border-tafanu-action group-hover:text-white transition-all duration-500 shadow-sm">
                 <ArrowUpRight
-                  size={16}
-                  className="md:w-[18px] md:h-[18px] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                  size={18}
+                  className="transition-transform duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 />
               </div>
             </div>
 
+            {/* CORPO DO CARD: Informações Centrais */}
             <div className="flex-1 flex flex-col">
-              <h3 className="font-black text-[#023059] text-sm md:text-xl uppercase tracking-tight line-clamp-2 leading-tight mb-2 group-hover:text-[#F28705] transition-colors">
+              <h3 className="font-black text-slate-800 text-base md:text-xl uppercase tracking-tight line-clamp-2 leading-tight mb-2 group-hover:text-tafanu-action transition-colors duration-300">
                 {biz.name}
               </h3>
 
-              <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[8px] md:text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">
-                <span className="text-[#F28705]">{biz.category}</span>
+              <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">
+                <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100/50">
+                  {biz.category}
+                </span>
 
-                {/* 🚀 ESTRELAS NO GRID DE TENDÊNCIAS */}
+                {/* Avaliação Limpa e Moderna */}
                 {biz.rating && biz.rating > 0 && (
                   <>
-                    <span className="text-slate-200">•</span>
-                    <span className="text-amber-500 flex items-center gap-0.5">
-                      ★ <span>{biz.rating.toFixed(1)}</span>
+                    <span className="text-amber-500 flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100/50">
+                      <Star size={10} className="fill-amber-400" />
+                      <span>{biz.rating.toFixed(1)}</span>
                     </span>
                   </>
                 )}
 
+                {/* Localização Minimalista */}
                 {biz.city && (
                   <>
-                    <span className="text-slate-200">•</span>
-                    <span className="flex items-center gap-1 truncate text-slate-400 font-bold">
-                      <MapPin
-                        size={10}
-                        className="text-slate-400 flex-shrink-0"
-                      />
+                    <span className="flex items-center gap-1 text-slate-400 font-bold truncate max-w-[100px] md:max-w-[120px]">
+                      <MapPin size={10} className="shrink-0" />
                       <span className="truncate">{biz.city}</span>
                     </span>
                   </>
@@ -123,10 +120,16 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
               </div>
             </div>
 
-            <div className="mt-auto pt-3 md:pt-4 border-t border-slate-100">
-              <p className="text-[10px] md:text-sm font-medium text-slate-500 italic line-clamp-2 group-hover:text-slate-700 transition-colors">
-                "{biz.luxe_quote || `A melhor opção de ${biz.category}`}"
-              </p>
+            {/* RODAPÉ DO CARD: O Bloco de Citação Curada */}
+            <div className="mt-auto pt-2">
+              <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3 md:p-3.5 group-hover:bg-emerald-50/50 transition-colors duration-500">
+                <p className="text-[10px] md:text-xs font-medium text-slate-500 italic line-clamp-2 leading-relaxed">
+                  "
+                  {biz.luxe_quote ||
+                    `A melhor opção de ${biz.category} na região.`}
+                  "
+                </p>
+              </div>
             </div>
           </Link>
         ))}

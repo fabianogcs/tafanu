@@ -76,10 +76,8 @@ export default function Navbar({
   }, [isOpen]);
 
   const { data: session } = useSession();
-
   const currentRole = session?.user?.role || userRole;
   const isCurrentlyLoggedIn = !!session || isLoggedIn;
-
   const isAdmin = isCurrentlyLoggedIn && currentRole === "ADMIN";
   const isAfiliado = isCurrentlyLoggedIn && currentRole === "AFILIADO";
   const isSubscriber = isCurrentlyLoggedIn && currentRole === "ASSINANTE";
@@ -88,195 +86,211 @@ export default function Navbar({
   const isGuest = !isCurrentlyLoggedIn;
 
   return (
-    <nav className="bg-tafanu-blue sticky top-0 z-40 border-b border-white/10 w-full transition-all duration-300">
-      <div className="w-full px-6 lg:px-12">
-        <div className="flex justify-between items-center h-20 md:h-24">
-          <div className="flex-shrink-0">
-            <Link href="/" className="group" onClick={() => setIsOpen(false)}>
-              <span className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase italic group-hover:text-tafanu-action transition-all duration-500">
-                Tafanu
-              </span>
-            </Link>
-          </div>
+    <>
+      <nav className="bg-white/90 backdrop-blur-xl sticky top-0 z-[80] border-b border-slate-200 w-full transition-all duration-300">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 md:h-20">
+            {/* LOGO EMPACOTADA */}
+            <div className="flex-shrink-0">
+              <Link
+                href="/"
+                className="flex items-center gap-2.5 group"
+                onClick={() => setIsOpen(false)}
+              >
+                <div className="w-9 h-9 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center p-1 shadow-[0_2px_15px_rgba(0,0,0,0.08)] border border-slate-100 group-hover:scale-105 transition-transform duration-500">
+                  <img
+                    src="/logo.png"
+                    alt="Tafanu Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase italic group-hover:text-tafanu-action transition-colors duration-500">
+                  Tafanu
+                </span>
+              </Link>
+            </div>
 
-          <div className="hidden md:flex items-center gap-8">
-            <div className="flex items-center gap-2 bg-white/5 px-2 py-1.5 rounded-2xl border border-white/10 shadow-inner">
+            {/* 🚀 CIRURGIA DESKTOP: Organizado em um único bloco, sem margens gigantes */}
+            <div className="hidden md:flex items-center gap-2">
+              {/* 1. INÍCIO */}
+              <DesktopNavLink href="/">Início</DesktopNavLink>
+
+              {/* 2. ENTRAR (OU DASHBOARD/SAIR SE ESTIVER LOGADO) */}
+              {isGuest ? (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-tafanu-action font-bold text-xs uppercase tracking-widest transition-colors rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 shadow-sm"
+                >
+                  Entrar
+                </Link>
+              ) : (
+                <>
+                  {isVisitor && (
+                    <DesktopNavLink href="/dashboard/favoritos">
+                      <Heart size={14} className="text-rose-500" /> Favoritos
+                    </DesktopNavLink>
+                  )}
+                  {isSubscriber && (
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 px-4 py-2 text-tafanu-action font-bold text-xs uppercase tracking-widest transition-all bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 shadow-sm"
+                    >
+                      <LayoutDashboard size={14} /> Gerenciar
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <DesktopNavLink href="/dashboard">
+                        <Layers size={14} /> Dashboard
+                      </DesktopNavLink>
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 px-4 py-2 text-amber-600 font-bold text-xs uppercase tracking-widest bg-amber-50 rounded-xl border border-amber-200 hover:bg-amber-100 shadow-sm"
+                      >
+                        <ShieldCheck size={14} /> Painel Mestre
+                      </Link>
+                    </>
+                  )}
+                  {isAfiliado && (
+                    <>
+                      <DesktopNavLink href="/dashboard">
+                        <Layers size={14} /> Dashboard
+                      </DesktopNavLink>
+                      <Link
+                        href="/dashboard/parceiro"
+                        className="flex items-center gap-2 px-4 py-2 text-emerald-600 font-bold text-xs uppercase tracking-widest bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 shadow-sm"
+                      >
+                        <Briefcase size={14} /> Parceiro
+                      </Link>
+                    </>
+                  )}
+
+                  {/* BOTÃO SAIR (Substitui o Entrar) */}
+                  <button
+                    onClick={handleFullLogout}
+                    className="p-2.5 text-slate-500 hover:text-red-500 transition-all rounded-xl hover:bg-red-50 active:scale-95 group border border-slate-200 hover:border-red-200 shadow-sm bg-white"
+                    title="Sair da conta"
+                  >
+                    <LogOut
+                      size={16}
+                      className="group-hover:translate-x-0.5 transition-transform"
+                    />
+                  </button>
+                </>
+              )}
+
+              {/* 3. BAIXAR APP */}
               {deferredPrompt && (
                 <button
                   onClick={handleInstallClick}
-                  className="px-4 py-2 text-tafanu-action font-black text-[10px] uppercase tracking-tighter hover:bg-tafanu-action/20 rounded-xl transition-all border border-tafanu-action/30 animate-pulse"
+                  className="px-4 py-2 text-tafanu-action font-bold text-xs uppercase tracking-wider hover:bg-emerald-50 rounded-xl transition-all border border-emerald-200 shadow-sm bg-white animate-pulse"
                 >
                   Baixar App
                 </button>
               )}
 
-              <Link
-                href="/"
-                className="px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
-              >
-                Início
-              </Link>
-              {isVisitor && (
-                <Link
-                  href="/dashboard/favoritos"
-                  className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-rose-500/10 rounded-xl"
+              {/* 4. VITRINE EM 5 MIN (Apenas para Visitantes e Convidados) */}
+              {(isGuest || isVisitor) && (
+                <button
+                  onClick={() =>
+                    isGuest
+                      ? setIsLoginModalOpen(true)
+                      : (window.location.href = "/anunciar")
+                  }
+                  className="flex items-center gap-2 bg-tafanu-action text-white px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider hover:bg-[#00c27a] hover:scale-105 transition-all shadow-[0_5px_15px_rgba(0,168,107,0.3)] whitespace-nowrap ml-1"
                 >
-                  <Heart size={14} className="text-rose-400 fill-rose-400/20" />{" "}
-                  Favoritos
-                </Link>
-              )}
-              {isSubscriber && (
-                <>
-                  <Link
-                    href="/dashboard/favoritos"
-                    className="px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest hover:bg-white/10 rounded-xl transition-all"
-                  >
-                    Favoritos
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all bg-tafanu-action/10 border border-tafanu-action/20 rounded-xl"
-                  >
-                    <LayoutDashboard size={14} className="text-tafanu-action" />{" "}
-                    Gerenciar
-                  </Link>
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
-                  >
-                    <Layers size={14} className="text-tafanu-action" />{" "}
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/admin"
-                    className="flex items-center gap-2 px-5 py-2 text-amber-400 font-black text-[11px] uppercase tracking-widest bg-amber-400/10 rounded-xl border border-amber-400/20"
-                  >
-                    <ShieldCheck size={14} /> Painel Mestre
-                  </Link>
-                </>
-              )}
-              {isAfiliado && (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 px-5 py-2 text-white/70 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-white/10 rounded-xl"
-                  >
-                    <Layers size={14} className="text-tafanu-action" />{" "}
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/dashboard/parceiro"
-                    className="flex items-center gap-2 px-5 py-2 text-emerald-400 font-black text-[11px] uppercase tracking-widest bg-emerald-400/10 rounded-xl border border-emerald-400/20"
-                  >
-                    <Briefcase size={14} /> Painel Parceiro
-                  </Link>
-                </>
+                  <Sparkles size={14} /> Vitrine em 5 min
+                </button>
               )}
             </div>
 
-            <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-              {isGuest ? (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-white/60 hover:text-white font-bold text-[11px] uppercase tracking-widest transition-all"
-                  >
-                    Entrar
-                  </Link>
-                  <button
-                    onClick={() => setIsLoginModalOpen(true)}
-                    className="flex items-center gap-1.5 md:gap-2 bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue px-4 md:px-6 py-3 md:py-3.5 rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-widest md:tracking-wider hover:scale-105 transition-all shadow-xl shadow-tafanu-action/20 border-t border-white/20 whitespace-nowrap"
-                  >
-                    <Sparkles size={16} className="hidden md:block" /> Vitrine
-                    em 5 min
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center gap-3">
-                  {isVisitor && (
-                    <Link
-                      href="/anunciar"
-                      className="bg-tafanu-action/10 text-tafanu-action border border-tafanu-action/30 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-tafanu-action/20 transition-all whitespace-nowrap"
-                    >
-                      Vitrine em 5 min
-                    </Link>
-                  )}
-                  <button
-                    aria-label="Sair da conta"
-                    onClick={handleFullLogout}
-                    className="p-3 text-white/20 hover:text-red-400 transition-all rounded-xl hover:bg-red-500/10 active:scale-95 group"
-                  >
-                    <LogOut
-                      size={20}
-                      className="group-hover:translate-x-0.5 transition-transform"
-                    />
-                  </button>
-                </div>
+            {/* TOPO MOBILE */}
+            <div className="md:hidden flex items-center gap-2.5">
+              {(isGuest || isVisitor) && (
+                <button
+                  onClick={() =>
+                    isGuest
+                      ? setIsLoginModalOpen(true)
+                      : (window.location.href = "/anunciar")
+                  }
+                  className="flex items-center gap-1.5 bg-tafanu-action text-white px-3.5 py-2 rounded-full font-black text-[11px] uppercase tracking-wider shadow-[0_3px_10px_rgba(0,168,107,0.3)] active:scale-95 transition-all"
+                >
+                  <Sparkles size={12} />
+                  <span>+ Vitrine</span>
+                </button>
               )}
+              <button
+                aria-label="Abrir menu principal"
+                onClick={() => setIsOpen(true)}
+                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 active:scale-95 transition-all shadow-sm"
+              >
+                <Menu size={22} />
+              </button>
             </div>
-          </div>
-
-          <div className="md:hidden flex items-center gap-4">
-            <button
-              aria-label={
-                isOpen ? "Fechar menu principal" : "Abrir menu principal"
-              }
-              aria-expanded={isOpen}
-              onClick={() => setIsOpen(!isOpen)}
-              className={`p-3 rounded-2xl border transition-all duration-300 ${isOpen ? "bg-red-500/20 border-red-500/40 text-red-400" : "bg-white/10 border-white/20 text-white"} relative z-[60] shadow-lg`}
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
         </div>
-      </div>
+      </nav>
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/95 z-50 md:hidden animate-in fade-in duration-300"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] md:hidden animate-in fade-in duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
+      {/* DRAWER MOBILE LUMINOSO (Mantido intacto conforme pedido) */}
       <div
-        className={`fixed top-0 right-0 h-full w-[310px] bg-[#0A0F1E] z-[55] shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:hidden ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed inset-y-0 right-0 w-[290px] bg-white z-[100] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] transform transition-transform duration-300 ease-out md:hidden flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        <div className="flex flex-col h-full p-6 pt-24">
+        <div className="flex justify-end p-4 border-b border-slate-100">
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95 transition-all shadow-sm"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 no-scrollbar bg-slate-50">
           {deferredPrompt && (
             <button
               onClick={handleInstallClick}
-              className="group flex items-center justify-between w-full bg-tafanu-action p-5 rounded-2xl font-black text-tafanu-blue mb-8 shadow-xl active:scale-95 transition-all"
+              className="group flex items-center justify-between w-full bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-emerald-800 mb-6 active:scale-95 transition-all text-left shadow-sm"
             >
-              <span className="flex items-center gap-4 relative z-10">
-                <Smartphone size={22} />
-                <div className="flex flex-col items-start leading-none">
-                  <span className="text-[10px] uppercase opacity-70">
-                    App Oficial
+              <span className="flex items-center gap-3">
+                <div className="bg-white text-tafanu-action p-2 rounded-xl shadow-sm border border-emerald-100">
+                  <Smartphone size={18} />
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="text-[9px] uppercase font-bold text-emerald-600 tracking-widest mb-1">
+                    Guia de Bolso
                   </span>
-                  <span className="text-sm">Instalar Tafanu</span>
+                  <span className="text-xs font-black">Baixar App Oficial</span>
                 </div>
               </span>
-              <Download size={20} className="animate-bounce" />
+              <Download
+                size={16}
+                className="text-tafanu-action animate-bounce"
+              />
             </button>
           )}
 
-          <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
+          <div className="space-y-1.5">
+            <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Navegação
+            </div>
             <MobileLink
               href="/"
-              icon={<Home size={20} />}
+              icon={<Home size={18} />}
               label="Início"
               onClick={() => setIsOpen(false)}
             />
             {isVisitor && (
               <MobileLink
                 href="/dashboard/favoritos"
-                icon={<Heart size={20} />}
+                icon={<Heart size={18} />}
                 label="Meus Favoritos"
-                color="text-rose-400"
+                color="text-rose-500"
                 onClick={() => setIsOpen(false)}
               />
             )}
@@ -284,14 +298,14 @@ export default function Navbar({
               <>
                 <MobileLink
                   href="/dashboard/favoritos"
-                  icon={<Heart size={20} />}
+                  icon={<Heart size={18} />}
                   label="Meus Favoritos"
-                  color="text-rose-400"
+                  color="text-rose-500"
                   onClick={() => setIsOpen(false)}
                 />
                 <MobileLink
                   href="/dashboard"
-                  icon={<LayoutDashboard size={20} />}
+                  icon={<LayoutDashboard size={18} />}
                   label="Gerenciar Negócio"
                   onClick={() => setIsOpen(false)}
                 />
@@ -301,15 +315,15 @@ export default function Navbar({
               <>
                 <MobileLink
                   href="/dashboard"
-                  icon={<Layers size={20} />}
+                  icon={<Layers size={18} />}
                   label="Meus Posts"
                   onClick={() => setIsOpen(false)}
                 />
                 <MobileLink
                   href="/admin"
-                  icon={<ShieldCheck size={20} />}
+                  icon={<ShieldCheck size={18} />}
                   label="Painel Mestre"
-                  color="text-amber-400"
+                  color="text-amber-500"
                   onClick={() => setIsOpen(false)}
                 />
               </>
@@ -318,15 +332,15 @@ export default function Navbar({
               <>
                 <MobileLink
                   href="/dashboard"
-                  icon={<Layers size={20} />}
+                  icon={<Layers size={18} />}
                   label="Dashboard"
                   onClick={() => setIsOpen(false)}
                 />
                 <MobileLink
                   href="/dashboard/parceiro"
-                  icon={<Briefcase size={20} />}
+                  icon={<Briefcase size={18} />}
                   label="Painel Parceiro"
-                  color="text-emerald-400"
+                  color="text-emerald-500"
                   onClick={() => setIsOpen(false)}
                 />
               </>
@@ -334,58 +348,64 @@ export default function Navbar({
             {isGuest && (
               <MobileLink
                 href="/login"
-                icon={<UserPlus size={20} />}
-                label="Entrar ou Criar Conta"
+                icon={<UserPlus size={18} />}
+                label="Entrar / Criar Conta"
                 onClick={() => setIsOpen(false)}
               />
             )}
           </div>
+        </div>
 
-          <div className="mt-auto pt-6 border-t border-white/10 space-y-4">
-            {(isGuest || isVisitor) && (
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  if (isGuest) {
-                    setIsLoginModalOpen(true);
-                  } else {
-                    window.location.href = "/anunciar"; // Se for Visitor (já logado), ele passa!
-                  }
-                }}
-                className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-tafanu-action to-emerald-400 text-tafanu-blue font-black p-5 rounded-2xl shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-[0.98] transition-all uppercase text-[12px] tracking-widest"
-              >
-                <Sparkles size={20} className="animate-pulse" /> Sua Vitrine em
-                5 Minutos
-              </button>
-            )}
-            {isLoggedIn && (
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  handleFullLogout();
-                }}
-                className="flex items-center justify-center gap-3 w-full text-red-400 font-bold p-4 text-[11px] uppercase tracking-widest transition-colors"
-              >
-                <LogOut size={18} /> Sair da Conta
-              </button>
-            )}
-          </div>
+        <div className="p-5 border-t border-slate-100 bg-white">
+          {(isGuest || isVisitor) && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                isGuest
+                  ? setIsLoginModalOpen(true)
+                  : (window.location.href = "/anunciar");
+              }}
+              className="flex items-center justify-center gap-2 w-full bg-tafanu-action text-white font-black p-4 rounded-xl shadow-[0_5px_15px_rgba(0,168,107,0.3)] active:scale-[0.98] transition-all uppercase text-xs tracking-wider"
+            >
+              <Sparkles size={16} /> Criar Vitrine
+            </button>
+          )}
+          {isLoggedIn && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                handleFullLogout();
+              }}
+              className="flex items-center justify-center gap-2 w-full text-red-500 hover:text-red-600 font-bold p-3.5 text-xs uppercase tracking-widest transition-colors rounded-xl bg-red-50 hover:bg-red-100 mt-2 border border-red-100 shadow-sm"
+            >
+              <LogOut size={16} /> Sair da Conta
+            </button>
+          )}
         </div>
       </div>
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
       />
-    </nav>
+    </>
   );
 }
 
-interface MobileLinkProps {
+function DesktopNavLink({
+  href,
+  children,
+}: {
   href: string;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  color?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors rounded-xl bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
+    >
+      {children}
+    </Link>
+  );
 }
 
 function MobileLink({
@@ -394,18 +414,31 @@ function MobileLink({
   label,
   onClick,
   color = "text-tafanu-action",
-}: MobileLinkProps) {
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  color?: string;
+}) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center justify-between w-full text-white bg-white/[0.05] p-5 rounded-2xl font-bold border border-white/5 hover:bg-white/[0.1] transition-all group active:scale-[0.98]"
+      className="flex items-center justify-between w-full text-slate-600 hover:text-slate-900 p-4 rounded-xl font-bold bg-white hover:bg-slate-100 transition-all group active:scale-95 shadow-sm border border-slate-100"
     >
-      <span className="flex items-center gap-4">
-        <span className={`${color} transition-transform`}>{icon}</span>
-        <span className="text-base tracking-tight">{label}</span>
+      <span className="flex items-center gap-3.5">
+        <span
+          className={`${color} bg-slate-50 shadow-inner border border-slate-100 p-2.5 rounded-lg transition-transform group-hover:scale-110`}
+        >
+          {icon}
+        </span>
+        <span className="text-sm tracking-wide">{label}</span>
       </span>
-      <ChevronRight size={18} className="text-white/20" />
+      <ChevronRight
+        size={16}
+        className="text-slate-300 group-hover:translate-x-1 transition-transform"
+      />
     </Link>
   );
 }

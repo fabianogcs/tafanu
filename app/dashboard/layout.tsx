@@ -4,20 +4,16 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   Store,
-  PlusCircle,
   User,
-  LogOut,
   Heart,
   Home,
   Lock,
   Briefcase,
   Target,
 } from "lucide-react";
-import { logoutUser } from "@/app/actions";
 import { Role } from "@prisma/client";
 import SessionRefresher from "@/components/SessionRefresher";
-
-import FloatingSupportButton from "@/components/FloatingSupportButton"; // 🚀 NOVO IMPORT
+import FloatingSupportButton from "@/components/FloatingSupportButton";
 
 export default async function DashboardLayout({
   children,
@@ -37,7 +33,7 @@ export default async function DashboardLayout({
       role: true,
       document: true,
       phone: true,
-      affiliate: { select: { phone: true, name: true } }, // 🚀 AQUI ELE PUXA O PARCEIRO!
+      affiliate: { select: { phone: true, name: true } },
       businesses: {
         select: { expiresAt: true },
       },
@@ -55,7 +51,6 @@ export default async function DashboardLayout({
   const businessExpiresAt = mainBusiness?.expiresAt;
 
   if (isAssinante && businessExpiresAt) {
-    // 🚀 CIRURGIA: Alinhando o fantasma com a nossa regra de 10 DIAS de Tolerância!
     const dataLimiteTolerancia = new Date(
       new Date(businessExpiresAt).getTime() + 10 * 24 * 60 * 60 * 1000,
     );
@@ -78,7 +73,6 @@ export default async function DashboardLayout({
 
   let hasValidSubscription = false;
   if (businessExpiresAt) {
-    // 🚀 CIRURGIA 2: Mantém o menu "Minha Vitrine" aparecendo na barra lateral durante os 10 dias!
     const dataLimiteTolerancia = new Date(
       new Date(businessExpiresAt).getTime() + 10 * 24 * 60 * 60 * 1000,
     );
@@ -86,14 +80,11 @@ export default async function DashboardLayout({
   }
 
   const isPro = isAdmin || isAfiliado || (isAssinante && hasValidSubscription);
-
   const isTestAccount = user.email?.endsWith("@tafanu.com.br");
   const isLocked =
     isAssinante && !isTestAccount && (!user.document || !user.phone);
 
   const displayName = user.name?.split(" ")[0] ?? "Usuário";
-
-  // 🚀 LÓGICA DO SUPORTE (Quem é o Gerente?)
   const defaultTafanuPhone = "5514991406618";
   let supportPhone = defaultTafanuPhone;
   let supportName = "Suporte Tafanu";
@@ -105,13 +96,18 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 relative pb-16 md:pb-0">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 relative pb-16 md:pb-0">
       <SessionRefresher />
 
-      <aside className="w-full md:w-64 bg-[#0F172A] text-white flex flex-col md:fixed md:h-full z-20 shadow-2xl">
-        <div className="p-6 md:p-8 border-b border-white/5">
+      {/* 🚀 CIRURGIA 1: Sidebar com "Vida" (Aura e Gradiente) */}
+      <aside className="w-full md:w-64 bg-white text-slate-800 flex flex-col md:fixed md:top-20 md:h-[calc(100vh-5rem)] z-20 border-r border-slate-200 relative overflow-hidden">
+        {/* A Mágica: Aura Esmeralda Suave Desfocada no fundo da Sidebar */}
+        <div className="absolute top-[-50px] left-[-50px] w-48 h-48 bg-tafanu-action/10 rounded-full blur-[50px] pointer-events-none z-0"></div>
+
+        {/* Cabeçalho Perfil na Sidebar */}
+        <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-transparent to-white relative z-10">
           <div>
-            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">
+            <p className="text-[10px] font-black text-tafanu-action uppercase tracking-[0.2em] mb-1 drop-shadow-sm">
               {isAdmin
                 ? "Admin Master"
                 : isAfiliado
@@ -120,29 +116,29 @@ export default async function DashboardLayout({
                     ? "Membro Premium"
                     : "Visitante"}
             </p>
-            {/* 🚀 COMPONENTE LIMPO: Nome fixo e elegante */}
-            <h2 className="text-xl font-black uppercase tracking-tighter truncate">
+            <h2 className="text-xl font-black uppercase tracking-tighter truncate text-slate-900">
               {displayName}
             </h2>
           </div>
           {isLocked && (
-            <div className="mt-2 flex items-center gap-2 text-red-400 animate-pulse">
+            <div className="mt-2 flex items-center gap-2 text-rose-500 animate-pulse">
               <Lock size={14} />
-              <span className="text-[10px] font-bold uppercase">
+              <span className="text-[10px] font-bold uppercase tracking-widest">
                 Validar Perfil
               </span>
             </div>
           )}
         </div>
 
-        <nav className="flex flex-row md:flex-col p-2 md:p-4 gap-1 md:gap-2 overflow-x-auto scrollbar-hide">
+        {/* Menu de Navegação - Versão Viva */}
+        <nav className="flex flex-row md:flex-col p-4 gap-2 overflow-x-auto no-scrollbar flex-1 relative z-10">
           {isLocked ? (
             <div className="flex flex-col gap-4 w-full">
               <Link
                 href="/dashboard/perfil"
-                className="flex items-center gap-3 px-4 py-4 bg-white text-[#0F172A] rounded-2xl shadow-lg font-black animate-pulse border-2 border-emerald-500"
+                className="flex items-center gap-3 px-4 py-4 bg-emerald-50 text-emerald-800 rounded-2xl shadow-sm font-black animate-pulse border border-emerald-200 hover:bg-emerald-100 transition-colors"
               >
-                <User size={20} className="text-emerald-500" />
+                <User size={20} className="text-tafanu-action" />
                 <span className="text-sm uppercase tracking-wide">
                   Validar Dados
                 </span>
@@ -150,65 +146,70 @@ export default async function DashboardLayout({
             </div>
           ) : (
             <>
+              {/* 🚀 CIRURGIA 2: Hover Magnético (Verde claro e leve sombra) */}
               <Link
                 href="/"
-                className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-2xl transition-all"
+                className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-tafanu-action hover:bg-emerald-50/50 hover:shadow-sm rounded-xl transition-all group font-semibold"
               >
-                <Home size={20} />{" "}
-                <span className="text-sm font-semibold">Início</span>
+                <Home
+                  size={18}
+                  className="text-slate-400 group-hover:text-tafanu-action transition-colors"
+                />
+                <span className="text-sm">Início</span>
               </Link>
 
               <Link
                 href="/dashboard/favoritos"
-                className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-2xl transition-all"
+                className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50/50 hover:shadow-sm rounded-xl transition-all group font-semibold"
               >
-                <Heart size={20} />{" "}
-                <span className="text-sm font-semibold">Favoritos</span>
+                <Heart
+                  size={18}
+                  className="text-slate-400 group-hover:text-rose-500 transition-colors"
+                />
+                <span className="text-sm">Favoritos</span>
               </Link>
 
-              {/* 🚀 MOVIDO PARA CIMA: Agora visitantes e PROs veem este botão */}
               <Link
                 href="/dashboard/perfil"
-                className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-2xl transition-all"
+                className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-tafanu-action hover:bg-emerald-50/50 hover:shadow-sm rounded-xl transition-all group font-semibold"
               >
-                <User size={20} />
-                <span className="text-sm font-semibold">Meus Dados</span>
+                <User
+                  size={18}
+                  className="text-slate-400 group-hover:text-tafanu-action transition-colors"
+                />
+                <span className="text-sm">Meus Dados</span>
               </Link>
 
               {isPro && (
                 <>
-                  <div className="my-2 border-t border-white/5 mx-4 hidden md:block opacity-50"></div>
+                  <div className="my-2 border-t border-slate-100 mx-2 hidden md:block"></div>
 
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
+                    className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-tafanu-action hover:bg-emerald-50/50 hover:shadow-sm rounded-xl transition-all font-semibold group"
                   >
-                    <Store size={20} className="text-emerald-400" />
+                    <Store size={18} className="text-tafanu-action" />
                     <span className="text-sm">
                       {isAssinante ? "Minha Vitrine" : "Meus Negócios"}
                     </span>
                   </Link>
 
-                  {/* ... Links do Funil Admin ... */}
-
                   {(isAdmin || isAfiliado) && (
-                    <>
-                      <Link
-                        href="/dashboard/funil"
-                        className="flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
-                      >
-                        <Target size={20} />
-                        <span className="text-sm">Funil de Vendas</span>
-                      </Link>
-                    </>
+                    <Link
+                      href="/dashboard/funil"
+                      className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-tafanu-action hover:bg-emerald-50/50 hover:shadow-sm rounded-xl transition-all font-semibold group"
+                    >
+                      <Target size={18} className="text-tafanu-action" />
+                      <span className="text-sm">Funil de Vendas</span>
+                    </Link>
                   )}
 
                   {isAfiliado && (
                     <Link
                       href="/dashboard/parceiro"
-                      className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-white/10 rounded-2xl transition-all font-semibold"
+                      className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-tafanu-action hover:bg-emerald-50/50 hover:shadow-sm rounded-xl transition-all font-semibold group"
                     >
-                      <Briefcase size={20} />
+                      <Briefcase size={18} className="text-tafanu-action" />
                       <span className="text-sm">Painel Parceiro</span>
                     </Link>
                   )}
@@ -217,21 +218,15 @@ export default async function DashboardLayout({
             </>
           )}
         </nav>
-
-        <div className="hidden md:block p-6 mt-auto border-t border-white/5">
-          <form action={logoutUser}>
-            <button className="flex items-center justify-center gap-2 w-full py-4 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl transition-all font-bold text-xs uppercase tracking-widest">
-              <LogOut size={16} /> Sair
-            </button>
-          </form>
-        </div>
+        {/* 🚀 Botão Sair foi apagado conforme seu pedido! A barra lateral agora é 100% de navegação */}
       </aside>
 
-      <main className="flex-1 md:ml-64 w-full min-h-screen bg-gray-50">
-        <div className="w-full">{children}</div>
+      {/* Área Principal (Dashboard Content) */}
+      <main className="flex-1 md:ml-64 w-full min-h-screen bg-slate-50 relative z-10">
+        <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-slate-200/50 to-transparent -z-10 pointer-events-none" />
+        <div className="w-full relative z-10">{children}</div>
       </main>
 
-      {/* 🚀 O BOTÃO FLUTUANTE INJETADO NO MOLDE GERAL (Apenas para Assinantes) */}
       {isAssinante && (
         <FloatingSupportButton
           supportName={supportName}

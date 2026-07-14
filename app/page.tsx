@@ -46,12 +46,13 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="relative min-h-screen bg-white pb-6 md:pb-8 overflow-hidden">
-      {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA */}
+    // 🚀 CIRURGIA: Removido o bg-white forçado. Agora ele herda o off-white do globals.css
+    <main className="relative min-h-screen pb-6 md:pb-8 overflow-hidden">
+      {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA (Cores alinhadas com o DNA Tafanu) */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[30vh] left-0 w-full h-[100%] bg-[#F8FAFC] transform -skew-y-2 origin-top-left border-t border-slate-200 shadow-[inset_0_10px_30px_rgba(0,0,0,0.05)]" />
+        <div className="absolute top-[30vh] left-0 w-full h-[100%] bg-white transform -skew-y-2 origin-top-left border-t border-slate-200 shadow-[inset_0_10px_30px_rgba(0,0,0,0.02)]" />
         <div className="absolute top-[60vh] -right-48 w-[800px] h-[800px] rounded-full border-[60px] border-emerald-50/80" />
-        <div className="absolute top-[100vh] -left-32 w-[500px] h-[500px] rounded-full border-[40px] border-orange-50/50" />
+        <div className="absolute top-[100vh] -left-32 w-[500px] h-[500px] rounded-full border-[40px] border-slate-100/60" />
       </div>
 
       {/* 📦 CONTEÚDO PRINCIPAL */}

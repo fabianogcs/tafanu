@@ -1,6 +1,13 @@
 "use client";
 
-import { Search, ChevronDown, Loader2, Mic, MapPin } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  Loader2,
+  Mic,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,10 +17,8 @@ export default function Hero() {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
-
   const [isGpsLoading, setIsGpsLoading] = useState(false);
 
-  // 🚀 O BOTÃO MAGNÉTICO: Busca por proximidade num clique!
   const handleQuickGpsSearch = () => {
     if (!navigator.geolocation) {
       toast.error("Seu dispositivo não suporta GPS.");
@@ -29,17 +34,11 @@ export default function Hero() {
         params.set("sort", "distance");
         params.set("status", "open");
         params.set("page", "1");
-
         let foundCity = null;
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-            {
-              headers: {
-                "Accept-Language": "pt-BR",
-                "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
-              },
-            },
+            { headers: { "Accept-Language": "pt-BR" } },
           );
           if (res.ok) {
             const data = await res.json();
@@ -49,23 +48,17 @@ export default function Hero() {
               data.address?.municipality ||
               null;
           }
-        } catch (e) {
-          // Segue o jogo se a API de mapas falhar
-        }
-
-        // 🚀 GRAVA O CACHE COMPLETO (Com a cidade) ANTES DE IR
+        } catch (e) {}
         localStorage.setItem(
           "tafanu_user_coords",
           JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
         );
-
         router.push(`/busca?${params.toString()}`);
       },
       (error) => {
         setIsGpsLoading(false);
         toast.error("GPS Bloqueado", {
-          description:
-            "Permita o acesso à localização para ver os abertos perto de você.",
+          description: "Permita o acesso à localização.",
         });
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
@@ -77,9 +70,8 @@ export default function Hero() {
     setIsSearching(true);
     const params = new URLSearchParams();
     const finalQuery = voiceQuery || query;
-    if (finalQuery) params.append("q", finalQuery);
+    if (finalQuery.trim() !== "") params.append("q", finalQuery);
 
-    // 🚀 O CONCIERGE DA HOME: Se já temos o GPS salvo no bolso, aplicamos na busca silenciosamente!
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
       if (cachedCoords) {
@@ -92,196 +84,174 @@ export default function Hero() {
     router.push(`/busca?${params.toString()}`);
   };
 
-  // 🎤 FUNÇÃO DO MICROFONE (BLINDADA)
   const handleVoiceSearch = () => {
     if (typeof window !== "undefined") {
       const SpeechRecognition =
         (window as any).SpeechRecognition ||
         (window as any).webkitSpeechRecognition;
-
       if (!SpeechRecognition) {
         toast.error("Navegador incompatível", {
-          description:
-            "Pesquisa por voz não suportada. Tente usar o Chrome ou Safari.",
+          description: "Pesquisa por voz não suportada.",
         });
         return;
       }
-
       try {
         const recognition = new SpeechRecognition();
         recognition.lang = "pt-BR";
         recognition.continuous = false;
         recognition.interimResults = false;
-
         recognition.onstart = () => setIsListening(true);
         recognition.onend = () => setIsListening(false);
-
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
           setQuery(transcript);
           handleSearch(undefined, transcript);
         };
-
         recognition.onerror = (event: any) => {
           setIsListening(false);
-          if (event.error === "not-allowed") {
-            toast.error("Microfone Bloqueado", {
-              description:
-                "Clique no ícone de cadeado ao lado da URL e permita o uso do microfone.",
-              duration: 8000,
-            });
-          } else {
-            toast.warning("Erro no microfone", {
-              description: `Falha técnica (${event.error}). Tente novamente.`,
-            });
-          }
         };
-
         recognition.start();
       } catch (err) {
-        console.error("Erro ao iniciar o microfone:", err);
         setIsListening(false);
       }
     }
   };
 
   const handleScrollDown = () => {
-    window.scrollBy({ top: window.innerHeight * 0.85, behavior: "smooth" });
+    window.scrollBy({ top: window.innerHeight * 0.75, behavior: "smooth" });
   };
 
   return (
-    <section className="relative bg-[#050B14] overflow-hidden pt-8 md:pt-20 lg:pt-24 pb-20 md:pb-24 border-b-4 border-emerald-500/10">
-      <div
-        className="absolute inset-0 z-0 opacity-[0.03] mix-blend-screen pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}
-      />
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none"
-        aria-hidden="true"
-      >
-        <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] md:w-[900px] md:h-[900px] bg-emerald-500/10 rounded-full blur-[80px] md:blur-[140px] mix-blend-screen opacity-70 animate-pulse-slow will-change-transform transform-gpu"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600 opacity-[0.07] rounded-full blur-[100px] -ml-20 -mb-20 will-change-transform transform-gpu"></div>
+    // 🚀 CIRURGIA 1: Ajuste de tamanho perfeito. O Hero vai crescer naturalmente com o conteúdo.
+    <section className="relative bg-[#F8FAFC] overflow-hidden flex flex-col justify-start md:justify-center pt-10 md:pt-20 pb-12 md:pb-16 border-b border-slate-200">
+      {/* 🚀 CIRURGIA 2: Fundo com vida (Tinta Esmeralda Suave) em vez de Grayscale */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img
+          src="/hero-bg.webp"
+          alt="Fundo Tafanu"
+          className="w-full h-full object-cover object-center opacity-25 mix-blend-overlay"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-emerald-50/70 to-white/95"></div>
       </div>
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 text-center mt-2 md:mt-0">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white tracking-[-0.05em] leading-[1.1] md:leading-[1] mb-3 md:mb-6 relative z-20 uppercase italic drop-shadow-2xl animate-in fade-in zoom-in duration-700 delay-100">
-          Tudo o que você busca, <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-tafanu-action via-emerald-400 to-teal-300 pr-1 md:pr-2 box-decoration-clone">
+
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center mt-2 md:mt-0 flex flex-col items-center">
+        {/* BADGE SUPERIOR */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-tafanu-action text-[10px] md:text-xs font-bold uppercase tracking-widest mb-4 md:mb-6 animate-in fade-in duration-500 shadow-sm">
+          <Sparkles size={12} className="animate-pulse" /> O seu guia comercial
+          inteligente
+        </div>
+
+        {/* TÍTULO */}
+        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] md:leading-[1] mb-3 md:mb-5 uppercase italic animate-in fade-in zoom-in duration-700 delay-100">
+          Tudo o que você busca, <br className="hidden sm:block" />
+          <span className="text-tafanu-action drop-shadow-[0_0_20px_rgba(0,168,107,0.2)]">
             em um só lugar.
           </span>
         </h1>
 
-        <p className="text-sm md:text-lg text-slate-400 max-w-2xl mx-auto mb-6 md:mb-10 font-medium leading-relaxed relative z-20 opacity-90 animate-in fade-in duration-700 delay-200 px-2 md:px-0">
-          Conectamos você aos melhores serviços, comércios e profissionais.
+        <p className="text-xs sm:text-base md:text-lg text-slate-500 max-w-xl mx-auto mb-6 md:mb-10 font-medium leading-relaxed animate-in fade-in duration-700 delay-200 px-2">
+          Conectamos você aos melhores serviços, comércios e profissionais de
+          confiança da sua cidade.
         </p>
 
-        <form
-          onSubmit={handleSearch}
-          role="search"
-          aria-label="Buscar serviços locais"
-          className="relative z-30 w-full max-w-4xl mx-auto flex items-center bg-white/90 backdrop-blur-md border border-white/20 p-1.5 md:p-2 rounded-2xl md:rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all hover:bg-white hover:shadow-[0_8px_40px_rgba(0,0,0,0.4)] focus-within:ring-4 focus-within:ring-emerald-500/20 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300"
-        >
-          <label
-            htmlFor="hero-search"
-            className="flex-1 h-12 md:h-14 flex items-center pl-3 md:pl-6 cursor-text"
+        {/* O CARD DE BUSCA */}
+        <div className="relative z-30 w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-2xl border border-slate-200 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.05)] animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+          <form
+            onSubmit={handleSearch}
+            role="search"
+            className="flex flex-col md:flex-row gap-2.5 md:gap-3.5"
           >
-            <Search
-              className="text-slate-400 focus-within:text-tafanu-action w-4 h-4 md:w-6 md:h-6 mr-2 md:mr-3 shrink-0 transition-colors"
-              aria-hidden="true"
-            />
-            <input
-              id="hero-search"
-              name="pesquisa_tafanu_v1"
-              autoComplete="off"
-              type="text"
-              aria-label="O que você está procurando?"
-              placeholder={
-                isListening ? "Ouvindo..." : "O que você procura?... "
-              }
-              className="w-full h-full !bg-transparent border-none outline-none focus:ring-0 text-slate-800 placeholder-slate-400 font-bold text-sm md:text-lg appearance-none shadow-none"
-              value={query}
-              maxLength={80}
-              onChange={(e) => setQuery(e.target.value)}
-              disabled={isSearching || isListening}
-            />
-          </label>
-
-          {/* 🎤 BOTÃO DE MICROFONE */}
-          <button
-            type="button"
-            onClick={handleVoiceSearch}
-            className={`p-2 mr-2 md:mr-4 rounded-full transition-all ${
-              isListening
-                ? "bg-red-100 text-red-500 animate-pulse"
-                : "text-slate-400 hover:text-tafanu-action hover:bg-slate-100"
-            }`}
-            title="Pesquisar por voz"
-          >
-            <Mic className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
-
-          <button
-            type="submit"
-            disabled={isSearching || query.trim() === ""}
-            aria-label="Realizar pesquisa"
-            className="bg-tafanu-action hover:bg-emerald-400 text-[#050B14] font-black rounded-xl md:rounded-full px-5 md:px-12 h-10 md:h-14 flex items-center justify-center gap-2 uppercase tracking-[0.1em] text-[10px] md:text-sm shrink-0 shadow-md transform transition-all duration-300 hover:scale-[1.03] active:scale-95 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!shadow-none disabled:!opacity-100 disabled:cursor-not-allowed disabled:hover:scale-100"
-          >
-            {isSearching ? (
-              <Loader2
-                size={16}
-                strokeWidth={3}
-                className="animate-spin md:w-5 md:h-5"
+            <div className="w-full h-12 md:h-14 bg-white rounded-xl md:rounded-2xl flex items-center px-3.5 focus-within:ring-4 focus-within:ring-tafanu-action/20 transition-all shadow-inner border border-slate-200">
+              <Search className="text-slate-400 w-4 h-4 md:w-5 md:h-5 mr-2.5 shrink-0" />
+              <input
+                id="hero-search"
+                type="text"
+                placeholder={
+                  isListening ? "Ouvindo..." : "Ex: Mecânico, Pizzaria, Moda..."
+                }
+                className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-bold text-xs sm:text-sm md:text-base h-full"
+                value={query}
+                maxLength={80}
+                onChange={(e) => setQuery(e.target.value)}
+                disabled={isSearching || isListening}
               />
-            ) : (
-              <>
-                <span className="md:hidden">Buscar</span>
-                <span className="hidden md:inline">Pesquisar</span>
-              </>
-            )}
-          </button>
-        </form>
+              <button
+                type="button"
+                onClick={handleVoiceSearch}
+                className={`p-2 rounded-lg transition-all ${isListening ? "bg-red-100 text-red-500 animate-pulse" : "text-slate-400 hover:text-tafanu-action hover:bg-slate-50"}`}
+                title="Pesquisar por voz"
+              >
+                <Mic className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+            </div>
 
-        {/* 🚀 BOTÃO ÚNICO DE AÇÃO RÁPIDA (Foco e Conversão) */}
-        <div className="relative z-30 w-full flex justify-center mt-8 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="w-full md:w-auto h-12 md:h-14 bg-tafanu-action hover:bg-[#00c27a] text-white font-black rounded-xl md:rounded-2xl px-8 flex items-center justify-center gap-2 uppercase tracking-wider text-xs md:text-sm shadow-[0_4px_20px_rgba(0,168,107,0.3)] transition-all hover:scale-[1.02] active:scale-95 shrink-0"
+            >
+              {isSearching ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                "Pesquisar"
+              )}
+            </button>
+          </form>
+
+          <div className="my-4 md:my-5 flex items-center gap-3">
+            <div className="h-px bg-slate-200 flex-1"></div>
+            <span className="text-slate-400 text-[9px] md:text-[10px] uppercase tracking-widest font-black">
+              Ou explore por proximidade
+            </span>
+            <div className="h-px bg-slate-200 flex-1"></div>
+          </div>
+
           <button
             onClick={handleQuickGpsSearch}
             disabled={isGpsLoading}
-            className="flex items-center gap-3 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-[#050B14] px-8 py-4 rounded-full transition-all text-[11px] md:text-xs font-black uppercase tracking-widest shadow-[0_0_30px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50"
+            className="w-full h-12 md:h-13 flex items-center justify-center gap-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-tafanu-action/30 text-slate-700 px-5 rounded-xl md:rounded-2xl transition-all text-xs sm:text-sm font-bold uppercase tracking-wider group disabled:opacity-50 active:scale-95"
           >
             {isGpsLoading ? (
-              <Loader2 size={18} className="animate-spin" />
+              <Loader2
+                size={16}
+                className="animate-spin text-tafanu-action shrink-0"
+              />
             ) : (
-              <MapPin size={18} className="animate-bounce" />
+              <MapPin
+                size={16}
+                className="text-tafanu-action group-hover:animate-bounce shrink-0"
+              />
             )}
-            Ver Abertos Perto de Mim
+            <span className="truncate">Ver abertos perto de mim</span>
+          </button>
+        </div>
+
+        {/* 🚀 CIRURGIA 3: A Setinha agora faz parte do fluxo normal da página (Sem absolute). 
+            Ela nunca mais vai invadir o espaço do botão ou de outra seção! */}
+        <div className="mt-8 md:mt-12 flex justify-center animate-bounce">
+          <button
+            onClick={handleScrollDown}
+            type="button"
+            className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 hover:border-tafanu-action hover:bg-emerald-50 transition-colors shadow-sm cursor-pointer"
+          >
+            <ChevronDown className="w-5 h-5 text-tafanu-action" />
           </button>
         </div>
       </div>
 
-      <div className="flex absolute bottom-2 md:bottom-2 lg:bottom-2 left-0 w-full justify-center z-40 animate-bounce pointer-events-none">
-        <button
-          onClick={handleScrollDown}
-          type="button"
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:border-tafanu-action hover:bg-tafanu-action/10 transition-colors shadow-lg cursor-pointer backdrop-blur-md pointer-events-auto"
-          aria-label="Rolar página para baixo"
-        >
-          <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-tafanu-action" />
-        </button>
-      </div>
-
+      {/* MICROFONE MODAL */}
       {isListening && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050B14]/80 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">
-            <div className="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-6 relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-4 relative">
               <div className="absolute inset-0 bg-rose-400 rounded-full animate-ping opacity-20"></div>
-              <Mic className="w-10 h-10 text-rose-500 relative z-10 animate-pulse" />
+              <Mic className="w-8 h-8 text-rose-500 relative z-10 animate-pulse" />
             </div>
-            <h3 className="text-xl font-black text-slate-800 uppercase italic mb-2">
+            <h3 className="text-lg font-black text-slate-800 uppercase italic mb-1">
               Ouvindo...
             </h3>
-            <p className="text-slate-500 text-sm font-medium text-center mb-6">
-              Fale o que você está procurando (ex: "Mecânico", "Pizzaria").
+            <p className="text-slate-500 text-xs font-medium text-center mb-6">
+              Fale o que você está procurando (ex: "Mecânico").
             </p>
             <button
               type="button"

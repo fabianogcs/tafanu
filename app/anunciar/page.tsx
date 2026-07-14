@@ -1,16 +1,18 @@
 import { Metadata } from "next";
 import {
   Smartphone,
-  Globe,
-  BarChart3,
-  ShieldCheck,
   Store,
   Sparkles,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  TrendingUp,
+  MapPin,
+  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-// 🚀 INJEÇÃO SÊNIOR: Importando o botão cliente inteligente com feedback de carregamento
 import CheckoutButton from "@/components/CheckoutButton";
 
 export const metadata: Metadata = {
@@ -30,7 +32,6 @@ export default async function AnunciarPage() {
   const userRole = session?.user?.role;
   const userId = session?.user?.id;
 
-  // 🛡️ O ESCUDO REVISOR: Se o robô da App Store ou um invasor acessar sem login, ele é ejetado imediatamente sem ver os planos
   if (!session || !userId) {
     redirect("/");
   }
@@ -56,7 +57,7 @@ export default async function AnunciarPage() {
         name: "PRECISO DE CARTÃO PARA COMEÇAR?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e avoid interrupções. Mas fique tranquilo, na sua primeira assinatura, absolutamente nada será cobrado hoje.",
+          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço. Mas fique tranquilo, na sua primeira assinatura, absolutamente nada será cobrado hoje.",
         },
       },
       {
@@ -71,147 +72,410 @@ export default async function AnunciarPage() {
   };
 
   return (
-    <main className="bg-white min-h-screen font-sans selection:bg-emerald-500 selection:text-white pb-20">
+    <main className="bg-slate-50 min-h-screen font-sans selection:bg-tafanu-action selection:text-white pb-20 relative">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
+      {/* 🚀 CIRURGIA 1: BOTÃO WHATSAPP FLUTUANTE DE VENDAS */}
+      <a
+        href="https://wa.me/5514991406618?text=Ol%C3%A1!%20Estou%20na%20p%C3%A1gina%20de%20planos%20do%20Tafanu%20e%20gostaria%20de%20tirar%20uma%20d%C3%BAvida."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-24 md:bottom-8 right-4 md:right-8 bg-[#25D366] text-white p-4 rounded-full shadow-[0_10px_25px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all z-[100] flex items-center justify-center group"
+        title="Falar com Atendimento"
+      >
+        <MessageCircle size={28} />
+        <span className="absolute right-full mr-4 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none hidden md:block">
+          Precisa de ajuda?
+        </span>
+      </a>
+
       {/* --- HERO BANNER --- */}
-      <section className="relative bg-[#050814] text-white pt-24 pb-16 md:pt-28 md:pb-20 overflow-hidden rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl">
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/15 via-transparent to-transparent opacity-60 pointer-events-none"
-          aria-hidden="true"
-        ></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 py-1.5 px-4 md:py-2 md:px-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] mb-6 md:mb-8 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-              <ShieldCheck size={16} aria-hidden="true" /> Risco Zero
+      <section className="bg-white pt-24 pb-16 md:pt-28 md:pb-20 border-b border-slate-200">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase italic tracking-tighter leading-[1] text-slate-900 mb-6">
+            Divulgue sua empresa na <br className="hidden md:block" />
+            <span className="text-tafanu-action">Vitrine Inteligente</span> da
+            cidade
+          </h1>
+          <p className="text-base md:text-lg text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed mb-10">
+            Sem taxas por venda, sem complicação. Mais visibilidade, mais
+            contatos no seu WhatsApp e mais oportunidades reais para o seu
+            negócio crescer.
+          </p>
+        </div>
+      </section>
+
+      {/* --- A ESTRUTURA DE ANCORAGEM (PLANOS) --- */}
+      <section className="max-w-6xl mx-auto px-4 -mt-8 relative z-20">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center mb-10 shadow-sm max-w-3xl mx-auto">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full text-tafanu-action mb-3 shadow-sm border border-emerald-100">
+            <Sparkles size={24} />
+          </div>
+          <h3 className="text-lg font-black text-emerald-900 uppercase tracking-tight">
+            Comece com 7 Dias Grátis para testar
+          </h3>
+          <p className="text-emerald-700 text-sm font-medium mt-1">
+            Cadastre sua loja hoje e teste todos os recursos de conversão sem
+            pagar nada agora.
+          </p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-stretch justify-center">
+          <div className="flex-1 bg-white border border-slate-200 rounded-[2rem] p-8 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-not-allowed">
+            <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">
+              Básico
+            </h3>
+            <p className="text-slate-500 text-sm font-medium mb-6 min-h-[40px]">
+              Para quem quer apenas estar no mapa, sem destaques.
+            </p>
+            <div className="mb-8">
+              <span className="text-4xl font-black text-slate-900 tracking-tighter">
+                R$ 29,90
+              </span>
+              <span className="text-slate-500 font-medium">/mês</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase italic tracking-tighter leading-[0.95] mb-6">
-              SUA VITRINE PRONTA EM <br className="hidden lg:block" />
-              <span className="text-emerald-500 relative">
-                5 MINUTOS.
-                <div className="absolute -inset-2 bg-emerald-500/20 blur-xl rounded-full -z-10" />
-              </span>
-            </h1>
+            <button
+              disabled
+              className="w-full py-4 bg-slate-100 text-slate-400 font-black rounded-xl uppercase tracking-widest text-xs mb-8"
+            >
+              Plano Indisponível
+            </button>
 
-            <p className="text-base md:text-xl text-slate-400 mb-10 max-w-xl font-medium leading-relaxed text-balance">
-              Centralize sua operação digital. Unifique catálogos, links
-              externos e contatos em uma experiência de alto padrão.
-              <span className="text-white block mt-3 text-sm md:text-lg opacity-90">
-                Teste todas as ferramentas PRO gratuitamente por 7 dias.
-              </span>
-            </p>
-
-            <div className="flex flex-col items-center lg:items-start gap-4 w-full max-w-sm">
-              {/* 🚀 CIRURGIA 1: Botão Cliente acoplado no topo com bloqueio anti-double-click */}
-              <CheckoutButton userId={userId} />
-              <p className="text-slate-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] lg:tracking-[0.25em] text-center lg:text-left">
-                7 dias grátis na 1ª assinatura • Cancele a qualquer momento
+            <div className="space-y-4 text-sm font-medium text-slate-600">
+              <p className="flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-slate-400" /> Presença
+                nas buscas simples
+              </p>
+              <p className="flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-slate-400" /> 3 fotos na
+                galeria
+              </p>
+              <p className="flex items-center gap-3 text-slate-400">
+                <XCircle size={18} /> Sem painel de métricas
+              </p>
+              <p className="flex items-center gap-3 text-slate-400">
+                <XCircle size={18} /> Sem botão de WhatsApp
               </p>
             </div>
           </div>
 
-          <div className="relative flex justify-center items-center w-full lg:w-auto mt-8 lg:mt-0 animate-in fade-in zoom-in-95 duration-1000">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[400px] bg-emerald-500/30 blur-[100px] rounded-full -z-10" />
-            <div className="relative w-[240px] h-[500px] md:w-[280px] md:h-[580px] bg-[#030409] border-[8px] md:border-[10px] border-slate-800 rounded-[2rem] md:rounded-[2.8rem] shadow-[0_30px_80px_rgba(16,185,129,0.2)] overflow-hidden group ring-1 ring-white/10">
-              <div className="absolute top-2 md:top-3 left-1/2 -translate-x-1/2 w-16 md:w-20 h-4 md:h-5 bg-slate-900 rounded-full z-20 flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-white/10 ml-8"></div>
+          <div className="flex-[1.2] bg-white border-2 border-tafanu-action rounded-[2rem] p-8 shadow-2xl relative transform lg:-translate-y-4">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-tafanu-action text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md">
+              Plano Recomendado
+            </div>
+
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-black text-slate-900 uppercase italic mb-2">
+                Tafanu PRO
+              </h3>
+              <p className="text-slate-500 text-sm font-medium">
+                Ecossistema completo de vendas para dominar a sua região.
+              </p>
+            </div>
+
+            <div className="text-center mb-8 bg-slate-50 py-6 rounded-2xl border border-slate-100">
+              <span className="text-5xl font-black text-slate-900 tracking-tighter">
+                R$ 39,90
+              </span>
+              <span className="text-slate-500 font-bold">/mês</span>
+            </div>
+
+            <div className="mb-8">
+              <CheckoutButton userId={userId} />
+            </div>
+
+            <div className="space-y-6 text-sm font-medium text-slate-700">
+              {/* 🚀 CIRURGIA 2: TEXTOS MATADORES E ESPECÍFICOS */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">
+                  Conteúdo e Conversão
+                </p>
+                <div className="space-y-3">
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Botões para Delivery (iFood, Anota Aí) e Agendamentos
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Envio de Cardápio ou Catálogo em PDF na Vitrine
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Até 12 fotos em alta resolução e Embed de Vídeos
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Logo, Destaques, Horários e FAQ
+                  </p>
+                </div>
               </div>
-              <div className="absolute top-20 -left-[12px] w-1 h-10 bg-slate-800 rounded-l-md" />
-              <div className="absolute top-36 -left-[12px] w-1 h-10 bg-slate-800 rounded-l-md" />
-              <div className="absolute top-28 -right-[12px] w-1 h-14 bg-slate-800 rounded-r-md" />
-              <div className="absolute inset-0 bg-emerald-500/10 group-hover:bg-transparent transition-colors duration-700 z-10 pointer-events-none"></div>
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700 rounded-[2rem] md:rounded-[2.8rem]"
-              >
-                <source src="/demo-tafanu.mp4" type="video/mp4" />
-              </video>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">
+                  Analytics Completo
+                </p>
+                <div className="space-y-3">
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Painel de Visitas da Vitrine em tempo real
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Cliques no WhatsApp, Site e Mapa
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Cliques no Instagram, TikTok e Facebook
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Quantidade de Pessoas que Favoritaram a Loja
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">
+                  Busca e Posicionamento
+                </p>
+                <div className="space-y-3">
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Posicionamento inteligente no mapa (SEO Local)
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Botões flutuantes direto para suas redes
+                  </p>
+                  <p className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-tafanu-action shrink-0"
+                    />{" "}
+                    Sistema de busca semântica completa
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white border border-slate-200 rounded-[2rem] p-8 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-not-allowed">
+            <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">
+              Corporate
+            </h3>
+            <p className="text-slate-500 text-sm font-medium mb-6 min-h-[40px]">
+              Para franquias e redes com mais de 5 unidades.
+            </p>
+            <div className="mb-8">
+              <span className="text-4xl font-black text-slate-900 tracking-tighter">
+                R$ 199,90
+              </span>
+              <span className="text-slate-500 font-medium">/mês</span>
+            </div>
+
+            <button
+              disabled
+              className="w-full py-4 bg-slate-100 text-slate-400 font-black rounded-xl uppercase tracking-widest text-xs mb-8"
+            >
+              Fale com Especialista
+            </button>
+
+            <div className="space-y-4 text-sm font-medium text-slate-600">
+              <p className="flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-slate-400" /> Tudo do
+                plano PRO
+              </p>
+              <p className="flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-slate-400" /> API de
+                Integração
+              </p>
+              <p className="flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-slate-400" /> Gerente de
+                Conta Dedicado
+              </p>
+              <p className="flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-slate-400" /> Múltiplos
+                CNPJs
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* --- DIFERENCIAIS --- */}
-      <section className="py-20 md:py-28 px-6 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-          <article className="flex flex-col gap-6 p-10 md:p-12 rounded-[2.5rem] md:rounded-[3rem] bg-slate-50 border border-slate-100 hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/5 transition-all duration-300 group">
-            <div className="w-14 h-14 bg-[#050814] text-white rounded-[1.2rem] flex items-center justify-center shadow-lg group-hover:bg-emerald-500 group-hover:text-[#050814] transition-colors duration-300">
-              <Store size={26} aria-hidden="true" />
-            </div>
-            <h3 className="text-2xl md:text-3xl font-black uppercase italic text-slate-900 tracking-tighter leading-tight mt-2">
-              Autoridade Local
-            </h3>
-            <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed">
-              Sua vitrine premium fica disponível no nosso portal para atrair
-              novos clientes da sua região. Acompanhe o crescimento do seu
-              negócio com métricas exatas de visitas e cliques em tempo real no
-              seu painel.
-            </p>
-          </article>
+      <section className="py-20 md:py-28 px-6 max-w-6xl mx-auto mt-10 border-t border-slate-200">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-black uppercase italic text-slate-900 tracking-tighter mb-4">
+            Foco em visibilidade e conexão
+          </h2>
+          <p className="text-slate-500 font-medium max-w-2xl mx-auto">
+            Conecte sua loja a milhares de compradores da sua região prontos
+            para fechar negócio.
+          </p>
+        </div>
 
-          <article className="flex flex-col gap-6 p-10 md:p-12 rounded-[2.5rem] md:rounded-[3rem] bg-slate-50 border border-slate-100 hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/5 transition-all duration-300 group">
-            <div className="w-14 h-14 bg-[#050814] text-white rounded-[1.2rem] flex items-center justify-center shadow-lg group-hover:bg-emerald-500 group-hover:text-[#050814] transition-colors duration-300">
-              <Smartphone size={26} aria-hidden="true" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center flex flex-col items-center">
+            <div className="w-14 h-14 bg-emerald-50 text-tafanu-action rounded-full flex items-center justify-center mb-6">
+              <Store size={24} />
             </div>
-            <h3 className="text-2xl md:text-3xl font-black uppercase italic text-slate-900 tracking-tighter leading-tight mt-2">
-              Você no Controle
-            </h3>
-            <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed">
-              Diga adeus a taxas abusivas e intermediários. Exiba seu catálogo
-              visual em PDF ou conecte seus próprios sistemas externos (iFood,
-              Calendly, Shopee) de forma invisível. O cliente fecha negócio onde
-              você mandar.
+            <h4 className="text-lg font-black text-slate-900 mb-3">
+              Mais Visibilidade
+            </h4>
+            <p className="text-sm font-medium text-slate-500 leading-relaxed">
+              Sua loja ganha destaque no maior catálogo digital da região,
+              alcançando clientes sem depender apenas de panfletos ou anúncios
+              caros.
             </p>
-          </article>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center flex flex-col items-center">
+            <div className="w-14 h-14 bg-emerald-50 text-tafanu-action rounded-full flex items-center justify-center mb-6">
+              <Smartphone size={24} />
+            </div>
+            <h4 className="text-lg font-black text-slate-900 mb-3">
+              Contatos Diretos
+            </h4>
+            <p className="text-sm font-medium text-slate-500 leading-relaxed">
+              Os interessados entram em contato pelos seus próprios canais —
+              WhatsApp, Instagram ou site — sem intermediários e sem taxas.
+            </p>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center flex flex-col items-center lg:col-span-1 md:col-span-2">
+            <div className="w-14 h-14 bg-emerald-50 text-tafanu-action rounded-full flex items-center justify-center mb-6">
+              <MapPin size={24} />
+            </div>
+            <h4 className="text-lg font-black text-slate-900 mb-3">
+              Fácil de Gerenciar
+            </h4>
+            <p className="text-sm font-medium text-slate-500 leading-relaxed">
+              Crie sua vitrine em minutos: adicione fotos, produtos e contatos
+              em um painel simples, intuitivo e no celular.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* --- TABELA DE PREÇOS PRO --- */}
-      <section className="py-20 px-6 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-white p-10 md:p-20 rounded-[3rem] md:rounded-[4rem] shadow-2xl border border-slate-100 relative overflow-hidden">
-            <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-6 text-slate-900 leading-none relative z-10">
-              PLANO <span className="text-emerald-500">TAFANU PRO</span>
-            </h2>
+      {/* --- FAQ --- */}
+      <section className="py-20 px-6 max-w-3xl mx-auto border-t border-slate-200">
+        <h2 className="text-3xl font-black uppercase italic text-slate-900 tracking-tighter mb-10 text-center">
+          Perguntas Frequentes
+        </h2>
 
-            <div className="inline-flex items-center gap-2 bg-slate-900 text-white text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] px-5 py-2 rounded-full mb-12 relative z-10 shadow-md">
-              <Sparkles size={14} className="text-emerald-400" />
-              TESTE GRÁTIS POR 7 DIAS
+        <div className="space-y-4">
+          <details className="group bg-white border border-slate-200 rounded-2xl [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex items-center justify-between p-6 cursor-pointer font-bold text-slate-800">
+              Como funciona o período grátis?
+              <span className="transition group-open:rotate-180">
+                <svg
+                  fill="none"
+                  height="24"
+                  shapeRendering="geometricPrecision"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="24"
+                >
+                  <path d="M6 9l6 6 6-6"></path>
+                </svg>
+              </span>
+            </summary>
+            <div className="px-6 pb-6 text-slate-500 text-sm leading-relaxed">
+              Na sua primeira assinatura do plano Tafanu PRO, você tem 7 dias de
+              Teste Grátis. A primeira cobrança de R$ 39,90 só acontece no 8º
+              dia. Se não gostar, basta cancelar antes e nada será cobrado.
             </div>
+          </details>
 
-            <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-16 mb-14 relative z-10">
-              <div className="text-center">
-                <span className="block text-slate-400 font-black text-sm uppercase mb-2 tracking-widest">
-                  Hoje
-                </span>
-                <span className="text-5xl md:text-6xl font-black text-emerald-500 tracking-tighter italic">
-                  GRÁTIS
-                </span>
-              </div>
-              <div
-                className="hidden md:block w-px h-20 bg-slate-200"
-                aria-hidden="true"
-              ></div>
-              <div className="text-center flex flex-col items-center">
-                <span className="block text-slate-400 font-black text-sm uppercase mb-2 tracking-widest">
-                  Após 7 days
-                </span>
-                <span className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter italic">
-                  R$ 39,90 <span className="text-2xl text-slate-500">/mês</span>
-                </span>
-              </div>
+          <details className="group bg-white border border-slate-200 rounded-2xl [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex items-center justify-between p-6 cursor-pointer font-bold text-slate-800">
+              Posso cancelar a qualquer momento?
+              <span className="transition group-open:rotate-180">
+                <svg
+                  fill="none"
+                  height="24"
+                  shapeRendering="geometricPrecision"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="24"
+                >
+                  <path d="M6 9l6 6 6-6"></path>
+                </svg>
+              </span>
+            </summary>
+            <div className="px-6 pb-6 text-slate-500 text-sm leading-relaxed">
+              Com certeza. Se você cancelar dentro dos 7 dias de teste, a
+              cobrança nem chega a ser feita. O cancelamento é feito direto no
+              seu painel de controle, sem multas e sem burocracia.
             </div>
+          </details>
 
-            {/* 🚀 CIRURGIA 2: Botão Cliente acoplado no rodapé da tabela de planos */}
-            <CheckoutButton userId={userId} />
-          </div>
+          <details className="group bg-white border border-slate-200 rounded-2xl [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex items-center justify-between p-6 cursor-pointer font-bold text-slate-800">
+              A Plataforma cobra taxas sobre minhas vendas?
+              <span className="transition group-open:rotate-180">
+                <svg
+                  fill="none"
+                  height="24"
+                  shapeRendering="geometricPrecision"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="24"
+                >
+                  <path d="M6 9l6 6 6-6"></path>
+                </svg>
+              </span>
+            </summary>
+            <div className="px-6 pb-6 text-slate-500 text-sm leading-relaxed">
+              Não! Nós não somos intermediários. O cliente acha você no Tafanu e
+              clica para ir direto para o seu WhatsApp, seu Instagram ou sua
+              Maquininha. Você paga apenas a assinatura mensal da vitrine e fica
+              com 100% do lucro das suas vendas.
+            </div>
+          </details>
         </div>
       </section>
     </main>

@@ -16,6 +16,7 @@ import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import MetaPixel from "@/components/MetaPixel";
+import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -64,13 +65,12 @@ export const metadata: Metadata = {
   },
 };
 
-// 🚀 A MÁGICA DA ACESSIBILIDADE DE ZOOM ESTÁ AQUI
 export const viewport: Viewport = {
-  themeColor: "#0f172a", // Cor da barra de status no celular
+  themeColor: "#ffffff", // 🚀 CIRURGIA: A barra do celular agora é branca, fundindo com a Navbar!
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5, // Isso permite que pessoas com visão reduzida deem zoom
-  userScalable: true, // Isso resolve a nota vermelha no Lighthouse
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default async function RootLayout({
@@ -122,6 +122,7 @@ export default async function RootLayout({
           <PasswordAlert />
           <Navbar isLoggedIn={!!userId} userRole={userRole as string} />
           <main className="flex-grow">{children}</main>
+          <BottomNav />
           <Footer />
           <Analytics />
           <SpeedInsights />

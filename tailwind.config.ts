@@ -46,9 +46,13 @@ export default withUt({
   theme: {
     extend: {
       colors: {
-        "tafanu-blue": "#0f172a",
-        "tafanu-action": "#25d366",
-        "tafanu-light": "#f1f5f9",
+        // 🚀 O NOVO DNA DO TAFANU (Baseado na Coruja)
+        // O Azul Marinho Profundo dos olhos da coruja (Novo fundo elegante)
+        "tafanu-blue": "#0A1425",
+        // O Verde Safira/Esmeralda das asas para botões de sucesso
+        "tafanu-action": "#00A86B",
+        // O Azul Brilhante das asas superior/inferior para detalhes sutis
+        "tafanu-light": "#0088CC",
       },
       animation: {
         // MANTIDAS:

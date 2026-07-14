@@ -4,37 +4,45 @@
 @tailwind utilities;
 
 :root {
-  --color-tafanu-blue: #0f172a;
-  --color-tafanu-light: #f1f5f9;
-  --color-tafanu-action: #25d366;
+  /* As cores oficiais do DNA Tafanu */
+  --color-tafanu-blue: #0a1425;
+  --color-tafanu-light: #0088cc;
+  --color-tafanu-action: #00a86b;
 
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  /* 🚀 CIRURGIA: As variáveis de base agora ditam um site CLARO */
+  --foreground-rgb: 15, 23, 42; /* slate-900 para o texto base */
+  --background-start-rgb: 248, 250, 252; /* slate-50 para o fundo */
+  --background-end-rgb: 248, 250, 252; /* slate-50 para o fundo */
 }
 
 body {
-  background-color: var(--color-tafanu-light);
-  color: var(--color-tafanu-blue);
-  /* Deixamos o Next.js e o Tailwind controlarem a font-family via layout.tsx */
+  /* O Fundo do site agora é um off-white sofisticado e o texto padrão é escuro */
+  background-color: rgb(var(--background-start-rgb));
+  color: rgb(var(--foreground-rgb));
+}
+
+/* Espaço vital no celular para a BottomNav */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 4rem; /* Garante que o conteúdo não fique atrás da barra */
+  }
 }
 
 /* ========================================================= */
-/* 🛡️ BLINDAGEM VISUAL: Remove o contorno "fantasma" branco/cinza 
-   que o navegador joga nos componentes durante o clique ou load */
+/* 🛡️ BLINDAGEM VISUAL: Remove o contorno "fantasma" do clique */
 /* ========================================================= */
 *:focus {
   outline: none !important;
 }
 
 *:focus-visible {
-  /* Se o usuário navegar pelo TECLADO, mostramos um contorno laranja elegante */
-  outline: 2px solid #f28705;
+  /* 🚀 CIRURGIA: Navegação por teclado agora pisca o seu Verde Safira! */
+  outline: 2px solid var(--color-tafanu-action);
   outline-offset: 2px;
 }
 
 /* ========================================================= */
-/* CURATIVOS DE EMERGÊNCIA (Tente evitar !important no futuro) */
+/* CURATIVOS DE EMERGÊNCIA */
 /* ========================================================= */
 main {
   background-color: transparent !important;
@@ -45,13 +53,13 @@ main {
 }
 
 /* ========================================================= */
-/* 🚀 MATA O FANTASMA DO AUTOCOMPLETAR DO CHROME */
+/* 🚀 MATA O FANTASMA DO AUTOCOMPLETAR DO CHROME NO TEMA CLARO */
 /* ========================================================= */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px #f8fafc inset !important;
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
   -webkit-text-fill-color: #0f172a !important;
   transition: background-color 5000s ease-in-out 0s !important;
 }
