@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import {
-  ArrowRight,
   Smartphone,
   Globe,
   BarChart3,
@@ -11,6 +10,8 @@ import {
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+// 🚀 INJEÇÃO SÊNIOR: Importando o botão cliente inteligente com feedback de carregamento
+import CheckoutButton from "@/components/CheckoutButton";
 
 export const metadata: Metadata = {
   title: "Anuncie no Tafanu | Teste 7 Dias Grátis",
@@ -55,7 +56,7 @@ export default async function AnunciarPage() {
         name: "PRECISO DE CARTÃO PARA COMEÇAR?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e evitar interrupções. Mas fique tranquilo, na sua primeira assinatura, absolutamente nada será cobrado hoje.",
+          text: "Sim, solicitamos o cartão para garantir a continuidade do seu serviço e avoid interrupções. Mas fique tranquilo, na sua primeira assinatura, absolutamente nada será cobrado hoje.",
         },
       },
       {
@@ -105,14 +106,8 @@ export default async function AnunciarPage() {
             </p>
 
             <div className="flex flex-col items-center lg:items-start gap-4 w-full max-w-sm">
-              <a
-                href={`/api/checkout-magico?uid=${userId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-emerald-500 text-[#050814] font-black text-sm md:text-base lg:text-lg px-8 py-5 rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
-              >
-                CRIAR MINHA VITRINE <ArrowRight size={22} aria-hidden="true" />
-              </a>
+              {/* 🚀 CIRURGIA 1: Botão Cliente acoplado no topo com bloqueio anti-double-click */}
+              <CheckoutButton userId={userId} />
               <p className="text-slate-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] lg:tracking-[0.25em] text-center lg:text-left">
                 7 dias grátis na 1ª assinatura • Cancele a qualquer momento
               </p>
@@ -214,14 +209,8 @@ export default async function AnunciarPage() {
               </div>
             </div>
 
-            <a
-              href={`/api/checkout-magico?uid=${userId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full bg-[#050814] text-white font-black py-6 rounded-2xl md:rounded-[1.5rem] hover:bg-emerald-500 hover:text-[#050814] transition-colors duration-300 uppercase text-sm md:text-base tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl relative z-10 active:scale-95"
-            >
-              ATIVAR MEU TESTE GRÁTIS
-            </a>
+            {/* 🚀 CIRURGIA 2: Botão Cliente acoplado no rodapé da tabela de planos */}
+            <CheckoutButton userId={userId} />
           </div>
         </div>
       </section>

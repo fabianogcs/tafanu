@@ -62,7 +62,11 @@ export default function SuccessPage() {
     fire(0.1, { spread: 120, startVelocity: 45 });
   };
 
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleGoToDashboard = () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
     // ✅ Redirecionamento forçado para limpar o cache da sessão
     window.location.href = "/dashboard";
   };
@@ -111,19 +115,32 @@ export default function SuccessPage() {
 
           <button
             onClick={handleGoToDashboard}
-            className="group w-full flex flex-col items-center justify-center p-6 bg-tafanu-blue rounded-[24px] transition-all hover:bg-[#0f172a] hover:scale-[1.02] active:scale-95"
+            disabled={isProcessing}
+            className="group w-full flex flex-col items-center justify-center p-6 bg-tafanu-blue rounded-[24px] transition-all hover:bg-[#0f172a] hover:scale-[1.02] active:scale-95 disabled:opacity-75 disabled:hover:scale-100"
           >
-            <>
-              <div className="flex items-center gap-3 mb-1">
-                <ShieldCheck className="text-tafanu-action" size={24} />
+            {isProcessing ? (
+              <div className="flex items-center gap-3">
+                <Loader2
+                  className="text-tafanu-action animate-spin"
+                  size={24}
+                />
                 <span className="font-black text-white uppercase italic text-xl">
-                  IR PARA O PAINEL
+                  VALIDANDO ACESSO...
                 </span>
               </div>
-              <div className="text-white/50 font-bold uppercase text-[9px] tracking-widest flex items-center gap-1">
-                VERIFICAR MEU ACESSO PRO <ArrowRight size={12} />
-              </div>
-            </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 mb-1">
+                  <ShieldCheck className="text-tafanu-action" size={24} />
+                  <span className="font-black text-white uppercase italic text-xl">
+                    IR PARA O PAINEL
+                  </span>
+                </div>
+                <div className="text-white/50 font-bold uppercase text-[9px] tracking-widest flex items-center gap-1">
+                  VERIFICAR MEU ACESSO PRO <ArrowRight size={12} />
+                </div>
+              </>
+            )}
           </button>
         </div>
       </div>
