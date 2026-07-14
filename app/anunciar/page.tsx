@@ -97,7 +97,7 @@ export default async function AnunciarPage() {
             </h1>
 
             <p className="text-base md:text-xl text-slate-400 mb-10 max-w-xl font-medium leading-relaxed text-balance">
-              Centralize sua operação digital. Unifique cardápios, links
+              Centralize sua operação digital. Unifique catálogos, links
               externos e contatos em uma experiência de alto padrão.
               <span className="text-white block mt-3 text-sm md:text-lg opacity-90">
                 Teste todas as ferramentas PRO gratuitamente por 7 dias.
@@ -105,7 +105,6 @@ export default async function AnunciarPage() {
             </p>
 
             <div className="flex flex-col items-center lg:items-start gap-4 w-full max-w-sm">
-              {/* 🚀 O LINK MÁGICO DE CHECKOUT OUT-APP (BURLA AS TAXAS DO GOOGLE/APPLE) */}
               <a
                 href={`/api/checkout-magico?uid=${userId}`}
                 target="_blank"
@@ -152,12 +151,13 @@ export default async function AnunciarPage() {
               <Store size={26} aria-hidden="true" />
             </div>
             <h3 className="text-2xl md:text-3xl font-black uppercase italic text-slate-900 tracking-tighter leading-tight mt-2">
-              Autoridade Digital
+              Autoridade Local
             </h3>
             <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed">
               Sua vitrine premium fica disponível no nosso portal para atrair
-              novos clientes. Acompanhe o crescimento do seu negócio com
-              métricas exatas de visitas e cliques em tempo real no seu painel.
+              novos clientes da sua região. Acompanhe o crescimento do seu
+              negócio com métricas exatas de visitas e cliques em tempo real no
+              seu painel.
             </p>
           </article>
 
@@ -170,8 +170,9 @@ export default async function AnunciarPage() {
             </h3>
             <p className="text-slate-500 text-base md:text-lg font-medium leading-relaxed">
               Diga adeus a taxas abusivas e intermediários. Exiba seu catálogo
-              interno ou conecte seus próprios sistemas externos de forma
-              invisível. O cliente fecha negócio onde você mandar.
+              visual em PDF ou conecte seus próprios sistemas externos (iFood,
+              Calendly, Shopee) de forma invisível. O cliente fecha negócio onde
+              você mandar.
             </p>
           </article>
         </div>
@@ -213,7 +214,6 @@ export default async function AnunciarPage() {
               </div>
             </div>
 
-            {/* 🚀 O LINK MÁGICO DUPLICADO NO RODAPÉ */}
             <a
               href={`/api/checkout-magico?uid=${userId}`}
               target="_blank"

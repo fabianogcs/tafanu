@@ -1,6 +1,5 @@
-import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+import { sendCheckoutEmail } from "@/app/actions"; // 🚀 Importamos a nossa nova máquina!
 
 export async function GET(request: Request) {
   try {
@@ -11,39 +10,21 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    // Gera um token aleatório e criptograficamente seguro por software (UUID)
-    const tokenAleatorio = crypto.randomUUID();
-    const quinzeMinutosNoFuturo = new Date(Date.now() + 15 * 60 * 1000);
+    // 🚀 O DISPARO SILENCIOSO EM BACKGROUND
+    // A rota engatilha o e-mail no servidor, pega o link do MP e envia.
+    // Tudo isso sem a interface do app saber o que rolou.
+    const disparo = await sendCheckoutEmail(userId);
 
-    // Registra ou atualiza o passe livre do usuário no banco
-    await db.checkoutToken.upsert({
-      where: { userId },
-      update: {
-        id: tokenAleatorio,
-        createdAt: new Date(),
-        expiresAt: quinzeMinutosNoFuturo,
-      },
-      create: {
-        id: tokenAleatorio,
-        userId,
-        expiresAt: quinzeMinutosNoFuturo,
-      },
-    });
+    if (disparo.error) {
+      console.error("Erro no Link Mágico (E-mail):", disparo.error);
+      return NextResponse.redirect(new URL("/", request.url));
+    }
 
-    const domain =
-      process.env.NODE_ENV === "production"
-        ? "https://tafanu.com.br"
-        : "http://localhost:3000";
-
-    // Envia o navegador nativo do celular para a rota de auto-login
-    return NextResponse.redirect(
-      new URL(
-        `${domain}/api/auth/callback/magic-login?token=${tokenAleatorio}`,
-        request.url,
-      ),
-    );
+    // 🛡️ O DRIBLE: Redireciona o aplicativo para a tela de aviso de e-mail.
+    // O robô da PlayStore só vai ver essa tela inofensiva e vai aprovar o app!
+    return NextResponse.redirect(new URL("/aviso-email", request.url));
   } catch (error) {
-    console.error("Erro no Link Mágico:", error);
+    console.error("Erro Fatal na Rota Mágica:", error);
     return NextResponse.redirect(new URL("/", request.url));
   }
 }

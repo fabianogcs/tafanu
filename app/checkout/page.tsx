@@ -228,24 +228,24 @@ export default function CheckoutPage() {
           <div className="flex flex-col gap-3">
             {[
               {
-                title: "Vitrine Premium e Buscas",
-                desc: "Destaque total no nosso sistema de busca local e indexação automática.",
+                title: "Presença no Buscador Local",
+                desc: "Sua empresa rastreada pelo nosso algoritmo de proximidade (Zonas de Calor) para clientes da sua cidade.",
               },
               {
-                title: "Pedidos e Orçamentos Livres",
-                desc: "Receba contatos diretos no WhatsApp sem pagar comissão por venda.",
+                title: "Tráfego Direto sem Taxas",
+                desc: "Receba clientes no seu WhatsApp, iFood ou site próprio sem pagar NENHUMA comissão por venda.",
               },
               {
-                title: "Gestão Kanban Integrada",
-                desc: "Organize seus leads de prospecção e clientes do contato ao fechamento.",
+                title: "Hub de Lojas Oficiais",
+                desc: "Centralize Mercado Livre, Shopee, Shein, iFood e redes sociais em uma única vitrine premium.",
               },
               {
                 title: "O Ímã do Google (SEO Local)",
-                desc: "Código otimizado para o robô do Google achar sua loja na sua região.",
+                desc: "Código otimizado para o robô do Google achar sua loja e indexar sua marca na sua região.",
               },
               {
-                title: "Impressão Térmica Direta",
-                desc: "Imprima orçamentos e comandas em aparelhos de 58mm/80mm num clique.",
+                title: "Métricas em Tempo Real",
+                desc: "Acompanhe no seu painel quantos acessos, cliques no WhatsApp e ligações você recebeu.",
               },
             ].map((item, i) => (
               <div

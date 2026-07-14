@@ -3920,3 +3920,56 @@ export async function transferBusinessToUser(
     return { error: "Erro interno no transplante." };
   }
 }
+
+// ==============================================================================
+// 🚀 O DRIBLE DO APLICATIVO (E-mail de Checkout)
+// ==============================================================================
+export async function sendCheckoutEmail(userId: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: { businesses: true },
+    });
+
+    if (!user || !user.email) return { error: "Usuário não encontrado." };
+
+    // 1. Gera ou recupera o link do Mercado Pago em background!
+    // Simulamos o PlanType (Vamos assumir 'monthly' como padrão para o app)
+    const subscriptionResult = await createSubscription(
+      userId,
+      user.email,
+      "", // Deixa a função achar ou criar a gaveta
+      "monthly",
+    );
+
+    if (subscriptionResult.error || !subscriptionResult.init_point) {
+      console.error("Falha ao gerar link do MP:", subscriptionResult.error);
+      return { error: "Não foi possível gerar a assinatura." };
+    }
+
+    const checkoutUrl = subscriptionResult.init_point;
+
+    // 2. Dispara o E-mail usando o Resend!
+    await resend.emails.send({
+      from: "Equipe Tafanu <sistema@tafanu.com.br>",
+      to: user.email,
+      subject: "Ativação da sua Vitrine Tafanu PRO 🚀",
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #0f172a;">Olá, ${user.name || "Parceiro"}!</h2>
+          <p>Para concluir a configuração da sua vitrine e ativar seu plano Tafanu PRO (Teste Grátis de 7 dias), clique no botão seguro abaixo.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${checkoutUrl}" target="_blank" style="background-color: #10b981; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Finalizar Ativação da Vitrine</a>
+          </div>
+          <p style="font-size: 14px; color: #666;">Se você não solicitou isso, apenas ignore este e-mail.</p>
+          <p style="font-size: 12px; color: #999;">O pagamento é processado com segurança pelo Mercado Pago.</p>
+        </div>
+      `,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao enviar email de checkout:", error);
+    return { error: "Falha interna ao disparar o e-mail." };
+  }
+}
