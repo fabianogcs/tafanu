@@ -39,7 +39,6 @@ export default function LocationTracker() {
 
   const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
-  // 🚀 A MÁGICA HÍBRIDA (VIACEP + OPENSTREETMAP): 100% de precisão no Brasil!
   const handleCepSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCep = cepInput.replace(/\D/g, "");
@@ -54,7 +53,6 @@ export default function LocationTracker() {
     setCepLoading(true);
 
     try {
-      // 1º Passo: Consulta o ViaCEP para descobrir o endereço brasileiro exato
       const viaCepRes = await fetch(
         `https://viacep.com.br/ws/${cleanCep}/json/`,
       );
@@ -72,7 +70,6 @@ export default function LocationTracker() {
       const state = viaCepData.uf;
       const street = viaCepData.logradouro || viaCepData.bairro || "";
 
-      // 2º Passo: Pede as coordenadas para o OpenStreetMap usando o Nome da Rua e Cidade (Infalível!)
       const queryAddress = encodeURIComponent(
         `${street}, ${city}, ${state}, Brasil`,
       );
@@ -87,7 +84,6 @@ export default function LocationTracker() {
       );
       let osmData = await osmRes.json();
 
-      // Se por acaso não achar a rua específica, busca pelas coordenadas do Centro da Cidade/Bairro
       if (!osmData || osmData.length === 0) {
         const fallbackQuery = encodeURIComponent(
           `${viaCepData.bairro || ""}, ${city}, ${state}, Brasil`,
@@ -106,7 +102,6 @@ export default function LocationTracker() {
 
       const params = new URLSearchParams(searchParams.toString());
 
-      // Se conseguiu a coordenada, aplica o filtro por proximidade perfeito!
       if (osmData && osmData.length > 0) {
         const latitude = parseFloat(osmData[0].lat);
         const longitude = parseFloat(osmData[0].lon);
@@ -129,7 +124,6 @@ export default function LocationTracker() {
           description: "Mostrando os negócios mais próximos ao CEP.",
         });
       } else {
-        // 3º Passo (Escudo de Aço): Se o mapa não tiver coordenadas, filtra pela Cidade do ViaCEP!
         params.delete("lat");
         params.delete("lng");
         params.set("city", city);
@@ -286,9 +280,9 @@ export default function LocationTracker() {
 
   if (isExploreMode) {
     return (
-      <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-3.5 md:p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
+      <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 shadow-inner shrink-0">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 shadow-inner shrink-0">
             <Map size={18} />
           </div>
           <div>
@@ -303,7 +297,7 @@ export default function LocationTracker() {
 
         <button
           disabled
-          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed"
+          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed shrink-0"
         >
           GPS Pausado
         </button>
@@ -312,17 +306,17 @@ export default function LocationTracker() {
   }
 
   return (
-    // 🚀 CIRURGIA DE UX MOBILE: O CARD ÚNICO E COMPACTO
+    // 🚀 CIRURGIA DE UX DESKTOP & MOBILE: ESPAÇAMENTO INTELIGENTE E SEM CORTES DE TEXTO
     <div
-      className={`w-full bg-white rounded-2xl p-3.5 md:p-4 shadow-sm border transition-all duration-300 mb-6 ${
+      className={`w-full bg-white rounded-2xl p-4 md:p-5 shadow-sm border transition-all duration-300 mb-6 ${
         isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-slate-200"
       }`}
     >
-      {/* LINHA 1: CONTROLE DE GPS */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
+      {/* LINHA 1: CONTROLE DE GPS COM TEXTO LIVRE PARA QUEBRAR LINHA SE PRECISO */}
+      <div className="flex items-start md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
-            className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors duration-500 shrink-0 ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 shrink-0 ${
               isGpsActive
                 ? "bg-rose-500 text-white shadow-md"
                 : "bg-[#1dbf8e]/10 text-[#1dbf8e]"
@@ -336,12 +330,14 @@ export default function LocationTracker() {
               <Navigation size={18} />
             )}
           </div>
-          <div className="min-w-0">
-            <h4 className="text-xs font-black text-slate-800 uppercase italic leading-tight truncate">
+
+          {/* Removido o truncate! O texto agora quebra lindamente se a barra lateral do Desktop for estreita */}
+          <div className="flex-1">
+            <h4 className="text-xs font-black text-slate-800 uppercase italic leading-tight">
               {isGpsActive ? cachedCity || "GPS Ativado" : "Localização"}
             </h4>
             <p
-              className={`text-[10px] font-bold uppercase italic mt-0.5 truncate ${
+              className={`text-[10px] font-bold uppercase italic mt-0.5 leading-tight ${
                 isGpsActive ? "text-rose-600" : "text-slate-400"
               }`}
             >
@@ -353,7 +349,7 @@ export default function LocationTracker() {
         <button
           onClick={handleToggleLocation}
           disabled={loading}
-          className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition-all disabled:opacity-50 active:scale-95 shadow-sm shrink-0 ${
+          className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition-all disabled:opacity-50 active:scale-95 shadow-sm shrink-0 self-center ${
             isGpsActive
               ? "bg-rose-500 text-white hover:bg-rose-600"
               : "bg-[#0f172a] text-white hover:bg-black"
@@ -363,20 +359,17 @@ export default function LocationTracker() {
         </button>
       </div>
 
-      {/* LINHA 2: CAMPO DE CEP INTEGRADO NA MESMA DIV (Só aparece quando o GPS não está ativo) */}
+      {/* LINHA 2: CAMPO DE CEP SPANNING FULL WIDTH (Sem rótulos laterais roubando espaço!) */}
       {!isGpsActive && (
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 animate-in fade-in duration-300">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 hidden sm:inline">
-            Ou CEP:
-          </span>
+        <div className="mt-3.5 pt-3.5 border-t border-slate-100 animate-in fade-in duration-300">
           <form
             onSubmit={handleCepSubmit}
-            className="flex items-center gap-1.5 w-full"
+            className="flex items-center gap-2 w-full"
           >
             <input
               type="text"
               maxLength={9}
-              placeholder="Digitar CEP (ex: 14000-000)"
+              placeholder="Buscar por CEP (ex: 14000-000)"
               value={cepInput}
               disabled={cepLoading}
               onChange={(e) => {
@@ -387,18 +380,18 @@ export default function LocationTracker() {
                   setCepInput(`${val.slice(0, 5)}-${val.slice(5, 8)}`);
                 }
               }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 text-slate-800 placeholder-slate-400 font-bold text-xs h-9 focus:outline-none focus:ring-2 focus:ring-tafanu-action/20 focus:border-tafanu-action transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-slate-800 placeholder-slate-400 font-bold text-xs h-10 focus:outline-none focus:ring-2 focus:ring-tafanu-action/20 focus:border-tafanu-action transition-all"
             />
             <button
               type="submit"
               disabled={cepLoading || cepInput.replace(/\D/g, "").length !== 8}
-              className="h-9 px-3 bg-slate-900 text-white hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 rounded-xl flex items-center justify-center transition-all shrink-0 active:scale-95 text-xs font-bold shadow-sm"
+              className="h-10 px-3.5 bg-slate-900 text-white hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 rounded-xl flex items-center justify-center transition-all shrink-0 active:scale-95 text-xs font-bold shadow-sm"
               title="Buscar por CEP"
             >
               {cepLoading ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 size={15} className="animate-spin" />
               ) : (
-                <ArrowRight size={14} strokeWidth={2.5} />
+                <ArrowRight size={15} strokeWidth={2.5} />
               )}
             </button>
           </form>
