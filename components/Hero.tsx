@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Search,
-  ChevronDown,
-  Loader2,
-  Mic,
-  MapPin,
-  Sparkles,
-} from "lucide-react";
+import { Search, ChevronDown, Loader2, Mic, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,86 +10,8 @@ export default function Hero() {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isGpsLoading, setIsGpsLoading] = useState(false);
 
-  // 🚀 BUSCA RÁPIDA (Só GPS, botão de baixo)
-  const handleQuickGpsSearch = () => {
-    if (!navigator.geolocation) {
-      toast.error("Seu dispositivo não suporta GPS.");
-      return;
-    }
-    setIsGpsLoading(true);
-
-    const executeGpsFetch = (isRetry = false) => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          const params = new URLSearchParams();
-          params.set("lat", latitude.toString());
-          params.set("lng", longitude.toString());
-          params.set("sort", "distance");
-          params.set("status", "open");
-          params.set("page", "1");
-          let foundCity = null;
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-              { headers: { "Accept-Language": "pt-BR" } },
-            );
-            if (res.ok) {
-              const data = await res.json();
-              foundCity =
-                data.address?.city ||
-                data.address?.town ||
-                data.address?.municipality ||
-                null;
-            }
-          } catch (e) {}
-          localStorage.setItem(
-            "tafanu_user_coords",
-            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
-          );
-          router.push(`/busca?${params.toString()}`);
-        },
-        (error) => {
-          if (error.code === error.TIMEOUT && !isRetry) {
-            console.log(
-              "GPS Cold Start detectado. Tentando rota alternativa...",
-            );
-            executeGpsFetch(true);
-            return;
-          }
-
-          setIsGpsLoading(false);
-
-          if (error.code === error.PERMISSION_DENIED) {
-            toast.error("GPS Bloqueado", {
-              description:
-                "Permita o acesso à localização nas configurações do aparelho.",
-            });
-          } else if (error.code === error.TIMEOUT) {
-            toast.info("Sinal de GPS fraco", {
-              description:
-                "Não conseguimos achar os satélites a tempo. Tente novamente em local aberto ou via Wi-Fi.",
-            });
-          } else {
-            toast.error("Sinal indisponível", {
-              description: "Não foi possível obter sua localização no momento.",
-            });
-          }
-        },
-        {
-          enableHighAccuracy: isRetry,
-          timeout: isRetry ? 15000 : 10000,
-          maximumAge: 300000,
-        },
-      );
-    };
-
-    executeGpsFetch(false);
-  };
-
-  // 🚀 BUSCA TEXTUAL PRINCIPAL (Agora captura GPS junto se possível)
+  // 🚀 BUSCA TEXTUAL PRINCIPAL (Captura GPS junto se disponível)
   const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
     if (e) e.preventDefault();
     setIsSearching(true);
@@ -176,7 +91,7 @@ export default function Hero() {
         },
         {
           enableHighAccuracy: isRetry,
-          timeout: isRetry ? 12000 : 7000, // 7s na primeira, pra não frustrar a espera do usuário
+          timeout: isRetry ? 12000 : 7000,
           maximumAge: 300000,
         },
       );
@@ -223,7 +138,8 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative bg-[#F8FAFC] overflow-hidden flex flex-col justify-start md:justify-center pt-10 md:pt-20 pb-12 md:pb-16 border-b border-slate-200">
+    // 🚀 CIRURGIA NO ESPAÇAMENTO: O pb-12 mudou para pb-6 no mobile para aproximar o componente de baixo
+    <section className="relative bg-[#F8FAFC] overflow-hidden flex flex-col justify-start md:justify-center pt-10 md:pt-20 pb-6 md:pb-16 border-b border-slate-200">
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img
           src="/hero-bg.webp"
@@ -293,36 +209,10 @@ export default function Hero() {
               )}
             </button>
           </form>
-
-          <div className="my-4 md:my-5 flex items-center gap-3">
-            <div className="h-px bg-slate-200 flex-1"></div>
-            <span className="text-slate-400 text-[9px] md:text-[10px] uppercase tracking-widest font-black">
-              Ou explore por proximidade
-            </span>
-            <div className="h-px bg-slate-200 flex-1"></div>
-          </div>
-
-          <button
-            onClick={handleQuickGpsSearch}
-            disabled={isGpsLoading}
-            className="w-full h-12 md:h-13 flex items-center justify-center gap-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-tafanu-action/30 text-slate-700 px-5 rounded-xl md:rounded-2xl transition-all text-xs sm:text-sm font-bold uppercase tracking-wider group disabled:opacity-50 active:scale-95"
-          >
-            {isGpsLoading ? (
-              <Loader2
-                size={16}
-                className="animate-spin text-tafanu-action shrink-0"
-              />
-            ) : (
-              <MapPin
-                size={16}
-                className="text-tafanu-action group-hover:animate-bounce shrink-0"
-              />
-            )}
-            <span className="truncate">Ver abertos perto de mim</span>
-          </button>
         </div>
 
-        <div className="mt-8 md:mt-12 flex justify-center animate-bounce">
+        {/* 🚀 CIRURGIA NA SETA: O mt-8 mudou para mt-4 no mobile, puxando a tela para cima! */}
+        <div className="mt-4 md:mt-10 flex justify-center animate-bounce">
           <button
             onClick={handleScrollDown}
             type="button"
