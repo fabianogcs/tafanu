@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, Sparkles, MapPin } from "lucide-react";
+import { ArrowRight, Sparkles, MapPin, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const CATEGORIES_SHOWCASE = [
   {
@@ -110,8 +110,8 @@ const CATEGORIES_SHOWCASE = [
 export default function VitrineDigital() {
   const router = useRouter();
   const [userCity, setUserCity] = useState<string | null>(null);
+  const [activeLoadingId, setActiveLoadingId] = useState<string | null>(null);
 
-  // 🚀 O MISTÉRIO REVELADO: Ele puxa a cidade assim que a Home carrega
   useEffect(() => {
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
@@ -122,82 +122,175 @@ export default function VitrineDigital() {
     } catch (err) {}
   }, []);
 
-  const handleMoodClick = (e: React.MouseEvent, baseUrl: string) => {
+  // 🚀 A INTELIGÊNCIA: Captura direta de GPS ao clicar no card da categoria
+  const handleMoodClick = (
+    e: React.MouseEvent,
+    baseUrl: string,
+    categoryId: string,
+  ) => {
     e.preventDefault();
+    if (activeLoadingId) return;
+
     const cachedCoords = localStorage.getItem("tafanu_user_coords");
 
+    // Cenário A: Já temos a localização em cache, manda na hora!
     if (cachedCoords) {
       try {
         const { lat, lng } = JSON.parse(cachedCoords);
-        router.push(`${baseUrl}&lat=${lat}&lng=${lng}&sort=distance`);
+        router.push(
+          `${baseUrl}&lat=${lat}&lng=${lng}&sort=distance&status=open&page=1`,
+        );
         return;
       } catch (err) {
         console.error("Erro ao ler cache de localização");
       }
     }
-    router.push(baseUrl);
+
+    // Cenário B: Não temos localização salva, aciona a antena em background com Auto-Retry
+    if (!navigator.geolocation) {
+      // Dispositivo sem GPS vai para a busca global pura
+      router.push(baseUrl);
+      return;
+    }
+
+    setActiveLoadingId(categoryId);
+
+    const executeGpsFetch = (isRetry = false) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          let foundCity = null;
+
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              { headers: { "Accept-Language": "pt-BR" } },
+            );
+            if (res.ok) {
+              const data = await res.json();
+              foundCity =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.municipality ||
+                null;
+            }
+          } catch (e) {}
+
+          localStorage.setItem(
+            "tafanu_user_coords",
+            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+          );
+
+          setActiveLoadingId(null);
+          router.push(
+            `${baseUrl}&lat=${latitude}&lng=${longitude}&sort=distance&status=open&page=1`,
+          );
+        },
+        (error) => {
+          // Se der timeout de antena desligada, o código executa a segunda tentativa sozinho
+          if (error.code === error.TIMEOUT && !isRetry) {
+            console.log(
+              "Cold start no card de categoria. Retentando automaticamente...",
+            );
+            executeGpsFetch(true);
+            return;
+          }
+
+          setActiveLoadingId(null);
+          // Se ele negou ou quebrou de vez, manda para a busca padrão da categoria para não travar a experiência
+          router.push(baseUrl);
+
+          if (error.code === error.PERMISSION_DENIED) {
+            toast.warning("Busca ampla ativada", {
+              description:
+                "Como o GPS está bloqueado, exibiremos resultados gerais.",
+            });
+          }
+        },
+        {
+          enableHighAccuracy: isRetry,
+          timeout: isRetry ? 12000 : 7000, // 7 segundos na primeira tentativa pra ser rápido
+          maximumAge: 300000,
+        },
+      );
+    };
+
+    executeGpsFetch(false);
   };
 
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-6 pt-12 md:pt-16 pb-8 relative z-10">
-      {/* CABEÇALHO INTELIGENTE */}
+      {/* CABEÇALHO DA SEÇÃO */}
       <div className="mb-6 md:mb-10 text-center flex flex-col items-center animate-in fade-in duration-500">
         <div className="flex items-center gap-2 mb-3">
-          <span className="bg-emerald-100 text-emerald-600 p-1.5 rounded-xl shadow-sm">
+          <span className="bg-emerald-50 border border-emerald-100 text-tafanu-action p-1.5 rounded-xl shadow-sm">
             {userCity ? (
               <MapPin size={14} strokeWidth={2.5} />
             ) : (
               <Sparkles size={14} strokeWidth={2.5} />
             )}
           </span>
-          <span className="text-emerald-600 font-black text-[10px] md:text-[11px] uppercase tracking-[0.25em]">
-            {userCity ? "Perto de Você" : "Busca Rápida"}
+          <span className="text-tafanu-action font-black text-[10px] md:text-[11px] uppercase tracking-[0.25em]">
+            {userCity ? "Perto de Você" : "Busca Direta Instantânea"}
           </span>
         </div>
 
-        <h2 className="text-2xl md:text-4xl font-black text-[#023059] uppercase italic tracking-tighter leading-tight mb-2">
+        <h2 className="text-2xl md:text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight mb-2">
           {userCity ? (
             <>
               Opções em{" "}
-              <span className="text-emerald-500 truncate">{userCity}</span>
+              <span className="text-tafanu-action truncate">{userCity}</span>
             </>
           ) : (
             <>
-              O Que Você <span className="text-emerald-500">Quer Hoje?</span>
+              O Que Você <span className="text-tafanu-action">Quer Hoje?</span>
             </>
           )}
         </h2>
       </div>
 
-      <div className="grid grid-cols-4 md:grid-cols-5 gap-2 md:gap-4">
-        {CATEGORIES_SHOWCASE.map((mood) => (
-          <Link
-            key={mood.id}
-            href={mood.url}
-            onClick={(e) => handleMoodClick(e, mood.url)}
-            className={`group relative overflow-hidden rounded-[1rem] md:rounded-[1.5rem] p-2.5 md:p-5 flex flex-col justify-between aspect-square md:aspect-auto md:h-36 lg:h-40 bg-gradient-to-br ${mood.bgClass} shadow-sm hover:shadow-md hover:${mood.shadowClass} hover:-translate-y-1 transition-all duration-300`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      {/* GRADE DE CATEGORIAS */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+        {CATEGORIES_SHOWCASE.map((mood) => {
+          const isLoadingThis = activeLoadingId === mood.id;
 
-            <div className="flex justify-between items-start w-full relative z-10">
-              <span className="text-2xl md:text-3xl lg:text-4xl drop-shadow-sm group-hover:scale-110 transition-transform duration-300 origin-top-left">
-                {mood.icon}
-              </span>
-              <div className="hidden md:flex w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
-                <ArrowRight size={12} strokeWidth={3} />
+          return (
+            <button
+              key={mood.id}
+              onClick={(e) => handleMoodClick(e, mood.url, mood.id)}
+              disabled={activeLoadingId !== null && !isLoadingThis}
+              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.5rem] p-4 md:p-5 flex flex-col justify-between h-32 md:h-36 lg:h-40 bg-gradient-to-br ${mood.bgClass} shadow-sm hover:shadow-md hover:${mood.shadowClass} hover:-translate-y-1 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none disabled:transform-none`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              <div className="flex justify-between items-start w-full relative z-10">
+                {isLoadingThis ? (
+                  <Loader2
+                    size={24}
+                    className="animate-spin text-white drop-shadow-sm"
+                  />
+                ) : (
+                  <span className="text-2xl md:text-3xl lg:text-4xl drop-shadow-sm group-hover:scale-110 transition-transform duration-300 origin-top-left">
+                    {mood.icon}
+                  </span>
+                )}
+
+                <div className="hidden md:flex w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
+                  <ArrowRight size={12} strokeWidth={3} />
+                </div>
               </div>
-            </div>
 
-            <div className="relative z-10 mt-auto pt-2 md:pt-4">
-              <h3 className="text-white font-black text-[9px] md:text-xs lg:text-sm uppercase tracking-wide md:tracking-widest leading-tight drop-shadow-sm mb-0.5 md:mb-1 break-words">
-                {mood.title}
-              </h3>
-              <p className="hidden md:block text-white/80 font-bold text-[8px] lg:text-[10px] tracking-wider truncate">
-                {mood.subtitle}
-              </p>
-            </div>
-          </Link>
-        ))}
+              <div className="relative z-10 mt-auto">
+                <h3 className="text-white font-black text-xs md:text-sm uppercase tracking-wide md:tracking-widest leading-tight drop-shadow-sm mb-0.5 md:mb-1">
+                  {isLoadingThis ? "Rastreando..." : mood.title}
+                </h3>
+                <p className="hidden md:block text-white/80 font-bold text-[9px] lg:text-[10px] tracking-wider truncate">
+                  {isLoadingThis ? "Acordando o sinal GPS" : mood.subtitle}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

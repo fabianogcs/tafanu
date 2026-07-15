@@ -12,7 +12,6 @@ export default function LocationTracker() {
   const [deviceEnv, setDeviceEnv] = useState({ isPwa: false, isMobile: false });
   const [cachedCity, setCachedCity] = useState<string | null>(null);
 
-  // 🚀 O RASTREADOR DE INTENÇÃO (Fase 3): Detecta se o usuário está viajando (Airbnb Mode)
   const isExploreMode = searchParams.has("city") || searchParams.has("state");
   const exploreCity = searchParams.get("city");
   const exploreState = searchParams.get("state");
@@ -38,6 +37,7 @@ export default function LocationTracker() {
 
   const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
+  // 🚀 A MÁGICA 2: Auto-Retry integrado no rastreador de localização
   const handleToggleLocation = () => {
     if (isExploreMode) {
       toast.info("Modo Exploração Ativo", {
@@ -69,113 +69,123 @@ export default function LocationTracker() {
 
     setLoading(true);
 
-    const options = {
-      enableHighAccuracy: false,
-      timeout: 15000,
-      maximumAge: 60000,
-    };
+    const executeGpsFetch = (isRetry = false) => {
+      const options = {
+        enableHighAccuracy: isRetry,
+        timeout: isRetry ? 20000 : 12000, // 12s na primeira, 20s na segunda
+        maximumAge: 300000, // 5 minutos de tolerância de cache!
+      };
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const params = new URLSearchParams(searchParams.toString());
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const params = new URLSearchParams(searchParams.toString());
 
-        params.set("lat", latitude.toString());
-        params.set("lng", longitude.toString());
-        params.set("sort", "distance");
-        params.set("page", "1");
+          params.set("lat", latitude.toString());
+          params.set("lng", longitude.toString());
+          params.set("sort", "distance");
+          params.set("page", "1");
 
-        let foundCity = null;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-            {
-              headers: {
-                "Accept-Language": "pt-BR",
-                "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
+          let foundCity = null;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              {
+                headers: {
+                  "Accept-Language": "pt-BR",
+                  "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
+                },
               },
-            },
+            );
+
+            if (!res.ok) throw new Error("Falha na API de Mapas");
+
+            const data = await res.json();
+            foundCity =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.municipality ||
+              null;
+            if (foundCity) setCachedCity(foundCity);
+          } catch (e) {}
+
+          localStorage.setItem(
+            "tafanu_user_coords",
+            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
           );
 
-          if (!res.ok) throw new Error("Falha na API de Mapas");
+          setLoading(false);
+          router.replace(`/busca?${params.toString()}`);
 
-          const data = await res.json();
-          foundCity =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.municipality ||
-            null;
-          if (foundCity) setCachedCity(foundCity);
-        } catch (e) {
-          // Ignora silenciosamente, é só um bônus visual
-        }
-
-        localStorage.setItem(
-          "tafanu_user_coords",
-          JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
-        );
-
-        setLoading(false);
-        router.replace(`/busca?${params.toString()}`);
-
-        toast.success("Localização encontrada!", {
-          description: foundCity
-            ? `Buscando negócios perto de você em ${foundCity}.`
-            : "Mostrando os negócios perto de você.",
-        });
-      },
-      (error) => {
-        setLoading(false);
-
-        let msg = "";
-        let description = "";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            msg = "Localização Bloqueada";
-            if (deviceEnv.isPwa && deviceEnv.isMobile) {
-              description =
-                "Vá nas Configurações do seu celular > Aplicativos > Tafanu > Permissões e ative a Localização.";
-            } else if (deviceEnv.isPwa && !deviceEnv.isMobile) {
-              description =
-                "Vá nas configurações de Privacidade do seu Windows/Mac e permita que o Tafanu acesse sua localização.";
-            } else {
-              description =
-                "Clique no cadeado ao lado da barra de endereço e permita o GPS.";
-            }
-            break;
-          case error.POSITION_UNAVAILABLE:
-            msg = "Sinal fraco ou indisponível";
-            description =
-              "Não conseguimos obter sua localização agora. Verifique se o GPS do aparelho está ligado e tente em instantes.";
-            break;
-          case error.TIMEOUT:
-            msg = "Busca lenta?";
-            description =
-              "O tempo de busca expirou. Tente clicar novamente para uma segunda busca mais rápida.";
-            break;
-          default:
-            msg = "Erro ao buscar GPS";
-            description =
-              "Ocorreu um erro inesperado ao tentar acessar sua localização.";
-        }
-
-        if (error.code === error.PERMISSION_DENIED) {
-          toast.error(msg, {
-            description: description,
-            duration: 8000,
+          toast.success("Localização encontrada!", {
+            description: foundCity
+              ? `Buscando negócios perto de você em ${foundCity}.`
+              : "Mostrando os negócios perto de você.",
           });
-        } else if (error.code === error.TIMEOUT) {
-          toast.info(msg, { description: description });
-        } else {
-          toast.warning(msg, { description: description });
-        }
-      },
-      options,
-    );
+        },
+        (error) => {
+          // 🚀 SE DEU TIMEOUT NA 1ª TENTATIVA, O CÓDIGO TENTA DE NOVO SOZINHO!
+          if (error.code === error.TIMEOUT && !isRetry) {
+            console.log(
+              "GPS Cold Start no Tracker. Retentando automaticamente...",
+            );
+            executeGpsFetch(true);
+            return;
+          }
+
+          setLoading(false);
+
+          let msg = "";
+          let description = "";
+
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              msg = "Localização Bloqueada";
+              if (deviceEnv.isPwa && deviceEnv.isMobile) {
+                description =
+                  "Vá nas Configurações do seu celular > Aplicativos > Tafanu > Permissões e ative a Localização.";
+              } else if (deviceEnv.isPwa && !deviceEnv.isMobile) {
+                description =
+                  "Vá nas configurações de Privacidade do seu Windows/Mac e permita que o Tafanu acesse sua localização.";
+              } else {
+                description =
+                  "Clique no cadeado ao lado da barra de endereço e permita o GPS.";
+              }
+              break;
+            case error.POSITION_UNAVAILABLE:
+              msg = "Sinal fraco ou indisponível";
+              description =
+                "Não conseguimos obter sua localização agora. Verifique se o GPS do aparelho está ligado e tente em instantes.";
+              break;
+            case error.TIMEOUT:
+              msg = "Sinal de GPS fraco";
+              description =
+                "O sinal demorou a responder em ambiente fechado. Tente clicar novamente em local aberto ou via Wi-Fi.";
+              break;
+            default:
+              msg = "Erro ao buscar GPS";
+              description =
+                "Ocorreu um erro inesperado ao tentar acessar sua localização.";
+          }
+
+          if (error.code === error.PERMISSION_DENIED) {
+            toast.error(msg, {
+              description: description,
+              duration: 8000,
+            });
+          } else if (error.code === error.TIMEOUT) {
+            toast.info(msg, { description: description });
+          } else {
+            toast.warning(msg, { description: description });
+          }
+        },
+        options,
+      );
+    };
+
+    executeGpsFetch(false);
   };
 
-  // 🚀 INTERFACE DO MODO EXPLORAR (AIRBNB MODE)
   if (isExploreMode) {
     return (
       <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
@@ -203,7 +213,6 @@ export default function LocationTracker() {
     );
   }
 
-  // 🚀 INTERFACE DO MODO GPS NORMAL
   return (
     <div
       className={`w-full bg-white rounded-2xl p-4 shadow-sm border transition-colors duration-500 flex items-center justify-between ${isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-gray-100 mb-6"}`}

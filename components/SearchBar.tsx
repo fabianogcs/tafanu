@@ -20,6 +20,7 @@ export default function SearchBar({
     setIsSearching(false);
   }, [searchParams]);
 
+  // 🚀 A NOVA LÓGICA: Buscar texto + Tentar GPS simultaneamente
   const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
     if (e) e.preventDefault();
     setIsSearching(true);
@@ -35,25 +36,96 @@ export default function SearchBar({
 
     params.delete("page");
 
-    // 🚀 FASE 3: PERSISTÊNCIA INVISÍVEL (O CONCIERGE)
-    // Se o usuário tem o GPS salvo e NÃO está explorando outra cidade ativamente,
-    // nós injetamos o GPS para ele cair direto na zona de calor!
+    // Cenário 1: Se o usuário estiver fixando uma cidade (Modo Explorar / Airbnb), respeitamos a cidade e NÃO usamos GPS.
     const isExploreMode = params.has("city") || params.has("state");
-
-    if (!isExploreMode) {
-      try {
-        const cachedCoords = localStorage.getItem("tafanu_user_coords");
-        if (cachedCoords) {
-          const { lat, lng } = JSON.parse(cachedCoords);
-          if (!params.has("lat") && lat) params.set("lat", lat);
-          if (!params.has("lng") && lng) params.set("lng", lng);
-        }
-      } catch (err) {
-        // Ignora silenciosamente se o cache estiver corrompido
-      }
+    if (isExploreMode) {
+      router.push(`/busca?${params.toString()}`);
+      return;
     }
 
-    router.push(`/busca?${params.toString()}`);
+    // Cenário 2: Tem GPS no cache válido (5 min)? Anexamos e disparamos instantaneamente!
+    try {
+      const cachedCoords = localStorage.getItem("tafanu_user_coords");
+      if (cachedCoords) {
+        const { lat, lng } = JSON.parse(cachedCoords);
+        if (lat && lng) {
+          if (!params.has("lat")) params.set("lat", lat);
+          if (!params.has("lng")) params.set("lng", lng);
+          params.set("sort", "distance"); // Força ordenação por proximidade
+          router.push(`/busca?${params.toString()}`);
+          return;
+        }
+      }
+    } catch (err) {}
+
+    // Cenário 3: Não tem cache e não está explorando. Vamos pedir o GPS para turbinar a busca!
+    if (!navigator.geolocation) {
+      // Navegador jurássico, faz a busca normal sem GPS.
+      router.push(`/busca?${params.toString()}`);
+      return;
+    }
+
+    const executeGpsFetch = (isRetry = false) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          params.set("lat", latitude.toString());
+          params.set("lng", longitude.toString());
+          params.set("sort", "distance"); // Turbina os pontos locais
+
+          let foundCity = null;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              { headers: { "Accept-Language": "pt-BR" } },
+            );
+            if (res.ok) {
+              const data = await res.json();
+              foundCity =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.municipality ||
+                null;
+            }
+          } catch (e) {}
+
+          localStorage.setItem(
+            "tafanu_user_coords",
+            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+          );
+
+          router.push(`/busca?${params.toString()}`);
+        },
+        (error) => {
+          // Auto-Retry se o GPS do celular estava dormindo (Cold Start)
+          if (error.code === error.TIMEOUT && !isRetry) {
+            console.log(
+              "Cold start na SearchBar. Retentando automaticamente...",
+            );
+            executeGpsFetch(true);
+            return;
+          }
+
+          // Fallback Suave: Se ele negar ou der erro de vez, a busca textual normal acontece sem quebrar a tela.
+          router.push(`/busca?${params.toString()}`);
+
+          if (error.code === error.PERMISSION_DENIED) {
+            toast.warning("Buscando em todo o diretório", {
+              description:
+                "Para achar resultados mais próximos, permita o uso do GPS.",
+            });
+          }
+        },
+        {
+          enableHighAccuracy: isRetry,
+          timeout: isRetry ? 12000 : 7000,
+          maximumAge: 300000, // 5 minutos de cache
+        },
+      );
+    };
+
+    executeGpsFetch(false);
   };
 
   // 🎤 FUNÇÃO DO MICROFONE (BLINDADA)

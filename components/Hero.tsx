@@ -19,69 +19,170 @@ export default function Hero() {
   const [isListening, setIsListening] = useState(false);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
 
+  // 🚀 BUSCA RÁPIDA (Só GPS, botão de baixo)
   const handleQuickGpsSearch = () => {
     if (!navigator.geolocation) {
       toast.error("Seu dispositivo não suporta GPS.");
       return;
     }
     setIsGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const params = new URLSearchParams();
-        params.set("lat", latitude.toString());
-        params.set("lng", longitude.toString());
-        params.set("sort", "distance");
-        params.set("status", "open");
-        params.set("page", "1");
-        let foundCity = null;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-            { headers: { "Accept-Language": "pt-BR" } },
+
+    const executeGpsFetch = (isRetry = false) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const params = new URLSearchParams();
+          params.set("lat", latitude.toString());
+          params.set("lng", longitude.toString());
+          params.set("sort", "distance");
+          params.set("status", "open");
+          params.set("page", "1");
+          let foundCity = null;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              { headers: { "Accept-Language": "pt-BR" } },
+            );
+            if (res.ok) {
+              const data = await res.json();
+              foundCity =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.municipality ||
+                null;
+            }
+          } catch (e) {}
+          localStorage.setItem(
+            "tafanu_user_coords",
+            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
           );
-          if (res.ok) {
-            const data = await res.json();
-            foundCity =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.municipality ||
-              null;
+          router.push(`/busca?${params.toString()}`);
+        },
+        (error) => {
+          if (error.code === error.TIMEOUT && !isRetry) {
+            console.log(
+              "GPS Cold Start detectado. Tentando rota alternativa...",
+            );
+            executeGpsFetch(true);
+            return;
           }
-        } catch (e) {}
-        localStorage.setItem(
-          "tafanu_user_coords",
-          JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
-        );
-        router.push(`/busca?${params.toString()}`);
-      },
-      (error) => {
-        setIsGpsLoading(false);
-        toast.error("GPS Bloqueado", {
-          description: "Permita o acesso à localização.",
-        });
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
-    );
+
+          setIsGpsLoading(false);
+
+          if (error.code === error.PERMISSION_DENIED) {
+            toast.error("GPS Bloqueado", {
+              description:
+                "Permita o acesso à localização nas configurações do aparelho.",
+            });
+          } else if (error.code === error.TIMEOUT) {
+            toast.info("Sinal de GPS fraco", {
+              description:
+                "Não conseguimos achar os satélites a tempo. Tente novamente em local aberto ou via Wi-Fi.",
+            });
+          } else {
+            toast.error("Sinal indisponível", {
+              description: "Não foi possível obter sua localização no momento.",
+            });
+          }
+        },
+        {
+          enableHighAccuracy: isRetry,
+          timeout: isRetry ? 15000 : 10000,
+          maximumAge: 300000,
+        },
+      );
+    };
+
+    executeGpsFetch(false);
   };
 
+  // 🚀 BUSCA TEXTUAL PRINCIPAL (Agora captura GPS junto se possível)
   const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
     if (e) e.preventDefault();
     setIsSearching(true);
+
     const params = new URLSearchParams();
     const finalQuery = voiceQuery || query;
     if (finalQuery.trim() !== "") params.append("q", finalQuery);
 
+    // 1. Tem cache salvo de até 5 minutos? Injeta e vai na hora!
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
       if (cachedCoords) {
         const { lat, lng } = JSON.parse(cachedCoords);
-        if (lat) params.set("lat", lat);
-        if (lng) params.set("lng", lng);
+        if (lat && lng) {
+          params.set("lat", lat);
+          params.set("lng", lng);
+          params.set("sort", "distance");
+          router.push(`/busca?${params.toString()}`);
+          return;
+        }
       }
     } catch (err) {}
 
-    router.push(`/busca?${params.toString()}`);
+    // 2. Não tem cache? Pede o GPS silenciosamente com Auto-Retry!
+    if (!navigator.geolocation) {
+      router.push(`/busca?${params.toString()}`);
+      return;
+    }
+
+    const executeGpsFetch = (isRetry = false) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          params.set("lat", latitude.toString());
+          params.set("lng", longitude.toString());
+          params.set("sort", "distance");
+
+          let foundCity = null;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              { headers: { "Accept-Language": "pt-BR" } },
+            );
+            if (res.ok) {
+              const data = await res.json();
+              foundCity =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.municipality ||
+                null;
+            }
+          } catch (e) {}
+
+          localStorage.setItem(
+            "tafanu_user_coords",
+            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+          );
+
+          router.push(`/busca?${params.toString()}`);
+        },
+        (error) => {
+          if (error.code === error.TIMEOUT && !isRetry) {
+            console.log("Cold start na busca textual. Retentando...");
+            executeGpsFetch(true);
+            return;
+          }
+
+          // Se negar ou falhar, joga para a busca normal (fallback suave)
+          router.push(`/busca?${params.toString()}`);
+
+          if (error.code === error.PERMISSION_DENIED) {
+            toast.warning("Buscando em todo o diretório", {
+              description:
+                "Para achar resultados mais próximos, permita o uso do GPS.",
+            });
+          }
+        },
+        {
+          enableHighAccuracy: isRetry,
+          timeout: isRetry ? 12000 : 7000, // 7s na primeira, pra não frustrar a espera do usuário
+          maximumAge: 300000,
+        },
+      );
+    };
+
+    executeGpsFetch(false);
   };
 
   const handleVoiceSearch = () => {
@@ -122,9 +223,7 @@ export default function Hero() {
   };
 
   return (
-    // 🚀 CIRURGIA 1: Ajuste de tamanho perfeito. O Hero vai crescer naturalmente com o conteúdo.
     <section className="relative bg-[#F8FAFC] overflow-hidden flex flex-col justify-start md:justify-center pt-10 md:pt-20 pb-12 md:pb-16 border-b border-slate-200">
-      {/* 🚀 CIRURGIA 2: Fundo com vida (Tinta Esmeralda Suave) em vez de Grayscale */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img
           src="/hero-bg.webp"
@@ -135,13 +234,11 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center mt-2 md:mt-0 flex flex-col items-center">
-        {/* BADGE SUPERIOR */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-tafanu-action text-[10px] md:text-xs font-bold uppercase tracking-widest mb-4 md:mb-6 animate-in fade-in duration-500 shadow-sm">
           <Sparkles size={12} className="animate-pulse" /> O seu guia comercial
           inteligente
         </div>
 
-        {/* TÍTULO */}
         <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] md:leading-[1] mb-3 md:mb-5 uppercase italic animate-in fade-in zoom-in duration-700 delay-100">
           Tudo o que você busca, <br className="hidden sm:block" />
           <span className="text-tafanu-action drop-shadow-[0_0_20px_rgba(0,168,107,0.2)]">
@@ -154,7 +251,6 @@ export default function Hero() {
           confiança da sua cidade.
         </p>
 
-        {/* O CARD DE BUSCA */}
         <div className="relative z-30 w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-2xl border border-slate-200 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.05)] animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
           <form
             onSubmit={handleSearch}
@@ -226,8 +322,6 @@ export default function Hero() {
           </button>
         </div>
 
-        {/* 🚀 CIRURGIA 3: A Setinha agora faz parte do fluxo normal da página (Sem absolute). 
-            Ela nunca mais vai invadir o espaço do botão ou de outra seção! */}
         <div className="mt-8 md:mt-12 flex justify-center animate-bounce">
           <button
             onClick={handleScrollDown}
@@ -239,7 +333,6 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* MICROFONE MODAL */}
       {isListening && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">
