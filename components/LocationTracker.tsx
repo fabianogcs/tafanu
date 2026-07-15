@@ -2,13 +2,27 @@
 
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Navigation, Loader2, MapPin, Map, ArrowRight } from "lucide-react";
+import {
+  Navigation,
+  Loader2,
+  MapPin,
+  Map,
+  ArrowRight,
+  Settings,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function LocationTracker() {
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepInput, setCepInput] = useState("");
+
+  // 🚀 ESTADOS DO MODAL DE SOCORRO DO PWA
+  const [showPwaHelpModal, setShowPwaHelpModal] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const [deviceEnv, setDeviceEnv] = useState({ isPwa: false, isMobile: false });
@@ -246,7 +260,11 @@ export default function LocationTracker() {
           switch (error.code) {
             case error.PERMISSION_DENIED:
               msg = "Acesso ao GPS Negado";
-              if (deviceEnv.isMobile) {
+              if (deviceEnv.isPwa) {
+                // 🚀 SE ESTIVER NO PWA E ELE NEGOU, ABRE O MODAL DE SOCORRO!
+                setShowPwaHelpModal(true);
+                return; // Corta o fluxo aqui, não exibe o toast.
+              } else if (deviceEnv.isMobile) {
                 description =
                   "Clique nos três pontinhos do navegador, vá em 'Configurações do Site' e ative a Localização.";
               } else {
@@ -278,11 +296,17 @@ export default function LocationTracker() {
     executeGpsFetch(false);
   };
 
+  // 🚀 FUNÇÃO PARA FORÇAR LIMPEZA DE CACHE DO NAVEGADOR
+  const handleForceReload = () => {
+    localStorage.removeItem("tafanu_user_coords");
+    window.location.reload();
+  };
+
   if (isExploreMode) {
     return (
-      <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
+      <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-3.5 md:p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 shadow-inner shrink-0">
+          <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 shadow-inner shrink-0">
             <Map size={18} />
           </div>
           <div>
@@ -297,7 +321,7 @@ export default function LocationTracker() {
 
         <button
           disabled
-          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed shrink-0"
+          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed"
         >
           GPS Pausado
         </button>
@@ -306,97 +330,151 @@ export default function LocationTracker() {
   }
 
   return (
-    // 🚀 CIRURGIA DE UX DESKTOP & MOBILE: ESPAÇAMENTO INTELIGENTE E SEM CORTES DE TEXTO
-    <div
-      className={`w-full bg-white rounded-2xl p-4 md:p-5 shadow-sm border transition-all duration-300 mb-6 ${
-        isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-slate-200"
-      }`}
-    >
-      {/* LINHA 1: CONTROLE DE GPS COM TEXTO LIVRE PARA QUEBRAR LINHA SE PRECISO */}
-      <div className="flex items-start md:items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 shrink-0 ${
-              isGpsActive
-                ? "bg-rose-500 text-white shadow-md"
-                : "bg-[#1dbf8e]/10 text-[#1dbf8e]"
-            }`}
-          >
-            {loading ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : isGpsActive ? (
-              <MapPin size={18} className="animate-pulse" />
-            ) : (
-              <Navigation size={18} />
-            )}
-          </div>
-
-          {/* Removido o truncate! O texto agora quebra lindamente se a barra lateral do Desktop for estreita */}
-          <div className="flex-1">
-            <h4 className="text-xs font-black text-slate-800 uppercase italic leading-tight">
-              {isGpsActive ? cachedCity || "GPS Ativado" : "Localização"}
-            </h4>
-            <p
-              className={`text-[10px] font-bold uppercase italic mt-0.5 leading-tight ${
-                isGpsActive ? "text-rose-600" : "text-slate-400"
+    <>
+      <div
+        className={`w-full bg-white rounded-2xl p-4 md:p-5 shadow-sm border transition-all duration-300 mb-6 ${
+          isGpsActive ? "border-rose-200 bg-rose-50/30" : "border-slate-200"
+        }`}
+      >
+        <div className="flex items-start md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 shrink-0 ${
+                isGpsActive
+                  ? "bg-rose-500 text-white shadow-md"
+                  : "bg-[#1dbf8e]/10 text-[#1dbf8e]"
               }`}
             >
-              {isGpsActive ? "Na sua região" : "Ative para ver próximos"}
-            </p>
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : isGpsActive ? (
+                <MapPin size={18} className="animate-pulse" />
+              ) : (
+                <Navigation size={18} />
+              )}
+            </div>
+
+            <div className="flex-1">
+              <h4 className="text-xs font-black text-slate-800 uppercase italic leading-tight">
+                {isGpsActive ? cachedCity || "GPS Ativado" : "Localização"}
+              </h4>
+              <p
+                className={`text-[10px] font-bold uppercase italic mt-0.5 leading-tight ${
+                  isGpsActive ? "text-rose-600" : "text-slate-400"
+                }`}
+              >
+                {isGpsActive ? "Na sua região" : "Ative para ver próximos"}
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={handleToggleLocation}
+            disabled={loading}
+            className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition-all disabled:opacity-50 active:scale-95 shadow-sm shrink-0 self-center ${
+              isGpsActive
+                ? "bg-rose-500 text-white hover:bg-rose-600"
+                : "bg-[#0f172a] text-white hover:bg-black"
+            }`}
+          >
+            {loading ? "Aguarde..." : isGpsActive ? "Desligar" : "Ligar GPS"}
+          </button>
         </div>
 
-        <button
-          onClick={handleToggleLocation}
-          disabled={loading}
-          className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition-all disabled:opacity-50 active:scale-95 shadow-sm shrink-0 self-center ${
-            isGpsActive
-              ? "bg-rose-500 text-white hover:bg-rose-600"
-              : "bg-[#0f172a] text-white hover:bg-black"
-          }`}
-        >
-          {loading ? "Aguarde..." : isGpsActive ? "Desligar" : "Ligar GPS"}
-        </button>
+        {!isGpsActive && (
+          <div className="mt-3.5 pt-3.5 border-t border-slate-100 animate-in fade-in duration-300">
+            <form
+              onSubmit={handleCepSubmit}
+              className="flex items-center gap-2 w-full"
+            >
+              <input
+                type="text"
+                maxLength={9}
+                placeholder="Buscar por CEP (ex: 14000-000)"
+                value={cepInput}
+                disabled={cepLoading}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  if (val.length <= 5) {
+                    setCepInput(val);
+                  } else {
+                    setCepInput(`${val.slice(0, 5)}-${val.slice(5, 8)}`);
+                  }
+                }}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-slate-800 placeholder-slate-400 font-bold text-xs h-10 focus:outline-none focus:ring-2 focus:ring-tafanu-action/20 focus:border-tafanu-action transition-all"
+              />
+              <button
+                type="submit"
+                disabled={
+                  cepLoading || cepInput.replace(/\D/g, "").length !== 8
+                }
+                className="h-10 px-3.5 bg-slate-900 text-white hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 rounded-xl flex items-center justify-center transition-all shrink-0 active:scale-95 text-xs font-bold shadow-sm"
+                title="Buscar por CEP"
+              >
+                {cepLoading ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <ArrowRight size={15} strokeWidth={2.5} />
+                )}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
-      {/* LINHA 2: CAMPO DE CEP SPANNING FULL WIDTH (Sem rótulos laterais roubando espaço!) */}
-      {!isGpsActive && (
-        <div className="mt-3.5 pt-3.5 border-t border-slate-100 animate-in fade-in duration-300">
-          <form
-            onSubmit={handleCepSubmit}
-            className="flex items-center gap-2 w-full"
-          >
-            <input
-              type="text"
-              maxLength={9}
-              placeholder="Buscar por CEP (ex: 14000-000)"
-              value={cepInput}
-              disabled={cepLoading}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "");
-                if (val.length <= 5) {
-                  setCepInput(val);
-                } else {
-                  setCepInput(`${val.slice(0, 5)}-${val.slice(5, 8)}`);
+      {/* 🚀 MODAL DE SOCORRO PARA PWA */}
+      {showPwaHelpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-[2rem] p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300 relative text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-5 border-4 border-white shadow-sm -mt-12">
+              <Settings className="text-amber-500 w-8 h-8" />
+            </div>
+
+            <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2 tracking-tight">
+              GPS <span className="text-amber-500">Bloqueado</span>
+            </h3>
+
+            <p className="text-slate-500 text-xs font-medium mb-6 leading-relaxed">
+              Como você está usando a versão Aplicativo, a barra de endereços
+              não está visível para reativar o GPS. Escolha uma opção:
+            </p>
+
+            <div className="w-full flex flex-col gap-3">
+              {/* Opção 1: Porta dos Fundos (Abre no navegador padrão) */}
+              <a
+                href={
+                  typeof window !== "undefined"
+                    ? window.location.href
+                    : "/busca"
                 }
-              }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-slate-800 placeholder-slate-400 font-bold text-xs h-10 focus:outline-none focus:ring-2 focus:ring-tafanu-action/20 focus:border-tafanu-action transition-all"
-            />
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowPwaHelpModal(false)}
+                className="w-full h-12 bg-[#0f172a] hover:bg-black text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
+              >
+                <ExternalLink size={16} /> Abrir no Navegador
+              </a>
+
+              {/* Opção 2: Bomba de Limpeza (Tenta forçar a memória) */}
+              <button
+                type="button"
+                onClick={handleForceReload}
+                className="w-full h-12 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all active:scale-95"
+              >
+                <RefreshCw size={16} /> Atualizar Página
+              </button>
+            </div>
+
             <button
-              type="submit"
-              disabled={cepLoading || cepInput.replace(/\D/g, "").length !== 8}
-              className="h-10 px-3.5 bg-slate-900 text-white hover:bg-black disabled:bg-slate-100 disabled:text-slate-300 rounded-xl flex items-center justify-center transition-all shrink-0 active:scale-95 text-xs font-bold shadow-sm"
-              title="Buscar por CEP"
+              type="button"
+              onClick={() => setShowPwaHelpModal(false)}
+              className="mt-6 text-[10px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest underline underline-offset-4"
             >
-              {cepLoading ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <ArrowRight size={15} strokeWidth={2.5} />
-              )}
+              Cancelar e usar CEP
             </button>
-          </form>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
