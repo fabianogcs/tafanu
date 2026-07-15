@@ -10,10 +10,9 @@ import {
   ArrowRight,
   Settings,
   ExternalLink,
-  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 
 export default function LocationTracker() {
   const [loading, setLoading] = useState(false);
@@ -22,6 +21,7 @@ export default function LocationTracker() {
 
   // 🚀 ESTADOS DO MODAL DE SOCORRO DO PWA
   const [showPwaHelpModal, setShowPwaHelpModal] = useState(false);
+  const [showBrowserTip, setShowBrowserTip] = useState(false); // Novo estado para a dica do navegador
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -247,7 +247,6 @@ export default function LocationTracker() {
         },
         (error) => {
           if (error.code === error.TIMEOUT && !isRetry) {
-            console.log("GPS Cold Start. Retentando automaticamente...");
             executeGpsFetch(true);
             return;
           }
@@ -261,9 +260,10 @@ export default function LocationTracker() {
             case error.PERMISSION_DENIED:
               msg = "Acesso ao GPS Negado";
               if (deviceEnv.isPwa) {
-                // 🚀 SE ESTIVER NO PWA E ELE NEGOU, ABRE O MODAL DE SOCORRO!
+                // 🚀 ABRE O MODAL NOVO E RESETA O ESTADO DA DICA
+                setShowBrowserTip(false);
                 setShowPwaHelpModal(true);
-                return; // Corta o fluxo aqui, não exibe o toast.
+                return;
               } else if (deviceEnv.isMobile) {
                 description =
                   "Clique nos três pontinhos do navegador, vá em 'Configurações do Site' e ative a Localização.";
@@ -296,12 +296,6 @@ export default function LocationTracker() {
     executeGpsFetch(false);
   };
 
-  // 🚀 FUNÇÃO PARA FORÇAR LIMPEZA DE CACHE DO NAVEGADOR
-  const handleForceReload = () => {
-    localStorage.removeItem("tafanu_user_coords");
-    window.location.reload();
-  };
-
   if (isExploreMode) {
     return (
       <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-3.5 md:p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
@@ -321,7 +315,7 @@ export default function LocationTracker() {
 
         <button
           disabled
-          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed"
+          className="text-[9px] font-black uppercase px-3 py-1.5 rounded-lg bg-blue-100/50 text-blue-400 opacity-50 cursor-not-allowed shrink-0"
         >
           GPS Pausado
         </button>
@@ -422,7 +416,7 @@ export default function LocationTracker() {
         )}
       </div>
 
-      {/* 🚀 MODAL DE SOCORRO PARA PWA */}
+      {/* 🚀 O NOVO MODAL: SEM LOOP, APENAS UX PURA E INTELIGENTE */}
       {showPwaHelpModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
           <div className="bg-white rounded-[2rem] p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300 relative text-center">
@@ -435,43 +429,55 @@ export default function LocationTracker() {
             </h3>
 
             <p className="text-slate-500 text-xs font-medium mb-6 leading-relaxed">
-              Como você está usando a versão Aplicativo, a barra de endereços
-              não está visível para reativar o GPS. Escolha uma opção:
+              Como você está na versão Aplicativo, a barra de navegação fica
+              oculta para desbloquear o GPS.
             </p>
 
-            <div className="w-full flex flex-col gap-3">
-              {/* Opção 1: Porta dos Fundos (Abre no navegador padrão) */}
-              <a
-                href={
-                  typeof window !== "undefined"
-                    ? window.location.href
-                    : "/busca"
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowPwaHelpModal(false)}
-                className="w-full h-12 bg-[#0f172a] hover:bg-black text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
-              >
-                <ExternalLink size={16} /> Abrir no Navegador
-              </a>
+            {/* O SEGREDO ESTÁ AQUI: TROCA DE ESTADOS DENTRO DO MODAL */}
+            {!showBrowserTip ? (
+              <div className="w-full flex flex-col gap-3">
+                {/* BOTÃO 1: A ESTRELA DO SHOW - USAR CEP */}
+                <button
+                  type="button"
+                  onClick={() => setShowPwaHelpModal(false)}
+                  className="w-full h-12 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-[0_5px_15px_rgba(0,168,107,0.3)] transition-all active:scale-95"
+                >
+                  <MapPin size={16} /> Usar Meu CEP (Rápido)
+                </button>
 
-              {/* Opção 2: Bomba de Limpeza (Tenta forçar a memória) */}
-              <button
-                type="button"
-                onClick={handleForceReload}
-                className="w-full h-12 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all active:scale-95"
-              >
-                <RefreshCw size={16} /> Atualizar Página
-              </button>
-            </div>
+                {/* BOTÃO 2: REVELA A INSTRUÇÃO */}
+                <button
+                  type="button"
+                  onClick={() => setShowBrowserTip(true)}
+                  className="w-full h-12 bg-[#0f172a] hover:bg-black text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
+                >
+                  <ExternalLink size={16} /> Abrir no Navegador
+                </button>
+              </div>
+            ) : (
+              <div className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-left animate-in fade-in zoom-in duration-300">
+                <div className="flex items-start gap-3 mb-4">
+                  <ShieldAlert
+                    className="text-amber-500 shrink-0 mt-0.5"
+                    size={18}
+                  />
+                  <p className="text-[11px] font-medium text-slate-600 leading-relaxed">
+                    Para abrir o site no navegador, clique nos{" "}
+                    <strong>3 pontinhos (⋮)</strong> no canto superior direito
+                    da sua tela e escolha{" "}
+                    <strong>"Abrir no Chrome/Safari"</strong>.
+                  </p>
+                </div>
 
-            <button
-              type="button"
-              onClick={() => setShowPwaHelpModal(false)}
-              className="mt-6 text-[10px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest underline underline-offset-4"
-            >
-              Cancelar e usar CEP
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPwaHelpModal(false)}
+                  className="w-full h-10 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                >
+                  Entendi, prefiro usar o CEP
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
