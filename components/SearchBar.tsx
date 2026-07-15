@@ -20,8 +20,8 @@ export default function SearchBar({
     setIsSearching(false);
   }, [searchParams]);
 
-  // 🚀 A NOVA LÓGICA: Buscar texto + Tentar GPS simultaneamente
-  const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
+  // 🚀 A NOVA LÓGICA 10/10: Busca texto + Tentar GPS simultaneamente sem engasgos
+  const handleSearch = async (e?: React.FormEvent, voiceQuery?: string) => {
     if (e) e.preventDefault();
     setIsSearching(true);
 
@@ -36,7 +36,7 @@ export default function SearchBar({
 
     params.delete("page");
 
-    // Cenário 1: Se o usuário estiver fixando uma cidade (Modo Explorar / Airbnb), respeitamos a cidade e NÃO usamos GPS.
+    // Cenário 1: Se o usuário estiver fixando uma cidade (Modo Explorar), NÃO usamos GPS.
     const isExploreMode = params.has("city") || params.has("state");
     if (isExploreMode) {
       router.push(`/busca?${params.toString()}`);
@@ -58,13 +58,23 @@ export default function SearchBar({
       }
     } catch (err) {}
 
-    // Cenário 3: Não tem cache e não está explorando. Vamos pedir o GPS para turbinar a busca!
+    // 🚀 Cenário 3: VERIFICAÇÃO PROATIVA DE BLINDAGEM (Pula o GPS se não suporta ou estiver bloqueado)
     if (!navigator.geolocation) {
-      // Navegador jurássico, faz a busca normal sem GPS.
       router.push(`/busca?${params.toString()}`);
       return;
     }
 
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: "geolocation" });
+        if (perm.state === "denied") {
+          router.push(`/busca?${params.toString()}`);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    // Cenário 4: Não tem cache e não está explorando. Vamos pedir o GPS para turbinar a busca!
     const executeGpsFetch = (isRetry = false) => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {

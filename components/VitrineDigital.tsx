@@ -122,8 +122,8 @@ export default function VitrineDigital() {
     } catch (err) {}
   }, []);
 
-  // 🚀 A INTELIGÊNCIA: Captura direta de GPS ao clicar no card da categoria
-  const handleMoodClick = (
+  // 🚀 A INTELIGÊNCIA 10/10: Salto instantâneo se o GPS estiver negado
+  const handleMoodClick = async (
     e: React.MouseEvent,
     baseUrl: string,
     categoryId: string,
@@ -146,11 +146,20 @@ export default function VitrineDigital() {
       }
     }
 
-    // Cenário B: Não temos localização salva, aciona a antena em background com Auto-Retry
+    // 🚀 Cenário B: VERIFICAÇÃO PROATIVA DE BLINDAGEM (Pula o GPS se não suporta ou estiver bloqueado)
     if (!navigator.geolocation) {
-      // Dispositivo sem GPS vai para a busca global pura
       router.push(baseUrl);
       return;
+    }
+
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: "geolocation" });
+        if (perm.state === "denied") {
+          router.push(baseUrl);
+          return;
+        }
+      } catch (e) {}
     }
 
     setActiveLoadingId(categoryId);

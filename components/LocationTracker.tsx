@@ -1,15 +1,17 @@
 "use client";
 
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Navigation,
   Loader2,
   MapPin,
   Map,
   ArrowRight,
-  Settings,
-  ExternalLink,
+  MapPinned,
+  CheckCircle2,
+  Globe,
+  Smartphone,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -18,8 +20,9 @@ export default function LocationTracker() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepInput, setCepInput] = useState("");
 
-  // 🚀 ESTADO DO MODAL DE SOCORRO DO PWA
-  const [showPwaHelpModal, setShowPwaHelpModal] = useState(false);
+  // 🚀 ESTADO DO MODAL DE PERMISSÃO NEGADA
+  const [showDeniedModal, setShowDeniedModal] = useState(false);
+  const [permissionState, setPermissionState] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,7 +32,110 @@ export default function LocationTracker() {
   const isExploreMode = searchParams.has("city") || searchParams.has("state");
   const exploreCity = searchParams.get("city");
   const exploreState = searchParams.get("state");
+  const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
+  // 🚀 FUNÇÃO CENTRAL DE BUSCA DE GPS
+  const executeGpsFetch = useCallback(
+    (isRetry = false) => {
+      if (!navigator.geolocation) return;
+
+      setLoading(true);
+      const options = {
+        enableHighAccuracy: isRetry,
+        timeout: isRetry ? 20000 : 12000,
+        maximumAge: 300000,
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const params = new URLSearchParams(searchParams.toString());
+
+          params.set("lat", latitude.toString());
+          params.set("lng", longitude.toString());
+          params.set("sort", "distance");
+          params.set("page", "1");
+          params.delete("city");
+          params.delete("state");
+
+          let foundCity = null;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              {
+                headers: {
+                  "Accept-Language": "pt-BR",
+                  "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
+                },
+              },
+            );
+
+            if (res.ok) {
+              const data = await res.json();
+              foundCity =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.municipality ||
+                null;
+              if (foundCity) setCachedCity(foundCity);
+            }
+          } catch (e) {}
+
+          localStorage.setItem(
+            "tafanu_user_coords",
+            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+          );
+
+          setLoading(false);
+          setShowDeniedModal(false);
+          router.replace(`/busca?${params.toString()}`);
+
+          toast.success("Localização ativada!", {
+            description: foundCity
+              ? `Buscando negócios perto de você em ${foundCity}.`
+              : "Mostrando os negócios perto de você.",
+          });
+        },
+        (error) => {
+          if (error.code === error.TIMEOUT && !isRetry) {
+            executeGpsFetch(true);
+            return;
+          }
+
+          setLoading(false);
+          if (error.code === error.PERMISSION_DENIED) {
+            setPermissionState("denied");
+            setShowDeniedModal(true);
+          } else if (error.code === error.TIMEOUT) {
+            toast.info("Sinal demorou a responder", {
+              description:
+                "O sinal do GPS expirou. Tente novamente em local aberto ou use seu CEP.",
+            });
+          } else {
+            toast.warning("Sinal indisponível", {
+              description:
+                "Não conseguimos capturar seu sinal. Use o CEP abaixo.",
+            });
+          }
+        },
+        options,
+      );
+    },
+    [searchParams, router],
+  );
+
+  // ⭐⭐⭐ OTIMIZAÇÃO DRY: Centraliza a ação de sucesso na liberação da permissão
+  const handlePermissionGranted = useCallback(() => {
+    if (isGpsActive) return; // Evita requisição duplicada se já estiver ativo (Ponto 2)
+
+    setShowDeniedModal(false);
+    toast.success("GPS Liberado!", {
+      description: "Atualizando sua localização...",
+    });
+    executeGpsFetch(false);
+  }, [isGpsActive, executeGpsFetch]);
+
+  // ⭐⭐⭐ MONITORAMENTO PROATIVO E REATIVO
   useEffect(() => {
     const isPwa =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -47,9 +153,57 @@ export default function LocationTracker() {
         if (parsed.city) setCachedCity(parsed.city);
       }
     } catch (e) {}
-  }, []);
 
-  const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
+    let permissionObj: any = null;
+
+    const checkAndWatchPermission = async () => {
+      if (!navigator.permissions) return;
+
+      try {
+        permissionObj = await navigator.permissions.query({
+          name: "geolocation",
+        });
+        setPermissionState(permissionObj.state);
+
+        // ⭐ REATIVIDADE EM TEMPO REAL: Escuta mudanças na hora (Ponto 3 DRY)
+        permissionObj.onchange = () => {
+          setPermissionState(permissionObj.state);
+          if (permissionObj.state === "granted") {
+            handlePermissionGranted();
+          } else if (permissionObj.state === "denied") {
+            setShowDeniedModal(true);
+          }
+        };
+      } catch (e) {}
+    };
+
+    checkAndWatchPermission();
+
+    // ⭐ DETECTA RETORNO DAS CONFIGURAÇÕES DO ANDROID (Ponto 3 DRY)
+    const handleAppReturn = async () => {
+      if (document.visibilityState === "visible" && navigator.permissions) {
+        try {
+          const perm = await navigator.permissions.query({
+            name: "geolocation",
+          });
+          setPermissionState(perm.state);
+
+          if (perm.state === "granted" && showDeniedModal) {
+            handlePermissionGranted();
+          }
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleAppReturn);
+    window.addEventListener("focus", handleAppReturn);
+
+    return () => {
+      window.removeEventListener("visibilitychange", handleAppReturn);
+      window.removeEventListener("focus", handleAppReturn);
+      if (permissionObj) permissionObj.onchange = null;
+    };
+  }, [showDeniedModal, handlePermissionGranted]);
 
   const handleCepSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +226,7 @@ export default function LocationTracker() {
 
       if (viaCepData.erro) {
         toast.error("CEP não encontrado", {
-          description: "Verifique os números digitados e tente novamente.",
+          description: "Verifique os números digitados.",
         });
         setCepLoading(false);
         return;
@@ -135,6 +289,7 @@ export default function LocationTracker() {
         toast.success(`Região de ${city} Ativada!`, {
           description: "Mostrando os negócios mais próximos ao CEP.",
         });
+        setShowDeniedModal(false);
       } else {
         params.delete("lat");
         params.delete("lng");
@@ -146,19 +301,20 @@ export default function LocationTracker() {
         toast.success(`Filtrando por ${city} - ${state}!`, {
           description: "Buscando comércios na sua cidade.",
         });
+        setShowDeniedModal(false);
       }
 
       setCepInput("");
     } catch (err) {
       toast.error("Erro de conexão", {
-        description: "Falha ao consultar o CEP. Tente novamente em instantes.",
+        description: "Falha ao consultar o CEP.",
       });
     } finally {
       setCepLoading(false);
     }
   };
 
-  const handleToggleLocation = () => {
+  const handleToggleLocation = async () => {
     if (isExploreMode) {
       toast.info("Modo Exploração Ativo", {
         description: "Remova o filtro de cidade/estado para usar o GPS local.",
@@ -182,175 +338,14 @@ export default function LocationTracker() {
       return;
     }
 
-    if (!navigator.geolocation) {
-      toast.error("Seu dispositivo não suporta geolocalização.");
+    if (permissionState === "denied") {
+      setShowDeniedModal(true);
       return;
     }
-
-    setLoading(true);
-
-    const executeGpsFetch = (isRetry = false) => {
-      const options = {
-        enableHighAccuracy: isRetry,
-        timeout: isRetry ? 20000 : 12000,
-        maximumAge: 300000,
-      };
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          const params = new URLSearchParams(searchParams.toString());
-
-          params.set("lat", latitude.toString());
-          params.set("lng", longitude.toString());
-          params.set("sort", "distance");
-          params.set("page", "1");
-
-          let foundCity = null;
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
-              {
-                headers: {
-                  "Accept-Language": "pt-BR",
-                  "User-Agent": "Tafanu-App/1.0 (contato@tafanu.com.br)",
-                },
-              },
-            );
-
-            if (!res.ok) throw new Error();
-
-            const data = await res.json();
-            foundCity =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.municipality ||
-              null;
-            if (foundCity) setCachedCity(foundCity);
-          } catch (e) {}
-
-          localStorage.setItem(
-            "tafanu_user_coords",
-            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
-          );
-
-          setLoading(false);
-          router.replace(`/busca?${params.toString()}`);
-
-          toast.success("Localização encontrada!", {
-            description: foundCity
-              ? `Buscando negócios perto de você em ${foundCity}.`
-              : "Mostrando os negócios perto de você.",
-          });
-        },
-        (error) => {
-          if (error.code === error.TIMEOUT && !isRetry) {
-            executeGpsFetch(true);
-            return;
-          }
-
-          setLoading(false);
-
-          let msg = "";
-          let description = "";
-
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              msg = "Acesso ao GPS Negado";
-              if (deviceEnv.isPwa) {
-                // 🚀 GATILHO DO MODAL (Sem mensagens confusas, vai direto pra tela de fuga)
-                setShowPwaHelpModal(true);
-                return;
-              } else if (deviceEnv.isMobile) {
-                description =
-                  "Clique no cadeado 🔒 na barra de endereços acima e permita a Localização.";
-              } else {
-                description =
-                  "Clique no ícone de Cadeado 🔒 ao lado da URL e permita a Localização.";
-              }
-              break;
-            case error.POSITION_UNAVAILABLE:
-              msg = "Sinal indisponível";
-              description =
-                "Não conseguimos capturar seu sinal GPS de satélite.";
-              break;
-            case error.TIMEOUT:
-              msg = "Sinal demorou a responder";
-              description =
-                "O sinal do GPS expirou. Digite seu CEP no campo abaixo.";
-              break;
-            default:
-              msg = "Erro ao buscar GPS";
-              description = "Por favor, digite seu CEP para prosseguir.";
-          }
-
-          toast.error(msg, { description: description, duration: 8000 });
-        },
-        options,
-      );
-    };
 
     executeGpsFetch(false);
   };
 
-  // 🚀 A BOMBA DE FUGA CAMALEÃO (Com Pára-quedas para Navegadores Desinstalados)
-  const handleForceBrowser = () => {
-    const hostPath =
-      window.location.host + window.location.pathname + window.location.search;
-    const fullUrl = `https://${hostPath}`;
-    const ua = navigator.userAgent;
-    const isAndroid = /Android/i.test(ua);
-
-    // 1. Backup Universal: Copia para a área de transferência silenciosamente
-    navigator.clipboard.writeText(fullUrl);
-
-    if (isAndroid) {
-      // 🕵️ HACKER ÉTICO: Detecção cirúrgica do motor que está rodando o PWA
-      let browserPackage = "";
-      let browserName = "seu navegador";
-
-      if (/SamsungBrowser/i.test(ua)) {
-        browserPackage = "package=com.sec.android.app.sbrowser;";
-        browserName = "Samsung Internet";
-      } else if (/EdgA/i.test(ua)) {
-        browserPackage = "package=com.microsoft.emmask;";
-        browserName = "Microsoft Edge";
-      } else if (/Opera|OPR/i.test(ua)) {
-        browserPackage = "package=com.opera.browser;";
-        browserName = "Opera";
-      } else if (
-        /Chrome/i.test(ua) &&
-        !/Chromium|EdgA|SamsungBrowser|OPR/i.test(ua)
-      ) {
-        browserPackage = "package=com.android.chrome;";
-        browserName = "Google Chrome";
-      }
-
-      toast.success(`Abrindo no ${browserName}...`, {
-        description:
-          "Se não abrir sozinho, o link já foi copiado! Basta colar na internet.",
-        duration: 4000,
-      });
-
-      // 🛡️ O SEGREDO ANTI-FALHA: S.browser_fallback_url
-      // Se o navegador original foi deletado, o Android ignora o 'package='
-      // e abre a URL usando o novo navegador padrão que estiver no celular!
-      const fallbackParam = `S.browser_fallback_url=${encodeURIComponent(fullUrl)};`;
-
-      setTimeout(() => {
-        window.location.href = `intent://${hostPath}#Intent;scheme=https;${browserPackage}${fallbackParam}end`;
-      }, 800);
-    } else {
-      // 2. iPhone / iOS: Operação via clipboard para respeitar o isolamento do WebKit
-      toast.success("Link copiado!", {
-        description:
-          "Abra o Safari, cole o link e clique no ícone 'Aa' ou cadeado para reativar o GPS.",
-        duration: 8000,
-      });
-    }
-
-    setShowPwaHelpModal(false);
-  };
   if (isExploreMode) {
     return (
       <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-3.5 md:p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
@@ -471,43 +466,140 @@ export default function LocationTracker() {
         )}
       </div>
 
-      {/* 🚀 O NOVO MODAL: COM A FUGA INTELIGENTE DO PWA */}
-      {showPwaHelpModal && (
+      {/* 🚀 O MODAL 10/10: INSTRUÇÃO CIRÚRGICA E REATIVA (PWA vs NAVEGADOR) */}
+      {showDeniedModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-[2rem] p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300 relative text-center">
-            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-5 border-4 border-white shadow-sm -mt-12">
-              <Settings className="text-amber-500 w-8 h-8" />
+          <div className="bg-white rounded-[2rem] p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-[400px] w-full animate-in fade-in zoom-in duration-300 relative">
+            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-5 border-4 border-white shadow-sm -mt-12">
+              <MapPinned className="text-rose-500 w-8 h-8" />
             </div>
 
-            <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2 tracking-tight">
-              GPS <span className="text-amber-500">Bloqueado</span>
+            <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2 tracking-tight text-center">
+              GPS <span className="text-rose-500">Bloqueado</span>
             </h3>
 
-            <p className="text-slate-500 text-xs font-medium mb-6 leading-relaxed">
-              Como você está na versão Aplicativo, a barra superior fica oculta.
-              Para reativar o GPS, você precisa abri-lo no Navegador de
-              internet.
+            <p className="text-slate-500 text-xs font-medium mb-6 text-center leading-relaxed">
+              O seu aparelho negou a permissão de localização. Você pode
+              continuar usando o CEP ou desbloquear nas configurações:
             </p>
 
-            <div className="w-full flex flex-col gap-3">
-              {/* BOTÃO 1: A ESTRELA DO SHOW (Fricção Zero) */}
-              <button
-                type="button"
-                onClick={() => setShowPwaHelpModal(false)}
-                className="w-full h-12 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-[0_5px_15px_rgba(0,168,107,0.3)] transition-all active:scale-95"
-              >
-                <MapPin size={16} /> Usar Meu CEP (Rápido)
-              </button>
+            <div className="w-full flex flex-col gap-4">
+              {/* PROTAGONISTA 1: CEP IMEDIATO */}
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                <span className="text-[10px] font-black text-tafanu-action uppercase tracking-widest text-center">
+                  Recomendado: Usar CEP
+                </span>
+                <form
+                  onSubmit={handleCepSubmit}
+                  className="flex items-center gap-2 w-full"
+                >
+                  <input
+                    type="text"
+                    maxLength={9}
+                    placeholder="Ex: 14000-000"
+                    value={cepInput}
+                    disabled={cepLoading}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      if (val.length <= 5) setCepInput(val);
+                      else setCepInput(`${val.slice(0, 5)}-${val.slice(5, 8)}`);
+                    }}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 text-slate-800 font-bold text-xs h-10 focus:outline-none focus:border-tafanu-action transition-all"
+                  />
+                  <button
+                    type="submit"
+                    disabled={
+                      cepLoading || cepInput.replace(/\D/g, "").length !== 8
+                    }
+                    className="h-10 px-4 bg-tafanu-action hover:bg-[#00c27a] text-white disabled:bg-slate-200 rounded-lg transition-all active:scale-95 shadow-md flex items-center justify-center"
+                  >
+                    {cepLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <ArrowRight size={16} strokeWidth={3} />
+                    )}
+                  </button>
+                </form>
+              </div>
 
-              {/* BOTÃO 2: A BOMBA DE FUGA (Dispara o Hack de Intent) */}
-              <button
-                type="button"
-                onClick={handleForceBrowser}
-                className="w-full h-12 bg-[#0f172a] hover:bg-black text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
-              >
-                <ExternalLink size={16} /> Ir para o Navegador
-              </button>
+              {/* ⭐⭐⭐ PROTAGONISTA 2: INSTRUÇÃO INTELIGENTE POR AMBIENTE */}
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                <div className="flex items-center justify-center gap-1.5 mb-2.5">
+                  {deviceEnv.isPwa ? (
+                    <Smartphone size={14} className="text-slate-600" />
+                  ) : (
+                    <Globe size={14} className="text-slate-600" />
+                  )}
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest block text-center">
+                    {deviceEnv.isPwa
+                      ? "Como reativar no Aplicativo"
+                      : "Como reativar no Navegador"}
+                  </span>
+                </div>
+
+                {deviceEnv.isPwa ? (
+                  <ul className="text-[11px] font-medium text-slate-500 leading-snug space-y-1.5 list-none pl-1">
+                    <li>
+                      <strong>1.</strong> Abra as{" "}
+                      <strong className="text-slate-700">Configurações</strong>{" "}
+                      do celular.
+                    </li>
+                    <li>
+                      <strong>2.</strong> Vá em{" "}
+                      <strong className="text-slate-700">
+                        Aplicativos → Tafanu
+                      </strong>
+                      .
+                    </li>
+                    <li>
+                      <strong>3.</strong> Acesse{" "}
+                      <strong className="text-slate-700">
+                        Permissões → Localização
+                      </strong>
+                      .
+                    </li>
+                    <li>
+                      <strong>4.</strong> Selecione{" "}
+                      <strong className="text-slate-700">Permitir</strong> e
+                      volte aqui!
+                    </li>
+                  </ul>
+                ) : (
+                  <ul className="text-[11px] font-medium text-slate-500 leading-snug space-y-1.5 list-none pl-1">
+                    <li>
+                      <strong>1.</strong> Clique no ícone de{" "}
+                      <strong className="text-slate-700">Cadeado 🔒</strong> (ou
+                      opções) ao lado da URL no topo da tela.
+                    </li>
+                    <li>
+                      <strong>2.</strong> Acesse{" "}
+                      <strong className="text-slate-700">
+                        Permissões do Site
+                      </strong>
+                      .
+                    </li>
+                    <li>
+                      <strong>3.</strong> Mude a{" "}
+                      <strong className="text-slate-700">Localização</strong>{" "}
+                      para <strong className="text-slate-700">Permitir</strong>.
+                    </li>
+                  </ul>
+                )}
+
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-center gap-1.5 text-[10px] font-bold text-emerald-600">
+                  <CheckCircle2 size={13} className="animate-pulse shrink-0" />
+                  <span>O app atualizará sozinho ao permitir!</span>
+                </div>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowDeniedModal(false)}
+              className="mt-6 text-[10px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest underline underline-offset-4"
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}
