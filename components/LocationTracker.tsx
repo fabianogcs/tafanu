@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Settings,
   ExternalLink,
-  ShieldAlert,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -19,9 +18,8 @@ export default function LocationTracker() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepInput, setCepInput] = useState("");
 
-  // 🚀 ESTADOS DO MODAL DE SOCORRO DO PWA
+  // 🚀 ESTADO DO MODAL DE SOCORRO DO PWA
   const [showPwaHelpModal, setShowPwaHelpModal] = useState(false);
-  const [showBrowserTip, setShowBrowserTip] = useState(false); // Novo estado para a dica do navegador
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -260,13 +258,12 @@ export default function LocationTracker() {
             case error.PERMISSION_DENIED:
               msg = "Acesso ao GPS Negado";
               if (deviceEnv.isPwa) {
-                // 🚀 ABRE O MODAL NOVO E RESETA O ESTADO DA DICA
-                setShowBrowserTip(false);
+                // 🚀 GATILHO DO MODAL (Sem mensagens confusas, vai direto pra tela de fuga)
                 setShowPwaHelpModal(true);
                 return;
               } else if (deviceEnv.isMobile) {
                 description =
-                  "Clique nos três pontinhos do navegador, vá em 'Configurações do Site' e ative a Localização.";
+                  "Clique no cadeado 🔒 na barra de endereços acima e permita a Localização.";
               } else {
                 description =
                   "Clique no ícone de Cadeado 🔒 ao lado da URL e permita a Localização.";
@@ -296,6 +293,64 @@ export default function LocationTracker() {
     executeGpsFetch(false);
   };
 
+  // 🚀 A BOMBA DE FUGA CAMALEÃO (Com Pára-quedas para Navegadores Desinstalados)
+  const handleForceBrowser = () => {
+    const hostPath =
+      window.location.host + window.location.pathname + window.location.search;
+    const fullUrl = `https://${hostPath}`;
+    const ua = navigator.userAgent;
+    const isAndroid = /Android/i.test(ua);
+
+    // 1. Backup Universal: Copia para a área de transferência silenciosamente
+    navigator.clipboard.writeText(fullUrl);
+
+    if (isAndroid) {
+      // 🕵️ HACKER ÉTICO: Detecção cirúrgica do motor que está rodando o PWA
+      let browserPackage = "";
+      let browserName = "seu navegador";
+
+      if (/SamsungBrowser/i.test(ua)) {
+        browserPackage = "package=com.sec.android.app.sbrowser;";
+        browserName = "Samsung Internet";
+      } else if (/EdgA/i.test(ua)) {
+        browserPackage = "package=com.microsoft.emmask;";
+        browserName = "Microsoft Edge";
+      } else if (/Opera|OPR/i.test(ua)) {
+        browserPackage = "package=com.opera.browser;";
+        browserName = "Opera";
+      } else if (
+        /Chrome/i.test(ua) &&
+        !/Chromium|EdgA|SamsungBrowser|OPR/i.test(ua)
+      ) {
+        browserPackage = "package=com.android.chrome;";
+        browserName = "Google Chrome";
+      }
+
+      toast.success(`Abrindo no ${browserName}...`, {
+        description:
+          "Se não abrir sozinho, o link já foi copiado! Basta colar na internet.",
+        duration: 4000,
+      });
+
+      // 🛡️ O SEGREDO ANTI-FALHA: S.browser_fallback_url
+      // Se o navegador original foi deletado, o Android ignora o 'package='
+      // e abre a URL usando o novo navegador padrão que estiver no celular!
+      const fallbackParam = `S.browser_fallback_url=${encodeURIComponent(fullUrl)};`;
+
+      setTimeout(() => {
+        window.location.href = `intent://${hostPath}#Intent;scheme=https;${browserPackage}${fallbackParam}end`;
+      }, 800);
+    } else {
+      // 2. iPhone / iOS: Operação via clipboard para respeitar o isolamento do WebKit
+      toast.success("Link copiado!", {
+        description:
+          "Abra o Safari, cole o link e clique no ícone 'Aa' ou cadeado para reativar o GPS.",
+        duration: 8000,
+      });
+    }
+
+    setShowPwaHelpModal(false);
+  };
   if (isExploreMode) {
     return (
       <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-3.5 md:p-4 shadow-sm mb-6 flex items-center justify-between transition-all animate-in fade-in zoom-in duration-500">
@@ -416,7 +471,7 @@ export default function LocationTracker() {
         )}
       </div>
 
-      {/* 🚀 O NOVO MODAL: SEM LOOP, APENAS UX PURA E INTELIGENTE */}
+      {/* 🚀 O NOVO MODAL: COM A FUGA INTELIGENTE DO PWA */}
       {showPwaHelpModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
           <div className="bg-white rounded-[2rem] p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300 relative text-center">
@@ -429,55 +484,30 @@ export default function LocationTracker() {
             </h3>
 
             <p className="text-slate-500 text-xs font-medium mb-6 leading-relaxed">
-              Como você está na versão Aplicativo, a barra de navegação fica
-              oculta para desbloquear o GPS.
+              Como você está na versão Aplicativo, a barra superior fica oculta.
+              Para reativar o GPS, você precisa abri-lo no Navegador de
+              internet.
             </p>
 
-            {/* O SEGREDO ESTÁ AQUI: TROCA DE ESTADOS DENTRO DO MODAL */}
-            {!showBrowserTip ? (
-              <div className="w-full flex flex-col gap-3">
-                {/* BOTÃO 1: A ESTRELA DO SHOW - USAR CEP */}
-                <button
-                  type="button"
-                  onClick={() => setShowPwaHelpModal(false)}
-                  className="w-full h-12 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-[0_5px_15px_rgba(0,168,107,0.3)] transition-all active:scale-95"
-                >
-                  <MapPin size={16} /> Usar Meu CEP (Rápido)
-                </button>
+            <div className="w-full flex flex-col gap-3">
+              {/* BOTÃO 1: A ESTRELA DO SHOW (Fricção Zero) */}
+              <button
+                type="button"
+                onClick={() => setShowPwaHelpModal(false)}
+                className="w-full h-12 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-[0_5px_15px_rgba(0,168,107,0.3)] transition-all active:scale-95"
+              >
+                <MapPin size={16} /> Usar Meu CEP (Rápido)
+              </button>
 
-                {/* BOTÃO 2: REVELA A INSTRUÇÃO */}
-                <button
-                  type="button"
-                  onClick={() => setShowBrowserTip(true)}
-                  className="w-full h-12 bg-[#0f172a] hover:bg-black text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
-                >
-                  <ExternalLink size={16} /> Abrir no Navegador
-                </button>
-              </div>
-            ) : (
-              <div className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-left animate-in fade-in zoom-in duration-300">
-                <div className="flex items-start gap-3 mb-4">
-                  <ShieldAlert
-                    className="text-amber-500 shrink-0 mt-0.5"
-                    size={18}
-                  />
-                  <p className="text-[11px] font-medium text-slate-600 leading-relaxed">
-                    Para abrir o site no navegador, clique nos{" "}
-                    <strong>3 pontinhos (⋮)</strong> no canto superior direito
-                    da sua tela e escolha{" "}
-                    <strong>"Abrir no Chrome/Safari"</strong>.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowPwaHelpModal(false)}
-                  className="w-full h-10 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
-                >
-                  Entendi, prefiro usar o CEP
-                </button>
-              </div>
-            )}
+              {/* BOTÃO 2: A BOMBA DE FUGA (Dispara o Hack de Intent) */}
+              <button
+                type="button"
+                onClick={handleForceBrowser}
+                className="w-full h-12 bg-[#0f172a] hover:bg-black text-white rounded-xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
+              >
+                <ExternalLink size={16} /> Ir para o Navegador
+              </button>
+            </div>
           </div>
         </div>
       )}
