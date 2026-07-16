@@ -152,6 +152,7 @@ export default auth(async (req) => {
   if (
     isMaintenanceMode &&
     !pathname.startsWith("/manutencao") &&
+    !pathname.startsWith("/.well-known") && // 🛡️ Protege a validação do app mesmo em manutenção!
     !pathname.startsWith("/api") &&
     !pathname.startsWith("/_next") &&
     pathname !== "/favicon.ico" &&
@@ -190,6 +191,7 @@ export default auth(async (req) => {
     pathname === "/" ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
+    pathname.startsWith("/.well-known") || // 🚀 WHITE HAT FIX: Libera o aperto de mão da TWA, Google e Apple!
     pathname.startsWith("/manutencao") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/esqueci-senha") ||
@@ -311,6 +313,6 @@ export default auth(async (req) => {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|sitemap.xml|workbox-.*|.*\\.(?:png|jpg|jpeg|svg|gif|ico|webp|avif)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|sitemap.xml|\\.well-known/.*|workbox-.*|.*\\.(?:png|jpg|jpeg|svg|gif|ico|webp|avif)).*)",
   ],
 };
