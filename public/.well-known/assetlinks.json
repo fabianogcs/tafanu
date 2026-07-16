@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.tafanu.twa",
+      "sha256_cert_fingerprints": [
+        "E0:F5:C4:76:A7:68:E3:8C:41:2B:D8:41:8E:F4:3D:35:F7:EE:94:4B:F7:3D:C6:E4:36:33:2E:7A:25:E6:45:A3"
+      ]
+    }
+  }
+]
