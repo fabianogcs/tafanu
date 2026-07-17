@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "utfs.io" },
       { protocol: "https", hostname: "*.ufs.sh" },
       { protocol: "https", hostname: "tafanu.com.br" },
+      { protocol: "https", hostname: "www.tafanu.com.br" }, // 🛡️ WHITE HAT FIX: Libera o domínio oficial com www!
       // 🛡️ PREVENÇÃO UX: Garante que os avatares de quem loga pelo Google carreguem
       { protocol: "https", hostname: "*.googleusercontent.com" },
     ],

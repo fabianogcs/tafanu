@@ -286,6 +286,11 @@ export async function registerUser(formData: FormData) {
     return { error: "Preencha todos os campos obrigatórios." };
   }
 
+  // 🛡️ WHITE HAT FIX: Impede senhas fracas no cadastro (Padrão ouro de segurança)
+  if (password.length < 6) {
+    return { error: "A senha deve ter no mínimo 6 caracteres." };
+  }
+
   try {
     // 2. VALIDAÇÃO DE DUPLICIDADE (sem vazar se o e-mail existe)
     const existingUser = await db.user.findUnique({ where: { email } });
