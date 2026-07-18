@@ -38,6 +38,9 @@ export default function LocationTracker() {
   const executeGpsFetch = useCallback(
     (isRetry = false) => {
       if (!navigator.geolocation) return;
+      // 🛡️ CTO FIX: A Trava de Clique Duplo!
+      // Ignora o clique se o celular já estiver buscando o satélite.
+      if (loading) return;
 
       setLoading(true);
       const options = {
