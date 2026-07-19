@@ -122,7 +122,16 @@ export default auth(async (req) => {
         return NextResponse.next();
       }
 
-      const { success } = await activeRatelimit.limit(ip);
+      // 🚀 CFO/UX FIX: Tenta validar no Upstash Redis. Se demorar mais de 300ms, libera o acesso (Fail-Open)
+      const limitPromise = activeRatelimit.limit(ip);
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(() => resolve({ success: true }), 300),
+      );
+
+      const { success } = (await Promise.race([
+        limitPromise,
+        timeoutPromise,
+      ])) as { success: boolean };
 
       if (!success) {
         // 🚀 HACKER FIX 2: Identificamos se é uma Server Action para não quebrar a tela do usuário com Redirects invisíveis.

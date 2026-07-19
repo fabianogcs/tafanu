@@ -1,27 +1,38 @@
-// public/sw.js
+const CACHE_NAME = "tafanu-offline-v1";
+const OFFLINE_URL = "/offline.html";
 
-// 1. Instalação: O navegador reconhece que o arquivo existe
+// 1. Instalação: Salva a tela de emergência no celular da pessoa
 self.addEventListener("install", (event) => {
-  console.log("[Service Worker] Instalado com sucesso!");
-  self.skipWaiting(); // Força a ativação imediata
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([OFFLINE_URL]);
+    }),
+  );
+  self.skipWaiting();
 });
 
-// 2. Ativação: O Service Worker assume o controle
+// 2. Ativação: Limpa lixos antigos
 self.addEventListener("activate", (event) => {
-  console.log("[Service Worker] Ativado e pronto para operar!");
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        }),
+      );
+    }),
+  );
+  self.clients.claim();
 });
-// 3. Interceptação de Rede (Exigência da Google Play Store)
+
+// 3. Interceptação: Se a internet cair, mostra a tela de emergência
 self.addEventListener("fetch", (event) => {
-  // Apenas rotas de navegação (HTML)
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => {
-        // Retorna uma página de fallback offline estática se a internet cair
-        return new Response(
-          '<html><body style="background:#0a1425;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px;"><div><h1>Sem Conexão</h1><p>Verifique sua internet e tente novamente.</p></div></body></html>',
-          { headers: { "Content-Type": "text/html" } },
-        );
+        return caches.match(OFFLINE_URL);
       }),
     );
   }

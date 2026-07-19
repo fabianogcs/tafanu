@@ -20,9 +20,7 @@ export default function LocationTracker() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepInput, setCepInput] = useState("");
 
-  // 🚀 ESTADO DO MODAL DE PERMISSÃO NEGADA
   const [showDeniedModal, setShowDeniedModal] = useState(false);
-  const [permissionState, setPermissionState] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,19 +32,23 @@ export default function LocationTracker() {
   const exploreState = searchParams.get("state");
   const isGpsActive = searchParams.has("lat") && searchParams.has("lng");
 
-  // 🚀 FUNÇÃO CENTRAL DE BUSCA DE GPS
+  // 🚀 FUNÇÃO CENTRAL DE BUSCA DE GPS (Blindada para Safari/iOS)
   const executeGpsFetch = useCallback(
     (isRetry = false) => {
-      if (!navigator.geolocation) return;
-      // 🛡️ CTO FIX: A Trava de Clique Duplo!
-      // Ignora o clique se o celular já estiver buscando o satélite.
+      if (!navigator.geolocation) {
+        toast.error("Erro", { description: "Seu navegador não suporta GPS." });
+        return;
+      }
+
       if (loading) return;
 
       setLoading(true);
+
+      // 🍎 SAFARI FIX: Opções ajustadas para não dar timeout no iPhone
       const options = {
         enableHighAccuracy: isRetry,
-        timeout: isRetry ? 20000 : 12000,
-        maximumAge: 300000,
+        timeout: isRetry ? 20000 : 15000, // Aumentado para dar tempo do PWA pensar
+        maximumAge: 0, // Força o celular a pegar a localização de agora, não a velha
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -106,8 +108,8 @@ export default function LocationTracker() {
           }
 
           setLoading(false);
+          // 🍎 SAFARI FIX: Apenas confia no erro nativo, não no 'navigator.permissions'
           if (error.code === error.PERMISSION_DENIED) {
-            setPermissionState("denied");
             setShowDeniedModal(true);
           } else if (error.code === error.TIMEOUT) {
             toast.info("Sinal demorou a responder", {
@@ -124,12 +126,11 @@ export default function LocationTracker() {
         options,
       );
     },
-    [searchParams, router],
+    [searchParams, router, loading],
   );
 
-  // ⭐⭐⭐ OTIMIZAÇÃO DRY: Centraliza a ação de sucesso na liberação da permissão
   const handlePermissionGranted = useCallback(() => {
-    if (isGpsActive) return; // Evita requisição duplicada se já estiver ativo (Ponto 2)
+    if (isGpsActive) return;
 
     setShowDeniedModal(false);
     toast.success("GPS Liberado!", {
@@ -138,7 +139,6 @@ export default function LocationTracker() {
     executeGpsFetch(false);
   }, [isGpsActive, executeGpsFetch]);
 
-  // ⭐⭐⭐ MONITORAMENTO PROATIVO E REATIVO
   useEffect(() => {
     const isPwa =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -157,20 +157,15 @@ export default function LocationTracker() {
       }
     } catch (e) {}
 
+    // Apenas tenta escutar o evento se existir (Safari não suporta bem)
     let permissionObj: any = null;
-
     const checkAndWatchPermission = async () => {
       if (!navigator.permissions) return;
-
       try {
         permissionObj = await navigator.permissions.query({
           name: "geolocation",
         });
-        setPermissionState(permissionObj.state);
-
-        // ⭐ REATIVIDADE EM TEMPO REAL: Escuta mudanças na hora (Ponto 3 DRY)
         permissionObj.onchange = () => {
-          setPermissionState(permissionObj.state);
           if (permissionObj.state === "granted") {
             handlePermissionGranted();
           } else if (permissionObj.state === "denied") {
@@ -182,15 +177,12 @@ export default function LocationTracker() {
 
     checkAndWatchPermission();
 
-    // ⭐ DETECTA RETORNO DAS CONFIGURAÇÕES DO ANDROID (Ponto 3 DRY)
     const handleAppReturn = async () => {
       if (document.visibilityState === "visible" && navigator.permissions) {
         try {
           const perm = await navigator.permissions.query({
             name: "geolocation",
           });
-          setPermissionState(perm.state);
-
           if (perm.state === "granted" && showDeniedModal) {
             handlePermissionGranted();
           }
@@ -341,11 +333,8 @@ export default function LocationTracker() {
       return;
     }
 
-    if (permissionState === "denied") {
-      setShowDeniedModal(true);
-      return;
-    }
-
+    // 🍎 SAFARI FIX: Removida a trava prematura de "denied"
+    // Agora o sistema SEMPRE força o navegador a perguntar ou acusar o erro nativo.
     executeGpsFetch(false);
   };
 
@@ -469,7 +458,7 @@ export default function LocationTracker() {
         )}
       </div>
 
-      {/* 🚀 O MODAL 10/10: INSTRUÇÃO CIRÚRGICA E REATIVA (PWA vs NAVEGADOR) */}
+      {/* 🚀 MODAL 10/10 DE PERMISSÃO NEGADA */}
       {showDeniedModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
           <div className="bg-white rounded-[2rem] p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-[400px] w-full animate-in fade-in zoom-in duration-300 relative">
@@ -487,7 +476,6 @@ export default function LocationTracker() {
             </p>
 
             <div className="w-full flex flex-col gap-4">
-              {/* PROTAGONISTA 1: CEP IMEDIATO */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
                 <span className="text-[10px] font-black text-tafanu-action uppercase tracking-widest text-center">
                   Recomendado: Usar CEP
@@ -525,7 +513,6 @@ export default function LocationTracker() {
                 </form>
               </div>
 
-              {/* ⭐⭐⭐ PROTAGONISTA 2: INSTRUÇÃO INTELIGENTE POR AMBIENTE */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
                 <div className="flex items-center justify-center gap-1.5 mb-2.5">
                   {deviceEnv.isPwa ? (
