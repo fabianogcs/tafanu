@@ -199,8 +199,8 @@ export default function Hero() {
 
             <button
               type="submit"
-              disabled={isSearching}
-              className="w-full md:w-auto h-12 md:h-14 bg-tafanu-action hover:bg-[#00c27a] text-white font-black rounded-xl md:rounded-2xl px-8 flex items-center justify-center gap-2 uppercase tracking-wider text-xs md:text-sm shadow-[0_4px_20px_rgba(0,168,107,0.3)] transition-all hover:scale-[1.02] active:scale-95 shrink-0"
+              disabled={isSearching || query.trim() === ""}
+              className="w-full md:w-auto h-12 md:h-14 bg-tafanu-action hover:bg-[#00c27a] text-white font-black rounded-xl md:rounded-2xl px-8 flex items-center justify-center gap-2 uppercase tracking-wider text-xs md:text-sm shadow-[0_4px_20px_rgba(0,168,107,0.3)] transition-all hover:scale-[1.02] active:scale-95 shrink-0 disabled:!bg-slate-200 disabled:!text-slate-400 disabled:!shadow-none disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isSearching ? (
                 <Loader2 size={18} className="animate-spin" />

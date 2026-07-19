@@ -24,7 +24,12 @@ export default function LocationTracker() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [deviceEnv, setDeviceEnv] = useState({ isPwa: false, isMobile: false });
+  const [deviceEnv, setDeviceEnv] = useState({
+    isPwa: false,
+    isMobile: false,
+    isTWA: false,
+    isIOS: false,
+  });
   const [cachedCity, setCachedCity] = useState<string | null>(null);
 
   const isExploreMode = searchParams.has("city") || searchParams.has("state");
@@ -147,7 +152,10 @@ export default function LocationTracker() {
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent,
       );
-    setDeviceEnv({ isPwa, isMobile });
+    // O Chrome só define esse referrer quando a página abre dentro do app da Play Store (TWA)
+    const isTWA = document.referrer.includes("android-app://");
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setDeviceEnv({ isPwa, isMobile, isTWA, isIOS });
 
     try {
       const coords = localStorage.getItem("tafanu_user_coords");
@@ -515,19 +523,19 @@ export default function LocationTracker() {
 
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
                 <div className="flex items-center justify-center gap-1.5 mb-2.5">
-                  {deviceEnv.isPwa ? (
+                  {deviceEnv.isTWA ? (
                     <Smartphone size={14} className="text-slate-600" />
                   ) : (
                     <Globe size={14} className="text-slate-600" />
                   )}
                   <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest block text-center">
-                    {deviceEnv.isPwa
+                    {deviceEnv.isTWA
                       ? "Como reativar no Aplicativo"
                       : "Como reativar no Navegador"}
                   </span>
                 </div>
 
-                {deviceEnv.isPwa ? (
+                {deviceEnv.isTWA ? (
                   <ul className="text-[11px] font-medium text-slate-500 leading-snug space-y-1.5 list-none pl-1">
                     <li>
                       <strong>1.</strong> Abra as{" "}
@@ -554,6 +562,60 @@ export default function LocationTracker() {
                       volte aqui!
                     </li>
                   </ul>
+                ) : deviceEnv.isIOS ? (
+                  <ul className="text-[11px] font-medium text-slate-500 leading-snug space-y-1.5 list-none pl-1">
+                    <li>
+                      <strong>1.</strong> Abra o{" "}
+                      <strong className="text-slate-700">Safari</strong> (fora
+                      deste app) e acesse tafanu.com.br.
+                    </li>
+                    <li>
+                      <strong>2.</strong> Toque no ícone{" "}
+                      <strong className="text-slate-700">"Aa"</strong> na barra
+                      de endereço.
+                    </li>
+                    <li>
+                      <strong>3.</strong> Toque em{" "}
+                      <strong className="text-slate-700">
+                        Configurações do Site
+                      </strong>{" "}
+                      → <strong className="text-slate-700">Localização</strong>.
+                    </li>
+                    <li>
+                      <strong>4.</strong> Selecione{" "}
+                      <strong className="text-slate-700">Permitir</strong> e
+                      volte ao app salvo na tela de início.
+                    </li>
+                  </ul>
+                ) : deviceEnv.isPwa ? (
+                  <ul className="text-[11px] font-medium text-slate-500 leading-snug space-y-1.5 list-none pl-1">
+                    <li>
+                      <strong>1.</strong> Abra o{" "}
+                      <strong className="text-slate-700">Chrome</strong> do seu
+                      celular (fora deste app).
+                    </li>
+                    <li>
+                      <strong>2.</strong> Toque nos{" "}
+                      <strong className="text-slate-700">
+                        3 pontinhos (⋮)
+                      </strong>{" "}
+                      →{" "}
+                      <strong className="text-slate-700">Configurações</strong>.
+                    </li>
+                    <li>
+                      <strong>3.</strong> Vá em{" "}
+                      <strong className="text-slate-700">
+                        Configurações de site → Localização
+                      </strong>
+                      .
+                    </li>
+                    <li>
+                      <strong>4.</strong> Encontre{" "}
+                      <strong className="text-slate-700">tafanu.com.br</strong>{" "}
+                      e mude para{" "}
+                      <strong className="text-slate-700">Permitir</strong>.
+                    </li>
+                  </ul>
                 ) : (
                   <ul className="text-[11px] font-medium text-slate-500 leading-snug space-y-1.5 list-none pl-1">
                     <li>
@@ -575,7 +637,6 @@ export default function LocationTracker() {
                     </li>
                   </ul>
                 )}
-
                 <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-center gap-1.5 text-[10px] font-bold text-emerald-600">
                   <CheckCircle2 size={13} className="animate-pulse shrink-0" />
                   <span>O app atualizará sozinho ao permitir!</span>

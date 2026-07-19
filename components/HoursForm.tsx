@@ -59,6 +59,7 @@ export default function HoursForm({
     const updatedDay = { ...newHours[index], [field]: val };
 
     // BLOQUEIO ATIVO: Validação quando o usuário termina de digitar o horário (5 caracteres)
+    // BLOQUEIO INTELIGENTE: Permite virar a madrugada!
     if (
       !updatedDay.isClosed &&
       updatedDay.openTime.length === 5 &&
@@ -70,13 +71,13 @@ export default function HoursForm({
       const openInMinutes = openH * 60 + openM;
       const closeInMinutes = closeH * 60 + closeM;
 
-      if (closeInMinutes <= openInMinutes) {
+      // 🚀 CTO FIX: Só bloqueia se o cara colocar o MESMO horário (ex: 18:00 às 18:00)
+      // Se for menor (ex: 00:30 < 18:00), o sistema entende sozinho que virou a noite!
+      if (closeInMinutes === openInMinutes) {
         toast.error(`Horário inválido de ${DAYS[index]}`, {
-          description: "O fechamento deve ser após a abertura.",
+          description:
+            "O fechamento não pode ser igual ao horário de abertura.",
         });
-
-        // Se o usuário tentou mudar o fechamento para algo menor que a abertura,
-        // nós impedimos a atualização desse campo específico voltando para o valor anterior
         return;
       }
     }
