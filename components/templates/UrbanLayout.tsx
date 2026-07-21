@@ -2,7 +2,15 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+// 🚀 INJEÇÃO DE MOTION DESIGN: Importamos o 'Variants' para o TypeScript aprovar
+import {
+  motion,
+  AnimatePresence,
+  useInView,
+  useScroll,
+  useTransform,
+  Variants,
+} from "framer-motion";
 import {
   Instagram,
   Facebook,
@@ -18,6 +26,9 @@ import {
   Sparkles,
   Plus,
   HelpCircle,
+  X,
+  ArrowRight,
+  Navigation,
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -37,6 +48,24 @@ import { businessThemes } from "@/lib/themes";
 import { useBusiness } from "@/lib/useBusiness";
 import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
+
+// 🚀 ANIMAÇÕES PADRONIZADAS
+const fadeUpVariant: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+};
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
 
 export default function UrbanLayout({
   business: rawBusiness,
@@ -75,6 +104,11 @@ export default function UrbanLayout({
     margin: "0px 0px 50px 0px",
   });
 
+  // 🚀 PARALLAX EFFECT
+  const { scrollY } = useScroll();
+  const yHeroBg = useTransform(scrollY, [0, 500], [0, 150]);
+  const opacityHeroBg = useTransform(scrollY, [0, 400], [1, 0.3]);
+
   const theme =
     propTheme ||
     businessThemes[business?.theme] ||
@@ -101,8 +135,6 @@ export default function UrbanLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-
-  // 🚀 O RADAR DO LINK EXTERNO:
   const isExternalLink = !!business.isExternalLink;
   const actionLink = business.actionLink || "";
 
@@ -137,11 +169,9 @@ export default function UrbanLayout({
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
-  // 🚀 EXTRAÇÃO INTELIGENTE DO FEED PARA O URBAN
   const rawFeed = useMemo(() => {
-    if (business.mediaFeed && business.mediaFeed.length > 0) {
+    if (business.mediaFeed && business.mediaFeed.length > 0)
       return business.mediaFeed;
-    }
     const oldGallery = (business.gallery || []).map((url: string) => ({
       type: "image",
       url,
@@ -153,7 +183,6 @@ export default function UrbanLayout({
     return [...oldGallery, ...oldVideos];
   }, [business.mediaFeed, business.gallery, business.videos]);
 
-  // Limpa links vazios e indexa as imagens pro Lightbox não quebrar
   const cleanFeed = useMemo(() => {
     let imgIndexCounter = 0;
     return rawFeed
@@ -161,26 +190,24 @@ export default function UrbanLayout({
         (item: any) =>
           item && typeof item.url === "string" && item.url.trim() !== "",
       )
-      .map((item: any) => {
-        if (item.type === "image") {
-          return { ...item, lightboxIndex: imgIndexCounter++ };
-        }
-        return item;
-      });
+      .map((item: any) =>
+        item.type === "image"
+          ? { ...item, lightboxIndex: imgIndexCounter++ }
+          : item,
+      );
   }, [rawFeed]);
 
-  // Lista pura de imagens pro Lightbox (Modal tela cheia)
-  const lightboxImages = useMemo(() => {
-    return cleanFeed
-      .filter((item: any) => item.type === "image")
-      .map((item: any) => item.url);
-  }, [cleanFeed]);
-
+  const lightboxImages = useMemo(
+    () =>
+      cleanFeed
+        .filter((item: any) => item.type === "image")
+        .map((item: any) => item.url),
+    [cleanFeed],
+  );
   const hasPhotos = cleanFeed.some((item: any) => item.type === "image");
   const hasVideos = cleanFeed.some((item: any) =>
     ["video", "video_v", "video_h"].includes(item.type),
   );
-  // Se o usuário não clicou em nada, o sistema escolhe: Fotos 1º, se não tiver, Vídeos.
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
 
@@ -201,9 +228,7 @@ export default function UrbanLayout({
       const numberWithDDI = cleanNumber.startsWith("55")
         ? cleanNumber
         : `55${cleanNumber}`;
-
       const message = `Olá! Vi o perfil de ${business?.name || "sua empresa"} no Tafanu.`;
-
       const targetUrl =
         type === "whatsapp"
           ? `https://wa.me/${numberWithDDI}?text=${encodeURIComponent(message)}`
@@ -212,22 +237,17 @@ export default function UrbanLayout({
       try {
         await Actions.registerClickEvent(business.id, type.toUpperCase());
       } finally {
-        if (type === "whatsapp") {
+        if (type === "whatsapp")
           window.open(targetUrl, "_blank", "noopener,noreferrer");
-        } else {
-          window.location.href = targetUrl;
-        }
+        else window.location.href = targetUrl;
       }
     },
     [business.id, business.name, business.whatsapp, business.phone],
   );
 
   useEffect(() => {
-    if (selectedIndex !== null || isPdfModalOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow =
+      selectedIndex !== null || isPdfModalOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
@@ -239,27 +259,38 @@ export default function UrbanLayout({
     <div
       className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans relative w-full overflow-x-hidden selection:bg-current selection:text-white`}
     >
+      {/* 🚀 HEADER PARALLAX E OVERLAPS */}
       <header
-        className={`relative w-full pt-10 pb-20 md:pt-16 md:pb-28 px-4 md:px-8 flex flex-col ${bgHero} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-xl z-20 overflow-hidden text-white`}
+        className={`relative w-full pt-12 pb-24 md:pt-20 md:pb-32 px-4 md:px-8 flex flex-col rounded-b-[3rem] md:rounded-b-[5rem] shadow-2xl z-20 text-white overflow-hidden`}
       >
-        {business.coverImage && (
-          <Image
-            src={business.coverImage}
-            alt={`Capa de ${business.name}`}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover rounded-b-[2.5rem] md:rounded-b-[4rem]"
-          />
-        )}
+        {/* Fundo Parallax */}
+        <motion.div
+          style={{ y: yHeroBg, opacity: opacityHeroBg }}
+          className={`absolute inset-0 z-0 ${!business.coverImage ? bgHero : ""}`}
+        >
+          {business.coverImage && (
+            <Image
+              src={business.coverImage}
+              alt={`Capa de ${business.name}`}
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
+            />
+          )}
+        </motion.div>
 
-        {/* 🚀 OVERLAY DE ALTO CONTRASTE (Garante leitura em qualquer foto) */}
-        <div className="absolute inset-0 pointer-events-none rounded-b-[2.5rem] md:rounded-b-[4rem] bg-black/40" />
-        <div className="absolute inset-0 pointer-events-none rounded-b-[2.5rem] md:rounded-b-[4rem] bg-gradient-to-b from-black/70 via-transparent to-black/80" />
+        {/* Gradiente de proteção */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-black/40 to-[#0a0a0a]" />
 
-        {/* 🚀 BOTÕES DE COMPARTILHAR E FAVORITAR FIXOS NO CANTO SUPERIOR DIREITO */}
-        <div className="absolute top-4 right-4 md:top-6 md:right-8 z-30">
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/20 rounded-full backdrop-blur-md border border-white/30 text-white shadow-lg">
+        {/* Botões do Topo Flutuantes */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="absolute top-6 right-6 md:top-8 md:right-10 z-30"
+        >
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/10 rounded-full backdrop-blur-xl border border-white/20 text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
             <button
               aria-label="Compartilhar perfil"
               onClick={() => handleShare(business.name)}
@@ -267,7 +298,7 @@ export default function UrbanLayout({
             >
               <Share2 className="w-5 h-5" strokeWidth={1.5} />
             </button>
-            <div className="w-[1px] h-4 bg-white/30" />
+            <div className="w-[1px] h-4 bg-white/20" />
             <div className="flex items-center justify-center transition-transform hover:scale-110">
               <FavoriteButton
                 businessId={business.id}
@@ -277,125 +308,81 @@ export default function UrbanLayout({
               />
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="relative z-20 w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-16">
-          {/* 🚀 BADGE ON/OFF (Mobile - Topo, acima da imagem) */}
-          {realHours.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="md:hidden flex justify-center w-full order-1"
-            >
-              <span
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
-                  isOpen
-                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                    : "bg-rose-500/20 text-rose-400 border-rose-500/30"
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isOpen ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
-                  }`}
-                />
-                {isOpen ? "ON" : "OFF"}
-              </span>
-            </motion.div>
-          )}
-
+        {/* Conteúdo Hero (Stagger Effect) */}
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="relative z-20 w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-8 md:gap-16 mt-8"
+        >
+          {/* Imagem do Perfil com Hover Magnético */}
           {business.imageUrl && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex justify-center md:justify-end relative order-2 md:order-2"
+              variants={fadeUpVariant}
+              className="flex justify-center relative w-48 h-48 md:w-72 md:h-72 lg:w-80 lg:h-80 shrink-0 group"
             >
-              <div className="relative w-56 h-56 md:w-80 md:h-80 lg:w-96 lg:h-96">
-                <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/30 rotate-6 scale-105 transition-transform" />
-                <div className="absolute inset-0 rounded-[2.5rem] md:rounded-[3rem] border-4 border-white/20 -rotate-6 scale-105 transition-transform" />
-                <Image
-                  src={business.imageUrl}
-                  alt={`Logotipo da empresa ${business.name}`}
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover rounded-[2.5rem] md:rounded-[3rem] shadow-2xl relative z-10 bg-white"
-                />
-              </div>
+              <div className="absolute inset-0 rounded-[2.5rem] border border-white/20 rotate-3 group-hover:rotate-6 transition-all duration-500 ease-out" />
+              <div className="absolute inset-0 rounded-[2.5rem] border border-white/10 -rotate-3 group-hover:-rotate-6 transition-all duration-500 ease-out" />
+              <Image
+                src={business.imageUrl}
+                alt={`Logotipo ${business.name}`}
+                fill
+                priority
+                className="object-cover rounded-[2.5rem] shadow-2xl relative z-10 bg-white group-hover:scale-[1.02] transition-transform duration-500"
+              />
             </motion.div>
           )}
 
-          <div className="flex flex-col items-center md:items-start text-center md:text-left order-3 md:order-1 w-full">
+          {/* Textos da Capa */}
+          <div className="flex flex-col items-center md:items-start text-center md:text-left w-full">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="hidden md:flex flex-wrap items-center gap-3 mb-6"
+              variants={fadeUpVariant}
+              className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4 md:mb-6"
             >
               {business.urban_tag && (
-                <span className="px-5 py-2 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm">
+                <span className="px-5 py-2 rounded-full bg-white/10 text-white text-[10px] font-bold tracking-[0.2em] uppercase backdrop-blur-md border border-white/20">
                   {business.urban_tag}
                 </span>
               )}
               {realHours.length > 0 && (
                 <span
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
-                    isOpen
-                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                      : "bg-rose-500/20 text-rose-400 border-rose-500/30"
-                  }`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md ${isOpen ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-rose-500/20 text-rose-400 border-rose-500/30"}`}
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isOpen ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
-                    }`}
+                    className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`}
                   />
-                  {isOpen ? "ON" : "OFF"}
+                  {isOpen ? "Aberto Agora" : "Fechado"}
                 </span>
               )}
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white drop-shadow-md leading-[1.1] mb-4"
+              variants={fadeUpVariant}
+              className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter text-white drop-shadow-lg leading-[1.05] mb-6"
             >
               {business.name}
             </motion.h1>
 
-            {/* 🚀 FRASE DE IMPACTO (Mobile - Abaixo do título) */}
-            {business.urban_tag && (
-              <div className="flex md:hidden justify-center items-center mb-6">
-                <span className="px-5 py-2 rounded-full bg-white/20 text-white text-[10px] font-bold tracking-widest uppercase backdrop-blur-sm border border-white/30 shadow-sm text-center">
-                  {business.urban_tag}
-                </span>
-              </div>
-            )}
-
             {hasDescription && (
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-base md:text-xl text-white/90 font-medium leading-relaxed mb-8 max-w-xl"
+                variants={fadeUpVariant}
+                className="text-sm md:text-lg text-white/80 font-medium leading-relaxed mb-8 max-w-2xl"
               >
                 {business.description}
               </motion.p>
             )}
 
+            {/* Ação Primária da Capa */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              variants={fadeUpVariant}
               className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
             >
-              {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE DO BOTÃO DE AÇÃO */}
               {((isExternalLink && actionLink) ||
                 (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
                 <button
                   onClick={() => {
-                    // SE FOR LINK EXTERNO (Loja Digital/Agenda/Site) -> Manda o cliente pra fora
                     if (isExternalLink && actionLink) {
                       Actions.registerClickEvent(business.id, "WEBSITE");
                       window.open(
@@ -403,24 +390,23 @@ export default function UrbanLayout({
                         "_blank",
                         "noopener,noreferrer",
                       );
-                      return;
-                    }
-
-                    // SE FOR PDF -> Abre o arquivo aqui mesmo
-                    if (rawBusiness.menuMode === "PDF") {
+                    } else if (rawBusiness.menuMode === "PDF") {
                       setIsPdfModalOpen(true);
                     }
                   }}
-                  className="relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white/10 border border-white/20 backdrop-blur-md text-white rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:bg-white/20 transition-all flex items-center justify-center gap-3 active:scale-95"
+                  className="relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/20 backdrop-blur-lg text-white rounded-full font-bold text-sm tracking-widest uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-3 active:scale-95 group"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {rawBusiness.menuMode === "DIGITAL"
                       ? "Acessar Loja"
                       : rawBusiness.menuMode === "AGENDA"
                         ? "Agendar Horário"
                         : "Catálogo Visual"}
-                    <ChevronRight size={20} strokeWidth={2.5} />
+                    <ChevronRight
+                      size={18}
+                      strokeWidth={2.5}
+                      className="group-hover:translate-x-1 transition-transform"
+                    />
                   </span>
                 </button>
               )}
@@ -429,210 +415,150 @@ export default function UrbanLayout({
                 <button
                   aria-label="Entrar em contato via WhatsApp"
                   onClick={() => handleTrackLead("whatsapp")}
-                  className={`w-full sm:w-auto px-8 py-4 bg-white ${theme.primary} rounded-full font-extrabold text-sm md:text-base tracking-wide shadow-xl hover:scale-105 hover:shadow-2xl transition-all flex items-center justify-center gap-3`}
+                  className={`w-full sm:w-auto px-8 py-4 bg-white ${theme.primary} rounded-full font-black text-sm tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3`}
                 >
-                  FALE CONOSCO <MessageCircle size={20} strokeWidth={2.5} />
+                  Fale Conosco <MessageCircle size={18} strokeWidth={2.5} />
                 </button>
               )}
             </motion.div>
           </div>
-        </div>
+        </motion.div>
       </header>
 
-      <main className="w-full max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16 flex flex-col gap-12 pb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+      {/* 🚀 CORPO DO SITE: Quebra de Grid e Elementos Flutuantes */}
+      <main className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-8 md:pt-16 flex flex-col gap-12 lg:gap-16 pb-4 relative z-30 -mt-10 md:-mt-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20 items-start mt-4">
           {/* COLUNA ESQUERDA (Destaques, Galeria, FAQ) */}
-          <div className="lg:col-span-8 flex flex-col gap-10 md:gap-14 w-full min-w-0">
-            {/* Redes Sociais */}
-            {availableSocials.length > 0 && (
-              <div className="flex gap-3 md:gap-4 flex-wrap justify-center md:justify-start">
-                {availableSocials.map((s) => {
-                  const username = business[s];
-                  if (!username) return null;
-                  const finalUrl =
-                    username.startsWith("http") || username.startsWith("www")
-                      ? formatExternalLink(username)
-                      : s === "instagram"
-                        ? `https://instagram.com/${username.replace("@", "")}`
-                        : s === "facebook"
-                          ? `https://facebook.com/${username.replace("@", "")}`
-                          : s === "tiktok"
-                            ? `https://tiktok.com/@${username.replace("@", "")}`
-                            : formatExternalLink(username);
-                  return (
-                    <a
-                      key={s}
-                      href={finalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Visitar perfil no ${s}`}
-                      onClick={() =>
-                        Actions.registerClickEvent(business.id, s.toUpperCase())
-                      }
-                      className={`w-12 h-12 md:w-14 md:h-14 rounded-full ${cardBg} border ${border} ${shadow} flex items-center justify-center transition-all duration-300 hover:scale-110 ${theme.primary}`}
-                    >
-                      {s === "instagram" ? (
-                        <Instagram
-                          className="w-5 h-5 md:w-6 md:h-6"
-                          strokeWidth={1.5}
-                        />
-                      ) : s === "facebook" ? (
-                        <Facebook
-                          className="w-5 h-5 md:w-6 md:h-6"
-                          strokeWidth={1.5}
-                        />
-                      ) : s === "tiktok" ? (
-                        <TikTokIcon className="w-5 h-5 md:w-6 md:h-6" />
-                      ) : (
-                        <Globe
-                          className="w-5 h-5 md:w-6 md:h-6"
-                          strokeWidth={1.5}
-                        />
-                      )}
-                    </a>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Sobre — visível no scroll para quem não leu o hero */}
-            {hasDescription && !business.imageUrl && (
-              <section
-                className={`p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
-              >
-                <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 mb-4 flex items-center gap-3">
-                  <span
-                    className={`w-2 h-6 md:h-8 rounded-full ${theme.bgAction} shrink-0`}
-                  />
-                  Sobre a empresa
-                </h2>
-                <p className="text-sm md:text-base leading-relaxed opacity-70 whitespace-pre-line">
-                  {business.description}
-                </p>
-              </section>
-            )}
-
-            {/* Destaques */}
+          <div className="lg:col-span-8 flex flex-col gap-16 w-full min-w-0">
+            {/* Destaques com efeito Hover */}
             {hasFeatures && (
-              <section className="space-y-6">
-                <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
+              <motion.section
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="space-y-8"
+              >
+                <h2 className="text-2xl md:text-3xl font-black tracking-tighter opacity-90 flex items-center gap-3 uppercase italic">
                   <Sparkles
-                    className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
-                    strokeWidth={2}
-                  />{" "}
-                  Nossos Diferenciais
+                    className={`w-6 h-6 md:w-8 md:h-8 ${theme.primary}`}
+                    strokeWidth={2.5}
+                  />
+                  Diferenciais
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {business.features
                     .filter(Boolean)
                     .map((f: string, i: number) => (
-                      <div
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        viewport={{ once: true }}
                         key={i}
-                        className={`w-full p-4 md:p-5 ${cardBg} border ${border} ${shadow} rounded-2xl flex items-center gap-4 transition-all duration-300 hover:-translate-y-1`}
+                        className={`w-full p-5 md:p-6 ${cardBg} border ${border} ${shadow} rounded-[1.5rem] flex items-start gap-4 transition-all duration-500 hover:-translate-y-1 hover:shadow-lg group`}
                       >
                         <div
-                          className={`w-2 h-2 md:w-2.5 md:h-2.5 shrink-0 rounded-full ${theme.bgAction}`}
+                          className={`w-3 h-3 md:w-4 md:h-4 shrink-0 rounded-full ${theme.bgAction} mt-1 group-hover:scale-125 transition-transform`}
                         />
-                        <span className="font-semibold text-sm md:text-base leading-snug opacity-80">
+                        <span className="font-bold text-sm md:text-base leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
                           {f}
                         </span>
-                      </div>
+                      </motion.div>
                     ))}
                 </div>
-              </section>
+              </motion.section>
             )}
 
-            {/* 🚀 THE MASTER RUNWAY (Mídia Unificada URBAN INTELIGENTE) */}
-            {cleanFeed.length > 0 &&
-              (() => {
-                const filteredFeed = cleanFeed.filter((item: any) => {
-                  if (activeMediaFilter === "photos")
-                    return item.type === "image";
-                  if (activeMediaFilter === "motion")
-                    return (
-                      item.type === "video" ||
-                      item.type === "video_v" ||
-                      item.type === "video_h"
-                    );
-                  return true;
-                });
-
-                if (filteredFeed.length === 0) return null;
-
-                return (
-                  <section className="w-full min-w-0 pt-2 flex flex-col gap-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2">
-                      <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center gap-3">
-                        <Camera
-                          className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
-                          strokeWidth={2}
-                        />
-                        Catálogo Visual
-                      </h2>
-
-                      {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS (sem a aba ALL) */}
-                      {hasPhotos && hasVideos && (
-                        <div
-                          className={`flex items-center p-1 ${cardBg} border ${border} rounded-full ${shadow}`}
-                        >
-                          <button
-                            onClick={() => setUserMediaFilter("photos")}
-                            className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
-                          >
-                            Photos
-                          </button>
-                          <button
-                            onClick={() => setUserMediaFilter("motion")}
-                            className={`px-4 md:px-5 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
-                          >
-                            Motion
-                          </button>
-                        </div>
-                      )}
+            {/* THE MASTER RUNWAY (Catálogo) */}
+            {cleanFeed.length > 0 && (
+              <motion.section
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="w-full min-w-0 flex flex-col gap-8"
+              >
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <h2 className="text-2xl md:text-3xl font-black tracking-tighter opacity-90 flex items-center gap-3 uppercase italic">
+                    <Camera
+                      className={`w-6 h-6 md:w-8 md:h-8 ${theme.primary}`}
+                      strokeWidth={2.5}
+                    />{" "}
+                    Catálogo Visual
+                  </h2>
+                  {hasPhotos && hasVideos && (
+                    <div
+                      className={`flex items-center p-1 ${cardBg} border ${border} rounded-full ${shadow}`}
+                    >
+                      <button
+                        onClick={() => setUserMediaFilter("photos")}
+                        className={`px-5 py-2 rounded-full text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                      >
+                        Photos
+                      </button>
+                      <button
+                        onClick={() => setUserMediaFilter("motion")}
+                        className={`px-5 py-2 rounded-full text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? `${theme.bgAction}` : "opacity-50 hover:opacity-100"}`}
+                      >
+                        Motion
+                      </button>
                     </div>
+                  )}
+                </div>
+                <div className="-mx-4 md:mx-0">
+                  <MasterRunway
+                    key={activeMediaFilter}
+                    feed={cleanFeed.filter((item: any) =>
+                      activeMediaFilter === "photos"
+                        ? item.type === "image"
+                        : ["video", "video_v", "video_h"].includes(item.type),
+                    )}
+                    setSelectedIndex={setSelectedIndex}
+                    variant="urban"
+                    themeBorder={border}
+                    cardBg={cardBg}
+                    cardShadow={shadow}
+                  />
+                </div>
+              </motion.section>
+            )}
 
-                    <MasterRunway
-                      key={activeMediaFilter}
-                      feed={filteredFeed}
-                      setSelectedIndex={setSelectedIndex}
-                      variant="urban"
-                      themeBorder={border}
-                      cardBg={cardBg}
-                      cardShadow={shadow}
-                    />
-                  </section>
-                );
-              })()}
-
-            {/* FAQ */}
+            {/* FAQ (Acordeon Suave) */}
             {hasFaqs && (
-              <section className="space-y-6 pt-6">
-                <h2 className="text-xl md:text-2xl font-extrabold tracking-tight opacity-90 flex items-center justify-center md:justify-start gap-3">
+              <motion.section
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="space-y-8"
+              >
+                <h2 className="text-2xl md:text-3xl font-black tracking-tighter opacity-90 flex items-center gap-3 uppercase italic">
                   <HelpCircle
-                    className={`w-5 h-5 md:w-6 md:h-6 ${theme.primary}`}
-                    strokeWidth={2}
+                    className={`w-6 h-6 md:w-8 md:h-8 ${theme.primary}`}
+                    strokeWidth={2.5}
                   />{" "}
-                  Suporte e Dúvidas
+                  Dúvidas Frequentes
                 </h2>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   {faqs.map((f: any, i: number) => (
                     <div
                       key={i}
-                      className={`${cardBg} border ${border} ${shadow} rounded-2xl overflow-hidden transition-all duration-300`}
+                      className={`${cardBg} border ${border} ${shadow} rounded-[1.5rem] overflow-hidden transition-all duration-300`}
                     >
                       <button
                         aria-expanded={openFaq === i}
-                        aria-label="Alternar visualização da resposta"
                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full flex items-center justify-between p-5 md:p-6 text-left group"
+                        className="w-full flex items-center justify-between p-6 text-left group"
                       >
-                        <span className="text-sm md:text-base font-bold opacity-90 pr-4">
+                        <span className="text-sm md:text-base font-black opacity-90 pr-4">
                           {f.q || f.question}
                         </span>
-                        <ChevronDown
-                          className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${theme.primary} ${openFaq === i ? "rotate-180" : ""}`}
-                          strokeWidth={2}
-                        />
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 transition-transform duration-500 ${openFaq === i ? "rotate-180" : ""}`}
+                        >
+                          <ChevronDown
+                            className={`w-5 h-5 ${theme.primary}`}
+                            strokeWidth={2.5}
+                          />
+                        </div>
                       </button>
                       <AnimatePresence>
                         {openFaq === i && (
@@ -643,7 +569,7 @@ export default function UrbanLayout({
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                           >
                             <div
-                              className={`px-5 md:px-6 pb-5 pt-2 font-medium opacity-70 text-sm leading-relaxed border-t ${border}`}
+                              className={`px-6 pb-6 pt-2 font-medium opacity-70 text-sm leading-relaxed border-t ${border}`}
                             >
                               {f.a || f.answer}
                             </div>
@@ -653,171 +579,206 @@ export default function UrbanLayout({
                     </div>
                   ))}
                 </div>
-              </section>
+              </motion.section>
             )}
           </div>
 
-          {/* COLUNA DIREITA (Sidebar Comercial Clean) */}
-          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-10">
-            {/* 🚀 ATENDIMENTO & LOJAS UNIFICADOS */}
-            {(hasWhatsapp || hasPhone || salesChannels.length > 0) && (
-              <div
-                className={`p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow} space-y-5`}
+          {/* COLUNA DIREITA (Sidebar Sticky Super Clean) */}
+          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
+            {/* Lojas Oficiais */}
+            {salesChannels.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className={`p-8 rounded-[2.5rem] border ${border} ${cardBg} ${shadow} space-y-4 relative overflow-hidden`}
               >
-                {/* Contatos Pessoais */}
-                {(hasWhatsapp || hasPhone) && (
-                  <>
-                    <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-2">
-                      Atendimento
-                    </h2>
-                    <div className="space-y-3">
-                      {hasWhatsapp && (
-                        <button
-                          onClick={() => handleTrackLead("whatsapp")}
-                          className="w-full flex items-center justify-between p-4 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all duration-300 border border-emerald-100 group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <MessageCircle size={20} strokeWidth={2} />
-                            <span className="text-xs md:text-sm font-bold">
-                              WhatsApp
-                            </span>
-                          </div>
-                          <ChevronRight
-                            size={18}
-                            strokeWidth={2}
-                            className="opacity-50 group-hover:translate-x-1 transition-transform"
-                          />
-                        </button>
-                      )}
-                      {hasPhone && (
-                        <button
-                          onClick={() => handleTrackLead("phone")}
-                          className={`w-full flex items-center justify-between p-4 rounded-xl border ${border} hover:bg-slate-50 transition-colors group`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Phone
-                              size={20}
-                              strokeWidth={2}
-                              className={`opacity-50 ${primary}`}
-                            />
-                            <span className="text-xs md:text-sm font-bold opacity-80 tracking-widest">
-                              {formatPhoneNumber(business.phone)}
-                            </span>
-                          </div>
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
+                <div
+                  className={`absolute top-0 right-0 w-32 h-32 opacity-10 rounded-full blur-3xl pointer-events-none ${theme.bgAction}`}
+                />
 
-                {/* Lojas Oficiais embutidas */}
-                {salesChannels.length > 0 && (
-                  <div
-                    className={`pt-5 ${hasWhatsapp || hasPhone ? `border-t ${border}` : ""} flex flex-col gap-3`}
-                  >
-                    <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 text-center mb-1">
-                      Nossas Lojas
-                    </h2>
-                    {salesChannels.map((channel) => (
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 relative z-10 text-center">
+                  Lojas Oficiais
+                </h3>
+                <div className="relative z-10 space-y-4">
+                  {salesChannels.map((channel) => (
+                    <a
+                      key={channel.key}
+                      href={formatExternalLink(channel.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        Actions.registerClickEvent(
+                          business.id,
+                          channel.key.toUpperCase(),
+                        )
+                      }
+                      className={`flex items-center gap-4 p-4 rounded-2xl ${channel.colorClass} hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-md`}
+                    >
+                      {channel.icon}
+                      <span className="text-xs font-black tracking-widest uppercase">
+                        {channel.name}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+            {/* 🚀 ENDEREÇO & REDES SOCIAIS (Box Combinado e Inteligente) */}
+            {(hasAddress || availableSocials.length > 0) && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className={`p-6 md:p-7 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
+              >
+                {/* Parte 1: Endereço e Botão Rota */}
+                {hasAddress && (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 mb-1 opacity-40">
+                      <MapPin size={20} strokeWidth={2.5} />
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">
+                        Como Chegar
+                      </h3>
+                    </div>
+                    {/* 🚀 FIX: Texto menor, menos "grosseiro" (text-sm font-bold) */}
+                    <p className="text-sm md:text-base font-bold leading-snug opacity-90 break-words">
+                      {business.address || "Endereço não cadastrado"}
+                      {business.number &&
+                        !business.address?.includes(business.number) &&
+                        `, ${business.number}`}
+                    </p>
+                    {business.complement && (
+                      <p className="text-xs font-medium opacity-60">
+                        {business.complement}
+                      </p>
+                    )}
+
+                    <div
+                      className={`mt-2 pt-4 border-t ${border} flex flex-col gap-3`}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-50">
+                        {business.neighborhood && `${business.neighborhood} • `}{" "}
+                        {business.city}
+                      </p>
+                      {/* 🚀 FIX: Botão de Rota mais delicado (py-2.5) */}
                       <a
-                        key={channel.key}
-                        href={formatExternalLink(channel.url)}
+                        href={mapsUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={`Comprar na loja ${channel.name}`}
                         onClick={() =>
-                          Actions.registerClickEvent(
-                            business.id,
-                            channel.key.toUpperCase(),
-                          )
+                          Actions.registerClickEvent(business.id, "MAP")
                         }
-                        className={`flex items-center gap-3 p-3 md:p-4 rounded-xl ${channel.colorClass} hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-sm`}
+                        className={`w-full py-2.5 rounded-xl ${theme.bgAction} flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white shadow-md hover:scale-[1.02] transition-transform`}
                       >
-                        <div className={`transition-transform duration-300`}>
-                          {channel.icon}
-                        </div>
-                        <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase">
-                          {channel.name}
-                        </span>
+                        <Navigation size={14} strokeWidth={2.5} />
+                        Iniciar Rota
                       </a>
-                    ))}
+                    </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Endereço Clean */}
-            {hasAddress && (
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Abrir localização no Google Maps"
-                onClick={() => Actions.registerClickEvent(business.id, "MAP")}
-                className={`block p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow} hover:-translate-y-1 transition-all duration-300 group`}
-              >
-                <div className="flex items-center gap-3 mb-5 opacity-40">
-                  <MapPin size={18} strokeWidth={2} />
-                  <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                    Localização
-                  </h2>
-                </div>
-                <p className="text-sm md:text-base font-bold leading-relaxed mb-1 opacity-90 break-words">
-                  {business.address || "Endereço não cadastrado"}
-                  {business.number &&
-                    !business.address?.includes(business.number) &&
-                    `, ${business.number}`}
-                </p>
-                {business.complement && (
-                  <p className="text-xs md:text-sm font-medium opacity-60 mb-4">
-                    {business.complement}
-                  </p>
+                {/* Parte 2: Redes Sociais no Rodapé da Caixa */}
+                {availableSocials.length > 0 && (
+                  <div
+                    className={`${hasAddress ? `mt-5 pt-5 border-t ${border}` : ""} flex flex-col gap-3`}
+                  >
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 text-center">
+                      Nossas Redes
+                    </h3>
+                    <div className="flex gap-2.5 flex-wrap justify-center">
+                      {availableSocials.map((s) => {
+                        const username = business[s];
+                        if (!username) return null;
+                        const finalUrl =
+                          username.startsWith("http") ||
+                          username.startsWith("www")
+                            ? formatExternalLink(username)
+                            : s === "instagram"
+                              ? `https://instagram.com/${username.replace("@", "")}`
+                              : s === "facebook"
+                                ? `https://facebook.com/${username.replace("@", "")}`
+                                : s === "tiktok"
+                                  ? `https://tiktok.com/@${username.replace("@", "")}`
+                                  : formatExternalLink(username);
+                        return (
+                          /* 🚀 FIX: Ícones menores e delicados (w-10 h-10) */
+                          <a
+                            key={s}
+                            href={finalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() =>
+                              Actions.registerClickEvent(
+                                business.id,
+                                s.toUpperCase(),
+                              )
+                            }
+                            className={`w-10 h-10 rounded-xl ${cardBg} border ${border} shadow-sm flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:rotate-3 ${theme.primary}`}
+                          >
+                            {s === "instagram" ? (
+                              <Instagram className="w-4 h-4" strokeWidth={2} />
+                            ) : s === "facebook" ? (
+                              <Facebook className="w-4 h-4" strokeWidth={2} />
+                            ) : s === "tiktok" ? (
+                              <TikTokIcon className="w-4 h-4" />
+                            ) : (
+                              <Globe className="w-4 h-4" strokeWidth={2} />
+                            )}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-                <p className="text-[10px] uppercase tracking-widest opacity-40 font-bold pt-4 border-t border-slate-100">
-                  {business.neighborhood && `${business.neighborhood} • `}{" "}
-                  {business.city} {business.state ? `• ${business.state}` : ""}
-                </p>
-              </a>
+              </motion.div>
             )}
 
             {/* Horários */}
             {hasHours && (
-              <div
-                className={`p-6 md:p-8 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className={`p-8 rounded-[2.5rem] border ${border} ${cardBg} ${shadow}`}
               >
-                <div className="flex items-center gap-3 mb-5 opacity-40">
-                  <Clock size={18} strokeWidth={2} />
-                  <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                <div className="flex items-center gap-3 mb-6 opacity-40">
+                  <Clock size={24} strokeWidth={2} />
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">
                     Horários
-                  </h2>
+                  </h3>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {realHours.map((h: any, i: number) => (
                     <div
                       key={i}
-                      className={`flex justify-between font-bold text-[10px] md:text-xs pb-3 border-b border-slate-50 last:border-0 last:pb-0`}
+                      className={`flex justify-between items-center font-bold text-xs pb-4 border-b border-slate-50 last:border-0 last:pb-0`}
                     >
                       <span className="opacity-50 uppercase tracking-widest">
                         {h.day}
                       </span>
                       <span
-                        className={h.isClosed ? "text-red-500" : "opacity-90"}
+                        className={
+                          h.isClosed
+                            ? "text-rose-500 bg-rose-50 px-3 py-1 rounded-lg text-[10px]"
+                            : "opacity-90"
+                        }
                       >
                         {h.time}
                       </span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
       </main>
 
-      <div className="max-w-4xl mx-auto w-full px-6 md:px-12 pb-12">
-        <div className="w-full flex justify-center py-6 opacity-30 hover:opacity-100 transition-opacity border-t border-current/10 mt-4">
-          <ReportModal businessSlug={business.slug} />
-        </div>
+      {/* RODAPÉ DO SAAS (Comentários e Report) */}
+      <div className="max-w-4xl mx-auto w-full px-4 md:px-12 pb-12 pt-10">
         <CommentsSection
           businessId={rawBusiness.id}
           businessOwnerId={rawBusiness.userId}
@@ -828,11 +789,14 @@ export default function UrbanLayout({
           comments={rawBusiness.comments || []}
           businessRating={business.rating}
         />
+        <div className="w-full flex justify-center pt-10 opacity-30 hover:opacity-100 transition-opacity">
+          <ReportModal businessSlug={business.slug} />
+        </div>
       </div>
 
       <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
 
-      {/* WHATSAPP FLUTUANTE */}
+      {/* WHATSAPP FLUTUANTE STICKY */}
       {hasWhatsapp && (
         <motion.button
           aria-label="Abrir WhatsApp Flutuante"
@@ -842,15 +806,17 @@ export default function UrbanLayout({
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-6 right-6 md:bottom-10 md:right-10 z-30 w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all`}
+          /* 🚀 FIX: bottom-24 (sobe no celular para não bater na Navbar) e bottom-10 (computador). Diminuí a bolinha no mobile para não poluir (w-14 h-14) */
+          className={`fixed bottom-24 right-6 md:bottom-10 md:right-10 z-40 w-14 h-14 md:w-16 md:h-16 rounded-[1.2rem] bg-[#25D366] text-white flex items-center justify-center shadow-[0_10px_40px_rgba(37,211,102,0.4)] hover:scale-110 hover:rounded-[1.5rem] active:scale-95 transition-all duration-300 border-2 border-white/20`}
         >
           <MessageCircle
-            className="w-8 h-8 md:w-10 md:h-10"
+            className="w-7 h-7 md:w-8 md:h-8 drop-shadow-md"
             fill="currentColor"
           />
         </motion.button>
       )}
 
+      {/* MODAIS (Galeria e PDF) */}
       <TemplateLightbox
         images={lightboxImages}
         selectedIndex={selectedIndex}
@@ -858,33 +824,30 @@ export default function UrbanLayout({
         onNavigate={safeSetIndex}
       />
 
-      {/* ==========================================
-          🚀 MODAL DE PDF (CATÁLOGO VIRTUAL)
-          ========================================== */}
       <AnimatePresence>
         {isPdfModalOpen && rawBusiness.catalogPdf && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
+            className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8"
           >
-            <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
-              <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
-                  Visualização de Documento
+            <div className="w-full max-w-5xl h-full bg-white rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col relative shadow-2xl">
+              <div className="w-full h-20 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                  Catálogo / Cardápio
                 </span>
                 <button
                   onClick={() => setIsPdfModalOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center bg-slate-200 hover:bg-rose-500 hover:text-white rounded-full transition-colors text-slate-500"
+                  className="w-10 h-10 flex items-center justify-center bg-slate-200 hover:bg-rose-500 hover:text-white rounded-full transition-colors text-slate-500"
                 >
-                  <Plus className="rotate-45" size={20} strokeWidth={2} />
+                  <X size={20} strokeWidth={2.5} />
                 </button>
               </div>
-              <div className="flex-1 w-full bg-slate-200/50">
+              <div className="flex-1 w-full bg-slate-200/50 p-2 md:p-4">
                 <iframe
                   src={`${rawBusiness.catalogPdf}#toolbar=0`}
-                  className="w-full h-full border-none"
+                  className="w-full h-full border-none rounded-xl md:rounded-[2rem]"
                   title="Catálogo PDF"
                 />
               </div>
@@ -892,6 +855,7 @@ export default function UrbanLayout({
           </motion.div>
         )}
       </AnimatePresence>
+
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;

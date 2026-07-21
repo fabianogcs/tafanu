@@ -314,98 +314,99 @@ export const businessThemes: Record<string, any> = {
 
   // 1. VIBRANT VIOLET (Igual à sua imagem de referência!)
   // Identidade: Agências, Criadores de Conteúdo, Inovação
+  // 1. VIBRANT VIOLET (Agências, Criadores de Conteúdo, Inovação)
   urban_rose_gold: {
-    // Mantive a chave para não quebrar cadastros antigos
     label: "Landing - Vibrant Violet",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#a855f7] to-[#ec4899]", // Degradê Roxo para Rosa vibrante
-    bgPage: "bg-[#f8fafc]", // Fundo do site super claro e limpo
-    textColor: "text-[#0f172a]", // Texto chumbo escuro para leitura perfeita
-    cardBg: "bg-[#ffffff]", // Cards brancos absolutos
-    cardTextColor: "text-[#0f172a]",
-    border: "border-[#e2e8f0]", // Borda cinza super fina
-    primary: "text-[#a855f7]", // Ícones e detalhes em Roxo
-    bgSecondary: "bg-[#f3e8ff]", // Fundo secundário roxinho claro
-    bgAction: "bg-white text-[#a855f7]", // Botão branco no header roxo
+    bgHero: "bg-gradient-to-r from-[#a855f7] to-[#ec4899]", // Roxo para Rosa
+    bgPage: "bg-[#fdf4ff]", // 🚀 Fundo Fúcsia ultra pálido (traz a identidade pra página toda)
+    textColor: "text-[#4a044e]", // Texto roxo super escuro (elegante)
+    cardBg: "bg-white",
+    cardTextColor: "text-[#4a044e]",
+    border: "border-[#f5d0fe]", // Borda levemente rosada
+    primary: "text-[#a855f7]",
+    bgSecondary: "bg-[#f3e8ff]",
+    // 🚀 FIX: Fundo sólido com degradê para destacar o texto branco!
+    bgAction:
+      "bg-gradient-to-r from-[#a855f7] to-[#ec4899] border-none !text-white",
     radius: "rounded-3xl",
-    shadow: "shadow-[0_15px_40px_-15px_rgba(168,85,247,0.2)]", // Sombra com tom roxo suave
+    shadow: "shadow-[0_15px_40px_-15px_rgba(168,85,247,0.25)]",
     previewColor: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
   },
 
   // 2. ELECTRIC BLUE (Tech, Clínicas, Confiança e Limpeza)
-  // Identidade: Consultorias, Softwares, Odontologia
   urban_ocean: {
     label: "Landing - Electric Blue",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#2563eb] to-[#06b6d4]", // Azul Royal para Ciano
-    bgPage: "bg-[#f8fafc]",
-    textColor: "text-[#0f172a]",
-    cardBg: "bg-[#ffffff]",
-    cardTextColor: "text-[#0f172a]",
-    border: "border-[#e2e8f0]",
-    primary: "text-[#0ea5e9]", // Azul claro vibrante
+    bgHero: "bg-gradient-to-r from-[#2563eb] to-[#06b6d4]",
+    bgPage: "bg-[#f0f9ff]", // 🚀 Fundo Ciano ultra pálido (Sky 50)
+    textColor: "text-[#082f49]", // Texto azul marinho profundo
+    cardBg: "bg-white",
+    cardTextColor: "text-[#082f49]",
+    border: "border-[#bae6fd]", // Borda azul clara
+    primary: "text-[#0ea5e9]",
     bgSecondary: "bg-[#e0f2fe]",
-    bgAction: "bg-white text-[#0ea5e9]",
+    bgAction:
+      "bg-gradient-to-r from-[#2563eb] to-[#06b6d4] border-none !text-white",
     radius: "rounded-3xl",
-    shadow: "shadow-[0_15px_40px_-15px_rgba(14,165,233,0.2)]", // Sombra azulada
+    shadow: "shadow-[0_15px_40px_-15px_rgba(14,165,233,0.25)]",
     previewColor: "linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)",
   },
 
   // 3. SUNSET ORANGE (Quente, Vendas, Alimentação, Energia)
-  // Identidade: Delivery, Moda Praia, Estúdios Criativos
   urban_black_nude: {
-    // Chave antiga, mas com cara totalmente nova
     label: "Landing - Sunset Orange",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#f97316] to-[#f43f5e]", // Laranja para Rosa/Vermelho
-    bgPage: "bg-[#f8fafc]",
-    textColor: "text-[#1c1917]",
-    cardBg: "bg-[#ffffff]",
-    cardTextColor: "text-[#1c1917]",
-    border: "border-[#e2e8f0]",
-    primary: "text-[#f97316]", // Laranja vibrante
+    bgHero: "bg-gradient-to-r from-[#f97316] to-[#f43f5e]",
+    bgPage: "bg-[#fff7ed]", // 🚀 Fundo Laranja ultra pálido (Orange 50)
+    textColor: "text-[#431407]", // Texto Marrom/Laranja super escuro
+    cardBg: "bg-white",
+    cardTextColor: "text-[#431407]",
+    border: "border-[#fed7aa]", // Borda laranja clara
+    primary: "text-[#f97316]",
     bgSecondary: "bg-[#ffedd5]",
-    bgAction: "bg-white text-[#f97316]",
+    bgAction:
+      "bg-gradient-to-r from-[#f97316] to-[#f43f5e] border-none !text-white",
     radius: "rounded-3xl",
-    shadow: "shadow-[0_15px_40px_-15px_rgba(249,115,22,0.2)]", // Sombra alaranjada
+    shadow: "shadow-[0_15px_40px_-15px_rgba(249,115,22,0.25)]",
     previewColor: "linear-gradient(135deg, #f97316 0%, #f43f5e 100%)",
   },
 
   // 4. FRESH EMERALD (Saúde, Natureza, Bem-estar)
-  // Identidade: Nutricionistas, Produtos Naturais, Spa
   urban_platinum: {
     label: "Landing - Fresh Emerald",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#10b981] to-[#14b8a6]", // Esmeralda para Teal
-    bgPage: "bg-[#f8fafc]",
-    textColor: "text-[#0f172a]",
-    cardBg: "bg-[#ffffff]",
-    cardTextColor: "text-[#0f172a]",
-    border: "border-[#e2e8f0]",
-    primary: "text-[#10b981]", // Verde Esmeralda
+    bgHero: "bg-gradient-to-r from-[#10b981] to-[#14b8a6]",
+    bgPage: "bg-[#f0fdf4]", // 🚀 Fundo Verde ultra pálido (Emerald 50)
+    textColor: "text-[#022c22]", // Texto verde musgo super escuro
+    cardBg: "bg-white",
+    cardTextColor: "text-[#022c22]",
+    border: "border-[#a7f3d0]", // Borda verde clara
+    primary: "text-[#10b981]",
     bgSecondary: "bg-[#d1fae5]",
-    bgAction: "bg-white text-[#10b981]",
+    bgAction:
+      "bg-gradient-to-r from-[#10b981] to-[#14b8a6] border-none !text-white",
     radius: "rounded-3xl",
-    shadow: "shadow-[0_15px_40px_-15px_rgba(16,185,129,0.2)]", // Sombra verde suave
+    shadow: "shadow-[0_15px_40px_-15px_rgba(16,185,129,0.25)]",
     previewColor: "linear-gradient(135deg, #10b981 0%, #14b8a6 100%)",
   },
 
   // 5. GOLD VIP (O Intocável - Luxo Absoluto)
-  // Identidade: Joalherias, Marcas de Alto Padrão, VIP
   urban_gold: {
     label: "Landing - Gold VIP",
     layout: "urban",
-    bgHero: "bg-[#0a0a0a]", // Tom de asfalto finíssimo (Capa)
-    bgPage: "bg-[#000000]", // Preto Absoluto Oled (Corpo)
-    textColor: "text-[#fef3c7]", // Âmbar Dourado para o texto
+    bgHero: "bg-[#0a0a0a]",
+    bgPage: "bg-[#000000]",
+    textColor: "text-[#fef3c7]",
     cardBg: "bg-[#111111]/90",
     cardTextColor: "text-[#fef3c7]",
     border: "border-[#d4af37]/30",
-    primary: "text-[#d4af37]", // Dourado Metálico Clássico
+    primary: "text-[#d4af37]",
     bgSecondary: "bg-[#171717]",
-    bgAction: "bg-[#d4af37] text-black", // Botão dourado escrito preto
-    radius: "rounded-3xl", // Deixei arredondado pra combinar com os outros!
-    shadow: "shadow-[0_15px_40px_-15px_rgba(212,175,55,0.15)]", // Glow Dourado
+    // 🚀 FIX: A tag !text-black força a cor a ser preta, ignorando o text-white do layout
+    bgAction: "bg-[#d4af37] !text-black",
+    radius: "rounded-3xl",
+    shadow: "shadow-[0_15px_40px_-15px_rgba(212,175,55,0.15)]",
     previewColor: "linear-gradient(135deg, #0a0a0a 0%, #d4af37 100%)",
   },
 
@@ -414,57 +415,54 @@ export const businessThemes: Record<string, any> = {
   // =========================================================
 
   // 6. URBAN BRUTALIST (Agressivo, Preto/Branco/Vermelho)
-  // Identidade: Streetwear, Crossfit, Agências Disruptivas
   urban_brutalist: {
     label: "Landing - Brutalist Red",
     layout: "urban",
-    bgHero: "bg-[#000000]", // Preto sólido, sem degradê para ser brutal
-    bgPage: "bg-[#ffffff]", // Branco absoluto
-    textColor: "text-[#000000]", // Preto absoluto
+    bgHero: "bg-[#000000]",
+    bgPage: "bg-[#ffffff]",
+    textColor: "text-[#000000]",
     cardBg: "bg-[#ffffff]",
     cardTextColor: "text-[#000000]",
-    border: "border-[#000000] border-2", // Borda preta e grossa
-    primary: "text-[#ef4444]", // Vermelho sangue
+    border: "border-[#000000] border-2",
+    primary: "text-[#ef4444]",
     bgSecondary: "bg-[#f3f4f6]",
-    bgAction: "bg-[#ef4444] text-white font-black uppercase",
-    radius: "rounded-none", // Sem cantos arredondados (Brutalismo)
-    shadow: "shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]", // Sombra sólida preta ("hard shadow")
+    bgAction: "bg-[#ef4444] !text-white font-black uppercase",
+    radius: "rounded-none",
+    shadow: "shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
     previewColor: "linear-gradient(135deg, #000000 50%, #ef4444 50%)",
   },
 
   // 7. URBAN SYNTHWAVE (Retro 80s, Noite, Cores Neon)
-  // Identidade: Baladas, Arcades, Streamers, Retrowave
   urban_synthwave: {
     label: "Landing - Synthwave 80s",
     layout: "urban",
-    bgHero: "bg-gradient-to-b from-[#db2777] via-[#9333ea] to-[#1e1b4b]", // Por do sol anos 80
-    bgPage: "bg-[#1e1b4b]", // Roxo mega escuro (fundo)
-    textColor: "text-[#fbcfe8]", // Rosa bebê pálido para leitura
-    cardBg: "bg-[#2e1065]", // Card roxo profundo
+    bgHero: "bg-gradient-to-b from-[#db2777] via-[#9333ea] to-[#1e1b4b]",
+    bgPage: "bg-[#1e1b4b]",
+    textColor: "text-[#fbcfe8]",
+    cardBg: "bg-[#2e1065]",
     cardTextColor: "text-[#e0e7ff]",
     border: "border-[#db2777]/50",
-    primary: "text-[#10b981]", // Verde neon escandaloso
+    primary: "text-[#10b981]",
     bgSecondary: "bg-[#171033]",
-    bgAction: "bg-[#10b981] text-[#064e3b]", // Botão Verde Neon
+    bgAction: "bg-[#10b981] !text-[#064e3b]", // 🚀 Força o texto a ficar escuro no botão neon
     radius: "rounded-xl",
-    shadow: "shadow-[0_0_25px_rgba(219,39,119,0.4)]", // Glow rosa
+    shadow: "shadow-[0_0_25px_rgba(219,39,119,0.4)]",
     previewColor: "linear-gradient(135deg, #db2777 0%, #1e1b4b 100%)",
   },
 
   // 8. URBAN EARTH (Tons de Barro, Areia e Natureza)
-  // Identidade: Cerâmica, Produtos Naturais, Estética Boho
   urban_earth: {
     label: "Landing - Earth & Boho",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#92400e] to-[#d97706]", // Barro para Ocre
-    bgPage: "bg-[#fef3c7]", // Fundo cor de areia/creme (quebra o branco)
-    textColor: "text-[#451a03]", // Marrom super escuro
-    cardBg: "bg-[#fffbeb]", // Creme mais claro para o card
+    bgHero: "bg-gradient-to-r from-[#92400e] to-[#d97706]",
+    bgPage: "bg-[#fef3c7]",
+    textColor: "text-[#451a03]",
+    cardBg: "bg-[#fffbeb]",
     cardTextColor: "text-[#78350f]",
     border: "border-[#fcd34d]",
-    primary: "text-[#92400e]", // Terracota escuro
+    primary: "text-[#92400e]",
     bgSecondary: "bg-[#fde68a]",
-    bgAction: "bg-[#78350f] text-[#fef3c7]",
+    bgAction: "bg-[#78350f] !text-[#fef3c7]", // 🚀 Força o texto bege clarinho no botão barro
     radius: "rounded-2xl",
     shadow: "shadow-xl shadow-[#d97706]/10",
     previewColor: "linear-gradient(135deg, #92400e 0%, #fef3c7 100%)",
