@@ -9,6 +9,7 @@ import {
   Facebook,
   Globe,
   PhoneCall,
+  Phone,
   MapPin,
   Camera,
   MessageCircle,
@@ -45,23 +46,23 @@ const AccordionItem = ({ q, a, theme }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div
-      className={`mb-4 rounded-[1.5rem] border ${theme.border} ${theme.cardBg} overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md`}
+      className={`mb-3 rounded-2xl border ${theme.border} ${theme.cardBg} overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md`}
     >
       <button
         type="button"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-6 flex justify-between items-center text-left gap-4 outline-none bg-transparent border-none group"
+        className="w-full p-5 md:p-6 flex justify-between items-center text-left gap-4 outline-none bg-transparent border-none group"
       >
         <span
-          className={`text-sm font-black uppercase tracking-tight transition-colors duration-300 ${isOpen ? theme.primary : "opacity-80 group-hover:opacity-100"}`}
+          className={`text-sm font-bold tracking-tight transition-colors duration-300 ${isOpen ? theme.primary : "opacity-80 group-hover:opacity-100"}`}
         >
           {q}
         </span>
         <div
-          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-inner ${isOpen ? `${theme.bgAction} rotate-45 text-white` : `${theme.bgSecondary} ${theme.primary}`}`}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-inner ${isOpen ? `${theme.bgAction} rotate-45 text-white` : `bg-black/5 ${theme.primary}`}`}
         >
-          <Plus size={18} />
+          <Plus size={16} />
         </div>
       </button>
       <AnimatePresence initial={false}>
@@ -73,7 +74,7 @@ const AccordionItem = ({ q, a, theme }: any) => {
             transition={{ duration: 0.3 }}
             style={{ overflow: "hidden" }}
           >
-            <div className="px-6 pb-6 text-sm font-medium leading-relaxed opacity-70 border-t border-black/5 pt-4 whitespace-pre-line">
+            <div className="px-5 md:px-6 pb-6 text-sm font-medium leading-relaxed opacity-70 border-t border-black/5 pt-4 whitespace-pre-line">
               {a}
             </div>
           </motion.div>
@@ -84,7 +85,7 @@ const AccordionItem = ({ q, a, theme }: any) => {
 };
 
 // ==========================================
-// 4. LAYOUT PRINCIPAL (COMERCIAL LUXE)
+// 4. LAYOUT PRINCIPAL (COMERCIAL 3.0)
 // ==========================================
 export default function ComercialLayout({
   business: rawBusiness,
@@ -115,7 +116,6 @@ export default function ComercialLayout({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
-  // 🚀 O filtro agora começa nulo para a IA decidir o que mostrar depois
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
   >(null);
@@ -176,7 +176,6 @@ export default function ComercialLayout({
   const activeMediaFilter =
     userMediaFilter || (hasPhotos ? "photos" : "motion");
 
-  // 🚀 O RADAR DO LINK EXTERNO:
   const isExternalLink = !!business.isExternalLink;
   const actionLink = business.actionLink || "";
 
@@ -187,7 +186,7 @@ export default function ComercialLayout({
       icon: <MeliIcon className="w-4 h-4" />,
       url: business.mercadoLivre,
       colorClass:
-        "bg-[#FFE600] text-[#2D3277] border-transparent hover:shadow-[0_5px_15px_rgba(255,230,0,0.3)]",
+        "bg-[#FFE600] text-[#2D3277] border-transparent hover:shadow-[0_4px_12px_rgba(255,230,0,0.3)]",
     },
     {
       key: "shopee",
@@ -195,7 +194,7 @@ export default function ComercialLayout({
       icon: <ShopeeIcon className="w-4 h-4" />,
       url: business.shopee,
       colorClass:
-        "bg-[#EE4D2D] text-white border-transparent hover:shadow-[0_5px_15px_rgba(238,77,45,0.3)]",
+        "bg-[#EE4D2D] text-white border-transparent hover:shadow-[0_4px_12px_rgba(238,77,45,0.3)]",
     },
     {
       key: "ifood",
@@ -203,7 +202,7 @@ export default function ComercialLayout({
       icon: <IfoodIcon className="w-4 h-4" />,
       url: business.ifood,
       colorClass:
-        "bg-[#EA1D2C] text-white border-transparent hover:shadow-[0_5px_15px_rgba(234,29,44,0.3)]",
+        "bg-[#EA1D2C] text-white border-transparent hover:shadow-[0_4px_12px_rgba(234,29,44,0.3)]",
     },
     {
       key: "shein",
@@ -211,7 +210,7 @@ export default function ComercialLayout({
       icon: <SheinIcon className="w-4 h-4" />,
       url: business.shein,
       colorClass:
-        "bg-slate-900 text-white border-transparent hover:shadow-[0_5px_15px_rgba(0,0,0,0.3)]",
+        "bg-slate-900 text-white border-transparent hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
@@ -277,17 +276,23 @@ export default function ComercialLayout({
     business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
       : completeAddressForMap;
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=$${encodeURIComponent(mapDestination)}`;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
+
+  // Variável para determinar se os botões dividem espaço
+  const hasStoreLink =
+    (isExternalLink && actionLink) ||
+    (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf);
+  const hasContact = hasWhatsapp || hasPhone;
 
   return (
     <div
       className={`min-h-screen ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
     >
-      {/* --- HEADER HERO BANNER (NOVA IDENTIDADE LUXE) --- */}
+      {/* --- HEADER HERO BANNER --- */}
       <div
-        className={`relative w-full h-56 md:h-72 ${theme.bgHero || "bg-slate-200"} rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-sm overflow-hidden`}
+        className={`relative w-full h-48 md:h-64 ${theme.bgHero || "bg-slate-200"} rounded-b-[2rem] md:rounded-b-[3rem] shadow-sm overflow-hidden`}
       >
         {business.coverImage && (
           <Image
@@ -299,17 +304,16 @@ export default function ComercialLayout({
             className="object-cover"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
-        {/* Botões de Partilha e Favorito no topo - Alta visibilidade */}
         <div className="absolute top-4 right-4 md:top-6 md:right-8 z-20 flex items-center gap-3">
           <button
             onClick={() => handleShare(business.name)}
-            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md rounded-full border border-black/5 text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white hover:scale-105 transition-all"
+            className="w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-md rounded-full border border-black/5 text-slate-800 shadow-sm hover:bg-white hover:scale-105 transition-all"
           >
-            <Share2 size={20} strokeWidth={2} />
+            <Share2 size={18} strokeWidth={2} />
           </button>
-          <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md rounded-full border border-black/5 text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white hover:scale-105 transition-all cursor-pointer">
+          <div className="w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-md rounded-full border border-black/5 text-slate-800 shadow-sm hover:bg-white hover:scale-105 transition-all cursor-pointer">
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -319,53 +323,54 @@ export default function ComercialLayout({
           </div>
         </div>
       </div>
+
       <header
-        className={`relative w-full max-w-6xl mx-auto px-6 -mt-20 md:-mt-24 z-10 flex flex-col items-start text-left mb-8`}
+        className={`relative w-full max-w-6xl mx-auto px-6 -mt-16 md:-mt-20 z-10 flex flex-col items-start text-left mb-6`}
       >
         <div className="flex flex-col md:flex-row items-start gap-6 w-full">
-          {/* Avatar Flutuante Premium */}
+          {/* Avatar Premium */}
           {business.imageUrl && (
             <div
-              className={`relative w-36 h-36 md:w-44 md:h-44 rounded-[2.5rem] border-[6px] md:border-[8px] ${theme.border} backdrop-blur-md shadow-2xl overflow-hidden ${theme.cardBg} shrink-0`}
+              className={`relative w-32 h-32 md:w-40 md:h-40 rounded-3xl border-4 ${theme.border} backdrop-blur-md shadow-xl overflow-hidden ${theme.cardBg} shrink-0`}
             >
               <Image
                 src={business.imageUrl || "/og-default.png"}
                 alt={`Logotipo ${business.name}`}
                 fill
                 priority
-                sizes="200px"
+                sizes="160px"
                 className="object-cover"
               />
             </div>
           )}
-          <div className="flex flex-col items-start pt-4 md:pt-32">
+          <div className="flex flex-col items-start pt-2 md:pt-24">
             {business.comercial_badge &&
               business.comercial_badge !== business.urban_tag && (
                 <span
-                  className={`${theme.bgAction} px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest shadow-md inline-block mb-3`}
+                  className={`${theme.bgAction} px-3 py-1 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-sm inline-block mb-3 text-white`}
                 >
                   {business.comercial_badge}
                 </span>
               )}
             <h1
-              className={`text-4xl md:text-5xl lg:text-6xl font-black italic tracking-tight leading-none drop-shadow-sm ${theme.textColor}`}
+              className={`text-3xl md:text-5xl font-extrabold tracking-tight leading-none drop-shadow-sm ${theme.textColor}`}
             >
               {business.name}
             </h1>
-            <div className="flex items-center gap-3 mt-2 flex-wrap justify-start">
+            <div className="flex items-center gap-3 mt-3 flex-wrap justify-start">
               {business.urban_tag && (
                 <span
-                  className={`text-sm font-bold uppercase tracking-widest ${theme.primary}`}
+                  className={`text-sm font-semibold uppercase tracking-wider opacity-80 ${theme.primary}`}
                 >
                   {business.urban_tag}
                 </span>
               )}
               {realHours.length > 0 && (
                 <span
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border backdrop-blur-md shadow-sm ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase border backdrop-blur-md shadow-sm ${
                     isOpen
-                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                      : "bg-rose-50 text-rose-600 border-rose-200"
                   }`}
                 >
                   <span
@@ -373,7 +378,7 @@ export default function ComercialLayout({
                       isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
                     }`}
                   />
-                  {isOpen ? "ON" : "OFF"}
+                  {isOpen ? "Aberto" : "Fechado"}
                 </span>
               )}
             </div>
@@ -381,52 +386,83 @@ export default function ComercialLayout({
         </div>
       </header>
 
-      {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE */}
-      {((isExternalLink && actionLink) ||
-        (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
-        <div className="w-full flex justify-center px-4 mb-8 -mt-2 relative z-10">
-          <button
-            onClick={() => {
-              if (isExternalLink && actionLink) {
-                Actions.registerClickEvent(business.id, "WEBSITE");
-                window.open(
-                  formatExternalLink(actionLink),
-                  "_blank",
-                  "noopener,noreferrer",
-                );
-                return;
-              }
-              if (rawBusiness.menuMode === "PDF") {
-                setIsPdfModalOpen(true);
-              }
-            }}
-            className={`relative overflow-hidden flex w-full md:w-[320px] justify-center items-center gap-3 px-8 py-4 rounded-full text-[11px] md:text-xs font-black tracking-[0.2em] uppercase text-white ${theme.bgAction} shadow-md border border-white/20 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95`}
+      {/* ==========================================
+          🚀 CTAs DE ALTA CONVERSÃO (3.0 Vibe)
+          Layout Grid para alinhar Loja e WhatsApp perfeitamente lado a lado
+          ========================================== */}
+      {(hasStoreLink || hasContact) && (
+        <div className="w-full flex justify-center px-4 mb-8 relative z-10">
+          <div
+            className={`w-full max-w-[600px] grid gap-3 ${hasStoreLink && hasContact ? "grid-cols-2" : "grid-cols-1"}`}
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/20 pointer-events-none" />
-            <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
-              {rawBusiness.menuMode === "DIGITAL"
-                ? "Fazer Pedido"
-                : rawBusiness.menuMode === "AGENDA"
-                  ? "Agendar Horário"
-                  : "Explorar Menu"}
-              <ChevronRight size={16} strokeWidth={2} />
-            </span>
-          </button>
+            {/* BOTÃO 1: LOJA / CATÁLOGO */}
+            {hasStoreLink && (
+              <button
+                onClick={() => {
+                  if (isExternalLink && actionLink) {
+                    Actions.registerClickEvent(business.id, "WEBSITE");
+                    window.open(
+                      formatExternalLink(actionLink),
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                    return;
+                  }
+                  if (rawBusiness.menuMode === "PDF") {
+                    setIsPdfModalOpen(true);
+                  }
+                }}
+                className={`relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 rounded-2xl text-[11px] md:text-xs font-bold tracking-wider uppercase text-white ${theme.bgAction} shadow-md border border-white/10 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
+                <span className="relative z-10 flex items-center justify-center gap-1.5 drop-shadow-sm">
+                  {rawBusiness.menuMode === "DIGITAL"
+                    ? "Fazer Pedido"
+                    : rawBusiness.menuMode === "AGENDA"
+                      ? "Agendar"
+                      : "Explorar Menu"}
+                </span>
+              </button>
+            )}
+
+            {/* BOTÃO 2: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
+            {hasContact && (
+              <button
+                onClick={() =>
+                  handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")
+                }
+                className={`relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 rounded-2xl text-[11px] md:text-xs font-bold tracking-wider uppercase transition-all active:scale-95 shadow-sm border hover:-translate-y-0.5 hover:shadow-md ${
+                  hasWhatsapp
+                    ? "bg-[#25D366]/10 text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/20"
+                    : "bg-black/5 text-slate-700 border-black/10 hover:bg-black/10"
+                }`}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-1.5">
+                  {hasWhatsapp ? (
+                    <MessageCircle size={16} strokeWidth={2.5} />
+                  ) : (
+                    <PhoneCall size={16} strokeWidth={2.5} />
+                  )}
+                  Falar Conosco
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {/* --- MENU TABS --- */}
-      <div className="sticky top-6 z-20 px-4 mb-10 flex justify-center">
+      <div className="sticky top-4 z-20 px-4 mb-8 flex justify-center">
         <div
-          className={`bg-white/80 backdrop-blur-xl p-1.5 rounded-full border ${theme.border} shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] flex gap-1`}
+          className={`bg-white/90 backdrop-blur-xl p-1 rounded-full border ${theme.border} shadow-[0_8px_30px_-10px_rgba(0,0,0,0.08)] flex gap-1`}
         >
           {["perfil", "infos"].map((t: any) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`relative px-8 md:px-14 py-3.5 rounded-full text-[11px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 active:scale-95 cursor-pointer ${
+              className={`relative px-8 md:px-12 py-2.5 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === t
-                  ? "text-white shadow-lg"
+                  ? "text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800 hover:bg-black/5"
               }`}
             >
@@ -439,9 +475,9 @@ export default function ComercialLayout({
               )}
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {t === "perfil" ? (
-                  <Layout size={16} />
+                  <Layout size={14} />
                 ) : (
-                  <ShieldCheck size={16} />
+                  <ShieldCheck size={14} />
                 )}{" "}
                 {t}
               </span>
@@ -459,58 +495,57 @@ export default function ComercialLayout({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-8 md:space-y-12"
+              className="space-y-6 md:space-y-8"
             >
               {/* HISTÓRIA */}
               {hasDescription && (
                 <section
-                  className={`${theme.cardBg} border ${theme.border} rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-black/5 transition-all hover:shadow-2xl hover:-translate-y-1`}
+                  className={`${theme.cardBg} border ${theme.border} rounded-3xl p-6 md:p-10 shadow-sm transition-all hover:shadow-md`}
                 >
-                  <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-3 mb-5">
                     <div
-                      className={`w-12 h-12 rounded-2xl ${theme.bgSecondary} flex items-center justify-center ${theme.primary} shadow-inner`}
+                      className={`w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center ${theme.primary}`}
                     >
-                      <Quote size={20} />
+                      <Quote size={18} />
                     </div>
                     <h2
-                      className={`text-sm md:text-lg font-black uppercase tracking-widest opacity-60 ${theme.primary}`}
+                      className={`text-xs md:text-sm font-bold uppercase tracking-widest opacity-50 ${theme.primary}`}
                     >
                       Nossa História
                     </h2>
                   </div>
                   <p
-                    className={`text-lg md:text-2xl font-medium leading-relaxed opacity-90 break-words whitespace-pre-line ${theme.textColor}`}
+                    className={`text-base md:text-lg font-medium leading-relaxed opacity-80 break-words whitespace-pre-line ${theme.textColor}`}
                   >
                     {business.description}
                   </p>
                 </section>
               )}
+
               {/* DESTAQUES */}
               {hasFeatures && (
-                <section className="space-y-6">
-                  <h2 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-40 pl-2">
-                    {" "}
-                    Destaques{" "}
+                <section className="space-y-4">
+                  <h2 className="text-xs md:text-sm font-bold uppercase tracking-widest opacity-40 pl-2">
+                    Destaques
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {business.features
                       .filter(Boolean)
                       .map((f: string, i: number) => (
                         <div
                           key={i}
-                          className={`w-full px-5 py-5 rounded-[1.5rem] border ${theme.border} ${theme.cardBg} flex items-center gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all`}
+                          className={`w-full px-5 py-4 rounded-2xl border ${theme.border} ${theme.cardBg} flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all`}
                         >
                           <div
-                            className={`w-10 h-10 shrink-0 rounded-full ${theme.bgSecondary} flex items-center justify-center`}
+                            className={`w-8 h-8 shrink-0 rounded-full bg-black/5 flex items-center justify-center`}
                           >
                             <CheckCircle2
-                              size={18}
+                              size={16}
                               className={`${theme.primary}`}
                             />
                           </div>
-                          <span className="text-sm font-bold leading-tight opacity-90">
-                            {" "}
-                            {f}{" "}
+                          <span className="text-sm font-semibold leading-tight opacity-90">
+                            {f}
                           </span>
                         </div>
                       ))}
@@ -520,33 +555,33 @@ export default function ComercialLayout({
 
               {/* GALERIA E VÍDEOS INTELIGENTE */}
               {cleanFeed.length > 0 && (
-                <section className="w-full pt-4">
+                <section className="w-full pt-2">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-12 h-12 rounded-2xl ${theme.bgSecondary} flex items-center justify-center ${theme.primary} shadow-inner`}
+                        className={`w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center ${theme.primary}`}
                       >
-                        <Camera size={20} />
+                        <Camera size={18} />
                       </div>
-                      <h2 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-40">
+                      <h2 className="text-xs md:text-sm font-bold uppercase tracking-widest opacity-40">
                         Catálogo Visual
                       </h2>
                     </div>
 
-                    {/* 🚀 SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS DE MÍDIA */}
+                    {/* SÓ MOSTRA AS ABAS SE TIVER OS DOIS TIPOS DE MÍDIA */}
                     {hasPhotos && hasVideos && (
                       <div
-                        className={`flex items-center p-1.5 ${theme.cardBg} border ${theme.border} rounded-full shadow-sm`}
+                        className={`flex items-center p-1 ${theme.cardBg} border ${theme.border} rounded-full shadow-sm`}
                       >
                         <button
                           onClick={() => setUserMediaFilter("photos")}
-                          className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? `${theme.bgAction} shadow-md text-white` : "opacity-50 hover:opacity-100"}`}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${activeMediaFilter === "photos" ? `${theme.bgAction} shadow-sm text-white` : "opacity-50 hover:opacity-100"}`}
                         >
                           Fotos
                         </button>
                         <button
                           onClick={() => setUserMediaFilter("motion")}
-                          className={`px-5 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? `${theme.bgAction} shadow-md text-white` : "opacity-50 hover:opacity-100"}`}
+                          className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${activeMediaFilter === "motion" ? `${theme.bgAction} shadow-sm text-white` : "opacity-50 hover:opacity-100"}`}
                         >
                           Vídeos
                         </button>
@@ -576,15 +611,15 @@ export default function ComercialLayout({
               {/* DUVIDAS FREQUENTES */}
               {faqs.length > 0 && (
                 <section
-                  className={`${theme.cardBg} border ${theme.border} rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-black/5 transition-all hover:shadow-2xl hover:-translate-y-1`}
+                  className={`${theme.cardBg} border ${theme.border} rounded-3xl p-6 md:p-10 shadow-sm transition-all hover:shadow-md`}
                 >
                   <div className="flex items-center gap-3 mb-6">
                     <div
-                      className={`w-12 h-12 rounded-2xl ${theme.bgSecondary} flex items-center justify-center ${theme.primary} shadow-inner`}
+                      className={`w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center ${theme.primary}`}
                     >
-                      <HelpCircle size={20} />
+                      <HelpCircle size={18} />
                     </div>
-                    <h2 className="text-sm md:text-lg font-black uppercase tracking-widest opacity-40">
+                    <h2 className="text-xs md:text-sm font-bold uppercase tracking-widest opacity-40">
                       Dúvidas Frequentes
                     </h2>
                   </div>
@@ -610,94 +645,26 @@ export default function ComercialLayout({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-8 md:space-y-12"
+              className="space-y-6 md:space-y-8"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* COLUNA ESQUERDA */}
-                <div className="lg:col-span-7 flex flex-col gap-8">
-                  {/* ATENDIMENTO ONLINE */}
-                  {(hasWhatsapp || hasPhone) && (
-                    <div
-                      className={`${theme.cardBg} p-8 md:p-10 rounded-[2.5rem] border ${theme.border} shadow-xl shadow-black/5 hover:-translate-y-1 transition-transform`}
-                    >
-                      <h2 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-6 text-center md:text-left">
-                        {" "}
-                        Atendimento Rápido{" "}
-                      </h2>
-                      <div className="space-y-4">
-                        {hasWhatsapp && (
-                          <button
-                            onClick={() => handleTrackLead("whatsapp")}
-                            className="w-full flex items-center justify-between group bg-white border border-[#25D366]/20 p-4 md:p-5 rounded-2xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-1"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 rounded-2xl bg-[#25D366] flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                                <MessageCircle size={24} />
-                              </div>
-                              <div className="text-left">
-                                <h4 className="text-[10px] font-black uppercase opacity-50 tracking-widest">
-                                  {" "}
-                                  Chamar no{" "}
-                                </h4>
-                                <p className="text-lg md:text-xl font-black text-[#25D366]">
-                                  {" "}
-                                  WhatsApp{" "}
-                                </p>
-                              </div>
-                            </div>
-                            <ChevronRight
-                              size={24}
-                              className="opacity-20 group-hover:translate-x-2 transition-transform text-[#25D366]"
-                            />
-                          </button>
-                        )}
-                        {hasPhone && (
-                          <button
-                            onClick={() => handleTrackLead("phone")}
-                            className={`w-full flex items-center justify-between group ${theme.bgSecondary} border ${theme.border} p-4 md:p-5 rounded-2xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-1`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div
-                                className={`w-14 h-14 rounded-2xl ${theme.bgAction} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform`}
-                              >
-                                <PhoneCall size={24} />
-                              </div>
-                              <div className="text-left">
-                                <h4 className="text-[10px] font-black uppercase opacity-50 tracking-widest">
-                                  {" "}
-                                  Ligar Agora{" "}
-                                </h4>
-                                <p
-                                  className={`text-lg md:text-xl font-black ${theme.primary}`}
-                                >
-                                  {" "}
-                                  {formatPhoneNumber(business.phone)}{" "}
-                                </p>
-                              </div>
-                            </div>
-                            <ChevronRight
-                              size={24}
-                              className={`opacity-20 group-hover:translate-x-2 transition-transform ${theme.primary}`}
-                            />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* REDES SOCIAIS E MARKETPLACES */}
+                <div className="lg:col-span-7 flex flex-col gap-6">
+                  {/* REDES SOCIAIS E MARKETPLACES (Limpo e Direto) */}
                   {(availableSocials.length > 0 ||
+                    hasPhone ||
                     salesChannels.length > 0) && (
                     <div
-                      className={`${theme.cardBg} p-8 md:p-10 rounded-[2.5rem] border ${theme.border} shadow-xl shadow-black/5 flex flex-col gap-8`}
+                      className={`${theme.cardBg} p-6 md:p-8 rounded-3xl border ${theme.border} shadow-sm flex flex-col gap-6`}
                     >
-                      {availableSocials.length > 0 && (
+                      {(availableSocials.length > 0 || hasPhone) && (
                         <div>
-                          <h2 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-5">
-                            {" "}
-                            Redes Sociais{" "}
+                          {/* FIX UX: text-center no título para alinhar com os ícones */}
+                          <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 mb-4 text-center">
+                            Canais e Sociais
                           </h2>
-                          <div className="flex flex-wrap gap-4">
+                          {/* FIX UX: justify-center para centralizar perfeitamente os botões */}
+                          <div className="flex flex-wrap justify-center gap-3">
                             {availableSocials.map((s) => {
                               const username = business[s];
                               if (!username) return null;
@@ -718,43 +685,51 @@ export default function ComercialLayout({
                                   href={finalUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  whileHover={{ y: -5 }}
+                                  title={s} // Tooltip de acessibilidade
+                                  whileHover={{ y: -3 }}
                                   onClick={() =>
                                     Actions.registerClickEvent(
                                       business.id,
                                       s.toUpperCase(),
                                     )
                                   }
-                                  className={`flex items-center gap-3 px-5 py-3 rounded-2xl ${theme.bgSecondary} border ${theme.border} shadow-sm hover:shadow-md transition-shadow`}
+                                  // FIX UX: Transformamos em blocos w-12 h-12 centralizados
+                                  className={`flex items-center justify-center w-12 h-12 rounded-xl bg-black/5 border border-black/5 shadow-sm hover:shadow-md transition-shadow ${theme.primary}`}
                                 >
-                                  <div className={`${theme.primary}`}>
-                                    {s === "instagram" ? (
-                                      <Instagram size={20} />
-                                    ) : s === "facebook" ? (
-                                      <Facebook size={20} />
-                                    ) : s === "tiktok" ? (
-                                      <TikTokIcon className="w-5 h-5" />
-                                    ) : (
-                                      <Globe size={20} />
-                                    )}
-                                  </div>
-                                  <span className="text-xs font-black uppercase tracking-widest opacity-80">
-                                    {s}
-                                  </span>
+                                  {/* Ícones aumentados de 16 para 20 */}
+                                  {s === "instagram" ? (
+                                    <Instagram size={20} />
+                                  ) : s === "facebook" ? (
+                                    <Facebook size={20} />
+                                  ) : s === "tiktok" ? (
+                                    <TikTokIcon className="w-5 h-5" />
+                                  ) : (
+                                    <Globe size={20} />
+                                  )}
                                 </motion.a>
                               );
                             })}
+
+                            {/* Botão de Telefone nas Redes Sociais */}
+                            {hasPhone && (
+                              <motion.button
+                                whileHover={{ y: -3 }}
+                                onClick={() => handleTrackLead("phone")}
+                                title="Ligar para nós"
+                                className={`flex items-center justify-center w-12 h-12 rounded-xl bg-black/5 border border-black/5 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${theme.primary}`}
+                              >
+                                <Phone size={20} />
+                              </motion.button>
+                            )}
                           </div>
                         </div>
                       )}
-
                       {salesChannels.length > 0 && (
                         <div
-                          className={`${availableSocials.length > 0 ? "pt-6 border-t border-black/5" : ""}`}
+                          className={`${availableSocials.length > 0 || hasPhone ? "pt-5 border-t border-black/5" : ""}`}
                         >
-                          <h2 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-5">
-                            {" "}
-                            Lojas Oficiais{" "}
+                          <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-widest opacity-40 mb-4">
+                            Lojas Oficiais
                           </h2>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {salesChannels.map((channel) => (
@@ -769,15 +744,13 @@ export default function ComercialLayout({
                                     channel.key.toUpperCase(),
                                   )
                                 }
-                                className={`flex items-center gap-3 px-5 py-4 rounded-2xl border transition-all duration-300 group ${channel.colorClass}`}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 group ${channel.colorClass}`}
                               >
-                                <div className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-                                  {" "}
-                                  {channel.icon}{" "}
+                                <div className="transition-transform duration-300 group-hover:scale-110">
+                                  {channel.icon}
                                 </div>
-                                <span className="text-[10px] font-black tracking-widest uppercase">
-                                  {" "}
-                                  {channel.name}{" "}
+                                <span className="text-[10px] font-bold tracking-widest uppercase">
+                                  {channel.name}
                                 </span>
                               </a>
                             ))}
@@ -789,36 +762,35 @@ export default function ComercialLayout({
                 </div>
 
                 {/* COLUNA DIREITA */}
-                <div className="lg:col-span-5 flex flex-col gap-8">
+                <div className="lg:col-span-5 flex flex-col gap-6">
                   {(hasAddress || hasHours) && (
                     <div
-                      className={`${theme.cardBg} p-8 md:p-10 rounded-[2.5rem] border ${theme.border} shadow-xl shadow-black/5 flex flex-col gap-8 hover:-translate-y-1 transition-transform`}
+                      className={`${theme.cardBg} p-6 md:p-8 rounded-3xl border ${theme.border} shadow-sm flex flex-col gap-6 transition-transform`}
                     >
                       {hasAddress && (
                         <div className="block">
-                          <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-2 mb-3">
                             <div
-                              className={`w-10 h-10 rounded-xl ${theme.bgSecondary} flex items-center justify-center ${theme.primary} shadow-inner group-hover:scale-110 transition-transform`}
+                              className={`w-8 h-8 rounded-lg bg-black/5 flex items-center justify-center ${theme.primary} shadow-sm`}
                             >
-                              <MapPin size={18} />
+                              <MapPin size={16} />
                             </div>
-                            <h2 className="text-[10px] font-black uppercase tracking-widest opacity-40">
-                              {" "}
-                              Localização{" "}
+                            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                              Localização
                             </h2>
                           </div>
-                          <p className="text-sm md:text-base font-black italic leading-snug mb-1 opacity-90">
+                          <p className="text-sm font-bold leading-snug mb-1 opacity-90">
                             {business.address || "Endereço não cadastrado"}{" "}
                             {business.number &&
                               !business.address?.includes(business.number) &&
                               `, ${business.number}`}
                           </p>
                           {business.complement && (
-                            <p className="text-xs font-medium opacity-60 mb-3">
+                            <p className="text-xs font-medium opacity-60 mb-2">
                               {business.complement}
                             </p>
                           )}
-                          <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-2 bg-black/5 inline-block px-3 py-1.5 rounded-md">
+                          <p className="text-[10px] font-semibold opacity-50 uppercase tracking-widest mt-1">
                             {business.neighborhood &&
                               `${business.neighborhood} • `}{" "}
                             {business.city}{" "}
@@ -833,43 +805,40 @@ export default function ComercialLayout({
                             onClick={() =>
                               Actions.registerClickEvent(business.id, "MAP")
                             }
-                            className={`mt-6 flex w-fit items-center gap-2 text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-xl ${theme.bgSecondary} ${theme.primary} border ${theme.border} hover:opacity-80 transition-all`}
+                            className={`mt-4 flex w-fit items-center gap-2 text-[10px] font-bold uppercase tracking-wider px-5 py-2.5 rounded-xl bg-black/5 border border-black/5 hover:bg-black/10 transition-all`}
                           >
-                            <Navigation size={16} /> Traçar Rota
+                            <Navigation size={14} /> Traçar Rota
                           </a>
                         </div>
                       )}
 
                       {hasHours && (
                         <div
-                          className={`${hasAddress ? "pt-6 border-t border-black/5" : ""}`}
+                          className={`${hasAddress ? "pt-5 border-t border-black/5" : ""}`}
                         >
-                          <div className="flex items-center gap-3 mb-5">
+                          <div className="flex items-center gap-2 mb-4">
                             <div
-                              className={`w-10 h-10 rounded-xl ${theme.bgSecondary} flex items-center justify-center ${theme.primary} shadow-inner`}
+                              className={`w-8 h-8 rounded-lg bg-black/5 flex items-center justify-center ${theme.primary} shadow-sm`}
                             >
-                              <Clock size={18} />
+                              <Clock size={16} />
                             </div>
-                            <h2 className="text-[10px] font-black uppercase tracking-widest opacity-40">
-                              {" "}
-                              Horários{" "}
+                            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                              Horários
                             </h2>
                           </div>
-                          <div className="space-y-3">
+                          <div className="space-y-2.5">
                             {realHours.map((h: any, i: number) => (
                               <div
                                 key={i}
-                                className="flex justify-between items-center pb-2.5 border-b border-black/5 last:border-0 last:pb-0"
+                                className="flex justify-between items-center pb-2 border-b border-black/5 last:border-0 last:pb-0"
                               >
-                                <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">
-                                  {" "}
-                                  {h.day}{" "}
+                                <span className="text-[10px] font-bold uppercase opacity-50 tracking-wider">
+                                  {h.day}
                                 </span>
                                 <span
-                                  className={`text-xs md:text-sm font-black italic ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
+                                  className={`text-xs font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
                                 >
-                                  {" "}
-                                  {h.time}{" "}
+                                  {h.time}
                                 </span>
                               </div>
                             ))}
@@ -885,10 +854,10 @@ export default function ComercialLayout({
         </AnimatePresence>
 
         {/* --- RODAPÉ DE DENÚNCIA E COMENTÁRIOS --- */}
-        <div className="mt-16 mb-8 w-full flex justify-center opacity-30 hover:opacity-100 transition-opacity">
+        <div className="mt-12 mb-6 w-full flex justify-center opacity-30 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug || business.id} />
         </div>
-        <div className="max-w-4xl mx-auto w-full pb-24">
+        <div className="max-w-4xl mx-auto w-full pb-20">
           <CommentsSection
             businessId={rawBusiness.id}
             businessOwnerId={rawBusiness.userId}
@@ -903,22 +872,30 @@ export default function ComercialLayout({
         <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
       </main>
 
-      {/* WHATSAPP FLUTUANTE GLOBAL */}
-      {hasWhatsapp && (
+      {/* 🚀 WHATSAPP FLUTUANTE GLOBAL (Com fallback para Phone) */}
+      {(hasWhatsapp || hasPhone) && (
         <motion.button
-          aria-label="Abrir WhatsApp Flutuante"
+          aria-label={hasWhatsapp ? "Abrir WhatsApp Flutuante" : "Ligar"}
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
-          onClick={() => handleTrackLead("whatsapp")}
-          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-[0_10px_30px_rgba(37,211,102,0.4)] border-4 border-white hover:bg-[#20bd5a] hover:scale-110 active:scale-95 transition-all"
+          onClick={() => handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")}
+          className={`fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all ${
+            hasWhatsapp
+              ? "bg-[#25D366] text-white hover:bg-[#20bd5a]"
+              : `${theme.bgAction} text-white`
+          }`}
         >
-          <MessageCircle
-            className="w-8 h-8 md:w-10 md:h-10"
-            fill="currentColor"
-          />
+          {hasWhatsapp ? (
+            <MessageCircle
+              className="w-7 h-7 md:w-8 md:h-8"
+              fill="currentColor"
+            />
+          ) : (
+            <Phone className="w-7 h-7 md:w-8 md:h-8" fill="currentColor" />
+          )}
         </motion.button>
       )}
 
@@ -940,10 +917,10 @@ export default function ComercialLayout({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
           >
-            <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
+            <div className="w-full max-w-5xl h-full bg-white rounded-3xl overflow-hidden flex flex-col relative shadow-2xl">
               {/* Barra de Topo com Botão de Fechar */}
               <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-400">
                   Visualização de Documento
                 </span>
                 <button
@@ -966,7 +943,6 @@ export default function ComercialLayout({
           </motion.div>
         )}
       </AnimatePresence>
-
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;

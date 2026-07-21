@@ -411,13 +411,25 @@ export default function UrbanLayout({
                 </button>
               )}
 
-              {hasWhatsapp && (
+              {/* 🚀 LÓGICA DO BOTÃO "FALAR CONOSCO" (WhatsApp ou Telefone) */}
+              {(hasWhatsapp || hasPhone) && (
                 <button
-                  aria-label="Entrar em contato via WhatsApp"
-                  onClick={() => handleTrackLead("whatsapp")}
+                  aria-label={
+                    hasWhatsapp
+                      ? "Entrar em contato via WhatsApp"
+                      : "Ligar para nós"
+                  }
+                  onClick={() =>
+                    handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")
+                  }
                   className={`w-full sm:w-auto px-8 py-4 bg-white ${theme.primary} rounded-full font-black text-sm tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3`}
                 >
-                  Fale Conosco <MessageCircle size={18} strokeWidth={2.5} />
+                  Fale Conosco{" "}
+                  {hasWhatsapp ? (
+                    <MessageCircle size={18} strokeWidth={2.5} />
+                  ) : (
+                    <Phone size={18} strokeWidth={2.5} />
+                  )}
                 </button>
               )}
             </motion.div>
@@ -624,14 +636,15 @@ export default function UrbanLayout({
                 </div>
               </motion.div>
             )}
-            {/* 🚀 ENDEREÇO & REDES SOCIAIS (Box Combinado e Inteligente) */}
-            {(hasAddress || availableSocials.length > 0) && (
+
+            {/* 🚀 ENDEREÇO & REDES SOCIAIS / TELEFONE */}
+            {(hasAddress || availableSocials.length > 0 || hasPhone) && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className={`p-6 md:p-7 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
+                className={`p-5 md:p-6 rounded-[2rem] border ${border} ${cardBg} ${shadow}`}
               >
                 {/* Parte 1: Endereço e Botão Rota */}
                 {hasAddress && (
@@ -642,7 +655,6 @@ export default function UrbanLayout({
                         Como Chegar
                       </h3>
                     </div>
-                    {/* 🚀 FIX: Texto menor, menos "grosseiro" (text-sm font-bold) */}
                     <p className="text-sm md:text-base font-bold leading-snug opacity-90 break-words">
                       {business.address || "Endereço não cadastrado"}
                       {business.number &&
@@ -662,7 +674,6 @@ export default function UrbanLayout({
                         {business.neighborhood && `${business.neighborhood} • `}{" "}
                         {business.city}
                       </p>
-                      {/* 🚀 FIX: Botão de Rota mais delicado (py-2.5) */}
                       <a
                         href={mapsUrl}
                         target="_blank"
@@ -679,14 +690,11 @@ export default function UrbanLayout({
                   </div>
                 )}
 
-                {/* Parte 2: Redes Sociais no Rodapé da Caixa */}
-                {availableSocials.length > 0 && (
+                {/* Parte 2: Redes Sociais e Telefone no Rodapé da Caixa */}
+                {(availableSocials.length > 0 || hasPhone) && (
                   <div
-                    className={`${hasAddress ? `mt-5 pt-5 border-t ${border}` : ""} flex flex-col gap-3`}
+                    className={`${hasAddress ? `mt-4 pt-4 border-t ${border}` : ""} flex flex-col gap-3`}
                   >
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 text-center">
-                      Nossas Redes
-                    </h3>
                     <div className="flex gap-2.5 flex-wrap justify-center">
                       {availableSocials.map((s) => {
                         const username = business[s];
@@ -703,7 +711,6 @@ export default function UrbanLayout({
                                   ? `https://tiktok.com/@${username.replace("@", "")}`
                                   : formatExternalLink(username);
                         return (
-                          /* 🚀 FIX: Ícones menores e delicados (w-10 h-10) */
                           <a
                             key={s}
                             href={finalUrl}
@@ -729,6 +736,17 @@ export default function UrbanLayout({
                           </a>
                         );
                       })}
+
+                      {/* Botão de Telefone injetado nas redes */}
+                      {hasPhone && (
+                        <button
+                          onClick={() => handleTrackLead("phone")}
+                          title="Ligar"
+                          className={`w-10 h-10 rounded-xl ${cardBg} border ${border} shadow-sm flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:rotate-3 ${theme.primary}`}
+                        >
+                          <Phone className="w-4 h-4" strokeWidth={2.5} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -796,23 +814,24 @@ export default function UrbanLayout({
 
       <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
 
-      {/* WHATSAPP FLUTUANTE STICKY */}
-      {hasWhatsapp && (
+      {/* 🚀 WHATSAPP FLUTUANTE STICKY COM FALLBACK PARA TELEFONE */}
+      {(hasWhatsapp || hasPhone) && (
         <motion.button
-          aria-label="Abrir WhatsApp Flutuante"
+          aria-label={hasWhatsapp ? "Abrir WhatsApp" : "Ligar"}
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
-          onClick={() => handleTrackLead("whatsapp")}
-          /* 🚀 FIX: bottom-24 (sobe no celular para não bater na Navbar) e bottom-10 (computador). Diminuí a bolinha no mobile para não poluir (w-14 h-14) */
-          className={`fixed bottom-24 right-6 md:bottom-10 md:right-10 z-40 w-14 h-14 md:w-16 md:h-16 rounded-[1.2rem] bg-[#25D366] text-white flex items-center justify-center shadow-[0_10px_40px_rgba(37,211,102,0.4)] hover:scale-110 hover:rounded-[1.5rem] active:scale-95 transition-all duration-300 border-2 border-white/20`}
+          onClick={() => handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")}
+          className={[
+            "fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all",
+            hasWhatsapp
+              ? "bg-[#25D366] text-white shadow-[0_8px_30px_rgba(37,211,102,0.4)]"
+              : `${bgAction} shadow-xl`,
+          ].join(" ")}
         >
-          <MessageCircle
-            className="w-7 h-7 md:w-8 md:h-8 drop-shadow-md"
-            fill="currentColor"
-          />
+          {hasWhatsapp ? <MessageCircle size={28} /> : <Phone size={28} />}
         </motion.button>
       )}
 
@@ -832,8 +851,8 @@ export default function UrbanLayout({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8"
           >
-            <div className="w-full max-w-5xl h-full bg-white rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col relative shadow-2xl">
-              <div className="w-full h-20 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+            <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
+              <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
                 <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
                   Catálogo / Cardápio
                 </span>

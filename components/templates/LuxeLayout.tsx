@@ -46,7 +46,6 @@ import FavoriteButton from "@/components/FavoriteButton";
 import CommentsSection from "../CommentsSection";
 
 // 🚀 ANIMAÇÕES RESTAURADAS!
-// Sem o backdrop-blur, o Chrome não buga mais com o eixo Y.
 const slowFadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -63,34 +62,37 @@ const slowStagger: Variants = {
     transition: { staggerChildren: 0.15 },
   },
 };
-
-const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
+const LuxeAccordion = ({ q, a, primary, themeBorder, cardBg }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className={`border-b ${themeBorder} transition-all duration-700 py-3`}>
+    <div
+      className={`mb-4 rounded-2xl border ${themeBorder} ${cardBg} shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] transition-all duration-500 overflow-hidden hover:shadow-md hover:-translate-y-0.5`}
+    >
       <button
         type="button"
         aria-expanded={isOpen}
         aria-label="Alternar visualização da resposta"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-4 flex justify-between items-center text-left gap-6 outline-none bg-transparent group"
+        className="w-full p-5 md:p-6 flex justify-between items-center text-left gap-6 outline-none bg-transparent group"
       >
         <span
-          className={`text-lg md:text-2xl font-serif italic ${
-            isOpen ? primary : "opacity-80"
-          } group-hover:opacity-100 transition-colors duration-500 tracking-tight`}
+          className={`text-base md:text-lg font-semibold ${
+            isOpen ? primary : "text-current opacity-90"
+          } group-hover:opacity-100 transition-colors duration-300 tracking-wide`}
         >
           {q}
         </span>
         <div
-          className={`w-8 h-8 rounded-full border border-current/20 flex items-center justify-center transition-all duration-700 group-hover:border-current/50 ${
-            isOpen ? primary : ""
+          className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-500 ${
+            isOpen
+              ? `border-current/50 ${primary} bg-current/5`
+              : "border-current/10 group-hover:border-current/30"
           } shrink-0`}
         >
           {isOpen ? (
-            <Minus size={16} strokeWidth={1} />
+            <Minus size={18} strokeWidth={2} />
           ) : (
-            <Plus size={16} strokeWidth={1} />
+            <Plus size={18} strokeWidth={2} />
           )}
         </div>
       </button>
@@ -100,10 +102,10 @@ const LuxeAccordion = ({ q, a, primary, themeBorder }: any) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             style={{ overflow: "hidden" }}
           >
-            <div className="pb-8 pt-2 text-sm md:text-base font-light leading-relaxed opacity-70 tracking-wide max-w-3xl whitespace-pre-line break-words pl-2">
+            <div className="px-5 md:px-6 pb-6 pt-2 text-sm md:text-base font-medium leading-relaxed opacity-70 tracking-wide max-w-3xl whitespace-pre-line break-words border-t border-current/5">
               {a}
             </div>
           </motion.div>
@@ -351,7 +353,7 @@ export default function LuxeLayout({
         }}
       />
 
-      <header className="relative w-full min-h-[auto] md:min-h-[100dvh] overflow-hidden flex items-start justify-center lg:justify-start pb-6 md:pb-0">
+      <header className="relative w-full min-h-[auto] md:min-h-[100dvh] overflow-hidden flex flex-col items-center pb-6 md:pb-0">
         <motion.div
           style={{ y: yHeroBg, opacity: opacityHeroBg }}
           className={`absolute inset-0 z-0 ${!business.coverImage ? bgHero : ""}`}
@@ -371,38 +373,6 @@ export default function LuxeLayout({
         <div
           className={`absolute inset-0 z-10 ${isLight ? "bg-gradient-to-t from-white/90 via-white/40 to-transparent" : "bg-gradient-to-t from-black/95 via-black/50 to-transparent"}`}
         />
-
-        {/* ==========================================
-            🚀 EDITORIAL SIGNATURE (Apenas Desktop)
-            ========================================== */}
-        {/* FIX UX: Mudamos de right-20 para right-8 para ela colar no canto da tela e não invadir o cartão */}
-        <div className="hidden xl:flex absolute right-8 top-1/2 -translate-y-1/2 z-20 items-center gap-6 pointer-events-none drop-shadow-xl">
-          {/* Linha esquerda mais espessa e larga */}
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "80px", opacity: 1 }}
-            transition={{ duration: 1.5, delay: 0.5, ease: "easeInOut" }}
-            className="h-[2px] bg-current opacity-80"
-          />
-
-          {/* Texto maior (text-sm), 100% de opacidade e muito mais espaçado */}
-          <motion.div
-            initial={{ clipPath: "inset(0 100% 0 0)", opacity: 0, x: -20 }}
-            animate={{ clipPath: "inset(0 0 0 0)", opacity: 1, x: 0 }}
-            transition={{ duration: 2.5, delay: 1.2, ease: "easeOut" }}
-            className="text-sm font-sans font-black tracking-[0.6em] uppercase whitespace-nowrap opacity-100"
-          >
-            {business.urban_tag || business.city || "Exclusive"}
-          </motion.div>
-
-          {/* Linha direita mais espessa e larga */}
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "80px", opacity: 1 }}
-            transition={{ duration: 1.5, delay: 0.5, ease: "easeInOut" }}
-            className="h-[2px] bg-current opacity-80"
-          />
-        </div>
 
         {/* Top Actions */}
         <motion.div
@@ -438,21 +408,19 @@ export default function LuxeLayout({
           </div>
         </motion.div>
 
-        {/* 🚀 O CARTÃO GIGANTE (Proporção de Ouro) */}
-        <div className="relative z-30 w-full px-6 md:px-10 lg:px-20 xl:px-28 flex justify-start items-start pt-24 md:pt-28 pb-12 w-full">
-          {/* FIX UX: Largura reduzida (max-w-4xl) e Altura aumentada via padding vertical (py-16 e py-20) */}
+        {/* 🚀 O CARTÃO GIGANTE E A COLUNA DIREITA (Layout Flex Protegido contra Zoom) */}
+        <div className="relative z-30 w-full max-w-[1800px] mx-auto px-6 md:px-10 lg:px-16 xl:px-20 flex flex-col xl:flex-row items-center justify-between pt-24 md:pt-28 pb-12 gap-12 xl:gap-16">
+          {/* --- ESQUERDA: O CARTÃO HERO --- */}
           <motion.div
             variants={slowStagger}
             initial="hidden"
             animate="visible"
-            className={`w-full max-w-4xl ${glassPanel} px-6 py-10 md:px-12 md:py-16 lg:px-16 lg:py-20 rounded-[2rem] md:rounded-[3rem] flex flex-col items-center md:items-start text-center md:text-left`}
+            className={`w-full max-w-4xl xl:max-w-[55%] 2xl:max-w-4xl ${glassPanel} px-6 py-10 md:px-12 md:py-16 lg:px-16 lg:py-20 rounded-[2rem] md:rounded-[3rem] flex flex-col items-center md:items-start text-center md:text-left shrink-0`}
           >
-            {/* Camada extra de solidez para leitura perfeita */}
             <div
               className={`absolute inset-0 rounded-[inherit] pointer-events-none ${isLight ? "bg-white/60" : "bg-[#0a0a0a]/60"}`}
             />
 
-            {/* Top Glare */}
             <div
               className={`absolute top-0 left-0 right-0 h-32 rounded-t-[inherit] pointer-events-none bg-gradient-to-b ${isLight ? "from-white/50" : "from-white/5"} to-transparent z-0`}
             />
@@ -480,7 +448,6 @@ export default function LuxeLayout({
               variants={slowFadeUp}
               className="flex flex-wrap items-center gap-3 mb-4 w-full justify-center md:justify-start relative z-10"
             >
-              {/* 🚀 FIX: A frase de impacto aqui aparece SÓ NO MOBILE. No desktop (xl), ela é escondida pois já está na Lateral. */}
               <div
                 className={`xl:hidden px-4 py-2 rounded-full ${isLight ? "bg-black/5" : "bg-white/10"} border border-current/10 flex items-center shadow-sm`}
               >
@@ -507,7 +474,6 @@ export default function LuxeLayout({
               )}
             </motion.div>
 
-            {/* 🚀 FIX: Bug resolvido. Apaguei o h1 duplicado! O título não empurra mais os botões pro fundo. */}
             <motion.h1
               variants={slowFadeUp}
               className="text-4xl md:text-5xl lg:text-[4rem] font-serif italic tracking-tight leading-[1.05] mb-4 font-light drop-shadow-md w-full relative z-10"
@@ -554,48 +520,135 @@ export default function LuxeLayout({
                 </button>
               )}
 
-              {hasWhatsapp && (
+              {/* 🚀 LOGICA DE CONTATO: Prioriza WhatsApp. Se não tiver, vira Telefone. */}
+              {(hasWhatsapp || hasPhone) && (
                 <button
-                  onClick={() => handleTrackLead("whatsapp")}
-                  className="w-full sm:w-auto flex items-center justify-center gap-3 text-[10px] md:text-xs font-black tracking-[0.2em] uppercase px-8 py-4 rounded-full bg-white/90 dark:bg-black/90 border border-current/10 text-current shadow-md hover:bg-white dark:hover:bg-black active:scale-[0.98] transition-all"
+                  onClick={() =>
+                    handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")
+                  }
+                  className={`w-full sm:w-auto flex items-center justify-center gap-3 text-[10px] md:text-xs font-black tracking-[0.2em] uppercase px-8 py-4 rounded-full border border-current/20 shadow-md active:scale-[0.98] transition-all backdrop-blur-md ${
+                    isLight
+                      ? "bg-white/90 hover:bg-white text-current"
+                      : "bg-black/40 hover:bg-black/70 text-white"
+                  }`}
                 >
-                  <MessageCircle
-                    size={16}
-                    strokeWidth={2.5}
-                    className={primary}
-                  />{" "}
+                  {hasWhatsapp ? (
+                    <MessageCircle
+                      size={16}
+                      strokeWidth={2.5}
+                      className={primary}
+                    />
+                  ) : (
+                    <Phone size={16} strokeWidth={2.5} className={primary} />
+                  )}{" "}
                   Falar Conosco
                 </button>
               )}
             </motion.div>
           </motion.div>
+
+          {/* --- DIREITA: ASSINATURA EDITORIAL + GALERIA (Apenas Desktop) --- */}
+          <motion.div
+            variants={slowStagger}
+            initial="hidden"
+            animate="visible"
+            className="hidden xl:flex flex-col items-center w-full max-w-[550px] 2xl:max-w-[700px] gap-8 shrink-0"
+          >
+            <div className="flex items-center gap-6 w-full justify-center opacity-80 drop-shadow-md">
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "60px", opacity: 1 }}
+                transition={{ duration: 1.5, delay: 0.5, ease: "easeInOut" }}
+                className="h-[1px] bg-current"
+              />
+              <motion.div
+                initial={{ clipPath: "inset(0 100% 0 0)", opacity: 0, x: -10 }}
+                animate={{ clipPath: "inset(0 0 0 0)", opacity: 1, x: 0 }}
+                transition={{ duration: 2.5, delay: 1.2, ease: "easeOut" }}
+                className="text-[11px] md:text-xs font-sans font-black tracking-[0.5em] uppercase whitespace-nowrap"
+              >
+                {business.urban_tag || business.city || "Exclusive"}
+              </motion.div>
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "60px", opacity: 1 }}
+                transition={{ duration: 1.5, delay: 0.5, ease: "easeInOut" }}
+                className="h-[1px] bg-current"
+              />
+            </div>
+
+            {cleanFeed.length > 0 && (
+              <motion.div
+                variants={slowFadeUp}
+                className="w-full flex flex-col gap-6"
+              >
+                {hasPhotos && hasVideos && (
+                  <div className="flex items-center justify-center p-1 border border-current/10 rounded-full w-max mx-auto bg-black/5 dark:bg-white/5 backdrop-blur-md">
+                    <button
+                      onClick={() => setUserMediaFilter("photos")}
+                      className={`px-5 py-2 rounded-full text-[9px] font-bold tracking-[0.2em] uppercase transition-all duration-500 ${activeMediaFilter === "photos" ? bgAction : "opacity-50 hover:opacity-100"}`}
+                    >
+                      Fotos
+                    </button>
+                    <button
+                      onClick={() => setUserMediaFilter("motion")}
+                      className={`px-5 py-2 rounded-full text-[9px] font-bold tracking-[0.2em] uppercase transition-all duration-500 ${activeMediaFilter === "motion" ? bgAction : "opacity-50 hover:opacity-100"}`}
+                    >
+                      Vídeos
+                    </button>
+                  </div>
+                )}
+
+                <div className="w-full relative">
+                  <MasterRunway
+                    key={activeMediaFilter}
+                    feed={cleanFeed.filter((item: any) => {
+                      if (activeMediaFilter === "photos")
+                        return item.type === "image";
+                      if (activeMediaFilter === "motion")
+                        return ["video", "video_v", "video_h"].includes(
+                          item.type,
+                        );
+                      return true;
+                    })}
+                    setSelectedIndex={setSelectedIndex}
+                    variant="luxe"
+                    themeBorder="border-none"
+                    cardBg="bg-transparent"
+                    cardShadow="shadow-none"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
       </header>
 
-      <main className="w-full flex flex-col items-center relative z-20 pt-8 md:pt-16 pb-12 gap-10 md:gap-16 lg:gap-20">
-        {/* CATÁLOGO VISUAL */}
+      <main className="w-full flex flex-col items-center relative z-20 pt-2 md:pt-16 pb-12 gap-6 md:gap-16 lg:gap-20">
         {cleanFeed.length > 0 && (
-          <section className="w-full relative overflow-hidden py-4 md:py-8 border-y border-current/5">
-            <div className="max-w-[1300px] mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-6 px-6 lg:px-12 mb-10">
-              <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 text-center md:text-left">
-                Catálogo Visual
-              </h2>
-              {hasPhotos && hasVideos && (
-                <div className="flex items-center p-1 border border-current/10 rounded-full">
-                  <button
-                    onClick={() => setUserMediaFilter("photos")}
-                    className={`px-6 py-2.5 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-500 ${activeMediaFilter === "photos" ? bgAction : "opacity-50 hover:opacity-100"}`}
-                  >
-                    Fotos
-                  </button>
-                  <button
-                    onClick={() => setUserMediaFilter("motion")}
-                    className={`px-6 py-2.5 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-500 ${activeMediaFilter === "motion" ? bgAction : "opacity-50 hover:opacity-100"}`}
-                  >
-                    Vídeos
-                  </button>
-                </div>
-              )}
+          <section className="xl:hidden w-full relative overflow-hidden pt-0 pb-6 md:py-8">
+            <div className="max-w-[1300px] mx-auto w-full flex flex-col items-start px-6 lg:px-12 mb-6">
+              <div className="flex flex-row items-center justify-between w-full">
+                <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight opacity-90 text-left">
+                  Galeria
+                </h2>
+                {hasPhotos && hasVideos && (
+                  <div className="flex items-center p-1 border border-current/10 rounded-full bg-black/5 dark:bg-white/5">
+                    <button
+                      onClick={() => setUserMediaFilter("photos")}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-bold tracking-[0.2em] uppercase transition-all duration-500 ${activeMediaFilter === "photos" ? bgAction : "opacity-50 hover:opacity-100"}`}
+                    >
+                      Fotos
+                    </button>
+                    <button
+                      onClick={() => setUserMediaFilter("motion")}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-bold tracking-[0.2em] uppercase transition-all duration-500 ${activeMediaFilter === "motion" ? bgAction : "opacity-50 hover:opacity-100"}`}
+                    >
+                      Vídeos
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="w-full max-w-[1500px] mx-auto">
@@ -618,7 +671,6 @@ export default function LuxeLayout({
           </section>
         )}
 
-        {/* GRID EDITORIAL DE LUXO */}
         <div className="w-full max-w-[1300px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
           <div className="flex flex-col gap-8 lg:gap-16 w-full">
             {hasFeatures && (
@@ -728,7 +780,7 @@ export default function LuxeLayout({
               </motion.div>
             )}
 
-            {(hasAddress || availableSocials.length > 0) && (
+            {(hasAddress || availableSocials.length > 0 || hasPhone) && (
               <motion.div
                 variants={slowStagger}
                 initial="hidden"
@@ -749,9 +801,10 @@ export default function LuxeLayout({
                   Onde Estamos
                 </motion.h2>
 
+                {/* 🚀 FIX UX: Altura e paddings reduzidos (gap-6 e p-8) */}
                 <motion.div
                   variants={slowFadeUp}
-                  className={`p-8 md:p-12 rounded-[2rem] md:rounded-[2.5rem] ${glassPanel} flex flex-col gap-8`}
+                  className={`p-8 md:p-12 rounded-[2rem] md:rounded-[2.5rem] ${glassPanel} flex flex-col gap-6`}
                 >
                   <div
                     className={`absolute top-0 left-0 right-0 h-20 rounded-t-[inherit] pointer-events-none bg-gradient-to-b ${isLight ? "from-white/40" : "from-white/5"} to-transparent`}
@@ -792,13 +845,11 @@ export default function LuxeLayout({
                     </>
                   )}
 
-                  {availableSocials.length > 0 && (
+                  {/* 🚀 LOGICA DE SOCIAIS + TELEFONE (SOLTOS NO RODAPÉ DO CARTÃO) */}
+                  {(availableSocials.length > 0 || hasPhone) && (
                     <div
-                      className={`${hasAddress ? "pt-8 mt-1 border-t border-current/10" : ""} flex flex-col gap-5 items-center relative z-10`}
+                      className={`${hasAddress ? "pt-6 border-t border-current/10" : ""} flex flex-col gap-5 items-center relative z-10`}
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-40">
-                        Siga a Marca
-                      </span>
                       <div className="flex gap-4 flex-wrap justify-center">
                         {availableSocials.map((s: string) => {
                           const username = business[s];
@@ -849,6 +900,20 @@ export default function LuxeLayout({
                             </a>
                           );
                         })}
+
+                        {/* Botão de Telefone Solto na Galeria de Sociais */}
+                        {hasPhone && (
+                          <button
+                            onClick={() => handleTrackLead("phone")}
+                            title="Ligar"
+                            className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border border-current/20 hover:bg-current/10 transition-all hover:scale-110"
+                          >
+                            <Phone
+                              strokeWidth={1.5}
+                              className="w-5 h-5 md:w-6 md:h-6 opacity-80"
+                            />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -918,7 +983,7 @@ export default function LuxeLayout({
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-3"
               >
                 <motion.span
                   variants={slowFadeUp}
@@ -932,6 +997,7 @@ export default function LuxeLayout({
                 >
                   Perguntas Frequentes
                 </motion.h2>
+
                 <motion.div variants={slowFadeUp} className="flex flex-col">
                   {faqs.map((f: any, i: number) => (
                     <LuxeAccordion
@@ -940,6 +1006,7 @@ export default function LuxeLayout({
                       a={f.a || f.answer}
                       primary={primary}
                       themeBorder={border}
+                      cardBg={theme.cardBg}
                     />
                   ))}
                 </motion.div>
@@ -969,22 +1036,31 @@ export default function LuxeLayout({
 
       <div ref={footerTriggerRef} className="w-full h-10 bg-transparent" />
 
-      {hasWhatsapp && (
+      {/* 🚀 LÓGICA DO WHATSAPP FLUTUANTE (Também vira Telefone se não tiver zap) */}
+      {(hasWhatsapp || hasPhone) && (
         <motion.button
-          aria-label="Abrir WhatsApp Flutuante"
+          aria-label={hasWhatsapp ? "Abrir WhatsApp" : "Ligar"}
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
-          onClick={() => handleTrackLead("whatsapp")}
-          className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 z-40 w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-[0_15px_40px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all duration-500 border border-white/20`}
+          onClick={() => handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")}
+          className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 z-40 w-14 h-14 md:w-16 md:h-16 rounded-full ${hasWhatsapp ? "bg-[#25D366] text-white shadow-[0_15px_40px_rgba(37,211,102,0.4)]" : `${bgAction} shadow-xl`} flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-500 border border-white/20`}
         >
-          <MessageCircle
-            className="w-7 h-7 md:w-8 md:h-8"
-            fill="currentColor"
-            strokeWidth={1.5}
-          />
+          {hasWhatsapp ? (
+            <MessageCircle
+              className="w-7 h-7 md:w-8 md:h-8"
+              fill="currentColor"
+              strokeWidth={1.5}
+            />
+          ) : (
+            <Phone
+              className="w-7 h-7 md:w-8 md:h-8"
+              fill="currentColor"
+              strokeWidth={1.5}
+            />
+          )}
         </motion.button>
       )}
 

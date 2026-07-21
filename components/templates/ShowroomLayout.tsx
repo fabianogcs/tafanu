@@ -8,8 +8,10 @@ import {
   Instagram,
   Facebook,
   Globe,
-  PhoneCall,
+  Phone,
+  PhoneCall, // 🚀 AQUI ESTÁ A CORREÇÃO
   MapPin,
+  Camera,
   MessageCircle,
   Clock,
   CheckCircle2,
@@ -19,6 +21,7 @@ import {
   Info,
   ChevronRight,
   Layout,
+  Store,
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -51,12 +54,12 @@ const AccordionItem = ({ q, a, theme }: any) => {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full py-4 flex justify-between items-center text-left gap-4 outline-none bg-transparent group"
       >
-        <span className="text-sm font-semibold opacity-90 group-hover:opacity-100">
+        <span className="text-sm font-semibold opacity-90 group-hover:opacity-100 transition-opacity">
           {q}
         </span>
         <Plus
-          size={16}
-          className={`shrink-0 transition-transform duration-300 opacity-50 ${isOpen ? "rotate-45" : ""}`}
+          size={18}
+          className={`shrink-0 transition-transform duration-300 opacity-40 ${theme.primary} ${isOpen ? "rotate-45 opacity-100" : ""}`}
         />
       </button>
       <AnimatePresence initial={false}>
@@ -68,7 +71,9 @@ const AccordionItem = ({ q, a, theme }: any) => {
             transition={{ duration: 0.3 }}
             style={{ overflow: "hidden" }}
           >
-            <div className="pb-5 text-sm leading-relaxed opacity-70">{a}</div>
+            <div className="pb-5 text-sm leading-relaxed opacity-70 whitespace-pre-line">
+              {a}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -77,7 +82,7 @@ const AccordionItem = ({ q, a, theme }: any) => {
 };
 
 // ==========================================
-// 4. LAYOUT PRINCIPAL (Google Meu Negócio Style)
+// 4. LAYOUT PRINCIPAL (Showroom Profissional)
 // ==========================================
 export default function ShowroomLayout({
   business: rawBusiness,
@@ -107,7 +112,6 @@ export default function ShowroomLayout({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
-  // 🚀 O filtro inteligente começa nulo
   const [userMediaFilter, setUserMediaFilter] = useState<
     "photos" | "motion" | null
   >(null);
@@ -125,7 +129,6 @@ export default function ShowroomLayout({
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
 
-  // 🚀 O RADAR DO LINK EXTERNO:
   const isExternalLink = !!business.isExternalLink;
   const actionLink = business.actionLink || "";
 
@@ -135,28 +138,32 @@ export default function ShowroomLayout({
       name: "Mercado Livre",
       icon: <MeliIcon className="w-5 h-5" />,
       url: business.mercadoLivre,
-      colorClass: "text-[#2D3277] bg-[#FFE600]",
+      colorClass:
+        "text-[#2D3277] bg-[#FFE600] border-transparent hover:shadow-[0_4px_12px_rgba(255,230,0,0.3)]",
     },
     {
       key: "shopee",
       name: "Shopee",
       icon: <ShopeeIcon className="w-5 h-5" />,
       url: business.shopee,
-      colorClass: "text-white bg-[#EE4D2D]",
+      colorClass:
+        "text-white bg-[#EE4D2D] border-transparent hover:shadow-[0_4px_12px_rgba(238,77,45,0.3)]",
     },
     {
       key: "ifood",
       name: "iFood",
       icon: <IfoodIcon className="w-5 h-5" />,
       url: business.ifood,
-      colorClass: "text-white bg-[#EA1D2C]",
+      colorClass:
+        "text-white bg-[#EA1D2C] border-transparent hover:shadow-[0_4px_12px_rgba(234,29,44,0.3)]",
     },
     {
       key: "shein",
       name: "Shein",
       icon: <SheinIcon className="w-5 h-5" />,
       url: business.shein,
-      colorClass: "text-white bg-slate-900",
+      colorClass:
+        "text-white bg-slate-900 border-transparent hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]",
     },
   ].filter((c) => c.url && c.url.trim() !== "");
 
@@ -267,11 +274,17 @@ export default function ShowroomLayout({
 
   if (!theme) return null;
 
+  // Variáveis para Layout de Botões Superiores
+  const hasStoreLink =
+    (isExternalLink && actionLink) ||
+    (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf);
+  const hasContact = hasWhatsapp || hasPhone;
+
   return (
     <div
       className={`min-h-[100dvh] ${theme.bgPage} ${theme.textColor} font-sans pb-10 overflow-x-hidden selection:bg-black/10`}
     >
-      {/* --- CAPA E TOPO (ESTILO GMB) --- */}
+      {/* --- CAPA E TOPO (Showroom Original Style) --- */}
       <div
         className={`w-full h-40 md:h-56 ${theme.bgHero} relative overflow-hidden`}
       >
@@ -285,18 +298,17 @@ export default function ShowroomLayout({
             className="object-cover"
           />
         )}
-        {/* 🚀 OVERLAY DE ALTO CONTRASTE (Garante leitura em qualquer foto) */}
-        <div className="absolute inset-0 pointer-events-none bg-black/20" />
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+        <div className="absolute inset-0 pointer-events-none bg-black/10" />
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/50 via-transparent to-transparent" />
 
         <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 z-20">
           <button
             onClick={() => handleShare(business.name)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:scale-105 transition-all shadow-sm"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white hover:text-slate-800 transition-all shadow-sm"
           >
             <Share2 size={18} />
           </button>
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:scale-105 transition-all shadow-sm">
+          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white hover:text-slate-800 transition-all shadow-sm cursor-pointer">
             <FavoriteButton
               businessId={business.id}
               isLoggedIn={isLoggedIn}
@@ -307,163 +319,175 @@ export default function ShowroomLayout({
         </div>
       </div>
 
-      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 relative -mt-16 md:-mt-20 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-end">
-          {business.imageUrl && (
-            <div
-              className={`w-32 h-32 md:w-40 md:h-40 rounded-full border-4 ${theme.border} bg-white shadow-xl overflow-hidden relative shrink-0 z-10`}
-            >
-              <Image
-                src={business.imageUrl}
-                alt="Logo"
-                fill
-                priority
-                sizes="160px"
-                className="object-cover"
-              />
-            </div>
-          )}
-          <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1 mb-2">
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-1">
-              {business.name}
-            </h1>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-              <span className="text-sm font-medium opacity-70">
-                {business.urban_tag || business.city || "Negócio Local"}
-              </span>
-              {/* 🚀 BADGE ON/OFF COM ANIMAÇÃO */}
-              {safeHours.length > 0 && (
-                <span
-                  className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
-                    isOpen
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-rose-100 text-rose-600"
-                  }`}
+      {/* --- HEADER DO PERFIL (FIX MOBILE: Apenas Avatar sobrepõe a capa) --- */}
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 relative mb-6 z-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4">
+          <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-5 w-full">
+            {/* Bloco 1: Avatar e Badge (O Avatar "puxa" a margem negativa sozinho) */}
+            <div className="flex items-end justify-between w-full md:w-auto -mt-8 md:-mt-12 relative z-20">
+              {business.imageUrl && (
+                <div
+                  className={`w-20 h-20 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden relative shrink-0`}
                 >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                    }`}
+                  <Image
+                    src={business.imageUrl}
+                    alt="Logo"
+                    fill
+                    priority
+                    sizes="160px"
+                    className="object-cover"
                   />
-                  {isOpen ? "Aberto" : "Fechado"}
-                </span>
+                </div>
               )}
 
-              {business.comercial_badge &&
-                business.comercial_badge !== business.urban_tag && (
-                  <>
-                    <span className="opacity-40">•</span>
+              {/* Badge Aberto/Fechado no Mobile (Fica inteligentemente ao lado do avatar) */}
+              <div className="md:hidden pb-1">
+                {safeHours.length > 0 && (
+                  <span
+                    className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                      isOpen
+                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm"
+                        : "bg-rose-50 text-rose-600 border border-rose-200 shadow-sm"
+                    }`}
+                  >
                     <span
-                      className={`text-[10px] font-bold uppercase tracking-wider ${theme.primary} flex items-center gap-1`}
-                    >
-                      <CheckCircle2 size={12} /> {business.comercial_badge}
-                    </span>
-                  </>
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                      }`}
+                    />
+                    {isOpen ? "Aberto" : "Fechado"}
+                  </span>
                 )}
+              </div>
+            </div>
+
+            {/* Bloco 2: Textos (Ficam seguros na área branca no mobile, longe da capa) */}
+            <div className="flex flex-col items-start pb-1 mt-1 md:mt-0">
+              <h1 className="text-xl md:text-3xl font-extrabold tracking-tight leading-none text-slate-900 drop-shadow-sm mb-1.5">
+                {business.name}
+              </h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                {business.urban_tag && (
+                  <span
+                    className={`text-[10px] md:text-xs font-semibold uppercase tracking-wider ${theme.primary}`}
+                  >
+                    {business.urban_tag}
+                  </span>
+                )}
+                {business.comercial_badge &&
+                  business.comercial_badge !== business.urban_tag && (
+                    <>
+                      <span className="opacity-30 text-slate-500">•</span>
+                      <span
+                        className={`text-[10px] md:text-xs font-semibold flex items-center gap-1 ${theme.primary}`}
+                      >
+                        <CheckCircle2 size={12} /> {business.comercial_badge}
+                      </span>
+                    </>
+                  )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* --- QUICK ACTIONS (Barra de Ações Rápidas) --- */}
-        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 border-b border-black/5 pb-8">
-          {/* 🚀 O MOTOR DE DECISÃO E INVISIBILIDADE: EXTERNO vs PDF */}
-          {((isExternalLink && actionLink) ||
-            (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
-            <button
-              onClick={() => {
-                if (isExternalLink && actionLink) {
-                  Actions.registerClickEvent(business.id, "WEBSITE");
-                  window.open(
-                    formatExternalLink(actionLink),
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                  return;
-                }
-                if (rawBusiness.menuMode === "PDF") {
-                  setIsPdfModalOpen(true);
-                }
-              }}
-              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
-            >
-              <div
-                className={`w-12 h-12 rounded-full border ${theme.border} ${theme.bgAction} text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}
+          {/* Badge Aberto/Fechado no Desktop (Fica alinhado à direita) */}
+          <div className="hidden md:block pb-1 shrink-0">
+            {safeHours.length > 0 && (
+              <span
+                className={`flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                  isOpen
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm"
+                    : "bg-rose-50 text-rose-600 border border-rose-200 shadow-sm"
+                }`}
               >
-                <Layout size={20} />
-              </div>
-              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100 text-center">
-                {rawBusiness.menuMode === "DIGITAL"
-                  ? "Acessar Loja"
-                  : rawBusiness.menuMode === "AGENDA"
-                    ? "Agendar"
-                    : "Catálogo"}
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                  }`}
+                />
+                {isOpen ? "Aberto" : "Fechado"}
               </span>
-            </button>
-          )}
-
-          {hasWhatsapp && (
-            <button
-              onClick={() => handleTrackLead("whatsapp")}
-              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
-            >
-              <div
-                className={`w-12 h-12 rounded-full ${theme.bgAction} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}
-              >
-                <MessageCircle size={20} />
-              </div>
-              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
-                WhatsApp
-              </span>
-            </button>
-          )}
-          {hasPhone && (
-            <button
-              onClick={() => handleTrackLead("phone")}
-              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
-            >
-              <div
-                className={`w-12 h-12 rounded-full border ${theme.border} ${theme.cardBg} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}
-              >
-                <PhoneCall size={20} className={theme.primary} />
-              </div>
-              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
-                Ligar
-              </span>
-            </button>
-          )}
-          {hasAddress && (
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => Actions.registerClickEvent(business.id, "MAP")}
-              className={`flex flex-col items-center gap-2 flex-1 min-w-[80px] max-w-[100px] group`}
-            >
-              <div
-                className={`w-12 h-12 rounded-full border ${theme.border} ${theme.cardBg} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}
-              >
-                <Navigation size={20} className={theme.primary} />
-              </div>
-              <span className="text-[10px] font-semibold uppercase opacity-80 group-hover:opacity-100">
-                Rota
-              </span>
-            </a>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* --- CORPO PRINCIPAL (2 Colunas) --- */}
+      {/* ==========================================
+          🚀 CTAs DE ALTA CONVERSÃO (3.0 Vibe)
+          ========================================== */}
+      {(hasStoreLink || hasContact) && (
+        <div className="w-full flex justify-center px-4 mb-8 relative z-10">
+          <div
+            className={`w-full max-w-[600px] grid gap-3 ${hasStoreLink && hasContact ? "grid-cols-2" : "grid-cols-1"}`}
+          >
+            {/* BOTÃO 1: LOJA / CATÁLOGO */}
+            {hasStoreLink && (
+              <button
+                onClick={() => {
+                  if (isExternalLink && actionLink) {
+                    Actions.registerClickEvent(business.id, "WEBSITE");
+                    window.open(
+                      formatExternalLink(actionLink),
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                    return;
+                  }
+                  if (rawBusiness.menuMode === "PDF") {
+                    setIsPdfModalOpen(true);
+                  }
+                }}
+                className={`relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 md:py-4 rounded-xl text-[11px] md:text-sm font-bold tracking-wide uppercase text-white ${theme.bgAction} shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
+                <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
+                  {rawBusiness.menuMode === "DIGITAL"
+                    ? "Fazer Pedido"
+                    : rawBusiness.menuMode === "AGENDA"
+                      ? "Agendar"
+                      : "Catálogo"}
+                  <ChevronRight size={16} strokeWidth={2.5} />
+                </span>
+              </button>
+            )}
+
+            {/* BOTÃO 2: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
+            {hasContact && (
+              <button
+                onClick={() =>
+                  handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")
+                }
+                className={`relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 md:py-4 rounded-xl text-[11px] md:text-sm font-bold tracking-wide uppercase transition-all active:scale-95 shadow-sm border hover:-translate-y-0.5 hover:shadow-md ${
+                  hasWhatsapp
+                    ? "bg-[#25D366] text-white border-[#25D366]/30 hover:bg-[#20bd5a]"
+                    : `bg-white ${theme.primary} border-black/5 hover:bg-black/5`
+                }`}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {hasWhatsapp ? (
+                    <MessageCircle size={18} strokeWidth={2.5} />
+                  ) : (
+                    <PhoneCall size={18} strokeWidth={2.5} />
+                  )}
+                  Contato
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* --- CORPO PRINCIPAL (Grid Moderno) --- */}
       <div className="w-full max-w-5xl mx-auto px-4 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-12">
-        {/* COLUNA ESQUERDA: Visão Geral */}
+        {/* COLUNA ESQUERDA: Informações do Negócio */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           {hasDescription && (
             <div
-              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+              className={`p-6 md:p-8 rounded-2xl ${theme.cardBg} border ${theme.border} shadow-sm`}
             >
-              <h2 className="text-base font-bold mb-3 flex items-center gap-2 opacity-90">
-                <Info size={18} className={theme.primary} /> Visão Geral
+              <h2 className="text-sm md:text-base font-bold mb-3 flex items-center gap-2 text-slate-800 uppercase tracking-wider">
+                <Store size={18} className={theme.primary} /> Sobre nós
               </h2>
-              <p className="text-sm md:text-base leading-relaxed opacity-80 whitespace-pre-line">
+              <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">
                 {business.description}
               </p>
             </div>
@@ -471,24 +495,24 @@ export default function ShowroomLayout({
 
           {cleanFeed.length > 0 && (
             <div
-              className={`p-6 pb-2 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+              className={`p-6 md:p-8 pb-4 md:pb-6 rounded-2xl ${theme.cardBg} border ${theme.border} shadow-sm`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold flex items-center gap-2 opacity-90">
-                  Galeria
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+                <h2 className="text-sm md:text-base font-bold flex items-center gap-2 text-slate-800 uppercase tracking-wider">
+                  <Camera size={18} className={theme.primary} /> Galeria
                 </h2>
 
                 {hasPhotos && hasVideos && (
-                  <div className="flex items-center p-0.5 bg-black/5 rounded-full">
+                  <div className="flex items-center p-1 bg-slate-100 rounded-lg">
                     <button
                       onClick={() => setUserMediaFilter("photos")}
-                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeMediaFilter === "photos" ? "bg-white shadow-sm" : "opacity-50 hover:opacity-100"}`}
+                      className={`px-4 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all ${activeMediaFilter === "photos" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"}`}
                     >
                       Fotos
                     </button>
                     <button
                       onClick={() => setUserMediaFilter("motion")}
-                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeMediaFilter === "motion" ? "bg-white shadow-sm" : "opacity-50 hover:opacity-100"}`}
+                      className={`px-4 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all ${activeMediaFilter === "motion" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"}`}
                     >
                       Vídeos
                     </button>
@@ -496,40 +520,48 @@ export default function ShowroomLayout({
                 )}
               </div>
 
-              <MasterRunway
-                key={activeMediaFilter}
-                feed={cleanFeed.filter((item: any) => {
-                  if (activeMediaFilter === "photos")
-                    return item.type === "image";
-                  if (activeMediaFilter === "motion")
-                    return ["video", "video_v", "video_h"].includes(item.type);
-                  return true;
-                })}
-                setSelectedIndex={setSelectedIndex}
-                variant="showroom"
-                themeBorder={theme.border}
-                cardBg={theme.cardBg}
-              />
+              <div className="-mx-2 md:mx-0">
+                <MasterRunway
+                  key={activeMediaFilter}
+                  feed={cleanFeed.filter((item: any) => {
+                    if (activeMediaFilter === "photos")
+                      return item.type === "image";
+                    if (activeMediaFilter === "motion")
+                      return ["video", "video_v", "video_h"].includes(
+                        item.type,
+                      );
+                    return true;
+                  })}
+                  setSelectedIndex={setSelectedIndex}
+                  variant="showroom"
+                  themeBorder={theme.border}
+                  cardBg={theme.cardBg}
+                />
+              </div>
             </div>
           )}
+
           {hasFeatures && (
             <div
-              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+              className={`p-6 md:p-8 rounded-2xl ${theme.cardBg} border ${theme.border} shadow-sm`}
             >
-              <h2 className="text-base font-bold mb-4 flex items-center gap-2 opacity-90">
-                O que oferecemos
+              <h2 className="text-sm md:text-base font-bold mb-4 flex items-center gap-2 text-slate-800 uppercase tracking-wider">
+                <CheckCircle2 size={18} className={theme.primary} /> Destaques
               </h2>
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
                 {business.features
                   .filter(Boolean)
                   .map((f: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3">
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 p-2 hover:bg-black/5 rounded-lg transition-colors"
+                    >
                       <CheckCircle2
-                        size={18}
+                        size={16}
                         className={`shrink-0 ${theme.primary} mt-0.5`}
                         strokeWidth={2.5}
                       />
-                      <span className="text-sm font-medium opacity-80">
+                      <span className="text-sm font-medium text-slate-700">
                         {f}
                       </span>
                     </div>
@@ -540,10 +572,11 @@ export default function ShowroomLayout({
 
           {hasFaqs && (
             <div
-              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm`}
+              className={`p-6 md:p-8 rounded-2xl ${theme.cardBg} border ${theme.border} shadow-sm`}
             >
-              <h2 className="text-base font-bold mb-2 flex items-center gap-2 opacity-90">
-                Perguntas Frequentes
+              <h2 className="text-sm md:text-base font-bold mb-4 flex items-center gap-2 text-slate-800 uppercase tracking-wider">
+                <HelpCircle size={18} className={theme.primary} /> Perguntas
+                Frequentes
               </h2>
               <div className="flex flex-col">
                 {faqs.map((f: any, i: number) => (
@@ -559,29 +592,35 @@ export default function ShowroomLayout({
           )}
         </div>
 
-        {/* COLUNA DIREITA: Detalhes Práticos */}
+        {/* COLUNA DIREITA: O "Knowledge Panel" (GMB Style) */}
         <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-6">
-          {(hasAddress || hasHours) && (
+          {/* CARTÃO MASTER DE INFORMAÇÕES */}
+          {(hasAddress ||
+            hasHours ||
+            availableSocials.length > 0 ||
+            hasPhone) && (
             <div
-              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm flex flex-col gap-6`}
+              className={`rounded-2xl ${theme.cardBg} border ${theme.border} shadow-sm flex flex-col overflow-hidden`}
             >
               {hasAddress && (
-                <div>
-                  <h2 className="text-base font-bold mb-3 flex items-center gap-2 opacity-90">
-                    <MapPin size={18} className={theme.primary} /> Endereço
+                <div
+                  className={`p-6 md:p-7 ${hasHours || availableSocials.length > 0 || hasPhone ? `border-b ${theme.border}` : ""}`}
+                >
+                  <h2 className="text-sm md:text-base font-bold mb-3 flex items-center gap-2 text-slate-800 uppercase tracking-wider">
+                    <MapPin size={16} className={theme.primary} /> Endereço
                   </h2>
-                  <p className="text-sm font-semibold opacity-90 leading-snug">
+                  <p className="text-sm font-medium text-slate-700 leading-snug">
                     {business.address || "Endereço não cadastrado"}
                     {business.number &&
                       !business.address?.includes(business.number) &&
                       `, ${business.number}`}
                   </p>
                   {business.complement && (
-                    <p className="text-xs font-medium opacity-60 mt-1">
+                    <p className="text-xs text-slate-500 mt-1 font-medium">
                       {business.complement}
                     </p>
                   )}
-                  <p className="text-xs opacity-50 mt-1">
+                  <p className="text-xs font-semibold text-slate-400 mt-2 uppercase tracking-widest">
                     {business.neighborhood && `${business.neighborhood} • `}
                     {business.city}{" "}
                     {business.state ? `— ${business.state}` : ""}
@@ -594,31 +633,31 @@ export default function ShowroomLayout({
                     onClick={() =>
                       Actions.registerClickEvent(business.id, "MAP")
                     }
-                    className={`mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl ${theme.bgSecondary} ${theme.primary} border ${theme.border} hover:opacity-80 transition-all`}
+                    className={`mt-4 inline-flex items-center justify-center w-full gap-2 text-xs font-bold uppercase tracking-widest px-4 py-3 rounded-xl text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all active:scale-95`}
                   >
-                    <Navigation size={14} /> Traçar Rota
+                    <Navigation size={14} strokeWidth={2.5} /> Traçar Rota
                   </a>
                 </div>
               )}
 
               {hasHours && (
                 <div
-                  className={`${hasAddress ? "pt-5 border-t border-black/5" : ""}`}
+                  className={`p-6 md:p-7 ${availableSocials.length > 0 || hasPhone ? `border-b ${theme.border}` : ""}`}
                 >
-                  <h2 className="text-base font-bold mb-3 flex items-center gap-2 opacity-90">
-                    <Clock size={18} className={theme.primary} /> Horários
+                  <h2 className="text-sm md:text-base font-bold mb-4 flex items-center gap-2 text-slate-800 uppercase tracking-wider">
+                    <Clock size={16} className={theme.primary} /> Horários
                   </h2>
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {safeHours.map((h: any, i: number) => (
                       <div
                         key={i}
-                        className="flex justify-between items-center text-xs md:text-sm"
+                        className="flex justify-between items-center text-sm"
                       >
-                        <span className="font-semibold opacity-60 capitalize">
+                        <span className="font-semibold text-slate-500 capitalize tracking-wide">
                           {h.day}
                         </span>
                         <span
-                          className={`font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
+                          className={`font-bold ${h.isClosed ? "text-rose-500" : "text-slate-800"}`}
                         >
                           {h.time}
                         </span>
@@ -627,20 +666,10 @@ export default function ShowroomLayout({
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Social e Web */}
-          {(availableSocials.length > 0 || salesChannels.length > 0) && (
-            <div
-              className={`p-6 rounded-[1.5rem] ${theme.cardBg} border ${theme.border} shadow-sm flex flex-col gap-5`}
-            >
-              {availableSocials.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-bold opacity-60 uppercase tracking-wider mb-3">
-                    Redes Sociais
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
+              {(availableSocials.length > 0 || hasPhone) && (
+                <div className="p-6 md:p-7 bg-slate-50/50">
+                  <div className="flex flex-wrap justify-center gap-3">
                     {availableSocials.map((s) => {
                       const username = business[s];
                       if (!username) return null;
@@ -660,6 +689,7 @@ export default function ShowroomLayout({
                           key={s}
                           href={finalUrl}
                           target="_blank"
+                          title={s}
                           rel="noopener noreferrer"
                           onClick={() =>
                             Actions.registerClickEvent(
@@ -667,62 +697,74 @@ export default function ShowroomLayout({
                               s.toUpperCase(),
                             )
                           }
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl ${theme.bgSecondary} border ${theme.border} hover:opacity-80 transition-opacity`}
+                          className={`flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${theme.primary}`}
                         >
                           {s === "instagram" ? (
-                            <Instagram size={14} />
+                            <Instagram size={20} />
                           ) : s === "facebook" ? (
-                            <Facebook size={14} />
+                            <Facebook size={20} />
                           ) : s === "tiktok" ? (
-                            <TikTokIcon className="w-3.5 h-3.5" />
+                            <TikTokIcon className="w-5 h-5" />
                           ) : (
-                            <Globe size={14} />
+                            <Globe size={20} />
                           )}
-                          <span className="text-xs font-semibold capitalize opacity-80">
-                            {s}
-                          </span>
                         </a>
                       );
                     })}
-                  </div>
-                </div>
-              )}
 
-              {salesChannels.length > 0 && (
-                <div
-                  className={`${availableSocials.length > 0 ? "pt-4 border-t border-black/5" : ""}`}
-                >
-                  <h2 className="text-sm font-bold opacity-60 uppercase tracking-wider mb-3">
-                    Onde Comprar
-                  </h2>
-                  <div className="flex flex-col gap-2">
-                    {salesChannels.map((channel) => (
-                      <a
-                        key={channel.key}
-                        href={formatExternalLink(channel.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                          Actions.registerClickEvent(
-                            business.id,
-                            channel.key.toUpperCase(),
-                          )
-                        }
-                        className={`flex items-center gap-3 p-3 rounded-xl transition-all font-sans group hover:opacity-90 ${channel.colorClass}`}
+                    {hasPhone && (
+                      <button
+                        onClick={() => handleTrackLead("phone")}
+                        title="Ligar"
+                        className={`flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer ${theme.primary}`}
                       >
-                        <div className="w-5 h-5">{channel.icon}</div>
-                        <span className="text-xs font-bold tracking-widest uppercase">
-                          {channel.name}
-                        </span>
-                        <ChevronRight
-                          size={16}
-                          className="ml-auto opacity-50"
-                        />
-                      </a>
-                    ))}
+                        <Phone size={20} />
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* LOJAS OFICIAIS */}
+          {salesChannels.length > 0 && (
+            <div
+              className={`rounded-2xl ${theme.cardBg} border ${theme.border} shadow-sm overflow-hidden`}
+            >
+              <div className="p-6 md:p-7">
+                <h2 className="text-sm md:text-base font-bold mb-4 text-slate-800 uppercase tracking-wider">
+                  Onde Comprar
+                </h2>
+                <div className="flex flex-col gap-3">
+                  {salesChannels.map((channel) => (
+                    <a
+                      key={channel.key}
+                      href={formatExternalLink(channel.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        Actions.registerClickEvent(
+                          business.id,
+                          channel.key.toUpperCase(),
+                        )
+                      }
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all font-medium text-slate-700 group`}
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center">
+                        {channel.icon}
+                      </div>
+                      <span className="text-xs font-bold tracking-widest uppercase">
+                        {channel.name}
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        className="ml-auto text-slate-400 group-hover:text-slate-600 transition-colors"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -730,7 +772,7 @@ export default function ShowroomLayout({
 
       {/* --- RODAPÉ --- */}
       <div className="w-full max-w-5xl mx-auto px-4 md:px-6 pt-4 pb-20">
-        <div className="w-full flex justify-center py-6 opacity-30 hover:opacity-100 transition-opacity">
+        <div className="w-full flex justify-center py-6 opacity-40 hover:opacity-100 transition-opacity">
           <ReportModal businessSlug={business.slug} />
         </div>
         <CommentsSection
@@ -747,22 +789,27 @@ export default function ShowroomLayout({
 
       <div ref={footerTriggerRef} className="w-full h-4 bg-transparent" />
 
-      {/* --- WHATSAPP FLUTUANTE UNIVERSAL --- */}
-      {hasWhatsapp && (
+      {/* 🚀 LÓGICA DO FAB: WhatsApp fallback para Telefone */}
+      {(hasWhatsapp || hasPhone) && (
         <motion.button
-          aria-label="Abrir WhatsApp"
+          aria-label={hasWhatsapp ? "Abrir WhatsApp" : "Ligar"}
           animate={
             isFooterVisible
               ? { opacity: 0, scale: 0.8, pointerEvents: "none" }
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
-          onClick={() => handleTrackLead("whatsapp")}
-          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:scale-105 active:scale-95 transition-all"
+          onClick={() => handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")}
+          className={`fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all ${
+            hasWhatsapp
+              ? "bg-[#25D366] text-white"
+              : `${theme.bgAction} text-white`
+          }`}
         >
-          <MessageCircle size={28} />
+          {hasWhatsapp ? <MessageCircle size={28} /> : <Phone size={28} />}
         </motion.button>
       )}
 
+      {/* MODAIS (Galeria e PDF) */}
       <TemplateLightbox
         images={lightboxImages}
         selectedIndex={selectedIndex}
@@ -770,9 +817,6 @@ export default function ShowroomLayout({
         onNavigate={safeSetIndex}
       />
 
-      {/* ==========================================
-          🚀 MODAL DE PDF (CARDÁPIO/CATÁLOGO)
-          ========================================== */}
       <AnimatePresence>
         {isPdfModalOpen && rawBusiness.catalogPdf && (
           <motion.div
@@ -783,7 +827,7 @@ export default function ShowroomLayout({
           >
             <div className="w-full max-w-5xl h-full bg-white rounded-2xl md:rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl">
               <div className="w-full h-16 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-slate-400">
                   Visualização de Documento
                 </span>
                 <button

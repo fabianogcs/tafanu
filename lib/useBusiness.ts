@@ -3,42 +3,58 @@ import { useState, useEffect, useMemo } from "react";
 import { normalizeBusiness } from "./normalize";
 
 export function useBusiness(rawBusiness: any, rawHours: any) {
-  // 1. Blindagem de dados
+  // 1. Blindagem de dados principal
   const business = useMemo(() => normalizeBusiness(rawBusiness), [rawBusiness]);
   const realHours = useMemo(
     () => (Array.isArray(rawHours) ? rawHours : []),
     [rawHours],
   );
 
-  // 2. Estado do Favorito Sincronizado
-  const [isFavorite, setIsFavorite] = useState(business.favorites.length > 0);
+  // 2. Estado do Favorito Sincronizado (Com trava de segurança contra Null)
+  const safeFavorites = Array.isArray(business?.favorites)
+    ? business.favorites
+    : [];
+  const [isFavorite, setIsFavorite] = useState(safeFavorites.length > 0);
 
   useEffect(() => {
-    setIsFavorite(business.favorites.length > 0);
-  }, [business.id, business.favorites]);
+    setIsFavorite(safeFavorites.length > 0);
+  }, [business?.id, safeFavorites.length]);
 
-  // 3. Capacidades (Booleans úteis para o Layout)
+  // 3. Capacidades (Booleans blindados contra "Tela Branca da Morte")
   const capabilities = useMemo(() => {
     // 🚀 A VACINA DOS GLOBOS:
     // Separamos as redes sociais reais dos Marketplaces para não dar vazamento na UI.
     const socialPlatforms = ["instagram", "tiktok", "facebook", "website"];
 
     return {
-      hasWhatsapp: business.whatsapp.trim() !== "",
-      hasPhone: business.phone.trim() !== "", // Atalho para o layout
-      hasGallery: business.gallery.length > 0,
-      hasFaqs: business.faqs.length > 0,
-      hasFeatures: business.features.length > 0,
+      // 🛡️ Prevenção: Garantimos que é uma string antes de aplicar o .trim()
+      hasWhatsapp:
+        typeof business?.whatsapp === "string" &&
+        business.whatsapp.trim() !== "",
+      hasPhone:
+        typeof business?.phone === "string" && business.phone.trim() !== "",
+      hasAddress:
+        typeof business?.address === "string" && business.address.trim() !== "",
+      hasDescription:
+        typeof business?.description === "string" &&
+        business.description.trim() !== "",
+
+      // 🛡️ Prevenção: Garantimos que é um Array antes de ler o .length
+      hasGallery:
+        Array.isArray(business?.gallery) && business.gallery.length > 0,
+      hasFaqs: Array.isArray(business?.faqs) && business.faqs.length > 0,
+      hasFeatures:
+        Array.isArray(business?.features) && business.features.length > 0,
       hasHours: realHours.length > 0,
-      hasAddress: business.address.trim() !== "",
-      hasDescription: business.description.trim() !== "",
-      // Verifica se existe pelo menos uma rede social preenchida
+
+      // Verifica se existe pelo menos uma rede social preenchida validando o tipo
       hasSocials: socialPlatforms.some(
-        (s) => typeof business[s] === "string" && business[s].trim() !== "",
+        (s) => typeof business?.[s] === "string" && business[s].trim() !== "",
       ),
+
       // Lista filtrada SÓ com as redes sociais REAIS
       availableSocials: socialPlatforms.filter(
-        (s) => typeof business[s] === "string" && business[s].trim() !== "",
+        (s) => typeof business?.[s] === "string" && business[s].trim() !== "",
       ),
     };
   }, [business, realHours]);

@@ -5,12 +5,12 @@ export const businessThemes: Record<string, any> = {
 
   // --- TEMAS CLAROS (Frescos, Modernos e Elegantes) ---
 
-  // 1. PEARL LUXE (O seu original atualizado - Quente e Dourado)
+  // 1. PEARL LUXE (Neutro Quente - Sofisticação Clássica)
   comercial_pearl: {
     label: "Comercial - Pearl Luxe",
     layout: "businessList",
-    bgPage: "bg-[#fdfcfb]", // Off-white quente
-    bgHero: "bg-gradient-to-r from-[#F4F1EA] to-[#EAE4D9]", // Capa bege
+    bgPage: "bg-[#fdfcfb]",
+    bgHero: "bg-gradient-to-r from-[#F4F1EA] to-[#EAE4D9]",
     textColor: "text-[#2d2421]",
     cardBg: "bg-white",
     border: "border-[#e5e1da]",
@@ -20,12 +20,12 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #fdfcfb 0%, #c5a059 100%)",
   },
 
-  // 2. CLOUD VIOLET (O seu original atualizado - Azulado e Índigo)
+  // 2. CLOUD VIOLET (Neutro Frio - Minimalismo Corporativo)
   comercial_violet: {
     label: "Comercial - Cloud Violet",
     layout: "businessList",
     bgPage: "bg-[#f8f9ff]",
-    bgHero: "bg-gradient-to-r from-[#EEF2FF] to-[#E0E7FF]", // Capa azulada
+    bgHero: "bg-gradient-to-r from-[#EEF2FF] to-[#E0E7FF]",
     textColor: "text-[#1e1b4b]",
     cardBg: "bg-white",
     border: "border-[#e0e7ff]",
@@ -35,92 +35,91 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #f8f9ff 0%, #6366f1 100%)",
   },
 
-  // 3. OCEAN CLEAR (Azul e Ciano super limpo)
+  // 3. OCEAN CLEAR (Neutro Limpo - Azul Tech)
   comercial_blue_dark: {
-    // Mantive a chave para não quebrar a sua BD
     label: "Comercial - Ocean Clear",
     layout: "businessList",
-    bgPage: "bg-[#F0F9FF]", // Fundo azul gelo
-    bgHero: "bg-gradient-to-r from-[#E0F2FE] to-[#BAE6FD]", // Capa Ciano
+    bgPage: "bg-[#F0F9FF]",
+    bgHero: "bg-gradient-to-r from-[#E0F2FE] to-[#BAE6FD]",
     textColor: "text-[#0C4A6E]",
     cardBg: "bg-white",
     border: "border-[#BAE6FD]",
-    primary: "text-[#0284C7]", // Azul tech
+    primary: "text-[#0284C7]",
     bgSecondary: "bg-[#E0F2FE]",
     bgAction: "bg-[#0284C7] text-white",
     previewColor: "linear-gradient(135deg, #F0F9FF 0%, #0284C7 100%)",
   },
 
-  // 4. FRESH MINT (Verde Claro e Minimalista)
+  // 4. FRESH MINT (Exótico Suave - Bem-estar e Organicos)
   comercial_mint: {
     label: "Comercial - Fresh Mint",
     layout: "businessList",
     bgPage: "bg-[#F0FDF4]",
-    bgHero: "bg-gradient-to-r from-[#D1FAE5] to-[#A7F3D0]", // Capa Verde Menta
+    bgHero: "bg-gradient-to-r from-[#D1FAE5] to-[#A7F3D0]",
     textColor: "text-[#064E3B]",
     cardBg: "bg-white",
     border: "border-[#A7F3D0]",
-    primary: "text-[#059669]", // Verde esmeralda
+    primary: "text-[#059669]",
     bgSecondary: "bg-[#D1FAE5]",
     bgAction: "bg-[#059669] text-white",
     previewColor: "linear-gradient(135deg, #F0FDF4 0%, #059669 100%)",
   },
 
-  // 5. PEACH SUNSET (Pêssego e Laranja Vivo)
+  // 5. PEACH SUNSET (Exótico Quente - Gastronomia e Lazer)
   comercial_peach: {
     label: "Comercial - Peach Sunset",
     layout: "businessList",
     bgPage: "bg-[#FFF5F5]",
-    bgHero: "bg-gradient-to-r from-[#FFEDD5] to-[#FFCFCD]", // Capa Pêssego
+    bgHero: "bg-gradient-to-r from-[#FFEDD5] to-[#FFCFCD]",
     textColor: "text-[#431407]",
     cardBg: "bg-white",
     border: "border-[#FFDEDD]",
-    primary: "text-[#F97316]", // Laranja Vivo
+    primary: "text-[#F97316]",
     bgSecondary: "bg-[#FFEDD5]",
     bgAction: "bg-[#F97316] text-white",
     previewColor: "linear-gradient(135deg, #FFF5F5 0%, #F97316 100%)",
   },
 
-  // 6. ROSE GOLD (Tons femininos e delicados)
+  // 6. ROSE GOLD (Exótico Elegante - Moda e Beleza)
   comercial_rose: {
     label: "Comercial - Rose Gold",
     layout: "businessList",
     bgPage: "bg-[#FFF1F2]",
-    bgHero: "bg-gradient-to-r from-[#FFE4E6] to-[#FECDD3]", // Capa Rosa
+    bgHero: "bg-gradient-to-r from-[#FFE4E6] to-[#FECDD3]",
     textColor: "text-[#881337]",
     cardBg: "bg-white",
     border: "border-[#FECDD3]",
-    primary: "text-[#E11D48]", // Rosa forte
+    primary: "text-[#E11D48]",
     bgSecondary: "bg-[#FFE4E6]",
     bgAction: "bg-[#E11D48] text-white",
     previewColor: "linear-gradient(135deg, #FFF1F2 0%, #E11D48 100%)",
   },
 
-  // 7. LEMONADE (Amarelo e Mostarda vibrante)
+  // 7. LEMONADE (Exótico Vibrante - Criatividade e Varejo)
   comercial_lemon: {
     label: "Comercial - Lemonade",
     layout: "businessList",
     bgPage: "bg-[#FEFCE8]",
-    bgHero: "bg-gradient-to-r from-[#FEF08A] to-[#FDE047]", // Capa Amarela
+    bgHero: "bg-gradient-to-r from-[#FEF08A] to-[#FDE047]",
     textColor: "text-[#713F12]",
     cardBg: "bg-white",
     border: "border-[#FEF08A]",
-    primary: "text-[#CA8A04]", // Mostarda Escuro
+    primary: "text-[#CA8A04]",
     bgSecondary: "bg-[#FEF08A]",
     bgAction: "bg-[#CA8A04] text-white",
     previewColor: "linear-gradient(135deg, #FEFCE8 0%, #CA8A04 100%)",
   },
 
-  // 8. MINIMAL MONOCHROME (Preto, Branco e Cinza puro)
+  // 8. MINIMAL MONOCHROME (Neutro Absoluto - Editorial Pura)
   comercial_mono: {
     label: "Comercial - Minimal Mono",
     layout: "businessList",
-    bgPage: "bg-[#F3F4F6]", // Cinza muito suave
-    bgHero: "bg-gradient-to-r from-[#E5E7EB] to-[#D1D5DB]", // Capa Cinza
+    bgPage: "bg-[#F3F4F6]",
+    bgHero: "bg-gradient-to-r from-[#E5E7EB] to-[#D1D5DB]",
     textColor: "text-[#111827]",
     cardBg: "bg-white",
     border: "border-[#E5E7EB]",
-    primary: "text-[#000000]", // Preto
+    primary: "text-[#000000]",
     bgSecondary: "bg-[#F3F4F6]",
     bgAction: "bg-[#000000] text-white",
     previewColor: "linear-gradient(135deg, #F3F4F6 0%, #000000 100%)",
@@ -128,205 +127,213 @@ export const businessThemes: Record<string, any> = {
 
   // --- TEMAS ESCUROS (Elegância Extrema e Contraste) ---
 
-  // 9. ONYX & GOLD (Preto Oled com Ouro)
+  // 9. ONYX & GOLD (Dark Luxo Absoluto)
   comercial_obsidian: {
     label: "Comercial - Onyx & Gold",
     layout: "businessList",
     bgPage: "bg-[#000000]",
-    bgHero: "bg-gradient-to-r from-[#171717] to-[#262626]", // Capa Cinza Chumbo
+    bgHero: "bg-gradient-to-r from-[#171717] to-[#262626]",
     textColor: "text-[#FAFAFA]",
     cardBg: "bg-[#0A0A0A]",
     border: "border-[#27272A]",
-    primary: "text-[#FBBF24]", // Dourado
+    primary: "text-[#FBBF24]",
     bgSecondary: "bg-[#18181B]",
     bgAction: "bg-[#FBBF24] text-[#000000]",
     previewColor: "linear-gradient(135deg, #000000 0%, #FBBF24 100%)",
   },
 
-  // 10. DEEP FOREST (O seu original - Verde Noturno)
+  // 10. DEEP FOREST (Dark Exótico - Verde Noturno)
   comercial_forest: {
     label: "Comercial - Deep Forest",
     layout: "businessList",
-    bgPage: "bg-[#052E16]", // Verde muito escuro
-    bgHero: "bg-gradient-to-r from-[#064E3B] to-[#065F46]", // Capa Esmeralda
+    bgPage: "bg-[#052E16]",
+    bgHero: "bg-gradient-to-r from-[#064E3B] to-[#065F46]",
     textColor: "text-[#ECFDF5]",
     cardBg: "bg-[#064E3B]",
     border: "border-[#047857]",
-    primary: "text-[#34D399]", // Verde Menta vibrante
+    primary: "text-[#34D399]",
     bgSecondary: "bg-[#047857]",
     bgAction: "bg-[#34D399] text-[#052E16]",
     previewColor: "linear-gradient(135deg, #052E16 0%, #34D399 100%)",
   },
-
   // =========================================================
-  // 💎 EDITORIAL (LUXE) - A MEGA COLEÇÃO (Claros + Escuros)
-  // Escolha os seus favoritos testando no painel e apague o resto!
+  // 💎 EDITORIAL (LUXE) - A MEGA COLEÇÃO (Cores Vivas + Dark VIP)
   // =========================================================
 
-  // --- OS ORIGINAIS (Vibrantes e Escuros) ---
-
+  // 1. GOLDEN PEARL (Ouro Brilhante e Pérola)
   luxe_ivory: {
     label: "Luxe - Golden Pearl",
     layout: "editorial",
-    bgPage: "bg-[#FCFBF9]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FDF0E6] to-[#EACBA6]",
-    textColor: "text-[#2A231E]",
-    subTextColor: "text-[#2A231E]/70",
-    cardBg: "bg-white",
-    border: "border-[#B67645]/20",
-    primary: "text-[#B67645]",
-    bgSecondary: "bg-[#F3EDE6]",
-    bgAction: "bg-[#B67645] text-[#2A231E]",
-    previewColor: "linear-gradient(135deg, #FDF0E6 0%, #EACBA6 100%)",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#FFFDF5] via-[#FFF3DC] to-[#F2D7A5]", // Ouro claro luminoso
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#C58A22]", // Ouro vivo e quente
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#C58A22] text-white",
+    previewColor: "linear-gradient(135deg, #FFF3DC 0%, #C58A22 100%)",
   },
 
+  // 2. CYBER SUNSET (Exótico: Amarelo Citrus, Magenta e Roxo)
   luxe_vanilla: {
-    label: "Luxe - Soft Vanilla",
+    label: "Luxe - Vibrant Vanilla",
     layout: "editorial",
     bgPage: "bg-[#FFFFFF]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FCFBF8] to-[#F3EEE6]",
-    textColor: "text-[#333333]",
-    subTextColor: "text-[#333333]/70",
-    cardBg: "bg-white",
-    border: "border-[#EBE6DF]",
-    primary: "text-[#A68A56]",
-    bgSecondary: "bg-[#FCFBF8]",
-    bgAction: "bg-[#A68A56] text-white",
-    previewColor: "linear-gradient(135deg, #FCFBF8 0%, #F3EEE6 100%)",
+    bgHero: "bg-gradient-to-br from-[#FEF08A] via-[#F43F5E] to-[#9333EA]", // Amarelo solar -> Magenta -> Roxo Neon
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#BE185D]", // Rosa Magenta Profundo / Fúcsia
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#9333EA] text-white", // Botão em Roxo Imperial
+    previewColor: "linear-gradient(135deg, #FEF08A 0%, #9333EA 100%)",
   },
-  luxe_breeze: {
-    label: "Luxe - Mint Breeze",
-    layout: "editorial",
-    bgPage: "bg-[#FAFCFB]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F2F9F6] to-[#E3EFEA]",
-    textColor: "text-[#1C2E24]",
-    subTextColor: "text-[#1C2E24]/70",
-    cardBg: "bg-white",
-    border: "border-[#D1E0D9]",
-    primary: "text-[#5D806D]",
-    bgSecondary: "bg-[#F2F9F6]",
-    bgAction: "bg-[#5D806D] text-white",
-    previewColor: "linear-gradient(135deg, #F2F9F6 0%, #E3EFEA 100%)",
-  },
-  luxe_blush: {
-    label: "Luxe - Blush Petal",
-    layout: "editorial",
-    bgPage: "bg-[#FFFCFC]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FFF5F6] to-[#FCE8EC]",
-    textColor: "text-[#3B1E25]",
-    subTextColor: "text-[#3B1E25]/70",
-    cardBg: "bg-white",
-    border: "border-[#F8D7E0]",
-    primary: "text-[#C47083]",
-    bgSecondary: "bg-[#FFF5F6]",
-    bgAction: "bg-[#C47083] text-white",
-    previewColor: "linear-gradient(135deg, #FFF5F6 0%, #FCE8EC 100%)",
-  },
+
+  // 3. SANDSTONE (Rose Gold Luminoso)
   luxe_sand: {
-    label: "Luxe - Sandstone",
+    label: "Luxe - Rose Gold",
     layout: "editorial",
-    bgPage: "bg-[#FCFAFC]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F7F5F2] to-[#EBE7E0]",
-    textColor: "text-[#2E2925]",
-    subTextColor: "text-[#2E2925]/70",
-    cardBg: "bg-white",
-    border: "border-[#DFD9D1]",
-    primary: "text-[#8C7A6B]",
-    bgSecondary: "bg-[#F7F5F2]",
-    bgAction: "bg-[#8C7A6B] text-white",
-    previewColor: "linear-gradient(135deg, #F7F5F2 0%, #EBE7E0 100%)",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#FFFAF8] via-[#F5E6E1] to-[#EAC4BA]", // Fundo Rose bem limpo
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#D97E6A]", // Rose Gold marcante
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#D97E6A] text-white",
+    previewColor: "linear-gradient(135deg, #F5E6E1 0%, #D97E6A 100%)",
   },
+
+  // 4. MINT BREEZE (Esmeralda Fresco)
+  luxe_breeze: {
+    label: "Luxe - Mint Emerald",
+    layout: "editorial",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#F0FDF4] via-[#D1FAE5] to-[#A7F3D0]", // Menta brilhante e alegre
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#10B981]", // Esmeralda vibrante
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#10B981] text-white",
+    previewColor: "linear-gradient(135deg, #D1FAE5 0%, #10B981 100%)",
+  },
+
+  // 5. BLUSH PETAL (Rubi e Pink)
+  luxe_blush: {
+    label: "Luxe - Ruby Petal",
+    layout: "editorial",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#FFF1F2] via-[#FFE4E6] to-[#FECDD3]", // Rosa chiclete limpo
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#E11D48]", // Cereja / Rubi elétrico
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#E11D48] text-white",
+    previewColor: "linear-gradient(135deg, #FFE4E6 0%, #E11D48 100%)",
+  },
+
+  // 6. CLOUD BLUE (Safira e Azul Céu)
   luxe_cloud: {
-    label: "Luxe - Cloud Blue",
+    label: "Luxe - Sapphire Blue",
     layout: "editorial",
-    bgPage: "bg-[#F8FBFF]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F2F7FC] to-[#E0EBF5]",
-    textColor: "text-[#1A2E40]",
-    subTextColor: "text-[#1A2E40]/70",
-    cardBg: "bg-white",
-    border: "border-[#CDDCEB]",
-    primary: "text-[#567E9F]",
-    bgSecondary: "bg-[#F2F7FC]",
-    bgAction: "bg-[#567E9F] text-white",
-    previewColor: "linear-gradient(135deg, #F2F7FC 0%, #E0EBF5 100%)",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#EFF6FF] via-[#DBEAFE] to-[#BFDBFE]", // Azul céu radiante
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#2563EB]", // Azul Safira puro e forte
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#2563EB] text-white",
+    previewColor: "linear-gradient(135deg, #DBEAFE 0%, #2563EB 100%)",
   },
+
+  // 7. LILAC WHISPER (Ametista Vibrante)
   luxe_lilac: {
-    label: "Luxe - Lilac Whisper",
+    label: "Luxe - Amethyst Whisper",
     layout: "editorial",
-    bgPage: "bg-[#FCFAFF]",
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F7F5FC] to-[#EDE7F5]",
-    textColor: "text-[#282136]",
-    subTextColor: "text-[#282136]/70",
-    cardBg: "bg-white",
-    border: "border-[#DFD6EB]",
-    primary: "text-[#8267A6]",
-    bgSecondary: "bg-[#F7F5FC]",
-    bgAction: "bg-[#8267A6] text-white",
-    previewColor: "linear-gradient(135deg, #F7F5FC 0%, #EDE7F5 100%)",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#FAF5FF] via-[#F3E8FF] to-[#E9D5FF]", // Lilás luminoso
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#9333EA]", // Roxo Ametista elétrico
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#9333EA] text-white",
+    previewColor: "linear-gradient(135deg, #F3E8FF 0%, #9333EA 100%)",
   },
-  // 8. PLATINUM MIST (Moda de Alta Costura, Joalharia Prata, Minimalismo)
+
+  // 8. PLATINUM MIST (Prata e Ciano)
   luxe_platinum: {
-    label: "Luxe - Platinum Mist",
+    label: "Luxe - Icy Platinum",
     layout: "editorial",
-    bgPage: "bg-[#F8F9FA]", // Cinza gelo quase branco
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F1F3F5] to-[#E2E8F0]", // Degradê prateado
-    textColor: "text-[#334155]", // Chumbo elegante
-    subTextColor: "text-[#334155]/70",
-    cardBg: "bg-white",
-    border: "border-[#E2E8F0]",
-    primary: "text-[#64748B]", // Prata/Cinza escuro nos ícones
-    bgSecondary: "bg-[#F1F3F5]",
-    bgAction: "bg-[#475569] text-white", // Botão Chumbo forte
-    previewColor: "linear-gradient(135deg, #F1F3F5 0%, #E2E8F0 100%)",
+    bgPage: "bg-[#FFFFFF]",
+    bgHero: "bg-gradient-to-br from-[#F0F9FF] via-[#E0F2FE] to-[#BAE6FD]", // Prata com toque de azul gelo
+    textColor: "text-[#171717]",
+    subTextColor: "text-[#171717]/70",
+    cardBg: "bg-[#FFFFFF]",
+    border: "border-black/5",
+    primary: "text-[#0891B2]", // Ciano profundo / Azul Cerúleo
+    bgSecondary: "bg-[#FAFAFA]",
+    bgAction: "bg-[#0891B2] text-white",
+    previewColor: "linear-gradient(135deg, #E0F2FE 0%, #0891B2 100%)",
   },
 
-  // 9. PEACH SILK (Skincare, Cosméticos, Moda Praia, Acolhedor)
+  // 9. MIDNIGHT ROSE (A Exceção Dark - Preto e Rosa Pink)
   luxe_peach: {
-    label: "Luxe - Peach Silk",
+    label: "Luxe - Midnight Rose",
     layout: "editorial",
-    bgPage: "bg-[#FFFAF8]", // Off-white puxado para um pêssego muito pálido
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#FFF1E6] to-[#FCD5CE]", // Degradê sedoso Pêssego/Coral
-    textColor: "text-[#5D4037]", // Castanho café para contraste suave
-    subTextColor: "text-[#5D4037]/70",
-    cardBg: "bg-white",
-    border: "border-[#F8EDEB]",
-    primary: "text-[#F08080]", // Coral suave nos ícones
-    bgSecondary: "bg-[#FFF1E6]",
-    bgAction: "bg-[#F08080] text-white", // Botão Coral
-    previewColor: "linear-gradient(135deg, #FFF1E6 0%, #FCD5CE 100%)",
+    bgPage: "bg-[#000000]",
+    bgHero: "bg-gradient-to-br from-[#1A0A0E] via-[#0A0003] to-[#000000]",
+    textColor: "text-[#FAFAFA]",
+    subTextColor: "text-[#FAFAFA]/70",
+    cardBg: "bg-[#111111]",
+    border: "border-[#F43F5E]/20",
+    primary: "text-[#F43F5E]",
+    bgSecondary: "bg-[#1A1A1A]",
+    bgAction: "bg-[#F43F5E] text-white",
+    previewColor: "linear-gradient(135deg, #0A0A0A 0%, #F43F5E 100%)",
   },
 
-  // 10. MATCHA SAGE (Produtos Orgânicos, Spas, Sustentabilidade)
+  // 10. ONYX GOLD (A Exceção Dark - Preto e Dourado Clássico)
   luxe_sage: {
-    label: "Luxe - Matcha Sage",
+    label: "Luxe - Onyx Gold",
     layout: "editorial",
-    bgPage: "bg-[#F9FAF8]", // Fundo natural quase branco
-    bgHero: "bg-gradient-to-br from-[#FFFFFF] via-[#F2F5F0] to-[#CCD5AE]", // Degradê chá verde/matcha
-    textColor: "text-[#283618]", // Verde musgo profundo para texto
-    subTextColor: "text-[#283618]/70",
-    cardBg: "bg-white",
-    border: "border-[#E9EDC9]",
-    primary: "text-[#606C38]", // Verde Sálvia
-    bgSecondary: "bg-[#F2F5F0]",
-    bgAction: "bg-[#606C38] text-white", // Botão verde terroso
-    previewColor: "linear-gradient(135deg, #F2F5F0 0%, #CCD5AE 100%)",
+    bgPage: "bg-[#000000]",
+    bgHero: "bg-gradient-to-br from-[#1A1814] via-[#0A0A0A] to-[#000000]",
+    textColor: "text-[#FAFAFA]",
+    subTextColor: "text-[#FAFAFA]/70",
+    cardBg: "bg-[#111111]",
+    border: "border-[#D4AF37]/20",
+    primary: "text-[#D4AF37]",
+    bgSecondary: "bg-[#1A1A1A]",
+    bgAction: "bg-[#D4AF37] text-black",
+    previewColor: "linear-gradient(135deg, #0A0A0A 0%, #D4AF37 100%)",
   },
+  // =========================================================
+  // 🚀 URBAN (LANDING / SAAS) - IDENTIDADES MODERNAS E EXÓTICAS
+  // =========================================================
 
-  // 1. VIBRANT VIOLET (Igual à sua imagem de referência!)
-  // Identidade: Agências, Criadores de Conteúdo, Inovação
-  // 1. VIBRANT VIOLET (Agências, Criadores de Conteúdo, Inovação)
   urban_rose_gold: {
     label: "Landing - Vibrant Violet",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#a855f7] to-[#ec4899]", // Roxo para Rosa
-    bgPage: "bg-[#fdf4ff]", // 🚀 Fundo Fúcsia ultra pálido (traz a identidade pra página toda)
-    textColor: "text-[#4a044e]", // Texto roxo super escuro (elegante)
+    bgHero: "bg-gradient-to-r from-[#a855f7] to-[#ec4899]",
+    bgPage: "bg-[#fdf4ff]",
+    textColor: "text-[#4a044e]",
     cardBg: "bg-white",
     cardTextColor: "text-[#4a044e]",
-    border: "border-[#f5d0fe]", // Borda levemente rosada
+    border: "border-[#f5d0fe]",
     primary: "text-[#a855f7]",
     bgSecondary: "bg-[#f3e8ff]",
-    // 🚀 FIX: Fundo sólido com degradê para destacar o texto branco!
     bgAction:
       "bg-gradient-to-r from-[#a855f7] to-[#ec4899] border-none !text-white",
     radius: "rounded-3xl",
@@ -334,16 +341,15 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
   },
 
-  // 2. ELECTRIC BLUE (Tech, Clínicas, Confiança e Limpeza)
   urban_ocean: {
     label: "Landing - Electric Blue",
     layout: "urban",
     bgHero: "bg-gradient-to-r from-[#2563eb] to-[#06b6d4]",
-    bgPage: "bg-[#f0f9ff]", // 🚀 Fundo Ciano ultra pálido (Sky 50)
-    textColor: "text-[#082f49]", // Texto azul marinho profundo
+    bgPage: "bg-[#f0f9ff]",
+    textColor: "text-[#082f49]",
     cardBg: "bg-white",
     cardTextColor: "text-[#082f49]",
-    border: "border-[#bae6fd]", // Borda azul clara
+    border: "border-[#bae6fd]",
     primary: "text-[#0ea5e9]",
     bgSecondary: "bg-[#e0f2fe]",
     bgAction:
@@ -353,16 +359,15 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)",
   },
 
-  // 3. SUNSET ORANGE (Quente, Vendas, Alimentação, Energia)
   urban_black_nude: {
     label: "Landing - Sunset Orange",
     layout: "urban",
     bgHero: "bg-gradient-to-r from-[#f97316] to-[#f43f5e]",
-    bgPage: "bg-[#fff7ed]", // 🚀 Fundo Laranja ultra pálido (Orange 50)
-    textColor: "text-[#431407]", // Texto Marrom/Laranja super escuro
+    bgPage: "bg-[#fff7ed]",
+    textColor: "text-[#431407]",
     cardBg: "bg-white",
     cardTextColor: "text-[#431407]",
-    border: "border-[#fed7aa]", // Borda laranja clara
+    border: "border-[#fed7aa]",
     primary: "text-[#f97316]",
     bgSecondary: "bg-[#ffedd5]",
     bgAction:
@@ -372,16 +377,15 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #f97316 0%, #f43f5e 100%)",
   },
 
-  // 4. FRESH EMERALD (Saúde, Natureza, Bem-estar)
   urban_platinum: {
     label: "Landing - Fresh Emerald",
     layout: "urban",
     bgHero: "bg-gradient-to-r from-[#10b981] to-[#14b8a6]",
-    bgPage: "bg-[#f0fdf4]", // 🚀 Fundo Verde ultra pálido (Emerald 50)
-    textColor: "text-[#022c22]", // Texto verde musgo super escuro
+    bgPage: "bg-[#f0fdf4]",
+    textColor: "text-[#022c22]",
     cardBg: "bg-white",
     cardTextColor: "text-[#022c22]",
-    border: "border-[#a7f3d0]", // Borda verde clara
+    border: "border-[#a7f3d0]",
     primary: "text-[#10b981]",
     bgSecondary: "bg-[#d1fae5]",
     bgAction:
@@ -391,9 +395,8 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #10b981 0%, #14b8a6 100%)",
   },
 
-  // 5. GOLD VIP (O Intocável - Luxo Absoluto)
   urban_gold: {
-    label: "Landing - Gold VIP",
+    label: "Landing - Gold VIP (Dark)",
     layout: "urban",
     bgHero: "bg-[#0a0a0a]",
     bgPage: "bg-[#000000]",
@@ -403,20 +406,14 @@ export const businessThemes: Record<string, any> = {
     border: "border-[#d4af37]/30",
     primary: "text-[#d4af37]",
     bgSecondary: "bg-[#171717]",
-    // 🚀 FIX: A tag !text-black força a cor a ser preta, ignorando o text-white do layout
     bgAction: "bg-[#d4af37] !text-black",
     radius: "rounded-3xl",
     shadow: "shadow-[0_15px_40px_-15px_rgba(212,175,55,0.15)]",
     previewColor: "linear-gradient(135deg, #0a0a0a 0%, #d4af37 100%)",
   },
 
-  // =========================================================
-  // 🔥 URBAN EXTREME (Identidades Radicais e Diferenciadas)
-  // =========================================================
-
-  // 6. URBAN BRUTALIST (Agressivo, Preto/Branco/Vermelho)
   urban_brutalist: {
-    label: "Landing - Brutalist Red",
+    label: "Landing - Brutalist Red (Exótico)",
     layout: "urban",
     bgHero: "bg-[#000000]",
     bgPage: "bg-[#ffffff]",
@@ -432,9 +429,8 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #000000 50%, #ef4444 50%)",
   },
 
-  // 7. URBAN SYNTHWAVE (Retro 80s, Noite, Cores Neon)
   urban_synthwave: {
-    label: "Landing - Synthwave 80s",
+    label: "Landing - Synthwave 80s (Dark Exótico)",
     layout: "urban",
     bgHero: "bg-gradient-to-b from-[#db2777] via-[#9333ea] to-[#1e1b4b]",
     bgPage: "bg-[#1e1b4b]",
@@ -444,15 +440,14 @@ export const businessThemes: Record<string, any> = {
     border: "border-[#db2777]/50",
     primary: "text-[#10b981]",
     bgSecondary: "bg-[#171033]",
-    bgAction: "bg-[#10b981] !text-[#064e3b]", // 🚀 Força o texto a ficar escuro no botão neon
+    bgAction: "bg-[#10b981] !text-[#064e3b]",
     radius: "rounded-xl",
     shadow: "shadow-[0_0_25px_rgba(219,39,119,0.4)]",
     previewColor: "linear-gradient(135deg, #db2777 0%, #1e1b4b 100%)",
   },
 
-  // 8. URBAN EARTH (Tons de Barro, Areia e Natureza)
   urban_earth: {
-    label: "Landing - Earth & Boho",
+    label: "Landing - Earth & Boho (Neutro Terroso)",
     layout: "urban",
     bgHero: "bg-gradient-to-r from-[#92400e] to-[#d97706]",
     bgPage: "bg-[#fef3c7]",
@@ -462,96 +457,86 @@ export const businessThemes: Record<string, any> = {
     border: "border-[#fcd34d]",
     primary: "text-[#92400e]",
     bgSecondary: "bg-[#fde68a]",
-    bgAction: "bg-[#78350f] !text-[#fef3c7]", // 🚀 Força o texto bege clarinho no botão barro
+    bgAction: "bg-[#78350f] !text-[#fef3c7]",
     radius: "rounded-2xl",
     shadow: "shadow-xl shadow-[#d97706]/10",
     previewColor: "linear-gradient(135deg, #92400e 0%, #fef3c7 100%)",
   },
 
-  // 9. URBAN CYBERPUNK (Futurista Sombrio, Ciano e Rosa)
-  // Identidade: Tecnologia, Hardware, Eventos Noturnos
   urban_cyberpunk: {
-    label: "Landing - Cyber Night",
+    label: "Landing - Cyber Night (Dark Tech)",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#020617] via-[#0891b2] to-[#c026d3]", // Preto, Ciano e Fuchsia
-    bgPage: "bg-[#020617]", // Slate 950 (Quase preto)
+    bgHero: "bg-gradient-to-r from-[#020617] via-[#0891b2] to-[#c026d3]",
+    bgPage: "bg-[#020617]",
     textColor: "text-[#e2e8f0]",
-    cardBg: "bg-[#0f172a]", // Slate 900
+    cardBg: "bg-[#0f172a]",
     cardTextColor: "text-[#f8fafc]",
-    border: "border-[#0891b2]/40", // Borda ciano
-    primary: "text-[#e879f9]", // Rosa choque / Fuchsia claro
+    border: "border-[#0891b2]/40",
+    primary: "text-[#e879f9]",
     bgSecondary: "bg-[#000000]",
-    bgAction: "bg-[#0891b2] text-white", // Botão Ciano
+    bgAction: "bg-[#0891b2] text-white",
     radius: "rounded-lg",
     shadow: "shadow-[0_10px_30px_rgba(8,145,178,0.3)]",
     previewColor: "linear-gradient(135deg, #0891b2 0%, #c026d3 100%)",
   },
 
-  // 10. URBAN Y2K (Estética Anos 2000, Tons Pastéis Doces)
-  // Identidade: Lojas Teen, Capinhas de Celular, Docerias
   urban_bubblegum: {
-    label: "Landing - Y2K Bubblegum",
+    label: "Landing - Y2K Bubblegum (Exótico Fofo)",
     layout: "urban",
-    bgHero: "bg-gradient-to-r from-[#f472b6] to-[#60a5fa]", // Rosa Chiclete para Azul Bebê
-    bgPage: "bg-[#faf5ff]", // Fundo lilás mega claro
-    textColor: "text-[#4c1d95]", // Roxo escuro
+    bgHero: "bg-gradient-to-r from-[#f472b6] to-[#60a5fa]",
+    bgPage: "bg-[#faf5ff]",
+    textColor: "text-[#4c1d95]",
     cardBg: "bg-[#ffffff]",
     cardTextColor: "text-[#4c1d95]",
     border: "border-[#e9d5ff]",
-    primary: "text-[#db2777]", // Rosa forte
+    primary: "text-[#db2777]",
     bgSecondary: "bg-[#f3e8ff]",
-    bgAction: "bg-[#60a5fa] text-white", // Botão Azul bebê
-    radius: "rounded-full", // Extremamente arredondado (Cute)
+    bgAction: "bg-[#60a5fa] text-white",
+    radius: "rounded-full",
     shadow: "shadow-[0_15px_30px_-10px_rgba(244,114,182,0.3)]",
     previewColor: "linear-gradient(135deg, #f472b6 0%, #60a5fa 100%)",
   },
 
-  // 11. URBAN COFFEE (Rústico Elegante, Madeiras e Torra)
-  // Identidade: Cafeterias, Empórios, Cervejarias Artesanais
   urban_coffee: {
-    label: "Landing - Espresso Wood",
+    label: "Landing - Espresso Wood (Neutro Rústico)",
     layout: "urban",
-    bgHero: "bg-gradient-to-bl from-[#451a03] to-[#1c1917]", // Torra escura
-    bgPage: "bg-[#f5f5f4]", // Off-white quente (cor de pedra)
+    bgHero: "bg-gradient-to-bl from-[#451a03] to-[#1c1917]",
+    bgPage: "bg-[#f5f5f4]",
     textColor: "text-[#292524]",
     cardBg: "bg-[#ffffff]",
     cardTextColor: "text-[#292524]",
     border: "border-[#d6d3d1]",
-    primary: "text-[#9a3412]", // Laranja avermelhado (Caramelo)
+    primary: "text-[#9a3412]",
     bgSecondary: "bg-[#e7e5e4]",
-    bgAction: "bg-[#451a03] text-[#f5f5f4]", // Botão Café Escuro
+    bgAction: "bg-[#451a03] text-[#f5f5f4]",
     radius: "rounded-xl",
     shadow: "shadow-xl shadow-[#451a03]/10",
     previewColor: "linear-gradient(135deg, #451a03 0%, #9a3412 100%)",
   },
+
   // =========================================================
   // 🏛️ SHOWROOM (8 TEMAS CLAROS + 2 ESCUROS) - ESTILO GMB
   // =========================================================
 
-  // --- TEMAS CLAROS (Focados em Legibilidade e Confiança) ---
-
-  // 1. SHOWROOM GOOGLE (Inspirado no visual limpo do Google Workspace)
   showroom_clean: {
-    label: "Showroom - Blue Trust",
+    label: "Showroom - Blue Trust (Neutro)",
     layout: "showroom",
-    bgPage: "bg-[#F3F4F6]", // Fundo cinza super claro (padrão de apps)
-    bgHero: "bg-gradient-to-r from-[#1A73E8] to-[#4285F4]", // Azul corporativo do Google
-    textColor: "text-[#1F2937]", // Texto chumbo escuro
-    cardBg: "bg-[#FFFFFF]", // Cartões brancos para destaque
+    bgPage: "bg-[#F3F4F6]",
+    bgHero: "bg-gradient-to-r from-[#1A73E8] to-[#4285F4]",
+    textColor: "text-[#1F2937]",
+    cardBg: "bg-[#FFFFFF]",
     border: "border-[#E5E7EB]",
-    primary: "text-[#1A73E8]", // Azul nos ícones
-    bgSecondary: "bg-[#F9FAFB]", // Fundo de badges cinza extra-claro
-    bgAction: "bg-[#1A73E8] text-white", // Botão Azul
+    primary: "text-[#1A73E8]",
+    bgSecondary: "bg-[#F9FAFB]",
+    bgAction: "bg-[#1A73E8] text-white",
     previewColor: "linear-gradient(135deg, #1A73E8 0%, #4285F4 100%)",
   },
 
-  // 2. SHOWROOM VIBRANT ORANGE (Para Serviços Dinâmicos, Delivery, Oficinas)
   showroom_latte: {
-    // Chave mantida
-    label: "Showroom - Vibrant Orange",
+    label: "Showroom - Vibrant Orange (Exótico)",
     layout: "showroom",
-    bgPage: "bg-[#FFF7ED]", // Fundo laranja ultra pálido
-    bgHero: "bg-gradient-to-r from-[#EA580C] to-[#F97316]", // Laranja forte na capa
+    bgPage: "bg-[#FFF7ED]",
+    bgHero: "bg-gradient-to-r from-[#EA580C] to-[#F97316]",
     textColor: "text-[#431407]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#FFEDD5]",
@@ -561,13 +546,11 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #EA580C 0%, #F97316 100%)",
   },
 
-  // 3. SHOWROOM EMERALD (Saúde, Natureza, Bem-estar, Clínicas)
   showroom_cloud: {
-    // Chave mantida
-    label: "Showroom - Fresh Emerald",
+    label: "Showroom - Fresh Emerald (Neutro Saúde)",
     layout: "showroom",
-    bgPage: "bg-[#ECFDF5]", // Fundo verde menta clarinho
-    bgHero: "bg-gradient-to-r from-[#059669] to-[#10B981]", // Capa esmeralda
+    bgPage: "bg-[#ECFDF5]",
+    bgHero: "bg-gradient-to-r from-[#059669] to-[#10B981]",
     textColor: "text-[#064E3B]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#D1FAE5]",
@@ -577,13 +560,11 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #059669 0%, #10B981 100%)",
   },
 
-  // 4. SHOWROOM INDIGO (Advogados, Imobiliárias, Agências)
   showroom_saas: {
-    // Chave mantida
-    label: "Showroom - Deep Indigo",
+    label: "Showroom - Deep Indigo (Corporativo)",
     layout: "showroom",
-    bgPage: "bg-[#EEF2FF]", // Azul índigo muito suave
-    bgHero: "bg-gradient-to-r from-[#4338CA] to-[#6366F1]", // Capa roxa/índigo
+    bgPage: "bg-[#EEF2FF]",
+    bgHero: "bg-gradient-to-r from-[#4338CA] to-[#6366F1]",
     textColor: "text-[#312E81]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#E0E7FF]",
@@ -593,96 +574,87 @@ export const businessThemes: Record<string, any> = {
     previewColor: "linear-gradient(135deg, #4338CA 0%, #6366F1 100%)",
   },
 
-  // 5. SHOWROOM RUBY (Beleza, Estética, Docerias)
   showroom_ruby: {
-    label: "Showroom - Ruby Blush",
+    label: "Showroom - Ruby Blush (Exótico Estética)",
     layout: "showroom",
-    bgPage: "bg-[#FFF1F2]", // Fundo rosa muito claro
-    bgHero: "bg-gradient-to-r from-[#E11D48] to-[#F43F5E]", // Capa rosa/cereja vibrante
+    bgPage: "bg-[#FFF1F2]",
+    bgHero: "bg-gradient-to-r from-[#E11D48] to-[#F43F5E]",
     textColor: "text-[#881337]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#FFE4E6]",
-    primary: "text-[#E11D48]", // Rosa escuro
+    primary: "text-[#E11D48]",
     bgSecondary: "bg-[#FFE4E6]",
     bgAction: "bg-[#E11D48] text-white",
     previewColor: "linear-gradient(135deg, #E11D48 0%, #F43F5E 100%)",
   },
 
-  // 6. SHOWROOM SAND (Arquitetura, Padarias, Produtos Naturais)
   showroom_sand: {
-    label: "Showroom - Golden Sand",
+    label: "Showroom - Golden Sand (Neutro Terroso)",
     layout: "showroom",
-    bgPage: "bg-[#FEFCE8]", // Fundo amarelo/bege super suave
-    bgHero: "bg-gradient-to-r from-[#D97706] to-[#F59E0B]", // Capa mostarda/ouro
+    bgPage: "bg-[#FEFCE8]",
+    bgHero: "bg-gradient-to-r from-[#D97706] to-[#F59E0B]",
     textColor: "text-[#78350F]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#FEF08A]",
-    primary: "text-[#D97706]", // Mostarda escuro
+    primary: "text-[#D97706]",
     bgSecondary: "bg-[#FEF08A]",
     bgAction: "bg-[#D97706] text-white",
     previewColor: "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)",
   },
 
-  // 7. SHOWROOM LILAC (Psicologia, Lojas Criativas, Marcas Teen)
   showroom_lilac: {
-    label: "Showroom - Lilac Dream",
+    label: "Showroom - Lilac Dream (Exótico Suave)",
     layout: "showroom",
-    bgPage: "bg-[#FAF5FF]", // Fundo lilás quase invisível
-    bgHero: "bg-gradient-to-r from-[#9333EA] to-[#A855F7]", // Capa roxa/lavanda
+    bgPage: "bg-[#FAF5FF]",
+    bgHero: "bg-gradient-to-r from-[#9333EA] to-[#A855F7]",
     textColor: "text-[#581C87]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#F3E8FF]",
-    primary: "text-[#9333EA]", // Lilás forte
+    primary: "text-[#9333EA]",
     bgSecondary: "bg-[#F3E8FF]",
     bgAction: "bg-[#9333EA] text-white",
     previewColor: "linear-gradient(135deg, #9333EA 0%, #A855F7 100%)",
   },
 
-  // 8. SHOWROOM AQUA (Turismo, Limpeza, Piscinas, Odonto)
   showroom_aqua: {
-    label: "Showroom - Aqua Splash",
+    label: "Showroom - Aqua Splash (Clean Azul)",
     layout: "showroom",
-    bgPage: "bg-[#F0FDFA]", // Fundo turquesa bebê
-    bgHero: "bg-gradient-to-r from-[#0D9488] to-[#14B8A6]", // Capa Teal/Aqua
+    bgPage: "bg-[#F0FDFA]",
+    bgHero: "bg-gradient-to-r from-[#0D9488] to-[#14B8A6]",
     textColor: "text-[#134E4A]",
     cardBg: "bg-[#FFFFFF]",
     border: "border-[#CCFBF1]",
-    primary: "text-[#0D9488]", // Turquesa escuro
+    primary: "text-[#0D9488]",
     bgSecondary: "bg-[#CCFBF1]",
     bgAction: "bg-[#0D9488] text-white",
     previewColor: "linear-gradient(135deg, #0D9488 0%, #14B8A6 100%)",
   },
 
-  // --- TEMAS ESCUROS (Focados em Elegância e Alto Contraste) ---
-
-  // 9. SHOWROOM LUXE DARK (Barbearias, Estúdios VIP, Baladas)
   showroom_obsidian: {
-    // Chave mantida
-    label: "Showroom - Night Obsidian",
+    label: "Showroom - Night Obsidian (Dark Luxo)",
     layout: "showroom",
-    bgPage: "bg-[#0A0A0A]", // Fundo preto absoluto
-    bgHero: "bg-gradient-to-r from-[#171717] to-[#262626]", // Capa cinza chumbo
+    bgPage: "bg-[#0A0A0A]",
+    bgHero: "bg-gradient-to-r from-[#171717] to-[#262626]",
     textColor: "text-[#F3F4F6]",
-    cardBg: "bg-[#171717]", // Cartões em chumbo para destacar do fundo preto
+    cardBg: "bg-[#171717]",
     border: "border-[#374151]",
-    primary: "text-[#A78BFA]", // Roxo neon para dar o contraste "dark mode"
+    primary: "text-[#A78BFA]",
     bgSecondary: "bg-[#1F2937]",
-    bgAction: "bg-[#A78BFA] text-[#0A0A0A]", // Botão roxo texto preto
+    bgAction: "bg-[#A78BFA] text-[#0A0A0A]",
     previewColor: "linear-gradient(135deg, #171717 0%, #A78BFA 100%)",
   },
 
-  // 10. SHOWROOM CRIMSON (Tatuadores, Hamburguerias Artesanais, Bares)
   showroom_crimson: {
-    label: "Showroom - Midnight Crimson",
+    label: "Showroom - Midnight Crimson (Dark Rústico)",
     layout: "showroom",
-    bgPage: "bg-[#111111]", // Fundo quase preto (tom carvão)
-    bgHero: "bg-gradient-to-r from-[#7F1D1D] to-[#9F1239]", // Capa vermelho escuro sangue
+    bgPage: "bg-[#111111]",
+    bgHero: "bg-gradient-to-r from-[#7F1D1D] to-[#9F1239]",
     textColor: "text-[#FEE2E2]",
-    cardBg: "bg-[#1C1917]", // Cartões em tom carvão levemente quente
-    border: "border-[#451A03]", // Borda rústica
-    primary: "text-[#F43F5E]", // Rosa/Vermelho brilhante nos detalhes
+    cardBg: "bg-[#1C1917]",
+    border: "border-[#451A03]",
+    primary: "text-[#F43F5E]",
     bgSecondary: "bg-[#292524]",
-    bgAction: "bg-[#F43F5E] text-white", // Botão vermelho vibrante
+    bgAction: "bg-[#F43F5E] text-white",
     previewColor: "linear-gradient(135deg, #7F1D1D 0%, #F43F5E 100%)",
   },
 };
