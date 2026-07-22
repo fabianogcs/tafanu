@@ -364,7 +364,7 @@ export default function LuxeLayout({
               alt={`Capa de ${business.name}`}
               fill
               priority
-              sizes="100vw"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1920px"
               className="object-cover object-center"
             />
           )}

@@ -294,7 +294,7 @@ export default function ShowroomLayout({
             alt={`Capa de ${business.name}`}
             fill
             priority
-            sizes="100vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1920px"
             className="object-cover"
           />
         )}
@@ -334,7 +334,7 @@ export default function ShowroomLayout({
                     alt="Logo"
                     fill
                     priority
-                    sizes="160px"
+                    sizes="(max-width: 768px) 112px, 160px"
                     className="object-cover"
                   />
                 </div>

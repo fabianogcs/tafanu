@@ -274,7 +274,7 @@ export default function UrbanLayout({
               alt={`Capa de ${business.name}`}
               fill
               priority
-              sizes="100vw"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1920px"
               className="object-cover"
             />
           )}
@@ -330,6 +330,7 @@ export default function UrbanLayout({
                 alt={`Logotipo ${business.name}`}
                 fill
                 priority
+                sizes="(max-width: 768px) 192px, (max-width: 1200px) 288px, 320px"
                 className="object-cover rounded-[2.5rem] shadow-2xl relative z-10 bg-white group-hover:scale-[1.02] transition-transform duration-500"
               />
             </motion.div>

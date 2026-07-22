@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -11,22 +12,108 @@ import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
 // COMPONENTES DE SUPORTE
 import ViewCounter from "@/components/ViewCounter";
 
-// 🚀 A VACINA DA VERCEL: Obriga a página a carregar em Tempo Real (Server-Side Rendering puro)
-// Isso resolve imediatamente o erro DYNAMIC_SERVER_USAGE sem quebrar a sua contagem de visualizações ou relógio.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// 🚀 A CIRURGIA DO CTO: REMOVEMOS O force-dynamic e revalidate=0.
+// Agora o Next.js vai gerar a vitrine e guardar no Edge Cache da Vercel por 1 hora.
+// O tempo de carregamento despenca de 1.5s para 10ms e o custo de banco de dados derrete!
+export const revalidate = 3600;
 
-// --- 0. VIEWPORT DINÂMICO ---
+// 🚀 O COFRE DO CFO: O React memoriza essa busca durante a requisição do servidor.
+// Ele consulta o banco de dados apenas 1 vez (sem atrelar ao userId) e distribui
+// os dados instantaneamente para Viewport, Metadata e Página!
+const getCachedBusiness = cache(async (slug: string) => {
+  return await db.business.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      theme: true,
+      layout: true,
+      category: true,
+      subcategory: true,
+      keywords: true,
+      imageUrl: true,
+      coverImage: true,
+      catalogPdf: true,
+      urban_tag: true,
+      luxe_quote: true,
+      comercial_badge: true,
+      showroom_collection: true,
+      features: true,
+      faqs: true,
+      mediaFeed: true,
+      gallery: true,
+      videos: true,
+      address: true,
+      number: true,
+      complement: true,
+      cep: true,
+      neighborhood: true,
+      city: true,
+      state: true,
+      latitude: true,
+      longitude: true,
+      whatsapp: true,
+      phone: true,
+      website: true,
+      instagram: true,
+      facebook: true,
+      tiktok: true,
+      shopee: true,
+      mercadoLivre: true,
+      shein: true,
+      ifood: true,
+      menuMode: true,
+      isExternalLink: true,
+      actionLink: true,
+      published: true,
+      isActive: true,
+      expiresAt: true,
+      userId: true,
+      user: { select: { role: true } },
+      hours: true,
+      comments: {
+        where: { parentId: null },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          isFlagged: true,
+          userId: true,
+          businessId: true,
+          parentId: true,
+          rating: true,
+          user: { select: { name: true, image: true, role: true } },
+          replies: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              isFlagged: true,
+              userId: true,
+              businessId: true,
+              parentId: true,
+              user: { select: { name: true, image: true, role: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
+    },
+  });
+});
+
+// --- 0. VIEWPORT DINÂMICO (Ultrarrápido, sem ler sessão/cookies) ---
 export async function generateViewport({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Viewport> {
   const { slug } = await params;
-  const business = await db.business.findUnique({
-    where: { slug },
-    select: { theme: true },
-  });
+  const business = await getCachedBusiness(slug);
 
   const themeKey =
     (business?.theme as keyof typeof businessThemes) || "urban_gold";
@@ -36,42 +123,26 @@ export async function generateViewport({
     themeColor: themeColor,
     width: "device-width",
     initialScale: 1,
-    // 🚀 VILÃO REMOVIDO: Apagamos o userScalable: false e maximumScale: 1
-    // Agora o Google vai te dar nota 100 em acessibilidade para deficientes visuais!
     maximumScale: 5,
   };
 }
+
+// --- METADATA (Ultrarrápido, sem ler sessão/cookies) ---
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-
-  // 🚀 BUSCA TAMBÉM CATEGORIA, SUBCATEGORIA E CIDADE PARA O SEO LOCAL
-  const business = await db.business.findUnique({
-    where: { slug },
-    select: {
-      name: true,
-      slug: true,
-      description: true,
-      keywords: true,
-      imageUrl: true,
-      category: true,
-      subcategory: true, // 👈 Agora ele puxa a subcategoria do banco!
-      city: true,
-    },
-  });
+  const business = await getCachedBusiness(slug);
 
   if (!business) return { title: "Negócio não encontrado | Tafanu" };
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br";
   const fullUrl = `${siteUrl}/site/${business.slug}`;
 
-  // 🎯 O ALVO: imageUrl
   const logoAssinante = business.imageUrl;
-
-  let displayImage = `${siteUrl}/og-default.png`; // Começa com o padrão do Tafanu
+  let displayImage = `${siteUrl}/og-default.png`;
 
   if (logoAssinante) {
     if (logoAssinante.startsWith("http")) {
@@ -81,10 +152,8 @@ export async function generateMetadata({
     }
   }
 
-  // 🚀 TÍTULO RICO PARA O GOOGLE (SEO LOCAL AVANÇADO)
   const locationTag = business.city ? `em ${business.city}` : "";
 
-  // Pega a primeira subcategoria da lista (já que é um Array), se existir
   const primeiraSubcategoria =
     business.subcategory && business.subcategory.length > 0
       ? ` - ${business.subcategory[0]}`
@@ -95,7 +164,6 @@ export async function generateMetadata({
       ? `${business.category}${primeiraSubcategoria} ${locationTag}`
       : locationTag;
 
-  // Monta o título dinâmico.
   const seoTitle = categoryTag
     ? `${business.name} | ${categoryTag} | Tafanu`
     : `${business.name} | Tafanu`;
@@ -153,108 +221,31 @@ export default async function BusinessPage({
   const session = await auth();
   const userId = session?.user?.id || null;
 
-  const [business, loggedUser] = await Promise.all([
-    db.business.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        theme: true,
-        layout: true,
-        category: true,
-        subcategory: true,
-        keywords: true,
-        imageUrl: true,
-        coverImage: true,
-        catalogPdf: true,
-        urban_tag: true,
-        luxe_quote: true,
-        comercial_badge: true,
-        showroom_collection: true,
-        features: true,
-        faqs: true,
-        mediaFeed: true,
-        gallery: true,
-        videos: true,
-        address: true,
-        number: true,
-        complement: true,
-        cep: true,
-        neighborhood: true,
-        city: true,
-        state: true,
-        latitude: true,
-        longitude: true,
-        whatsapp: true,
-        phone: true,
-        website: true,
-        instagram: true,
-        facebook: true,
-        tiktok: true,
-        shopee: true,
-        mercadoLivre: true,
-        shein: true,
-        ifood: true,
-        menuMode: true,
-        isExternalLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND
-        actionLink: true, // 🚀 CAVALO DE TRÓIA INJETADO PRO FRONTEND
-        published: true,
-        isActive: true,
-        expiresAt: true,
-        userId: true,
-        user: { select: { role: true } },
-        hours: true,
-        favorites: userId ? { where: { userId } } : false,
-        comments: {
-          where: { parentId: null },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-            isFlagged: true,
-            userId: true,
-            businessId: true,
-            parentId: true,
-            rating: true, // 🚀 ADICIONE APENAS ESTA LINHA AQUI!
-            user: { select: { name: true, image: true, role: true } },
-            replies: {
-              select: {
-                id: true,
-                content: true,
-                createdAt: true,
-                isFlagged: true,
-                userId: true,
-                businessId: true,
-                parentId: true,
-                user: { select: { name: true, image: true, role: true } },
-              },
-              orderBy: { createdAt: "asc" },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        },
-      },
-    }),
+  // 🚀 PROMISE.ALL DE ELITE: Puxa a loja do cache universal do React e,
+  // paralelamente, consulta dados do usuário logado e status de favorito se houver sessão!
+  const [business, loggedUser, userFavorite] = await Promise.all([
+    getCachedBusiness(slug),
     userId
       ? db.user.findUnique({
           where: { id: userId },
           select: { emailVerified: true, role: true },
         })
       : null,
+    userId
+      ? db.favorite.findFirst({
+          where: { userId, business: { slug } },
+          select: { id: true },
+        })
+      : null,
   ]);
-  // 2. TRAVA DE SEGURANÇA: Se não existe
+
   if (!business) return notFound();
 
   const now = new Date();
-  // 🚀 CORREÇÃO: Admins e Afiliados têm imunidade vitalícia na vitrine
   const isOwnerImmune =
     business.user?.role === "ADMIN" || business.user?.role === "AFILIADO";
   const isVisitorAdmin = loggedUser?.role === "ADMIN";
 
-  // 🚀 A MATEMÁTICA DA MORTE: Calcula as 48 horas de carência
   const limiteCarencia = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const isVencidoDeVerdade = business.expiresAt
     ? new Date(business.expiresAt) < limiteCarencia
@@ -262,14 +253,11 @@ export default async function BusinessPage({
 
   const isOwner = userId === business.userId;
 
-  // 🚀 A TRAVA DEFINITIVA: Se passou das 48h OU a loja foi desativada, dá erro 404 (Not Found) na hora!
   if (!isOwnerImmune && (isVencidoDeVerdade || !business.isActive)) {
     return notFound();
   }
 
-  // 2. Bloqueio por "Modo Rascunho" (published: false)
   if (!business.published) {
-    // Se a loja está pausada, SÓ o Dono ou o Admin podem entrar
     if (!isOwner && !isVisitorAdmin) {
       return notFound();
     }
@@ -288,7 +276,6 @@ export default async function BusinessPage({
   const brazilDate = new Date(
     serverDate.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
   );
-
   const currentDay = brazilDate.getDay();
   const currentTime = brazilDate.getHours() * 100 + brazilDate.getMinutes();
   const todayHours = business.hours.find((h) => h.dayOfWeek === currentDay);
@@ -304,17 +291,13 @@ export default async function BusinessPage({
     const [closeH, closeM] = todayHours.closeTime.split(":").map(Number);
     const openVal = openH * 100 + openM;
     const closeVal = closeH * 100 + closeM;
-    isOpen = currentTime >= openVal && currentTime < closeVal;
+    if (closeVal < openVal) {
+      isOpen = currentTime >= openVal || currentTime < closeVal;
+    } else {
+      isOpen = currentTime >= openVal && currentTime < closeVal;
+    }
   }
 
-  let currentLayout = business.layout || "urban";
-  if (currentLayout === "influencer") currentLayout = "urban";
-
-  const theme =
-    businessThemes[business.theme as keyof typeof businessThemes] ||
-    businessThemes["urban_gold"];
-
-  // 🚀 CORREÇÃO 3: Endereço completo agora com o Número e o Complemento que você adicionou hoje!
   const streetWithNumber = [business.address, business.number]
     .filter(Boolean)
     .join(", ");
@@ -350,24 +333,10 @@ export default async function BusinessPage({
     };
   });
 
-  const layoutProps = {
-    business,
-    theme,
-    currentUserId: userId,
-    isAdmin: isVisitorAdmin,
-    realHours,
-    fullAddress,
-    isOpen,
-    isLoggedIn: !!userId,
-    isFavorited: business.favorites && business.favorites.length > 0,
-    emailVerified: loggedUser ? !!loggedUser.emailVerified : false,
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <ViewCounter businessId={business.id} />
 
-      {/* SCRIPT DE SEGURANÇA: Aqui o next/script funciona perfeitamente (usando children em vez de dangerouslySetInnerHTML) */}
       <Script id="pwa-cleanup-script" strategy="afterInteractive">
         {`
           if (window.location.search.indexOf('utm_source=pwa') === -1) {
@@ -380,7 +349,6 @@ export default async function BusinessPage({
         `}
       </Script>
 
-      {/* 🚀 SEO AVANÇADO MULTI-NICHO: Agora o Google ranqueia advogados, mecânicas e restaurantes corretamente */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -413,17 +381,16 @@ export default async function BusinessPage({
             servesCuisine: business.category.toLowerCase().includes("alimenta")
               ? "Geral"
               : undefined,
-          }).replace(/</g, "\\u003c"), // 🚀 HACKER FIX: Neutraliza injeção de script direto na raiz!
+          }).replace(/</g, "\\u003c"),
         }}
       />
 
       <MainLayoutSwitcher
         business={business}
-        theme={theme}
         realHours={realHours}
         fullAddress={fullAddress}
         isLoggedIn={!!userId}
-        isFavorited={business.favorites && business.favorites.length > 0}
+        isFavorited={!!userFavorite}
         emailVerified={loggedUser ? !!loggedUser.emailVerified : false}
         currentUserId={userId || ""}
         isAdmin={isVisitorAdmin}

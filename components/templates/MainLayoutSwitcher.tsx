@@ -3,19 +3,17 @@
 import dynamic from "next/dynamic";
 import { businessThemes } from "@/lib/themes";
 
-// 🚀 ARQUITETURA SÊNIOR: Lazy Loading com Object Mapping
-// O navegador só baixa o pacote JS do layout específico que a vitrine usa.
-const layouts: Record<string, any> = {
-  editorial: dynamic(() => import("./LuxeLayout")),
-  influencer: dynamic(() => import("./UrbanLayout")),
-  urban: dynamic(() => import("./UrbanLayout")),
-  businessList: dynamic(() => import("./ComercialLayout")),
-  showroom: dynamic(() => import("./ShowroomLayout")),
-};
+// 🚀 ARQUITETURA 10/10: Lazy loading por chunk isolado + sem flicker de tela
+const layouts = {
+  editorial: dynamic(() => import("./LuxeLayout"), { loading: () => null }),
+  influencer: dynamic(() => import("./UrbanLayout"), { loading: () => null }),
+  urban: dynamic(() => import("./UrbanLayout"), { loading: () => null }),
+  businessList: dynamic(() => import("./ComercialLayout"), { loading: () => null }),
+  showroom: dynamic(() => import("./ShowroomLayout"), { loading: () => null }),
+} as const;
 
 interface LayoutSwitcherProps {
   business: any;
-  theme: any;
   realHours: any;
   fullAddress: string;
   isLoggedIn: boolean;
@@ -28,7 +26,6 @@ interface LayoutSwitcherProps {
 
 export default function MainLayoutSwitcher({
   business,
-  theme,
   realHours,
   fullAddress,
   isLoggedIn,
@@ -36,9 +33,9 @@ export default function MainLayoutSwitcher({
   emailVerified,
   currentUserId,
   isAdmin,
-  isOpen, // Recebemos o cálculo estático inicial do servidor
+  isOpen = false,
 }: LayoutSwitcherProps) {
-  // TRAVA DE SEGURANÇA
+  // TRAVA DE SEGURANÇA ANTI-QUEBRA
   if (!business) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-white">
@@ -49,26 +46,28 @@ export default function MainLayoutSwitcher({
     );
   }
 
-  // --- REDE DE PROTEÇÃO DE TEMA ---
+  // 🛡️ RESOLUÇÃO SEGURA DE TEMA (Com tipagem estrita do TS)
   const safeTheme =
     businessThemes[business.theme as keyof typeof businessThemes] ||
     businessThemes.showroom_clean;
 
-  // 🚀 CLEAN CODE: Resolve qual layout carregar sem precisar de um switch gigante
-  const LayoutComponent = layouts[business.layout] || layouts.showroom;
+  // 🚀 RESOLUÇÃO DE LAYOUT O(1) COM FALLBACK SEGURO
+  const LayoutComponent =
+    layouts[business.layout as keyof typeof layouts] ?? layouts.showroom;
 
-  return (
-    <LayoutComponent
-      business={business}
-      theme={safeTheme}
-      realHours={realHours}
-      fullAddress={fullAddress}
-      isLoggedIn={isLoggedIn}
-      isFavorited={isFavorited}
-      emailVerified={emailVerified}
-      currentUserId={currentUserId}
-      isAdmin={isAdmin}
-      isOpen={isOpen}
-    />
-  );
+  // 📦 AGRUPADOR DE PROPS LIMPO
+  const sharedProps = {
+    business,
+    theme: safeTheme,
+    realHours,
+    fullAddress,
+    isLoggedIn,
+    isFavorited,
+    emailVerified,
+    currentUserId,
+    isAdmin,
+    isOpen,
+  };
+
+  return <LayoutComponent {...sharedProps} />;
 }

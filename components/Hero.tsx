@@ -1,9 +1,13 @@
 "use client";
 
-import { Search, ChevronDown, Loader2, Mic, Sparkles } from "lucide-react";
+import { Search, Mic, Sparkles, Loader2, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import Image from "next/image";
+
+// 🚀 CIRURGIA: Apenas 4 palavras diretas e fortes!
+const POPULAR_TAGS = ["Restaurante", "Mecânico", "Salão", "Academia"];
 
 export default function Hero() {
   const router = useRouter();
@@ -11,16 +15,18 @@ export default function Hero() {
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // 🚀 BUSCA TEXTUAL PRINCIPAL (Captura GPS junto se disponível)
-  const handleSearch = (e?: React.FormEvent, voiceQuery?: string) => {
+  const handleSearch = (
+    e?: React.FormEvent,
+    voiceQuery?: string,
+    tagQuery?: string,
+  ) => {
     if (e) e.preventDefault();
     setIsSearching(true);
 
     const params = new URLSearchParams();
-    const finalQuery = voiceQuery || query;
+    const finalQuery = tagQuery || voiceQuery || query;
     if (finalQuery.trim() !== "") params.append("q", finalQuery);
 
-    // 1. Tem cache salvo de até 5 minutos? Injeta e vai na hora!
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
       if (cachedCoords) {
@@ -35,7 +41,6 @@ export default function Hero() {
       }
     } catch (err) {}
 
-    // 2. Não tem cache? Pede o GPS silenciosamente com Auto-Retry!
     if (!navigator.geolocation) {
       router.push(`/busca?${params.toString()}`);
       return;
@@ -74,12 +79,10 @@ export default function Hero() {
         },
         (error) => {
           if (error.code === error.TIMEOUT && !isRetry) {
-            console.log("Cold start na busca textual. Retentando...");
             executeGpsFetch(true);
             return;
           }
 
-          // Se negar ou falhar, joga para a busca normal (fallback suave)
           router.push(`/busca?${params.toString()}`);
 
           if (error.code === error.PERMISSION_DENIED) {
@@ -123,9 +126,7 @@ export default function Hero() {
           setQuery(transcript);
           handleSearch(undefined, transcript);
         };
-        recognition.onerror = (event: any) => {
-          setIsListening(false);
-        };
+        recognition.onerror = () => setIsListening(false);
         recognition.start();
       } catch (err) {
         setIsListening(false);
@@ -133,113 +134,167 @@ export default function Hero() {
     }
   };
 
-  const handleScrollDown = () => {
-    window.scrollBy({ top: window.innerHeight * 0.75, behavior: "smooth" });
-  };
-
   return (
-    // 🚀 CIRURGIA NO ESPAÇAMENTO: O pb-12 mudou para pb-6 no mobile para aproximar o componente de baixo
-    <section className="relative bg-[#F8FAFC] overflow-hidden flex flex-col justify-start md:justify-center pt-10 md:pt-20 pb-6 md:pb-16 border-b border-slate-200">
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <img
-          src="/hero-bg.webp"
-          alt="Fundo Tafanu"
-          className="w-full h-full object-cover object-center opacity-25 mix-blend-overlay"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-emerald-50/70 to-white/95"></div>
+    <section className="relative w-full min-h-[400px] lg:min-h-[440px] bg-gradient-to-br from-[#E6F9F0] via-white to-[#F0FDF4] overflow-hidden flex items-center border-b border-slate-200/60 pt-6 pb-8 lg:py-6">
+      {/* Luz Esmeralda Principal */}
+      <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-emerald-400/25 to-teal-300/10 rounded-full blur-[90px] pointer-events-none" />
+
+      {/* Onda Abstrata Esquerda */}
+      <div className="absolute bottom-0 left-0 w-full lg:w-[60%] h-full pointer-events-none overflow-hidden opacity-40">
+        <svg
+          className="absolute bottom-0 left-0 w-full h-[80%]"
+          viewBox="0 0 1000 600"
+          fill="none"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0,600 C200,500 350,300 200,100 C100,0 400,0 500,200 C600,400 800,550 1000,450 L1000,600 L0,600 Z"
+            fill="url(#wave-grad)"
+          />
+          <defs>
+            <linearGradient id="wave-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#059669" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 text-center mt-2 md:mt-0 flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-tafanu-action text-[10px] md:text-xs font-bold uppercase tracking-widest mb-4 md:mb-6 animate-in fade-in duration-500 shadow-sm">
-          <Sparkles size={12} className="animate-pulse" /> O seu guia comercial
-          inteligente
+      {/* Padrão de Pontos Digitais no Fundo */}
+      <div
+        className="absolute top-6 left-8 w-56 h-48 opacity-25 pointer-events-none hidden md:block"
+        style={{
+          backgroundImage: "radial-gradient(#10b981 1.5px, transparent 1.5px)",
+          backgroundSize: "18px 18px",
+        }}
+      />
+
+      {/* LADO DIREITO: IMAGEM CURVA (SEM O CARD FLUTUANTE) */}
+      <div className="hidden lg:block absolute top-0 right-0 bottom-0 w-[48%] xl:w-[50%] z-10 pointer-events-none">
+        <div className="w-full h-full relative rounded-l-[140px] xl:rounded-l-[180px] overflow-hidden border-l-[6px] border-white shadow-[-20px_0_50px_rgba(0,0,0,0.1)] bg-slate-900">
+          <Image
+            src="/hero-bg.webp"
+            alt="Centro Comercial Cidade e Serviços"
+            fill
+            priority
+            sizes="50vw"
+            className="object-cover object-center scale-105 hover:scale-100 transition-transform duration-1000 ease-out"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/30 via-transparent to-transparent" />
+          {/* ❌ CIRURGIA: Card "Lojas e Serviços Verificados" removido daqui! */}
         </div>
+      </div>
 
-        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] md:leading-[1] mb-3 md:mb-5 uppercase italic animate-in fade-in zoom-in duration-700 delay-100">
-          Tudo o que você busca, <br className="hidden sm:block" />
-          <span className="text-tafanu-action drop-shadow-[0_0_20px_rgba(0,168,107,0.2)]">
-            em um só lugar.
-          </span>
-        </h1>
+      {/* LADO ESQUERDO: CONTEÚDO E PESQUISA COMPACTOS */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-20">
+        <div className="w-full lg:w-[54%] xl:w-[51%] flex flex-col items-center lg:items-start text-center lg:text-left">
+          {/* Tag Topo */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-emerald-200 text-tafanu-action text-[10px] font-black uppercase tracking-widest mb-3.5 shadow-2xs backdrop-blur-md">
+            <Sparkles size={12} className="animate-pulse text-tafanu-action" />{" "}
+            Guia comercial inteligente
+          </div>
 
-        <p className="text-xs sm:text-base md:text-lg text-slate-500 max-w-xl mx-auto mb-6 md:mb-10 font-medium leading-relaxed animate-in fade-in duration-700 delay-200 px-2">
-          Conectamos você aos melhores serviços, comércios e profissionais de
-          confiança da sua cidade.
-        </p>
+          {/* Título Principal Compacto */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.06] mb-2.5 uppercase italic">
+            Tudo o que você busca, <br className="hidden sm:block" />
+            <span className="text-tafanu-action drop-shadow-[0_0_25px_rgba(0,168,107,0.25)]">
+              em um só lugar.
+            </span>
+          </h1>
 
-        <div className="relative z-30 w-full max-w-2xl mx-auto bg-white/80 backdrop-blur-2xl border border-slate-200 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.05)] animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
-          <form
-            onSubmit={handleSearch}
-            role="search"
-            className="flex flex-col md:flex-row gap-2.5 md:gap-3.5"
-          >
-            <div className="w-full h-12 md:h-14 bg-white rounded-xl md:rounded-2xl flex items-center px-3.5 focus-within:ring-4 focus-within:ring-tafanu-action/20 transition-all shadow-inner border border-slate-200">
-              <Search className="text-slate-400 w-4 h-4 md:w-5 md:h-5 mr-2.5 shrink-0" />
-              <input
-                id="hero-search"
-                type="text"
-                placeholder={
-                  isListening ? "Ouvindo..." : "Ex: Mecânico, Pizzaria, Moda..."
-                }
-                className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-bold text-xs sm:text-sm md:text-base h-full"
-                value={query}
-                maxLength={80}
-                onChange={(e) => setQuery(e.target.value)}
-                disabled={isSearching || isListening}
-              />
-              <button
-                type="button"
-                onClick={handleVoiceSearch}
-                className={`p-2 rounded-lg transition-all ${isListening ? "bg-red-100 text-red-500 animate-pulse" : "text-slate-400 hover:text-tafanu-action hover:bg-slate-50"}`}
-                title="Pesquisar por voz"
-              >
-                <Mic className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-            </div>
+          {/* Subtítulo Compacto */}
+          <p className="text-xs sm:text-sm md:text-base text-slate-600 font-medium leading-relaxed max-w-md mb-5">
+            Conectamos você aos melhores serviços e comércios de confiança da
+            sua cidade em poucos segundos.
+          </p>
 
-            <button
-              type="submit"
-              disabled={isSearching || query.trim() === ""}
-              className="w-full md:w-auto h-12 md:h-14 bg-tafanu-action hover:bg-[#00c27a] text-white font-black rounded-xl md:rounded-2xl px-8 flex items-center justify-center gap-2 uppercase tracking-wider text-xs md:text-sm shadow-[0_4px_20px_rgba(0,168,107,0.3)] transition-all hover:scale-[1.02] active:scale-95 shrink-0 disabled:!bg-slate-200 disabled:!text-slate-400 disabled:!shadow-none disabled:cursor-not-allowed disabled:hover:scale-100"
+          {/* BARRA DE PESQUISA COMPACTA */}
+          <div className="w-full max-w-lg bg-white p-2 sm:p-2.5 rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.06)] border border-slate-200/80 mb-4 relative z-30">
+            <form
+              onSubmit={handleSearch}
+              className="flex flex-col sm:flex-row gap-2"
             >
-              {isSearching ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                "Pesquisar"
-              )}
-            </button>
-          </form>
-        </div>
+              <div className="flex-1 h-11 sm:h-12 bg-slate-50 rounded-xl flex items-center px-3.5 border border-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-tafanu-action/20 transition-all">
+                <Search className="text-slate-400 w-4 h-4 mr-2.5 shrink-0" />
+                <input
+                  type="text"
+                  placeholder={
+                    isListening
+                      ? "Ouvindo..."
+                      : "Ex: Mecânico, Pizzaria, Moda..."
+                  }
+                  className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-bold text-xs sm:text-sm h-full"
+                  value={query}
+                  maxLength={80}
+                  onChange={(e) => setQuery(e.target.value)}
+                  disabled={isSearching || isListening}
+                />
+                <button
+                  type="button"
+                  onClick={handleVoiceSearch}
+                  className={`p-1.5 rounded-lg transition-all ${isListening ? "bg-red-100 text-red-500 animate-pulse" : "text-slate-400 hover:text-tafanu-action hover:bg-white"}`}
+                  title="Pesquisar por voz"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              </div>
 
-        {/* 🚀 CIRURGIA NA SETA: O mt-8 mudou para mt-4 no mobile, puxando a tela para cima! */}
-        <div className="mt-4 md:mt-10 flex justify-center animate-bounce">
-          <button
-            onClick={handleScrollDown}
-            type="button"
-            className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 hover:border-tafanu-action hover:bg-emerald-50 transition-colors shadow-sm cursor-pointer"
-          >
-            <ChevronDown className="w-5 h-5 text-tafanu-action" />
-          </button>
+              <button
+                type="submit"
+                disabled={isSearching || query.trim() === ""}
+                className="h-11 sm:h-12 bg-tafanu-action hover:bg-[#00c27a] text-white font-black rounded-xl px-6 flex items-center justify-center gap-2 uppercase tracking-wider text-xs shadow-[0_4px_15px_rgba(0,168,107,0.3)] transition-all hover:scale-[1.02] active:scale-95 shrink-0 disabled:!bg-slate-200 disabled:!text-slate-400 disabled:!shadow-none disabled:cursor-not-allowed"
+              >
+                {isSearching ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  "Pesquisar"
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* TAGS RÁPIDAS (4 PALAVRAS) */}
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 max-w-lg">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1">
+              <TrendingUp size={12} className="text-tafanu-action" /> Populares:
+            </span>
+            {POPULAR_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={(e) => {
+                  setQuery(tag);
+                  handleSearch(e, undefined, tag);
+                }}
+                className="px-3 py-1 rounded-full bg-white/80 border border-slate-200 hover:border-tafanu-action hover:bg-emerald-50 text-slate-600 hover:text-tafanu-action text-[11px] font-bold transition-all shadow-2xs active:scale-95 backdrop-blur-sm"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
+      {/* ❌ CIRURGIA: Seta de rolar a página para baixo removida daqui! */}
+
+      {/* Modal de Voz */}
       {isListening && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">
-            <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-4 relative">
+          <div className="bg-white rounded-3xl p-6 flex flex-col items-center shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-4 relative">
               <div className="absolute inset-0 bg-rose-400 rounded-full animate-ping opacity-20"></div>
-              <Mic className="w-8 h-8 text-rose-500 relative z-10 animate-pulse" />
+              <Mic className="w-6 h-6 text-rose-500 relative z-10 animate-pulse" />
             </div>
-            <h3 className="text-lg font-black text-slate-800 uppercase italic mb-1">
+            <h3 className="text-base font-black text-slate-800 uppercase italic mb-1">
               Ouvindo...
             </h3>
-            <p className="text-slate-500 text-xs font-medium text-center mb-6">
+            <p className="text-slate-500 text-xs font-medium text-center mb-5">
               Fale o que você está procurando (ex: "Mecânico").
             </p>
             <button
               type="button"
               onClick={() => setIsListening(false)}
-              className="px-6 py-2 bg-slate-100 text-slate-600 rounded-full text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+              className="px-5 py-2 bg-slate-100 text-slate-600 rounded-full text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
             >
               Cancelar
             </button>

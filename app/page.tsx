@@ -1,13 +1,8 @@
-import {
-  getActiveCategories,
-  getOnlineMarketplaceMetadata,
-  getTrendingBusinesses,
-} from "@/app/actions";
+import { getTrendingBusinesses } from "@/app/actions";
 import Hero from "@/components/Hero";
-import Categories from "@/components/Categories";
 import VitrineDigital from "@/components/VitrineDigital";
 import OsMaisBuscados from "@/components/OsMaisBuscados";
-
+import WhyTafanu from "@/components/WhyTafanu"; // 🚀 NOVO COMPONENTE DE NEUROMARKETING
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -22,7 +17,7 @@ export const metadata: Metadata = {
     siteName: "Tafanu",
     images: [
       {
-        url: "https://tafanu.com.br/og-default.png", // Sua imagem de compartilhamento
+        url: "https://tafanu.com.br/og-default.png",
         width: 1200,
         height: 630,
         alt: "Capa do Tafanu",
@@ -39,28 +34,24 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  // Busca Tudo Paralelamente (Mais rápido e limpo agora!)
-  const [activeCategories, trendingBusinesses] = await Promise.all([
-    getActiveCategories(),
-    getTrendingBusinesses(),
-  ]);
+  // 🚀 CIRURGIA DO CFO: Como removemos o diretório cinza duplicado,
+  // o banco de dados agora só faz 1 consulta leve para carregar a Home!
+  const trendingBusinesses = await getTrendingBusinesses();
 
   return (
-    // 🚀 CIRURGIA: Removido o bg-white forçado. Agora ele herda o off-white do globals.css
-    <main className="relative min-h-screen pb-6 md:pb-8 overflow-hidden">
-      {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA (Cores alinhadas com o DNA Tafanu) */}
+    <main className="relative min-h-screen pb-6 md:pb-12 overflow-hidden bg-[#F8FAFC]">
+      {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[30vh] left-0 w-full h-[100%] bg-white transform -skew-y-2 origin-top-left border-t border-slate-200 shadow-[inset_0_10px_30px_rgba(0,0,0,0.02)]" />
-        <div className="absolute top-[60vh] -right-48 w-[800px] h-[800px] rounded-full border-[60px] border-emerald-50/80" />
-        <div className="absolute top-[100vh] -left-32 w-[500px] h-[500px] rounded-full border-[40px] border-slate-100/60" />
+        <div className="absolute top-[25vh] left-0 w-full h-[80%] bg-white transform -skew-y-2 origin-top-left border-t border-slate-200/60 shadow-[inset_0_10px_30px_rgba(0,0,0,0.01)]" />
+        <div className="absolute top-[60vh] -right-48 w-[800px] h-[800px] rounded-full border-[60px] border-emerald-50/50" />
       </div>
 
-      {/* 📦 CONTEÚDO PRINCIPAL */}
-      <div className="relative z-10">
+      {/* 📦 FLUXO DE NAVEGAÇÃO COMPLETO E DENSO */}
+      <div className="relative z-10 space-y-4 md:space-y-8">
         <Hero />
         <VitrineDigital />
+        <WhyTafanu />
         <OsMaisBuscados businesses={trendingBusinesses} />
-        <Categories activeCats={activeCategories} />
       </div>
     </main>
   );
