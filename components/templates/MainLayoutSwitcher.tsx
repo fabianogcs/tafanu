@@ -1,10 +1,17 @@
 "use client";
 
-import LuxeLayout from "./LuxeLayout";
-import UrbanLayout from "./UrbanLayout";
-import ComercialLayout from "./ComercialLayout";
-import ShowroomLayout from "./ShowroomLayout";
+import dynamic from "next/dynamic";
 import { businessThemes } from "@/lib/themes";
+
+// 🚀 ARQUITETURA SÊNIOR: Lazy Loading com Object Mapping
+// O navegador só baixa o pacote JS do layout específico que a vitrine usa.
+const layouts: Record<string, any> = {
+  editorial: dynamic(() => import("./LuxeLayout")),
+  influencer: dynamic(() => import("./UrbanLayout")),
+  urban: dynamic(() => import("./UrbanLayout")),
+  businessList: dynamic(() => import("./ComercialLayout")),
+  showroom: dynamic(() => import("./ShowroomLayout")),
+};
 
 interface LayoutSwitcherProps {
   business: any;
@@ -29,14 +36,8 @@ export default function MainLayoutSwitcher({
   emailVerified,
   currentUserId,
   isAdmin,
-  isOpen = false,
+  isOpen, // Recebemos o cálculo estático inicial do servidor
 }: LayoutSwitcherProps) {
-  // --- REDE DE PROTEÇÃO ---
-  const safeTheme =
-    business && businessThemes[business.theme]
-      ? businessThemes[business.theme]
-      : businessThemes.showroom_clean;
-
   // TRAVA DE SEGURANÇA
   if (!business) {
     return (
@@ -48,33 +49,26 @@ export default function MainLayoutSwitcher({
     );
   }
 
-  // 🚀 AGRUPADOR DE PROPS: Repassa tudo, incluindo nota, avaliações e status para as vitrines públicas
-  const sharedProps = {
-    business,
-    theme: safeTheme,
-    realHours,
-    fullAddress,
-    isLoggedIn,
-    isFavorited,
-    emailVerified,
-    currentUserId,
-    isAdmin,
-    isOpen,
-  };
+  // --- REDE DE PROTEÇÃO DE TEMA ---
+  const safeTheme =
+    businessThemes[business.theme as keyof typeof businessThemes] ||
+    businessThemes.showroom_clean;
 
-  switch (business.layout) {
-    case "editorial":
-      return <LuxeLayout {...sharedProps} />;
+  // 🚀 CLEAN CODE: Resolve qual layout carregar sem precisar de um switch gigante
+  const LayoutComponent = layouts[business.layout] || layouts.showroom;
 
-    case "influencer":
-    case "urban":
-      return <UrbanLayout {...sharedProps} />;
-
-    case "businessList":
-      return <ComercialLayout {...sharedProps} />;
-
-    case "showroom":
-    default:
-      return <ShowroomLayout {...sharedProps} />;
-  }
+  return (
+    <LayoutComponent
+      business={business}
+      theme={safeTheme}
+      realHours={realHours}
+      fullAddress={fullAddress}
+      isLoggedIn={isLoggedIn}
+      isFavorited={isFavorited}
+      emailVerified={emailVerified}
+      currentUserId={currentUserId}
+      isAdmin={isAdmin}
+      isOpen={isOpen}
+    />
+  );
 }
