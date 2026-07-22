@@ -6,7 +6,7 @@ const REASONS = [
   {
     icon: ShieldCheck,
     title: "Confiança",
-    desc: "Apenas empresas e profissionais verificados e recomendados.",
+    desc: "Encontre empresas e profissionais verificados e recomendados.",
   },
   {
     icon: MapPin,

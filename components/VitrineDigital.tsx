@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// 🚀 LISTA LIMPA: Foco 100% em Tipografia e Cor
+// 🚀 AS 11 CATEGORIAS: Foco 100% em Tipografia e Cor
 const CATEGORIES_SHOWCASE = [
   {
     id: "Alimentacao",
@@ -239,8 +239,8 @@ export default function VitrineDigital() {
         </h2>
       </div>
 
-      {/* 🚀 GRID TIPOGRÁFICO: Mais limpo e focado no contraste */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3 md:gap-3.5">
+      {/* 🚀 GRID HORIZONTAL COMPACTO: Textos na esquerda, seta na direita, zero espaço em branco! */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5 md:gap-3">
         {CATEGORIES_SHOWCASE.map((mood) => {
           const isLoadingThis = activeLoadingId === mood.id;
 
@@ -249,14 +249,25 @@ export default function VitrineDigital() {
               key={mood.id}
               onClick={(e) => handleMoodClick(e, mood.url, mood.id)}
               disabled={activeLoadingId !== null && !isLoadingThis}
-              // Altura ajustada para h-24 sm:h-28 (como não há ícones, o card fica mais fino e elegante!)
-              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.4rem] p-4 flex flex-col justify-between h-24 sm:h-28 bg-gradient-to-br ${mood.bgClass} shadow-sm hover:shadow-xl hover:${mood.shadowClass} hover:-translate-y-1 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none border border-white/10`}
+              // 🚀 CIRURGIA DE FONTE: Altura levemente ajustada para min-h-[76px] sm:min-h-[84px] para abrigar a fonte maior e dar respiro!
+              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.4rem] px-4 py-3.5 md:px-5 md:py-4 flex items-center justify-between min-h-[76px] sm:min-h-[84px] bg-gradient-to-br ${mood.bgClass} shadow-2xs hover:shadow-lg hover:${mood.shadowClass} hover:-translate-y-0.5 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none border border-white/10`}
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+              {/* Efeito de brilho no hover */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
-              {/* 🚀 TOPO LIMPO: Apenas o indicador de seta ou o spinner alinhado à direita */}
-              <div className="flex justify-end items-start w-full relative z-10">
-                <div className="w-6 h-6 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white/80 group-hover:bg-white group-hover:text-slate-900 transition-all duration-300 shadow-2xs">
+              {/* LADO ESQUERDO: Título e Subtítulo com FONTES MAIORES E MAIS NÍTIDAS */}
+              <div className="relative z-10 flex flex-col justify-center pr-2 min-w-0">
+                <h3 className="text-white font-black text-sm sm:text-base md:text-lg uppercase tracking-tight leading-tight drop-shadow-2xs mb-1 truncate">
+                  {isLoadingThis ? "Abrindo..." : mood.title}
+                </h3>
+                <p className="text-white/80 font-bold text-[11px] sm:text-xs tracking-wider truncate">
+                  {isLoadingThis ? "Buscando..." : mood.subtitle}
+                </p>
+              </div>
+
+              {/* LADO DIREITO: Seta de Ação ou Spinner */}
+              <div className="relative z-10 shrink-0">
+                <div className="w-7 h-7 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white/80 group-hover:bg-white group-hover:text-slate-900 transition-all duration-300 shadow-2xs">
                   {isLoadingThis ? (
                     <Loader2
                       size={12}
@@ -264,22 +275,12 @@ export default function VitrineDigital() {
                     />
                   ) : (
                     <ArrowRight
-                      size={12}
+                      size={14}
                       strokeWidth={2.5}
                       className="group-hover:translate-x-0.5 transition-transform"
                     />
                   )}
                 </div>
-              </div>
-
-              {/* 🚀 RODAPÉ DO CARD: Foco total nas palavras */}
-              <div className="relative z-10 mt-auto">
-                <h3 className="text-white font-black text-xs sm:text-[13px] md:text-sm uppercase tracking-tight leading-tight drop-shadow-sm mb-0.5">
-                  {isLoadingThis ? "Abrindo..." : mood.title}
-                </h3>
-                <p className="text-white/80 font-bold text-[9px] sm:text-[10px] tracking-wider truncate">
-                  {isLoadingThis ? "Buscando GPS..." : mood.subtitle}
-                </p>
               </div>
             </button>
           );
