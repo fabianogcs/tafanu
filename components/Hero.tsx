@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Search,
-  Mic,
-  Sparkles,
-  Loader2,
-  TrendingUp,
-  ChevronDown,
-} from "lucide-react";
+import { Search, Mic, Sparkles, Loader2, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -154,10 +147,6 @@ export default function Hero() {
     }
   };
 
-  const handleScrollDown = () => {
-    window.scrollBy({ top: window.innerHeight * 0.6, behavior: "smooth" });
-  };
-
   return (
     // 🚀 MANTIDA A SUA ALTURA EXATA: min-h-[400px] lg:min-h-[440px] pt-6 pb-8 lg:py-6
     <section className="relative w-full min-h-[400px] lg:min-h-[440px] bg-gradient-to-br from-[#E6F9F0] via-white to-[#F0FDF4] overflow-hidden flex items-center border-b border-slate-200/60 pt-6 pb-8 lg:py-6">
@@ -257,55 +246,54 @@ export default function Hero() {
             sua cidade em poucos segundos.
           </p>
 
-          {/* SUA BARRA DE PESQUISA EXATA (Com altura h-11/h-12 e fontes que você escolheu) */}
-          <div className="w-full max-w-lg bg-white/95 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-[0_15px_35px_rgba(0,168,107,0.1)] border border-emerald-100/80 mb-4 relative z-30">
-            <form
-              onSubmit={handleSearch}
-              className="flex flex-col sm:flex-row gap-2"
-            >
-              <div className="flex-1 h-11 sm:h-12 bg-slate-50/90 rounded-xl flex items-center px-3.5 border border-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-tafanu-action/20 transition-all">
-                <Search className="text-slate-400 w-4 h-4 mr-2.5 shrink-0" />
-                <input
-                  type="text"
-                  placeholder={
-                    isListening
-                      ? "Ouvindo..."
-                      : "Ex: Mecânico, Pizzaria, Moda..."
-                  }
-                  className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-bold text-xs sm:text-sm h-full"
-                  value={query}
-                  maxLength={80}
-                  onChange={(e) => setQuery(e.target.value)}
-                  disabled={isSearching || isListening}
-                />
-                <button
-                  type="button"
-                  onClick={handleVoiceSearch}
-                  className={`p-1.5 rounded-lg transition-all ${
-                    isListening
-                      ? "bg-red-100 text-red-500 animate-pulse"
-                      : "text-slate-400 hover:text-tafanu-action hover:bg-white"
-                  }`}
-                  title="Pesquisar por voz"
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
-              </div>
+          {/* BARRA DE PESQUISA UNIFICADA E FLUTUANTE (Sem Card Branco, Estilo Premium image_5.png) */}
+          <form
+            onSubmit={handleSearch}
+            className="w-full max-w-lg h-13 flex flex-row items-center gap-1 bg-slate-50 rounded-2xl px-2.5 py-1 border border-slate-200/80 focus-within:bg-white focus-within:border-tafanu-action focus-within:ring-2 focus-within:ring-tafanu-action/20 transition-all shadow-[0_15px_35px_rgba(0,168,107,0.1)] mb-4 relative z-30"
+          >
+            {/* Ícone de Busca Cinza (Esquerda) */}
+            <Search className="text-slate-400 w-4 h-4 ml-1.5 shrink-0" />
 
-              {/* Botão Pesquisar com a sua altura e fonte originais */}
-              <button
-                type="submit"
-                disabled={isSearching}
-                className="h-11 sm:h-12 bg-tafanu-action hover:bg-[#00c27a] text-white font-black rounded-xl px-6 flex items-center justify-center gap-2 uppercase tracking-wider text-xs shadow-[0_4px_15px_rgba(0,168,107,0.35)] transition-all hover:scale-[1.02] active:scale-95 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSearching ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Pesquisar"
-                )}
-              </button>
-            </form>
-          </div>
+            {/* Campo de Texto (Mantivemos a fonte maior para UX mobile) */}
+            <input
+              type="text"
+              placeholder={
+                isListening ? "Ouvindo..." : "Ex: Mecânico, Pizzaria, Moda..."
+              }
+              className="flex-1 bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-bold text-sm h-full"
+              value={query}
+              maxLength={80}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={isSearching || isListening}
+            />
+
+            {/* Ícone do Microfone */}
+            <button
+              type="button"
+              onClick={handleVoiceSearch}
+              className={`p-2 rounded-lg transition-all ${
+                isListening
+                  ? "bg-red-100 text-red-500 animate-pulse"
+                  : "text-slate-400 hover:text-tafanu-action hover:bg-white"
+              }`}
+              title="Pesquisar por voz"
+            >
+              <Mic className="w-4 h-4" />
+            </button>
+
+            {/* Botão de Pesquisar Compacto Integrado (Estilo Círculo Verde da Referência image_5.png) */}
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="w-10 h-10 rounded-full bg-tafanu-action text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-all active:scale-95 shadow-md"
+            >
+              {isSearching ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Search className="w-5 h-5" strokeWidth={3} />
+              )}
+            </button>
+          </form>
 
           {/* Suas Tags Rápidas Exatas */}
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 max-w-lg">
@@ -326,21 +314,6 @@ export default function Hero() {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* 🚀 SETA CIRCULAR DO NOVO ALGORITMO: Conectando a Hero com a vitrine */}
-      <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-30 hidden md:flex">
-        <button
-          onClick={handleScrollDown}
-          aria-label="Rolar para ver categorias"
-          className="w-10 h-10 rounded-full bg-white border border-slate-200/80 shadow-md flex items-center justify-center text-tafanu-action hover:scale-110 hover:bg-emerald-50 transition-all duration-300 cursor-pointer group"
-        >
-          <ChevronDown
-            size={20}
-            strokeWidth={2.5}
-            className="group-hover:translate-y-0.5 transition-transform"
-          />
-        </button>
       </div>
 
       {/* Modal de Voz */}
