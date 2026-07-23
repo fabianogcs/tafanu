@@ -22,6 +22,7 @@ import {
   Quote,
   Navigation,
   ChevronRight,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo de verificado
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -280,7 +281,6 @@ export default function ComercialLayout({
 
   if (!theme) return null;
 
-  // Variável para determinar se os botões dividem espaço
   const hasStoreLink =
     (isExternalLink && actionLink) ||
     (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf);
@@ -343,7 +343,7 @@ export default function ComercialLayout({
               />
             </div>
           )}
-          <div className="flex flex-col items-start pt-2 md:pt-24">
+          <div className="flex flex-col items-start pt-2 md:pt-24 w-full">
             {business.comercial_badge &&
               business.comercial_badge !== business.urban_tag && (
                 <span
@@ -352,11 +352,25 @@ export default function ComercialLayout({
                   {business.comercial_badge}
                 </span>
               )}
+
+            {/* 🚀 CIRURGIA DEV: Título Principal com Selo de Empresa Verificada */}
             <h1
-              className={`text-3xl md:text-5xl font-extrabold tracking-tight leading-none drop-shadow-sm ${theme.textColor}`}
+              className={`text-3xl md:text-5xl font-extrabold tracking-tight leading-none drop-shadow-sm flex items-center gap-2.5 flex-wrap ${theme.textColor}`}
             >
-              {business.name}
+              <span>{business.name}</span>
+              {(business.isVerified || rawBusiness.isVerified) && (
+                <span
+                  title="Empresa Verificada pelo Tafanu"
+                  className="shrink-0 inline-flex"
+                >
+                  <BadgeCheck
+                    size={32}
+                    className="fill-emerald-500 text-white shrink-0 shadow-sm rounded-full w-7 h-7 md:w-9 md:h-9"
+                  />
+                </span>
+              )}
             </h1>
+
             <div className="flex items-center gap-3 mt-3 flex-wrap justify-start">
               {business.urban_tag && (
                 <span

@@ -10,6 +10,7 @@ import {
   Heart,
   Loader2,
   Clock,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo oficial
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -255,9 +256,20 @@ export default function BusinessCard({ business, showDistance }: any) {
             )}
           </div>
 
-          {/* Título Principal */}
-          <h3 className="text-base md:text-lg font-black text-[#023059] leading-tight mb-4 group-hover:text-emerald-500 transition-colors line-clamp-2">
-            {business.name}
+          {/* 🚀 CIRURGIA DEV: Título Principal com o Selo Verificado Solid */}
+          <h3 className="text-base md:text-lg font-black text-[#023059] leading-tight mb-4 group-hover:text-emerald-500 transition-colors flex items-center gap-1.5">
+            <span className="line-clamp-2">{business.name}</span>
+            {business.isVerified && (
+              <span
+                title="Empresa Verificada pelo Tafanu"
+                className="shrink-0 inline-flex"
+              >
+                <BadgeCheck
+                  size={18}
+                  className="fill-emerald-500 text-white shrink-0 shadow-sm rounded-full"
+                />
+              </span>
+            )}
           </h3>
 
           {/* Dados (Endereço e Relógio) empilhados discretamente */}

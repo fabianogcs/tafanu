@@ -25,6 +25,7 @@ import {
   MapPin,
   Navigation,
   X,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo de verificado
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -474,11 +475,23 @@ export default function LuxeLayout({
               )}
             </motion.div>
 
+            {/* 🚀 CIRURGIA DEV: Título Principal com Selo Verificado Solid no padrão Editorial */}
             <motion.h1
               variants={slowFadeUp}
-              className="text-4xl md:text-5xl lg:text-[4rem] font-serif italic tracking-tight leading-[1.05] mb-4 font-light drop-shadow-md w-full relative z-10"
+              className="text-4xl md:text-5xl lg:text-[4rem] font-serif italic tracking-tight leading-[1.05] mb-4 font-light drop-shadow-md w-full relative z-10 flex items-center justify-center md:justify-start gap-3 flex-wrap"
             >
-              {business.name}
+              <span>{business.name}</span>
+              {(business.isVerified || rawBusiness.isVerified) && (
+                <span
+                  title="Empresa Verificada pelo Tafanu"
+                  className="shrink-0 inline-flex"
+                >
+                  <BadgeCheck
+                    size={36}
+                    className="fill-emerald-500 text-white shrink-0 shadow-sm rounded-full w-8 h-8 md:w-10 md:h-10"
+                  />
+                </span>
+              )}
             </motion.h1>
 
             {hasDescription && (

@@ -9,7 +9,7 @@ import {
   Facebook,
   Globe,
   Phone,
-  PhoneCall, // 🚀 AQUI ESTÁ A CORREÇÃO
+  PhoneCall,
   MapPin,
   Camera,
   MessageCircle,
@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Layout,
   Store,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo de verificado
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -362,10 +363,23 @@ export default function ShowroomLayout({
             </div>
 
             {/* Bloco 2: Textos (Ficam seguros na área branca no mobile, longe da capa) */}
-            <div className="flex flex-col items-start pb-1 mt-1 md:mt-0">
-              <h1 className="text-xl md:text-3xl font-extrabold tracking-tight leading-none text-slate-900 drop-shadow-sm mb-1.5">
-                {business.name}
+            <div className="flex flex-col items-start pb-1 mt-1 md:mt-0 w-full">
+              {/* 🚀 CIRURGIA DEV: Título com Selo Verificado no Showroom Clean */}
+              <h1 className="text-xl md:text-3xl font-extrabold tracking-tight leading-none text-slate-900 drop-shadow-sm mb-1.5 flex items-center gap-2 flex-wrap">
+                <span>{business.name}</span>
+                {(business.isVerified || rawBusiness.isVerified) && (
+                  <span
+                    title="Empresa Verificada pelo Tafanu"
+                    className="shrink-0 inline-flex"
+                  >
+                    <BadgeCheck
+                      size={28}
+                      className="fill-emerald-500 text-white shrink-0 shadow-sm rounded-full w-6 h-6 md:w-7 md:h-7"
+                    />
+                  </span>
+                )}
               </h1>
+
               <div className="flex items-center gap-2 flex-wrap">
                 {business.urban_tag && (
                   <span

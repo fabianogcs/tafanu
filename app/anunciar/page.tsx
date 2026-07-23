@@ -9,6 +9,7 @@ import {
   TrendingUp,
   MapPin,
   MessageCircle,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o ícone de Verificado
 } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -62,6 +63,14 @@ export default async function AnunciarPage() {
       },
       {
         "@type": "Question",
+        name: "COMO FUNCIONA O SELO DE VERIFICADO GRÁTIS?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Por tempo limitado, os assinantes do plano Tafanu PRO ganham o Selo de Empresa Verificada gratuitamente! Após a assinatura, basta entrar em contato com nosso suporte para uma rápida análise de segurança da sua empresa e liberação da insígnia sem custo adicional.",
+        },
+      },
+      {
+        "@type": "Question",
         name: "POSSO CANCELAR A QUALQUER MOMENTO?",
         acceptedAnswer: {
           "@type": "Answer",
@@ -78,7 +87,7 @@ export default async function AnunciarPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      {/* 🚀 CIRURGIA 1: BOTÃO WHATSAPP FLUTUANTE DE VENDAS */}
+      {/* 🚀 BOTÃO WHATSAPP FLUTUANTE DE VENDAS */}
       <a
         href="https://wa.me/5514991406618?text=Ol%C3%A1!%20Estou%20na%20p%C3%A1gina%20de%20planos%20do%20Tafanu%20e%20gostaria%20de%20tirar%20uma%20d%C3%BAvida."
         target="_blank"
@@ -124,6 +133,7 @@ export default async function AnunciarPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-stretch justify-center">
+          {/* --- PLANO BÁSICO --- */}
           <div className="flex-1 bg-white border border-slate-200 rounded-[2rem] p-8 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-not-allowed">
             <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">
               Básico
@@ -160,15 +170,19 @@ export default async function AnunciarPage() {
               <p className="flex items-center gap-3 text-slate-400">
                 <XCircle size={18} /> Sem botão de WhatsApp
               </p>
+              <p className="flex items-center gap-3 text-slate-400">
+                <XCircle size={18} /> Sem Selo de Verificado
+              </p>
             </div>
           </div>
 
+          {/* --- PLANO PRO (RECOMENDADO) --- */}
           <div className="flex-[1.2] bg-white border-2 border-tafanu-action rounded-[2rem] p-8 shadow-2xl relative transform lg:-translate-y-4">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-tafanu-action text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md">
               Plano Recomendado
             </div>
 
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h3 className="text-3xl font-black text-slate-900 uppercase italic mb-2">
                 Tafanu PRO
               </h3>
@@ -177,11 +191,31 @@ export default async function AnunciarPage() {
               </p>
             </div>
 
-            <div className="text-center mb-8 bg-slate-50 py-6 rounded-2xl border border-slate-100">
+            <div className="text-center mb-6 bg-slate-50 py-6 rounded-2xl border border-slate-100">
               <span className="text-5xl font-black text-slate-900 tracking-tighter">
                 R$ 39,90
               </span>
               <span className="text-slate-500 font-bold">/mês</span>
+            </div>
+
+            {/* 🚀 CIRURGIA DE NEUROMARKETING: BANNER DO SELO VERIFICADO */}
+            <div className="bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-amber-500/10 border border-amber-400/40 rounded-2xl p-4 mb-6 text-left flex items-start gap-3.5 shadow-sm">
+              <div className="bg-amber-500 text-white p-2 rounded-xl shrink-0 shadow-sm mt-0.5">
+                <BadgeCheck size={22} />
+              </div>
+              <div>
+                <span className="bg-amber-100 text-amber-900 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-amber-200/60">
+                  Bônus VIP • Tempo Limitado
+                </span>
+                <p className="text-sm font-black text-slate-800 mt-1 leading-snug">
+                  Selo de Verificado{" "}
+                  <span className="text-emerald-600">GRÁTIS</span>
+                </p>
+                <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">
+                  Incluso na assinatura mediante contato e análise de segurança
+                  do seu negócio.
+                </p>
+              </div>
             </div>
 
             <div className="mb-8">
@@ -189,12 +223,19 @@ export default async function AnunciarPage() {
             </div>
 
             <div className="space-y-6 text-sm font-medium text-slate-700">
-              {/* 🚀 CIRURGIA 2: TEXTOS MATADORES E ESPECÍFICOS */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">
-                  Conteúdo e Conversão
+                  Autoridade e Conversão
                 </p>
                 <div className="space-y-3">
+                  {/* 🚀 ITEM DE DESTAQUE NA LISTA */}
+                  <p className="flex items-center gap-3 font-bold text-slate-900 bg-emerald-50/70 p-2 rounded-lg border border-emerald-100">
+                    <BadgeCheck
+                      size={20}
+                      className="text-emerald-600 shrink-0"
+                    />{" "}
+                    Selo de Empresa Verificada (Análise Gratuita)
+                  </p>
                   <p className="flex items-center gap-3">
                     <CheckCircle2
                       size={18}
@@ -293,6 +334,7 @@ export default async function AnunciarPage() {
             </div>
           </div>
 
+          {/* --- PLANO CORPORATE --- */}
           <div className="flex-1 bg-white border border-slate-200 rounded-[2rem] p-8 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-not-allowed">
             <h3 className="text-xl font-black text-slate-900 uppercase italic mb-2">
               Corporate
@@ -421,6 +463,35 @@ export default async function AnunciarPage() {
               Na sua primeira assinatura do plano Tafanu PRO, você tem 7 dias de
               Teste Grátis. A primeira cobrança de R$ 39,90 só acontece no 8º
               dia. Se não gostar, basta cancelar antes e nada será cobrado.
+            </div>
+          </details>
+
+          {/* 🚀 CIRURGIA NO FAQ: NOVO ITEM EXPLICANDO O SELO */}
+          <details className="group bg-white border border-slate-200 rounded-2xl [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex items-center justify-between p-6 cursor-pointer font-bold text-slate-800">
+              Como funciona o Selo de Empresa Verificada Grátis?
+              <span className="transition group-open:rotate-180">
+                <svg
+                  fill="none"
+                  height="24"
+                  shapeRendering="geometricPrecision"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="24"
+                >
+                  <path d="M6 9l6 6 6-6"></path>
+                </svg>
+              </span>
+            </summary>
+            <div className="px-6 pb-6 text-slate-500 text-sm leading-relaxed">
+              Por tempo limitado, os assinantes do plano Tafanu PRO ganham o
+              Selo de Empresa Verificada gratuitamente! Após a assinatura, basta
+              entrar em contato com nosso suporte para uma rápida análise de
+              segurança da sua empresa e liberação da insígnia sem custo
+              adicional.
             </div>
           </details>
 

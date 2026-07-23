@@ -173,6 +173,7 @@ model Business {
 
   published Boolean  @default(true)
   isActive  Boolean  @default(true)
+  isVerified Boolean @default(false)
   createdAt DateTime @default(now()) // Centralizado aqui
   updatedAt DateTime @updatedAt
 

@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { TrendingUp, MapPin, ArrowUpRight, Star } from "lucide-react";
+import {
+  TrendingUp,
+  MapPin,
+  ArrowUpRight,
+  Star,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo
+} from "lucide-react";
 import { useState } from "react";
 
 // 🚀 LOGO INTELIGENTE: Agora menor para overlay no canto da capa
@@ -155,9 +161,20 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
 
             {/* CORPO DO CARD: Título e Tags (Paddings p-4 e textos bem proporcionais) */}
             <div className="flex-1 flex flex-col p-4">
-              {/* Título menor (text-sm sm:text-base) proporcional ao card compacto */}
-              <h3 className="font-black text-slate-800 text-sm sm:text-base uppercase tracking-tight line-clamp-2 leading-tight mb-2.5 group-hover:text-emerald-600 transition-colors duration-300">
-                {biz.name}
+              {/* 🚀 CIRURGIA DEV: Título menor com Selo de Verificado embutido */}
+              <h3 className="font-black text-slate-800 text-sm sm:text-base uppercase tracking-tight line-clamp-2 leading-tight mb-2.5 group-hover:text-emerald-600 transition-colors duration-300 flex items-center gap-1.5">
+                <span className="line-clamp-2">{biz.name}</span>
+                {biz.isVerified && (
+                  <span
+                    title="Empresa Verificada"
+                    className="shrink-0 inline-flex"
+                  >
+                    <BadgeCheck
+                      size={16}
+                      className="fill-emerald-500 text-white shrink-0 shadow-sm rounded-full"
+                    />
+                  </span>
+                )}
               </h3>
 
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mb-3.5 mt-auto">

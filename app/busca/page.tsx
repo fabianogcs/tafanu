@@ -367,6 +367,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     createdAt: true,
     whatsapp: true,
     phone: true,
+    isVerified: true,
     hours: {
       select: {
         dayOfWeek: true,
@@ -803,6 +804,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
       if (b.rating && b.rating > 0) {
         score += Math.round(b.rating * 10);
+      }
+
+      // 🚀 CIRURGIA 2 (NEUROMARKETING & ALGORITMO):
+      // Empresas verificadas ganham +150 pontos de relevância e ultrapassam concorrentes comuns!
+      if (b.isVerified) {
+        score += 90;
       }
 
       const hasCoreIntentExact =

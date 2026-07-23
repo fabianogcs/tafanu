@@ -85,6 +85,7 @@ export default async function AdminPage({
             views: true,
             whatsapp_clicks: true,
             phone_clicks: true,
+            isVerified: true,
             _count: { select: { favorites: true } },
           },
         },

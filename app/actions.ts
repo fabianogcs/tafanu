@@ -1926,6 +1926,40 @@ export async function toggleBusinessStatus(
   return { success: true };
 }
 
+// 🚀 CIRURGIA 2: ALAVANCA DO ADMIN PARA ATIVAR/DESATIVAR O SELO VERIFICADO
+export async function toggleVerifiedBadge(businessId: string, status: boolean) {
+  // 1. Trava de segurança absoluta: apenas o ADMIN oficial pode mudar isso
+  if (!(await requireAdmin())) {
+    return {
+      error: "Acesso negado. Apenas a administração pode conceder o selo.",
+    };
+  }
+
+  try {
+    // 2. Atualiza o interruptor no banco de dados
+    await db.business.update({
+      where: { id: businessId },
+      data: { isVerified: status },
+    });
+
+    // 3. Limpa o cache para o ícone aparecer ou sumir instantaneamente no site inteiro
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+    revalidatePath("/busca");
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      message: status
+        ? "Selo de Verificado CONCEDIDO com sucesso! 🛡️"
+        : "Selo de Verificado removido.",
+    };
+  } catch (error) {
+    console.error("Erro ao alterar selo de verificado:", error);
+    return { error: "Erro interno no servidor ao atualizar o status do selo." };
+  }
+}
+
 export async function banBusiness(businessId: string) {
   if (!(await requireAdmin())) return { error: "Acesso negado." };
   await db.business.update({
@@ -3778,6 +3812,7 @@ export const getTrendingBusinesses = unstable_cache(
           neighborhood: true,
           city: true,
           rating: true,
+          isVerified: true,
         },
       });
 

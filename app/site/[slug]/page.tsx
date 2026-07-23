@@ -69,6 +69,7 @@ const getCachedBusiness = cache(async (slug: string) => {
       actionLink: true,
       published: true,
       isActive: true,
+      isVerified: true,
       expiresAt: true,
       userId: true,
       user: { select: { role: true } },

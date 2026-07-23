@@ -22,7 +22,11 @@ import {
   Copy,
   Loader2,
   Link2,
+  BadgeCheck, // 🚀 CIRURGIA DEV: Ícone de Verificado importado
 } from "lucide-react";
+
+// 🚀 CIRURGIA DEV: Importamos nossa Server Action blindada do Backend
+import { toggleVerifiedBadge } from "@/app/actions";
 
 // Trazemos o StatusBadge para cá para os modais poderem usá-lo sem problemas
 function StatusBadge({
@@ -264,7 +268,7 @@ export default function AdminModals({
                 <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 w-full md:w-auto">
                   <input
                     type="text"
-                    maxLength={255} // 🚀 TRAVA UX (Protege contra URL ou texto gigante)
+                    maxLength={255} // 🚀 TRAVA UX
                     placeholder={
                       selectedUser.affiliateId
                         ? "Trocar parceiro..."
@@ -324,6 +328,7 @@ export default function AdminModals({
                 </div>
               </div>
 
+              {/* 🚀 CIRURGIA DEV: LISTA DE LOJAS COM BOTÃO DE SELO VERIFICADO */}
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
                   <Store size={13} /> Lojas e Assinaturas (
@@ -342,8 +347,16 @@ export default function AdminModals({
                       >
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                           <div>
-                            <p className="font-black text-slate-900 text-lg uppercase italic tracking-tight">
+                            <p className="font-black text-slate-900 text-lg uppercase italic tracking-tight flex items-center gap-1.5">
                               {biz.name}
+                              {biz.isVerified && (
+                                <span
+                                  className="text-emerald-500"
+                                  title="Empresa Verificada"
+                                >
+                                  <BadgeCheck size={20} />
+                                </span>
+                              )}
                             </p>
                             <div className="flex flex-wrap gap-2 mt-1.5">
                               <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold uppercase border border-slate-200">
@@ -377,6 +390,41 @@ export default function AdminModals({
                             </a>
                           </div>
                         </div>
+
+                        {/* 🚀 BOTÃO DE CONTROLE DO SELO VERIFICADO */}
+                        <div className="flex gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            onClick={async () => {
+                              const res = await toggleVerifiedBadge(
+                                biz.id,
+                                !biz.isVerified,
+                              );
+                              if (res?.success) {
+                                toast.success(res.message);
+                              } else {
+                                toast.error(
+                                  res?.error || "Erro ao atualizar selo.",
+                                );
+                              }
+                            }}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                              biz.isVerified
+                                ? "bg-emerald-500 text-white hover:bg-rose-500 hover:text-white"
+                                : "bg-amber-500 text-white hover:bg-emerald-600"
+                            }`}
+                            title={
+                              biz.isVerified
+                                ? "Clique para remover o selo"
+                                : "Clique para conceder o selo"
+                            }
+                          >
+                            <BadgeCheck size={14} />
+                            {biz.isVerified
+                              ? "Verificado ✓ (Clique p/ Remover)"
+                              : "Conceder Selo Verificado 🏆"}
+                          </button>
+                        </div>
+
                         <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                           <div className="text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1">
@@ -711,7 +759,7 @@ export default function AdminModals({
             </div>
             <input
               type="text"
-              maxLength={50} // 🚀 TRAVA UX (Sincronizado perfeitamente com a trava de Back-end)
+              maxLength={50} // 🚀 TRAVA UX
               placeholder="EX: JOAO-SP"
               className="w-full px-4 py-4 bg-slate-50 rounded-xl font-black uppercase outline-none focus:ring-2 ring-amber-500/20 text-center tracking-widest mb-4"
               value={referralCodeInput}
