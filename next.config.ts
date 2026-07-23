@@ -18,25 +18,54 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "utfs.io" },
       { protocol: "https", hostname: "*.ufs.sh" },
       { protocol: "https", hostname: "tafanu.com.br" },
-      { protocol: "https", hostname: "www.tafanu.com.br" }, // 🛡️ WHITE HAT FIX: Libera o domínio oficial com www!
-      // 🛡️ PREVENÇÃO UX: Garante que os avatares de quem loga pelo Google carreguem
+      { protocol: "https", hostname: "www.tafanu.com.br" }, // ✅ corrigido, sem markdown
       { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
   },
 
-  // 🛡️ Headers de Segurança HTTP para produção (Livres de bloqueios front-end)
   async headers() {
     return [
+      // 🔓 Página da vitrine: libera só o "cadeado de iframe", mantém o resto
       {
-        source: "/(.*)",
+        source: "/site/:slug*",
         headers: [
-          { key: "X-Frame-Options", value: "SAMEORIGIN" }, // 🚀 Permite que os lojistas usem iframes com segurança
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors *;",
+          },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(self), geolocation=(self)", // 🚀 Libera o microfone também!
+            value: "camera=(), microphone=(self), geolocation=(self)",
           },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+      // 🔒 Resto do site: todos os cadeados ativos, incluindo o de iframe
+      {
+        source: "/((?!site/).*)",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(self), geolocation=(self)",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
         ],
       },
     ];
