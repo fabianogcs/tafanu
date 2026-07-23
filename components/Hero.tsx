@@ -1,6 +1,13 @@
 "use client";
 
-import { Search, Mic, Sparkles, Loader2, TrendingUp } from "lucide-react";
+import {
+  Search,
+  Mic,
+  Sparkles,
+  Loader2,
+  TrendingUp,
+  ChevronDown,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -107,25 +114,39 @@ export default function Hero() {
       const SpeechRecognition =
         (window as any).SpeechRecognition ||
         (window as any).webkitSpeechRecognition;
+
       if (!SpeechRecognition) {
         toast.error("Navegador incompatível", {
-          description: "Pesquisa por voz não suportada.",
+          description: "Pesquisa por voz não suportada neste aparelho.",
         });
         return;
       }
+
       try {
         const recognition = new SpeechRecognition();
         recognition.lang = "pt-BR";
         recognition.continuous = false;
         recognition.interimResults = false;
+
         recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
+
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
           setQuery(transcript);
+          setIsListening(false);
           handleSearch(undefined, transcript);
         };
-        recognition.onerror = () => setIsListening(false);
+
+        recognition.onerror = (event: any) => {
+          setIsListening(false);
+          if (event.error === "not-allowed") {
+            toast.error("Microfone bloqueado", {
+              description: "Permita o acesso ao microfone nas configurações.",
+            });
+          }
+        };
+
+        recognition.onend = () => setIsListening(false);
         recognition.start();
       } catch (err) {
         setIsListening(false);
@@ -133,16 +154,18 @@ export default function Hero() {
     }
   };
 
+  const handleScrollDown = () => {
+    window.scrollBy({ top: window.innerHeight * 0.6, behavior: "smooth" });
+  };
+
   return (
+    // 🚀 MANTIDA A SUA ALTURA EXATA: min-h-[400px] lg:min-h-[440px] pt-6 pb-8 lg:py-6
     <section className="relative w-full min-h-[400px] lg:min-h-[440px] bg-gradient-to-br from-[#E6F9F0] via-white to-[#F0FDF4] overflow-hidden flex items-center border-b border-slate-200/60 pt-6 pb-8 lg:py-6">
       {/* Luz Esmeralda Principal */}
       <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-emerald-400/25 to-teal-300/10 rounded-full blur-[90px] pointer-events-none" />
 
-      {/* =========================================================================
-          📱 CIRURGIA MOBILE: FOTO VIVA, VIBRANTE E COM CORES REAIS (lg:hidden)
-          ========================================================================= */}
+      {/* 📱 FOTO MOBILE VIBRANTE (lg:hidden) */}
       <div className="absolute inset-0 z-0 lg:hidden pointer-events-none overflow-hidden">
-        {/* Opacidade subida para 75% para as cores da cidade brilharem de verdade! */}
         <Image
           src="/hero-bg.webp"
           alt="Fundo Urbano Mobile"
@@ -151,8 +174,6 @@ export default function Hero() {
           sizes="100vw"
           className="object-cover object-center opacity-75 scale-105"
         />
-        {/* Gradiente Inteligente: Deixa o topo mais livre para ver a arquitetura,
-            e cria uma base limpa embaixo apenas onde o texto e a barra precisam de leitura! */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/85 to-[#F8FAFC]" />
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/15 via-transparent to-teal-500/10" />
       </div>
@@ -187,32 +208,42 @@ export default function Hero() {
         }}
       />
 
-      {/* LADO DIREITO DESKTOP: IMAGEM CURVA */}
-      <div className="hidden lg:block absolute top-0 right-0 bottom-0 w-[48%] xl:w-[50%] z-10 pointer-events-none">
-        <div className="w-full h-full relative rounded-l-[140px] xl:rounded-l-[180px] overflow-hidden border-l-[6px] border-white shadow-[-20px_0_50px_rgba(0,0,0,0.1)] bg-slate-900">
-          <Image
-            src="/hero-bg.webp"
-            alt="Centro Comercial Cidade e Serviços"
-            fill
-            priority
-            sizes="50vw"
-            className="object-cover object-center scale-105 hover:scale-100 transition-transform duration-1000 ease-out"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/30 via-transparent to-transparent" />
-        </div>
+      {/* =========================================================================
+          💻 NOVO ALGORITMO DE FUSÃO NA DIREITA (Sem borda, w-[62%], máscara gradual)
+          ========================================================================= */}
+      <div
+        className="hidden lg:block absolute inset-y-0 right-0 w-[62%] z-10 pointer-events-none overflow-hidden"
+        style={{
+          WebkitMaskImage:
+            "linear-gradient(to left, black 65%, transparent 100%)",
+          maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+        }}
+      >
+        <Image
+          src="/hero-bg.webp"
+          alt="Centro Comercial Cidade e Serviços"
+          fill
+          priority
+          sizes="62vw"
+          className="object-cover object-center scale-105 hover:scale-100 transition-transform duration-1000 ease-out"
+        />
+        {/* Gradiente translúcido sobre a foto para garantir a leitura perfeita do texto */}
+        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/15 to-white" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-60" />
       </div>
 
-      {/* LADO ESQUERDO: CONTEÚDO E PESQUISA COMPACTOS */}
+      {/* =========================================================================
+          🎯 LADO ESQUERDO: MANTIDAS SUAS FONTES, ALTURAS E ESPAÇAMENTOS EXATOS
+          ========================================================================= */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-20">
         <div className="w-full lg:w-[54%] xl:w-[51%] flex flex-col items-center lg:items-start text-center lg:text-left">
-          {/* Tag Topo */}
+          {/* Sua Tag Topo Exata */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border border-emerald-200 text-tafanu-action text-[10px] font-black uppercase tracking-widest mb-3.5 shadow-sm backdrop-blur-md">
             <Sparkles size={12} className="animate-pulse text-tafanu-action" />{" "}
             Guia comercial inteligente
           </div>
 
-          {/* Título Principal Compacto */}
+          {/* Seu Título Exato (3xl/4xl/5xl) */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.06] mb-2.5 uppercase italic drop-shadow-sm">
             Tudo o que você busca, <br className="hidden sm:block" />
             <span className="text-tafanu-action drop-shadow-[0_0_25px_rgba(0,168,107,0.3)]">
@@ -220,13 +251,13 @@ export default function Hero() {
             </span>
           </h1>
 
-          {/* Subtítulo com Constraste Reforçado para Leitura Perfeita no Celular */}
+          {/* Seu Subtítulo Exato (text-slate-700 font-semibold) */}
           <p className="text-xs sm:text-sm md:text-base text-slate-700 font-semibold leading-relaxed max-w-md mb-5 drop-shadow-2xs">
             Conectamos você aos melhores serviços e comércios de confiança da
             sua cidade em poucos segundos.
           </p>
 
-          {/* BARRA DE PESQUISA COMPACTA E COM BRILHO */}
+          {/* SUA BARRA DE PESQUISA EXATA (Com altura h-11/h-12 e fontes que você escolheu) */}
           <div className="w-full max-w-lg bg-white/95 backdrop-blur-xl p-2 sm:p-2.5 rounded-2xl shadow-[0_15px_35px_rgba(0,168,107,0.1)] border border-emerald-100/80 mb-4 relative z-30">
             <form
               onSubmit={handleSearch}
@@ -250,14 +281,18 @@ export default function Hero() {
                 <button
                   type="button"
                   onClick={handleVoiceSearch}
-                  className={`p-1.5 rounded-lg transition-all ${isListening ? "bg-red-100 text-red-500 animate-pulse" : "text-slate-400 hover:text-tafanu-action hover:bg-white"}`}
+                  className={`p-1.5 rounded-lg transition-all ${
+                    isListening
+                      ? "bg-red-100 text-red-500 animate-pulse"
+                      : "text-slate-400 hover:text-tafanu-action hover:bg-white"
+                  }`}
                   title="Pesquisar por voz"
                 >
                   <Mic className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* 🚀 BOTÃO SEMPRE VERDE, VIBRANTE E ATIVO! Fim do bloco cinza desativado! */}
+              {/* Botão Pesquisar com a sua altura e fonte originais */}
               <button
                 type="submit"
                 disabled={isSearching}
@@ -272,7 +307,7 @@ export default function Hero() {
             </form>
           </div>
 
-          {/* TAGS RÁPIDAS (4 PALAVRAS) */}
+          {/* Suas Tags Rápidas Exatas */}
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 max-w-lg">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
               <TrendingUp size={12} className="text-tafanu-action" /> Populares:
@@ -291,6 +326,21 @@ export default function Hero() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* 🚀 SETA CIRCULAR DO NOVO ALGORITMO: Conectando a Hero com a vitrine */}
+      <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-30 hidden md:flex">
+        <button
+          onClick={handleScrollDown}
+          aria-label="Rolar para ver categorias"
+          className="w-10 h-10 rounded-full bg-white border border-slate-200/80 shadow-md flex items-center justify-center text-tafanu-action hover:scale-110 hover:bg-emerald-50 transition-all duration-300 cursor-pointer group"
+        >
+          <ChevronDown
+            size={20}
+            strokeWidth={2.5}
+            className="group-hover:translate-y-0.5 transition-transform"
+          />
+        </button>
       </div>
 
       {/* Modal de Voz */}
