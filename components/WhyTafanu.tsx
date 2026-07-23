@@ -88,20 +88,24 @@ export default function WhyTafanu() {
           </p>
         </div>
 
-        {/* Grade de Cards mais fina (padding de p-8 reduzido para p-5 md:p-6) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+        {/* 🚀 CORREÇÃO DA GRID MOBILE: `grid-cols-1` mudou para `grid-cols-2` base, garantindo que apareça em 2 colunas no mobile. O tablet e desktop continuam com as configurações corretas (`sm:grid-cols-2`, `lg:grid-cols-4`). */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {REASONS.map((item, i) => {
             const Icon = item.icon;
             return (
               <div
                 key={i}
-                className="flex flex-col items-center text-center p-5 md:p-6 rounded-[1.8rem] bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_25px_rgba(0,0,0,0.03)] hover:-translate-y-1.5 hover:shadow-md hover:border-emerald-200 transition-all duration-300 group"
+                // 🚀 CIRURGIA DE CARD: p-5 md:p-6 reduzido para p-4 md:p-5 e arredondamento rounded-3xl para ficar proporcional.
+                className="flex flex-col items-center text-center p-4 md:p-5 rounded-3xl bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_25px_rgba(0,0,0,0.03)] hover:-translate-y-1.5 hover:shadow-md hover:border-emerald-200 transition-all duration-300 group"
               >
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-tafanu-action mb-4 group-hover:scale-110 group-hover:bg-tafanu-action group-hover:text-white transition-all duration-300 shadow-2xs">
-                  <Icon size={24} strokeWidth={2.2} />
+                {/* 🚀 CIRURGIA DE ÍCONE: w-12 h-12 reduzido para w-10 h-10, mb-4 para mb-3 e arredondamento rounded-xl. */}
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-tafanu-action mb-3 group-hover:scale-110 group-hover:bg-tafanu-action group-hover:text-white transition-all duration-300 shadow-2xs">
+                  {/* size=24 reduzido para size=20 */}
+                  <Icon size={20} strokeWidth={2.2} />
                 </div>
 
-                <h3 className="text-sm md:text-base font-black text-slate-800 uppercase tracking-tight mb-1.5 group-hover:text-tafanu-action transition-colors">
+                {/* 🚀 CIRURGIA DE TÍTULO: text-sm md:text-base reduzido para text-xs md:text-sm e mb-1.5 para mb-1. */}
+                <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight mb-1 group-hover:text-tafanu-action transition-colors">
                   {item.title}
                 </h3>
 

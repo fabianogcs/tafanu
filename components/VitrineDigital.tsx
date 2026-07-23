@@ -221,7 +221,7 @@ export default function VitrineDigital() {
             )}
           </span>
           <span className="text-tafanu-action font-black text-[10px] uppercase tracking-[0.25em]">
-            {userCity ? "Perto de Você" : "Categorias Oficiais"}
+            {userCity ? "Aberto Perto de Você" : "Categorias Oficiais"}
           </span>
         </div>
 
@@ -239,8 +239,8 @@ export default function VitrineDigital() {
         </h2>
       </div>
 
-      {/* 🚀 GRID HORIZONTAL COMPACTO: Textos na esquerda, seta na direita, zero espaço em branco! */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5 md:gap-3">
+      {/* 🚀 GRID ALTERADO: lg:grid-cols-6 mudou para lg:grid-cols-5 para aumentar a largura dos cards no desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3">
         {CATEGORIES_SHOWCASE.map((mood) => {
           const isLoadingThis = activeLoadingId === mood.id;
 
@@ -249,13 +249,12 @@ export default function VitrineDigital() {
               key={mood.id}
               onClick={(e) => handleMoodClick(e, mood.url, mood.id)}
               disabled={activeLoadingId !== null && !isLoadingThis}
-              // 🚀 CIRURGIA DE FONTE: Altura levemente ajustada para min-h-[76px] sm:min-h-[84px] para abrigar a fonte maior e dar respiro!
               className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.4rem] px-4 py-3.5 md:px-5 md:py-4 flex items-center justify-between min-h-[76px] sm:min-h-[84px] bg-gradient-to-br ${mood.bgClass} shadow-2xs hover:shadow-lg hover:${mood.shadowClass} hover:-translate-y-0.5 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none border border-white/10`}
             >
               {/* Efeito de brilho no hover */}
               <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
-              {/* LADO ESQUERDO: Título e Subtítulo com FONTES MAIORES E MAIS NÍTIDAS */}
+              {/* LADO ESQUERDO: Título e Subtítulo */}
               <div className="relative z-10 flex flex-col justify-center pr-2 min-w-0">
                 <h3 className="text-white font-black text-sm sm:text-base md:text-lg uppercase tracking-tight leading-tight drop-shadow-2xs mb-1 truncate">
                   {isLoadingThis ? "Abrindo..." : mood.title}

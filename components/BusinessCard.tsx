@@ -219,7 +219,7 @@ export default function BusinessCard({ business, showDistance }: any) {
               </span>
 
               {/* 🚀 ULTRA PREMIUM NOTA: Só injeta na busca se a loja tiver nota > 0 */}
-              {business.rating && business.rating > 0 && (
+              {(business.rating || 0) > 0 && (
                 <div className="flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 text-amber-600 shrink-0 ml-1">
                   <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />

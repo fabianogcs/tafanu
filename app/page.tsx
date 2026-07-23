@@ -46,12 +46,14 @@ export default async function Home() {
         <div className="absolute top-[60vh] -right-48 w-[800px] h-[800px] rounded-full border-[60px] border-emerald-50/50" />
       </div>
 
-      {/* 📦 FLUXO DE NAVEGAÇÃO COMPLETO E DENSO */}
+      {/* 📦 FLUXO DE NAVEGAÇÃO COMPLETO, DENSO E NA ORDEM ESTRATÉGICA CORRETA */}
       <div className="relative z-10 space-y-4 md:space-y-8">
         <Hero />
         <VitrineDigital />
-        <WhyTafanu />
+        {/* 🚀 CIRURGIA APLICADA: Os Mais Buscados vêm primeiro (Social Proof)... */}
         <OsMaisBuscados businesses={trendingBusinesses} />
+        {/* ...e o WhyTafanu fecha a página ancorando a confiança e autoridade! */}
+        <WhyTafanu />
       </div>
     </main>
   );

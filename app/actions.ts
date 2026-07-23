@@ -3563,8 +3563,10 @@ export async function deleteComment(commentId: string) {
     const userId = session.user.id;
     const userRole = session.user.role; // Pego o cargo real do banco/sessão
 
+    // 🚀 ATUALIZAÇÃO: Buscamos também o businessId e parentId para saber de qual loja é
     const comment = await db.comment.findUnique({
       where: { id: commentId },
+      select: { id: true, userId: true, businessId: true, parentId: true },
     });
 
     if (!comment) return { success: false, error: "Comentário não existe." };
@@ -3580,11 +3582,46 @@ export async function deleteComment(commentId: string) {
       };
     }
 
-    await db.comment.delete({ where: { id: commentId } });
+    const businessId = comment.businessId;
+    const wasMainReview = !comment.parentId;
 
+    // 🚀 TRANSAÇÃO ATÔMICA: Apaga o comentário E recalcula a média da loja instantaneamente!
+    await db.$transaction(async (tx) => {
+      await tx.comment.delete({ where: { id: commentId } });
+
+      // Se era uma avaliação principal (com nota), recalculamos a média da loja
+      if (wasMainReview) {
+        const aggregation = await tx.comment.aggregate({
+          where: { businessId, parentId: null, rating: { gte: 1 } },
+          _count: { rating: true },
+          _sum: { rating: true },
+        });
+
+        const reviewCount = aggregation._count.rating || 0;
+        const sumRatings = Number(aggregation._sum.rating) || 0;
+        const finalAverage =
+          reviewCount > 0
+            ? parseFloat((sumRatings / reviewCount).toFixed(1))
+            : 0; // Se não sobrar comentários, a nota volta para 0 no banco!
+
+        await tx.business.update({
+          where: { id: businessId },
+          data: {
+            rating: finalAverage,
+            reviewCount: reviewCount,
+          },
+        });
+      }
+    });
+
+    // 🚀 Limpa o cache de todas as telas para sumir na hora
     revalidatePath("/site/[slug]", "page");
+    revalidatePath("/busca");
+    revalidatePath("/");
+
     return { success: true };
   } catch (error) {
+    console.error("Erro ao deletar comentário:", error);
     return { success: false, error: "Erro ao deletar." };
   }
 }
@@ -3734,6 +3771,8 @@ export const getTrendingBusinesses = unstable_cache(
           name: true,
           slug: true,
           imageUrl: true,
+          // 🎯 CIRURGIA AQUI: ADICIONAMOS A CAPA NO SELECT DO BANCO!
+          coverImage: true,
           category: true,
           luxe_quote: true,
           neighborhood: true,
