@@ -809,7 +809,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       // 🚀 CIRURGIA 2 (NEUROMARKETING & ALGORITMO):
       // Empresas verificadas ganham +150 pontos de relevância e ultrapassam concorrentes comuns!
       if (b.isVerified) {
-        score += 90;
+        score += 100;
       }
 
       const hasCoreIntentExact =
