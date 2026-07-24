@@ -6,7 +6,14 @@ import { useState } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
 
-const POPULAR_TAGS = ["Restaurante", "Mecânico", "Salão", "Academia"];
+const POPULAR_TAGS = [
+  "Restaurante",
+  "Mecânico",
+  "Salão",
+  "Pizzaria",
+  "Barbearia",
+  "Padaria",
+];
 
 export default function Hero() {
   const router = useRouter();
