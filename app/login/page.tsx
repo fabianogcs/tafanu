@@ -372,8 +372,8 @@ export default function LoginPage() {
             <span className="text-tafanu-action">MERCADO LOCAL.</span>
           </h2>
           <p className="text-slate-400 text-xl leading-relaxed">
-            Tudo o que você precisa para ser encontrado e fechar mais vendas
-            pelo WhatsApp.
+            Sua vitrine digital 24h para transformar buscas na cidade em
+            clientes reais, sem taxas ou intermediários.
           </p>
         </div>
       </div>
