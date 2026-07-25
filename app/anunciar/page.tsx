@@ -41,6 +41,7 @@ export default async function AnunciarPage() {
   if (userRole === "ASSINANTE") redirect("/dashboard");
   if (userRole === "AFILIADO") redirect("/dashboard");
 
+  // 🚀 CIRURGIA CTO: 5ª Pergunta adicionada ao Schema para sincronizar 100% com o visual da tela!
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -75,6 +76,14 @@ export default async function AnunciarPage() {
         acceptedAnswer: {
           "@type": "Answer",
           text: "Com certeza. Se você cancelar dentro dos 7 dias de teste, a cobrança nem chega a ser feita. O cancelamento é feito direto no seu painel, sem multas e sem burocracia.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "A PLATAFORMA COBRA TAXAS SOBRE MINHAS VENDAS?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Não! Nós não somos intermediários. O cliente acha você no Tafanu e clica para ir direto para o seu WhatsApp, seu Instagram ou sua Maquininha. Você paga apenas a assinatura mensal da vitrine e fica com 100% do lucro das suas vendas.",
         },
       },
     ],
@@ -191,11 +200,20 @@ export default async function AnunciarPage() {
               </p>
             </div>
 
-            <div className="text-center mb-6 bg-slate-50 py-6 rounded-2xl border border-slate-100">
-              <span className="text-5xl font-black text-slate-900 tracking-tighter">
-                R$ 39,90
-              </span>
-              <span className="text-slate-500 font-bold">/mês</span>
+            {/* 🎨 CIRURGIA DE LUXO UX/UI: Framing de Preço limpo, sofisticado e sem gritaria! */}
+            <div className="text-center mb-6 bg-slate-50 py-5 px-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-5xl font-black text-slate-900 tracking-tighter">
+                  R$ 39,90
+                </span>
+                <span className="text-slate-500 font-bold">/mês</span>
+              </div>
+              <p className="text-xs font-bold text-slate-500 mt-1.5 flex items-center justify-center gap-1">
+                Equivalente a{" "}
+                <strong className="text-emerald-600 font-black">
+                  R$ 1,33 por dia
+                </strong>
+              </p>
             </div>
 
             {/* 🚀 CIRURGIA DE NEUROMARKETING: BANNER DO SELO VERIFICADO */}

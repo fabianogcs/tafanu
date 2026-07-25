@@ -87,31 +87,32 @@ export default function Navbar({
 
   return (
     <>
+      {/* 🚀 CIRURGIA UX/UI: Altura reduzida para h-14 (mobile) e h-16 (desktop) */}
       <nav className="bg-white/90 backdrop-blur-xl sticky top-0 z-[80] border-b border-slate-200 w-full transition-all duration-300">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 md:h-20">
-            {/* LOGO EMPACOTADA */}
+          <div className="flex justify-between items-center h-14 md:h-16">
+            {/* LOGO COM DESTAQUE E PRESENÇA DE MARCA (UX/UI Premium) */}
             <div className="flex-shrink-0">
               <Link
                 href="/"
                 className="flex items-center gap-2.5 group"
                 onClick={() => setIsOpen(false)}
               >
-                <div className="w-9 h-9 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center p-1 shadow-[0_2px_15px_rgba(0,0,0,0.08)] border border-slate-100 group-hover:scale-105 transition-transform duration-500">
+                <div className="w-10 h-10 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center p-1 shadow-md border border-slate-100 group-hover:scale-105 transition-transform duration-500">
                   <img
                     src="/logo.png"
                     alt="Tafanu Logo"
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase italic group-hover:text-tafanu-action transition-colors duration-500">
+                <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase italic group-hover:text-tafanu-action transition-colors duration-500">
                   Tafanu
                 </span>
               </Link>
             </div>
 
-            {/* 🚀 CIRURGIA DESKTOP: Organizado em um único bloco, sem margens gigantes */}
-            <div className="hidden md:flex items-center gap-2">
+            {/* DESKTOP: Botões refinados com padding menor e tipografia levemente mais compacta */}
+            <div className="hidden md:flex items-center gap-1.5">
               {/* 1. INÍCIO */}
               <DesktopNavLink href="/">Início</DesktopNavLink>
 
@@ -119,7 +120,7 @@ export default function Navbar({
               {isGuest ? (
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-tafanu-action font-bold text-xs uppercase tracking-widest transition-colors rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 shadow-sm"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-slate-600 hover:text-tafanu-action font-bold text-[11px] uppercase tracking-widest transition-colors rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 shadow-2xs"
                 >
                   Entrar
                 </Link>
@@ -127,52 +128,52 @@ export default function Navbar({
                 <>
                   {isVisitor && (
                     <DesktopNavLink href="/dashboard/favoritos">
-                      <Heart size={14} className="text-rose-500" /> Favoritos
+                      <Heart size={13} className="text-rose-500" /> Favoritos
                     </DesktopNavLink>
                   )}
                   {isSubscriber && (
                     <Link
                       href="/dashboard"
-                      className="flex items-center gap-2 px-4 py-2 text-tafanu-action font-bold text-xs uppercase tracking-widest transition-all bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 shadow-sm"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 text-tafanu-action font-bold text-[11px] uppercase tracking-widest transition-all bg-emerald-50 rounded-lg border border-emerald-200 hover:bg-emerald-100 shadow-2xs"
                     >
-                      <LayoutDashboard size={14} /> Gerenciar
+                      <LayoutDashboard size={13} /> Gerenciar
                     </Link>
                   )}
                   {isAdmin && (
                     <>
                       <DesktopNavLink href="/dashboard">
-                        <Layers size={14} /> Dashboard
+                        <Layers size={13} /> Dashboard
                       </DesktopNavLink>
                       <Link
                         href="/admin"
-                        className="flex items-center gap-2 px-4 py-2 text-amber-600 font-bold text-xs uppercase tracking-widest bg-amber-50 rounded-xl border border-amber-200 hover:bg-amber-100 shadow-sm"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-amber-600 font-bold text-[11px] uppercase tracking-widest bg-amber-50 rounded-lg border border-amber-200 hover:bg-amber-100 shadow-2xs"
                       >
-                        <ShieldCheck size={14} /> Painel Mestre
+                        <ShieldCheck size={13} /> Painel Mestre
                       </Link>
                     </>
                   )}
                   {isAfiliado && (
                     <>
                       <DesktopNavLink href="/dashboard">
-                        <Layers size={14} /> Dashboard
+                        <Layers size={13} /> Dashboard
                       </DesktopNavLink>
                       <Link
                         href="/dashboard/parceiro"
-                        className="flex items-center gap-2 px-4 py-2 text-emerald-600 font-bold text-xs uppercase tracking-widest bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 shadow-sm"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-emerald-600 font-bold text-[11px] uppercase tracking-widest bg-emerald-50 rounded-lg border border-emerald-200 hover:bg-emerald-100 shadow-2xs"
                       >
-                        <Briefcase size={14} /> Parceiro
+                        <Briefcase size={13} /> Parceiro
                       </Link>
                     </>
                   )}
 
-                  {/* BOTÃO SAIR (Substitui o Entrar) */}
+                  {/* BOTÃO SAIR */}
                   <button
                     onClick={handleFullLogout}
-                    className="p-2.5 text-slate-500 hover:text-red-500 transition-all rounded-xl hover:bg-red-50 active:scale-95 group border border-slate-200 hover:border-red-200 shadow-sm bg-white"
+                    className="p-2 text-slate-400 hover:text-red-500 transition-all rounded-lg hover:bg-red-50 active:scale-95 group border border-slate-200 hover:border-red-200 shadow-2xs bg-white cursor-pointer"
                     title="Sair da conta"
                   >
                     <LogOut
-                      size={16}
+                      size={14}
                       className="group-hover:translate-x-0.5 transition-transform"
                     />
                   </button>
@@ -183,48 +184,35 @@ export default function Navbar({
               {deferredPrompt && (
                 <button
                   onClick={handleInstallClick}
-                  className="px-4 py-2 text-tafanu-action font-bold text-xs uppercase tracking-wider hover:bg-emerald-50 rounded-xl transition-all border border-emerald-200 shadow-sm bg-white animate-pulse"
+                  className="px-3.5 py-1.5 text-tafanu-action font-bold text-[11px] uppercase tracking-wider hover:bg-emerald-50 rounded-lg transition-all border border-emerald-200 shadow-2xs bg-white animate-pulse cursor-pointer"
                 >
                   Baixar App
                 </button>
               )}
 
-              {/* 4. VITRINE EM 5 MIN (Apenas para Visitantes e Convidados) */}
+              {/* 4. VITRINE EM 5 MIN (DESKTOP) Refinado e Delicado */}
               {(isGuest || isVisitor) && (
                 <button
                   onClick={() =>
                     isGuest
-                      ? setIsLoginModalOpen(true)
+                      ? (window.location.href = "/login?callbackUrl=/anunciar")
                       : (window.location.href = "/anunciar")
                   }
-                  className="flex items-center gap-2 bg-tafanu-action text-white px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider hover:bg-[#00c27a] hover:scale-105 transition-all shadow-[0_5px_15px_rgba(0,168,107,0.3)] whitespace-nowrap ml-1"
+                  className="flex items-center gap-1.5 bg-tafanu-action text-white px-4 py-1.5 rounded-full font-black text-[11px] uppercase tracking-wider hover:bg-[#00c27a] hover:scale-105 transition-all shadow-[0_3px_10px_rgba(0,168,107,0.25)] whitespace-nowrap ml-1 cursor-pointer"
                 >
-                  <Sparkles size={14} /> Vitrine em 5 min
+                  <Sparkles size={13} /> Vitrine em 5 min
                 </button>
               )}
             </div>
 
-            {/* TOPO MOBILE */}
-            <div className="md:hidden flex items-center gap-2.5">
-              {(isGuest || isVisitor) && (
-                <button
-                  onClick={() =>
-                    isGuest
-                      ? setIsLoginModalOpen(true)
-                      : (window.location.href = "/anunciar")
-                  }
-                  className="flex items-center gap-1.5 bg-tafanu-action text-white px-3.5 py-2 rounded-full font-black text-[11px] uppercase tracking-wider shadow-[0_3px_10px_rgba(0,168,107,0.3)] active:scale-95 transition-all"
-                >
-                  <Sparkles size={12} />
-                  <span>+ Vitrine</span>
-                </button>
-              )}
+            {/* TOPO MOBILE LIMPO */}
+            <div className="md:hidden flex items-center">
               <button
                 aria-label="Abrir menu principal"
                 onClick={() => setIsOpen(true)}
-                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 active:scale-95 transition-all shadow-sm"
+                className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 active:scale-95 transition-all shadow-2xs cursor-pointer"
               >
-                <Menu size={22} />
+                <Menu size={20} />
               </button>
             </div>
           </div>
@@ -238,28 +226,28 @@ export default function Navbar({
         />
       )}
 
-      {/* DRAWER MOBILE LUMINOSO (Mantido intacto conforme pedido) */}
+      {/* DRAWER MOBILE REFInADO */}
       <div
-        className={`fixed inset-y-0 right-0 w-[290px] bg-white z-[100] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] transform transition-transform duration-300 ease-out md:hidden flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed inset-y-0 right-0 w-[280px] bg-white z-[100] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] transform transition-transform duration-300 ease-out md:hidden flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        <div className="flex justify-end p-4 border-b border-slate-100">
+        <div className="flex justify-end p-3.5 border-b border-slate-100">
           <button
             onClick={() => setIsOpen(false)}
-            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95 transition-all shadow-sm"
+            className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95 transition-all shadow-2xs cursor-pointer"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 no-scrollbar bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-4 no-scrollbar bg-slate-50">
           {deferredPrompt && (
             <button
               onClick={handleInstallClick}
-              className="group flex items-center justify-between w-full bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-emerald-800 mb-6 active:scale-95 transition-all text-left shadow-sm"
+              className="group flex items-center justify-between w-full bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-emerald-800 mb-5 active:scale-95 transition-all text-left shadow-2xs cursor-pointer"
             >
-              <span className="flex items-center gap-3">
-                <div className="bg-white text-tafanu-action p-2 rounded-xl shadow-sm border border-emerald-100">
-                  <Smartphone size={18} />
+              <span className="flex items-center gap-2.5">
+                <div className="bg-white text-tafanu-action p-1.5 rounded-lg shadow-2xs border border-emerald-100">
+                  <Smartphone size={16} />
                 </div>
                 <div className="flex flex-col leading-none">
                   <span className="text-[9px] uppercase font-bold text-emerald-600 tracking-widest mb-1">
@@ -269,26 +257,26 @@ export default function Navbar({
                 </div>
               </span>
               <Download
-                size={16}
+                size={15}
                 className="text-tafanu-action animate-bounce"
               />
             </button>
           )}
 
-          <div className="space-y-1.5">
-            <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <div className="space-y-1">
+            <div className="px-3 pb-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">
               Navegação
             </div>
             <MobileLink
               href="/"
-              icon={<Home size={18} />}
+              icon={<Home size={16} />}
               label="Início"
               onClick={() => setIsOpen(false)}
             />
             {isVisitor && (
               <MobileLink
                 href="/dashboard/favoritos"
-                icon={<Heart size={18} />}
+                icon={<Heart size={16} />}
                 label="Meus Favoritos"
                 color="text-rose-500"
                 onClick={() => setIsOpen(false)}
@@ -298,14 +286,14 @@ export default function Navbar({
               <>
                 <MobileLink
                   href="/dashboard/favoritos"
-                  icon={<Heart size={18} />}
+                  icon={<Heart size={16} />}
                   label="Meus Favoritos"
                   color="text-rose-500"
                   onClick={() => setIsOpen(false)}
                 />
                 <MobileLink
                   href="/dashboard"
-                  icon={<LayoutDashboard size={18} />}
+                  icon={<LayoutDashboard size={16} />}
                   label="Gerenciar Negócio"
                   onClick={() => setIsOpen(false)}
                 />
@@ -315,13 +303,13 @@ export default function Navbar({
               <>
                 <MobileLink
                   href="/dashboard"
-                  icon={<Layers size={18} />}
+                  icon={<Layers size={16} />}
                   label="Meus Posts"
                   onClick={() => setIsOpen(false)}
                 />
                 <MobileLink
                   href="/admin"
-                  icon={<ShieldCheck size={18} />}
+                  icon={<ShieldCheck size={16} />}
                   label="Painel Mestre"
                   color="text-amber-500"
                   onClick={() => setIsOpen(false)}
@@ -332,13 +320,13 @@ export default function Navbar({
               <>
                 <MobileLink
                   href="/dashboard"
-                  icon={<Layers size={18} />}
+                  icon={<Layers size={16} />}
                   label="Dashboard"
                   onClick={() => setIsOpen(false)}
                 />
                 <MobileLink
                   href="/dashboard/parceiro"
-                  icon={<Briefcase size={18} />}
+                  icon={<Briefcase size={16} />}
                   label="Painel Parceiro"
                   color="text-emerald-500"
                   onClick={() => setIsOpen(false)}
@@ -348,7 +336,7 @@ export default function Navbar({
             {isGuest && (
               <MobileLink
                 href="/login"
-                icon={<UserPlus size={18} />}
+                icon={<UserPlus size={16} />}
                 label="Entrar / Criar Conta"
                 onClick={() => setIsOpen(false)}
               />
@@ -356,18 +344,18 @@ export default function Navbar({
           </div>
         </div>
 
-        <div className="p-5 border-t border-slate-100 bg-white">
+        <div className="p-4 border-t border-slate-100 bg-white">
           {(isGuest || isVisitor) && (
             <button
               onClick={() => {
                 setIsOpen(false);
                 isGuest
-                  ? setIsLoginModalOpen(true)
+                  ? (window.location.href = "/login?callbackUrl=/anunciar")
                   : (window.location.href = "/anunciar");
               }}
-              className="flex items-center justify-center gap-2 w-full bg-tafanu-action text-white font-black p-4 rounded-xl shadow-[0_5px_15px_rgba(0,168,107,0.3)] active:scale-[0.98] transition-all uppercase text-xs tracking-wider"
+              className="flex items-center justify-center gap-1.5 w-full bg-tafanu-action text-white font-black p-3.5 rounded-xl shadow-[0_4px_12px_rgba(0,168,107,0.25)] active:scale-[0.98] transition-all uppercase text-[11px] tracking-wider cursor-pointer"
             >
-              <Sparkles size={16} /> Criar Vitrine
+              <Sparkles size={15} /> Criar Vitrine
             </button>
           )}
           {isLoggedIn && (
@@ -376,9 +364,9 @@ export default function Navbar({
                 setIsOpen(false);
                 handleFullLogout();
               }}
-              className="flex items-center justify-center gap-2 w-full text-red-500 hover:text-red-600 font-bold p-3.5 text-xs uppercase tracking-widest transition-colors rounded-xl bg-red-50 hover:bg-red-100 mt-2 border border-red-100 shadow-sm"
+              className="flex items-center justify-center gap-1.5 w-full text-red-500 hover:text-red-600 font-bold p-3 text-[11px] uppercase tracking-widest transition-colors rounded-xl bg-red-50 hover:bg-red-100 mt-2 border border-red-100 shadow-2xs cursor-pointer"
             >
-              <LogOut size={16} /> Sair da Conta
+              <LogOut size={15} /> Sair da Conta
             </button>
           )}
         </div>
@@ -401,7 +389,7 @@ function DesktopNavLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 font-bold text-xs uppercase tracking-widest transition-colors rounded-xl bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
+      className="flex items-center gap-1.5 px-3.5 py-1.5 text-slate-600 hover:text-slate-900 font-bold text-[11px] uppercase tracking-widest transition-colors rounded-lg bg-white border border-slate-200 hover:bg-slate-50 shadow-2xs"
     >
       {children}
     </Link>
@@ -425,18 +413,18 @@ function MobileLink({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center justify-between w-full text-slate-600 hover:text-slate-900 p-4 rounded-xl font-bold bg-white hover:bg-slate-100 transition-all group active:scale-95 shadow-sm border border-slate-100"
+      className="flex items-center justify-between w-full text-slate-600 hover:text-slate-900 p-3.5 rounded-xl font-bold bg-white hover:bg-slate-100 transition-all group active:scale-95 shadow-2xs border border-slate-100"
     >
-      <span className="flex items-center gap-3.5">
+      <span className="flex items-center gap-3">
         <span
-          className={`${color} bg-slate-50 shadow-inner border border-slate-100 p-2.5 rounded-lg transition-transform group-hover:scale-110`}
+          className={`${color} bg-slate-50 shadow-inner border border-slate-100 p-2 rounded-lg transition-transform group-hover:scale-110`}
         >
           {icon}
         </span>
-        <span className="text-sm tracking-wide">{label}</span>
+        <span className="text-[13px] tracking-wide">{label}</span>
       </span>
       <ChevronRight
-        size={16}
+        size={15}
         className="text-slate-300 group-hover:translate-x-1 transition-transform"
       />
     </Link>
