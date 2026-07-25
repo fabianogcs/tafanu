@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// 🚀 AS 11 CATEGORIAS: Foco 100% em Tipografia e Cor
+// 🚀 AS 11 CATEGORIAS: Cores preservadas para atuar como ACENTO DE LUXO no botão de ação!
 const CATEGORIES_SHOWCASE = [
   {
     id: "Alimentacao",
@@ -151,6 +151,7 @@ export default function VitrineDigital() {
 
     setActiveLoadingId(categoryId);
 
+    // ⚡ CIRURGIA DE VELOCIDADE: GPS agora tem limite de 2.5s para não travar a tela!
     const executeGpsFetch = (isRetry = false) => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -200,7 +201,7 @@ export default function VitrineDigital() {
         },
         {
           enableHighAccuracy: isRetry,
-          timeout: isRetry ? 12000 : 7000,
+          timeout: isRetry ? 3000 : 2500, // 🚀 DE 12s/7s PARA 3s/2.5s!
           maximumAge: 300000,
         },
       );
@@ -210,9 +211,9 @@ export default function VitrineDigital() {
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-6 md:pb-8 relative z-10 -mt-3 sm:-mt-6">
-      <div className="mb-4 md:mb-6 text-center flex flex-col items-center animate-in fade-in duration-500">
-        <div className="flex items-center gap-1.5 mb-1.5">
+    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-6 pb-8 md:pb-12 relative z-10 -mt-2 sm:-mt-4">
+      <div className="mb-6 md:mb-8 text-center flex flex-col items-center animate-in fade-in duration-500">
+        <div className="flex items-center gap-1.5 mb-2">
           <span className="bg-emerald-50 border border-emerald-100 text-tafanu-action p-1 rounded-lg shadow-2xs">
             {userCity ? (
               <MapPin size={12} strokeWidth={2.5} />
@@ -239,42 +240,42 @@ export default function VitrineDigital() {
         </h2>
       </div>
 
-      {/* 🚀 GRID ALTERADO: lg:grid-cols-6 mudou para lg:grid-cols-5 para aumentar a largura dos cards no desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3">
+      {/* 🚀 GRID PREMIUM: Layout preservado em 5 colunas no desktop com respiro perfeito */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3 md:gap-3.5">
         {CATEGORIES_SHOWCASE.map((mood) => {
           const isLoadingThis = activeLoadingId === mood.id;
 
           return (
+            // 🎨 CIRURGIA DE LUXO: Fundo branco, borda suave, sombra elegante e hover esmeralda
             <button
               key={mood.id}
               onClick={(e) => handleMoodClick(e, mood.url, mood.id)}
               disabled={activeLoadingId !== null && !isLoadingThis}
-              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.4rem] px-4 py-3.5 md:px-5 md:py-4 flex items-center justify-between min-h-[76px] sm:min-h-[84px] bg-gradient-to-br ${mood.bgClass} shadow-2xs hover:shadow-lg hover:${mood.shadowClass} hover:-translate-y-0.5 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none border border-white/10`}
+              className="group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.4rem] px-4 py-3.5 md:px-5 md:py-4 flex items-center justify-between min-h-[76px] sm:min-h-[84px] bg-white border border-slate-200/80 hover:border-tafanu-action/50 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none"
             >
-              {/* Efeito de brilho no hover */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+              {/* Efeito sutil de brilho esmeralda no fundo ao passar o mouse */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-              {/* LADO ESQUERDO: Título e Subtítulo */}
+              {/* LADO ESQUERDO: Título Escuro e Subtítulo Cinza */}
               <div className="relative z-10 flex flex-col justify-center pr-2 min-w-0">
-                <h3 className="text-white font-black text-sm sm:text-base md:text-lg uppercase tracking-tight leading-tight drop-shadow-2xs mb-1 truncate">
+                <h3 className="text-slate-800 group-hover:text-tafanu-action transition-colors font-black text-sm sm:text-base md:text-lg uppercase tracking-tight leading-tight mb-0.5 truncate">
                   {isLoadingThis ? "Abrindo..." : mood.title}
                 </h3>
-                <p className="text-white/80 font-bold text-[11px] sm:text-xs tracking-wider truncate">
+                <p className="text-slate-500 font-bold text-[11px] sm:text-xs tracking-wider truncate">
                   {isLoadingThis ? "Buscando..." : mood.subtitle}
                 </p>
               </div>
 
-              {/* LADO DIREITO: Seta de Ação ou Spinner */}
+              {/* LADO DIREITO: O Acento Colorido Exclusivo de Cada Categoria! */}
               <div className="relative z-10 shrink-0">
-                <div className="w-7 h-7 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white/80 group-hover:bg-white group-hover:text-slate-900 transition-all duration-300 shadow-2xs">
+                <div
+                  className={`w-8 h-8 rounded-full bg-gradient-to-br ${mood.bgClass} flex items-center justify-center text-white shadow-sm group-hover:scale-110 group-hover:${mood.shadowClass} transition-all duration-300`}
+                >
                   {isLoadingThis ? (
-                    <Loader2
-                      size={12}
-                      className="animate-spin text-white group-hover:text-slate-900"
-                    />
+                    <Loader2 size={14} className="animate-spin text-white" />
                   ) : (
                     <ArrowRight
-                      size={14}
+                      size={15}
                       strokeWidth={2.5}
                       className="group-hover:translate-x-0.5 transition-transform"
                     />
