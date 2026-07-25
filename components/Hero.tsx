@@ -117,7 +117,7 @@ export default function Hero() {
           alt="Fundo Urbano Mobile"
           fill
           priority
-          sizes="100vw"
+          sizes="(max-width: 1023px) 100vw, 1vw"
           className="object-cover object-center opacity-75 scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/85 to-[#F8FAFC]" />
@@ -170,7 +170,7 @@ export default function Hero() {
           alt="Centro Comercial Cidade e Serviços"
           fill
           priority
-          sizes="62vw"
+          sizes="(min-width: 1024px) 62vw, 1vw"
           /* 🚀 CIRURGIA: Tiramos o scale-105 (zoom) e mudamos object-center para object-[center_25%] para descer a cabeça do rapaz! */
           className="object-cover object-[center_25%] scale-100 hover:scale-[1.02] transition-transform duration-1000 ease-out"
         />
