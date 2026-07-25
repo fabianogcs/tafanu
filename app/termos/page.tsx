@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ShieldCheck,
   AlertOctagon,
@@ -14,6 +15,23 @@ import {
 
 export default function TermosPage() {
   const currentYear = new Date().getFullYear();
+  const router = useRouter();
+
+  // 🚀 CIRURGIA CTO/UX: Navegação Inteligente compatível com Web e TWA
+  const handleClose = () => {
+    if (typeof window !== "undefined") {
+      try {
+        window.close();
+      } catch (e) {}
+
+      // Se o window.close() for bloqueado pelo navegador/TWA, volta para a tela anterior ou Home
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.push("/");
+      }
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -216,8 +234,9 @@ export default function TermosPage() {
 
           <div className="pt-10 border-t border-slate-100 flex flex-col items-center gap-4">
             <button
-              onClick={() => window.close()}
-              className="px-8 py-3 bg-tafanu-blue text-white rounded-xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-lg"
+              onClick={handleClose}
+              type="button"
+              className="px-8 py-3 bg-tafanu-blue text-white rounded-xl font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer"
             >
               Concordar e Fechar
             </button>
