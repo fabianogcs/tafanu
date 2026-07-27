@@ -266,14 +266,14 @@ export default async function AnunciarPage() {
                       size={18}
                       className="text-tafanu-action shrink-0"
                     />{" "}
-                    Envio de Cardápio ou Catálogo em PDF na Vitrine
+                    Envio de Cardápio, Agenda ou Catálogo em PDF na Vitrine
                   </p>
                   <p className="flex items-center gap-3">
                     <CheckCircle2
                       size={18}
                       className="text-tafanu-action shrink-0"
                     />{" "}
-                    Até 12 fotos em alta resolução e Embed de Vídeos
+                    Até 12 fotos em alta resolução
                   </p>
                   <p className="flex items-center gap-3">
                     <CheckCircle2

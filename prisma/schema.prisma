@@ -120,13 +120,11 @@ model Business {
   rating              Float @default(0.0) // 🚀 NOVO: Nota média calculada (Ex: 4.7)
   reviewCount         Int @default(0)     // 🚀 NOVO: Quantidade total de avaliações com nota
 
-  // Mídia
+  // Mídia (Foco em Alta Performance e Leveza)
   imageUrl   String?  @db.Text
   coverImage String?  @db.Text
   catalogPdf String?  @db.Text
   gallery    String[] @default([])
-  videos     String[] @default([])
-  mediaFeed  Json[]   @default([])
 
   // Tags e Conteúdo Extra
   urban_tag           String?

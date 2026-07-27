@@ -11,6 +11,5 @@ export {
   formatExternalLink,
   buildWhatsappUrl,
 } from "./templateUtils";
-export { VideoEmbed } from "./VideoEmbed";
 export { MasterRunway } from "./MasterRunway";
 export { TemplateLightbox } from "./TemplateLightbox";

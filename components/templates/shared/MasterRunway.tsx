@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { VideoEmbed } from "./VideoEmbed";
 
 interface MasterRunwayProps {
   feed: any[];
@@ -105,9 +104,6 @@ export function MasterRunway({
       ? `hidden md:flex absolute top-[50%] -translate-y-1/2 z-20 w-14 h-14 items-center justify-center rounded-full opacity-0 group-hover/runway:opacity-100 transition-all duration-500 hover:scale-105 border ${themeBorder} text-current backdrop-blur-md shadow-2xl hover:bg-current/10`
       : `hidden lg:flex absolute top-[50%] -translate-y-1/2 z-20 w-12 h-12 items-center justify-center bg-white/90 backdrop-blur-md border border-black/10 rounded-full shadow-xl opacity-0 group-hover/runway:opacity-100 transition-all hover:scale-110 text-slate-800`;
 
-  const videoVariant =
-    variant === "luxe" || variant === "comercial" ? variant : "default";
-
   return (
     <div className="relative group/runway w-full">
       <button
@@ -164,18 +160,6 @@ export function MasterRunway({
                   />
                 </div>
               </motion.div>
-            );
-          }
-
-          if (
-            item.type === "video" ||
-            item.type === "video_v" ||
-            item.type === "video_h"
-          ) {
-            return (
-              <div key={`vid-${i}`} className={`${baseClasses}`}>
-                <VideoEmbed url={item.url} variant={videoVariant} />
-              </div>
             );
           }
 

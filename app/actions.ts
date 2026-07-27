@@ -800,15 +800,7 @@ export async function createBusiness(payload: any) {
           longitude: coords.lng,
           imageUrl: validatedData.imageUrl || "",
           coverImage: validatedData.coverImage || "",
-          mediaFeed: validatedData.mediaFeed as any,
-          gallery: (validatedData.mediaFeed || [])
-            .filter((m: any) => m && m.type === "image" && m.url)
-            .map((m: any) => m.url)
-            .slice(0, 30),
-          videos: (validatedData.mediaFeed || [])
-            .filter((m: any) => m && m.type === "video" && m.url)
-            .map((m: any) => m.url)
-            .slice(0, 5),
+          gallery: validatedData.gallery || [],
           features: validatedData.features,
           keywords: Array.from(
             new Set([
@@ -969,9 +961,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
     }
 
     const galeriaAntiga = (old.gallery as string[]) || [];
-    const novaGaleriaUrls = (validatedData.mediaFeed || [])
-      .filter((m: any) => m && m.type === "image" && m.url)
-      .map((m: any) => m.url);
+    const novaGaleriaUrls = validatedData.gallery || [];
 
     galeriaAntiga.forEach((url) => {
       if (!novaGaleriaUrls.includes(url)) {
@@ -1057,15 +1047,7 @@ export async function updateFullBusiness(slug: string, payload: any) {
           shein: "",
           ifood: "",
 
-          mediaFeed: validatedData.mediaFeed as any,
-          gallery: (validatedData.mediaFeed || [])
-            .filter((m: any) => m && m.type === "image" && m.url)
-            .map((m: any) => m.url)
-            .slice(0, 30),
-          videos: (validatedData.mediaFeed || [])
-            .filter((m: any) => m && m.type === "video" && m.url)
-            .map((m: any) => m.url)
-            .slice(0, 5),
+          gallery: validatedData.gallery || [],
           faqs: validatedData.faqs as any,
         },
       });
@@ -1119,11 +1101,12 @@ export async function updateFullBusiness(slug: string, payload: any) {
 }
 
 // ==============================================================================
-// 7. ATUALIZAÇÃO ESPECÍFICA DE MÍDIA (VÍDEO E GALERIA)
+// 7. ATUALIZAÇÃO DA GALERIA DE FOTOS (ALTA PERFORMANCE)
 // ==============================================================================
 export async function updateBusinessMedia(slug: string, gallery: string[]) {
   if (!slug || slug.length > 60) return { error: "Link inválido." };
-  if (gallery?.length > 30) return { error: "Limite de mídias excedido." };
+  if (gallery?.length > 12)
+    return { error: "O limite é de 12 fotos na galeria." };
   const user = await getSafeUser();
   if (!user) return { error: "Não autorizado." };
   if (storeActionRatelimit) {
@@ -1131,15 +1114,13 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
     if (!success) return { error: "Muitas ações. Aguarde um minuto." };
   }
   try {
-    // 1. Busca o negócio atual e traz o mediaFeed junto
     const business = await db.business.findUnique({
       where: { slug },
       select: {
         id: true,
         userId: true,
         gallery: true,
-        mediaFeed: true,
-        user: { select: { affiliateId: true } }, // 🚀 A Chave Mestra do Parceiro
+        user: { select: { affiliateId: true } },
       },
     });
 
@@ -1152,7 +1133,7 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
       return { error: "Negócio não encontrado ou permissão negada." };
     }
 
-    // 2. Lógica de Faxina (Deleta fotos removidas do UploadThing)
+    // Lógica de Faxina (Deleta fotos removidas do UploadThing)
     const filesToDelete: string[] = [];
     const oldGallery = (business.gallery as string[]) || [];
 
@@ -1166,39 +1147,25 @@ export async function updateBusinessMedia(slug: string, gallery: string[]) {
       await deleteFilesFromUploadThing(filesToDelete);
     }
 
-    // 🚀 3. MÁGICA DO MEDIAFEED: Filtra os vídeos (Embeds) existentes
-    const currentVideos = Array.isArray(business.mediaFeed)
-      ? business.mediaFeed.filter((m: any) => m && m.type === "video")
-      : [];
-
-    // 🚀 ESCUDO ANTI-XSS: Só aceita as strings que começam com "http" (barra URLs maliciosas)
+    // 🚀 ESCUDO ANTI-XSS: Só aceita links que começam com "http"
     const validGalleryUrls = gallery.filter(
       (url) => typeof url === "string" && url.startsWith("http"),
     );
 
-    // Mapeia as novas fotos validadas
-    const newImages = validGalleryUrls.map((url) => ({ type: "image", url }));
-
-    // Une fotos novas e vídeos antigos
-    const newMediaFeed = [...newImages, ...currentVideos];
-
-    // 4. Atualiza o banco de dados com a tipagem forçada e segura do Prisma
     await db.business.update({
       where: { id: business.id },
       data: {
-        gallery: gallery,
-        mediaFeed: newMediaFeed as unknown as Prisma.InputJsonValue[],
+        gallery: validGalleryUrls,
       },
     });
 
-    // 5. Limpa o cache para as mudanças aparecerem no site
     revalidatePath(`/site/${slug}`);
     revalidatePath("/dashboard");
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao atualizar mídia:", error);
-    return { error: "Erro interno ao salvar as mídias." };
+    console.error("Erro ao atualizar galeria:", error);
+    return { error: "Erro interno ao salvar as fotos." };
   }
 }
 
@@ -1353,8 +1320,6 @@ export async function resetBusiness(slug: string) {
           imageUrl: "",
           coverImage: "",
           gallery: [],
-          videos: [],
-          mediaFeed: [],
           features: [],
           faqs: [],
           keywords: [],
@@ -1479,7 +1444,6 @@ async function executeCoreCleanup() {
         coverImage: true,
         catalogPdf: true,
         gallery: true,
-        mediaFeed: true,
       },
     });
 
@@ -1502,13 +1466,6 @@ async function executeCoreCleanup() {
       if (business.catalogPdf) linksParaDeletar.push(business.catalogPdf);
       if (business.gallery && Array.isArray(business.gallery)) {
         linksParaDeletar.push(...(business.gallery as string[]));
-      }
-      if (business.mediaFeed && Array.isArray(business.mediaFeed)) {
-        business.mediaFeed.forEach((item: any) => {
-          if (item && item.type === "image" && item.url) {
-            linksParaDeletar.push(item.url);
-          }
-        });
       }
     });
 
@@ -1575,7 +1532,6 @@ async function cleanStorageFiles(slug: string) {
       coverImage: true,
       catalogPdf: true,
       gallery: true,
-      mediaFeed: true,
     },
   });
   if (!business) return;
@@ -1586,14 +1542,6 @@ async function cleanStorageFiles(slug: string) {
   if (business.catalogPdf) filesToDelete.push(business.catalogPdf);
   if (business.gallery && business.gallery.length > 0) {
     filesToDelete.push(...(business.gallery as string[]));
-  }
-
-  if (business.mediaFeed && Array.isArray(business.mediaFeed)) {
-    business.mediaFeed.forEach((item: any) => {
-      if (item && item.type === "image" && item.url) {
-        filesToDelete.push(item.url);
-      }
-    });
   }
 
   if (filesToDelete.length > 0) {
@@ -2294,7 +2242,6 @@ export async function runGarbageCollector() {
         coverImage: true,
         catalogPdf: true,
         gallery: true,
-        mediaFeed: true,
       },
     });
 
@@ -2311,12 +2258,6 @@ export async function runGarbageCollector() {
       add(b.catalogPdf);
       if (b.gallery && Array.isArray(b.gallery)) {
         b.gallery.forEach((img) => add(img));
-      }
-
-      if (b.mediaFeed && Array.isArray(b.mediaFeed)) {
-        b.mediaFeed.forEach((item: any) => {
-          if (item && item.type === "image" && item.url) add(item.url);
-        });
       }
     });
 
@@ -3902,8 +3843,6 @@ export async function transferBusinessToUser(
           imageUrl: vitrinePronta.imageUrl,
           coverImage: vitrinePronta.coverImage,
           gallery: vitrinePronta.gallery,
-          videos: vitrinePronta.videos,
-          mediaFeed: vitrinePronta.mediaFeed as any,
 
           features: vitrinePronta.features,
           faqs: vitrinePronta.faqs as any,

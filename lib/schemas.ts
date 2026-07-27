@@ -156,7 +156,7 @@ export const businessSchema = z.object({
   catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
   menuMode: z.enum(["PDF", "DIGITAL", "AGENDA"]).default("PDF"), // AGENDA mantida aqui para servir de chave de link
 
-  // URLs do UploadThing
+  // URLs do UploadThing (Foco 100% em Galeria Fotográfica de Alta Velocidade)
   imageUrl: z
     .string()
     .max(1000)
@@ -178,40 +178,7 @@ export const businessSchema = z.object({
     .max(12, "O limite é de 12 fotos na galeria")
     .default([]),
 
-  mediaFeed: z
-    .preprocess(
-      (val) => {
-        if (typeof val === "string") {
-          try {
-            return JSON.parse(val);
-          } catch {
-            return [];
-          }
-        }
-        return val || [];
-      },
-      z
-        .array(
-          z.object({
-            type: z.string().max(20),
-            // 🚀 BLINDAGEM DE EMBED: Proíbe injeção de HTML no lugar do link do vídeo
-            url: z
-              .string()
-              .max(1000)
-              .optional()
-              .or(z.literal(""))
-              .refine(
-                (val) => !val || val === "" || /^https?:\/\//i.test(val),
-                "Cole apenas o link da página, não o código do vídeo.",
-              ),
-          }),
-        )
-        .max(30),
-    )
-    .default([]),
-
   // --- Listas e Arrays ---
-  videos: z.array(z.string().max(1000)).max(5).default([]),
   subcategory: z
     .array(z.string().max(50))
     .max(3, "O limite é de 3 nichos")

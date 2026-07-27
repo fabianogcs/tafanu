@@ -159,17 +159,14 @@ export default function BusinessEditor({
 
   const [mediaFeed, setMediaFeed] = useState<any[]>(() => {
     if (safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0) {
-      return JSON.parse(JSON.stringify(safeBusiness.mediaFeed));
+      return JSON.parse(JSON.stringify(safeBusiness.mediaFeed)).filter(
+        (m: any) => m.type === "image",
+      );
     }
-    const oldGallery = (safeBusiness.gallery || []).map((url: string) => ({
+    return (safeBusiness.gallery || []).map((url: string) => ({
       type: "image",
       url,
     }));
-    const oldVideos = (safeBusiness.videos || []).map((url: string) => ({
-      type: "video",
-      url,
-    }));
-    return [...oldGallery, ...oldVideos];
   });
 
   const [profileImage, setProfileImage] = useState<string>(
@@ -295,17 +292,11 @@ export default function BusinessEditor({
 
     const safeMediaFeed =
       safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0
-        ? safeBusiness.mediaFeed
-        : [
-            ...(safeBusiness.gallery || []).map((url: string) => ({
-              type: "image",
-              url,
-            })),
-            ...(safeBusiness.videos || []).map((url: string) => ({
-              type: "video",
-              url,
-            })),
-          ];
+        ? safeBusiness.mediaFeed.filter((m: any) => m.type === "image")
+        : (safeBusiness.gallery || []).map((url: string) => ({
+            type: "image",
+            url,
+          }));
 
     const mappedSafeHours = (safeBusiness.hours || [])
       .map((h: any) => ({
@@ -453,18 +444,15 @@ export default function BusinessEditor({
       setSlug(safeBusiness.slug || "");
       setMediaFeed(
         safeBusiness.mediaFeed && safeBusiness.mediaFeed.length > 0
-          ? JSON.parse(JSON.stringify(safeBusiness.mediaFeed))
-          : [
-              ...(safeBusiness.gallery || []).map((url: string) => ({
-                type: "image",
-                url,
-              })),
-              ...(safeBusiness.videos || []).map((url: string) => ({
-                type: "video",
-                url,
-              })),
-            ],
+          ? JSON.parse(JSON.stringify(safeBusiness.mediaFeed)).filter(
+              (m: any) => m.type === "image",
+            )
+          : (safeBusiness.gallery || []).map((url: string) => ({
+              type: "image",
+              url,
+            })),
       );
+
       setProfileImage(safeBusiness.imageUrl || "");
       setCoverImage(safeBusiness.coverImage || "");
       setCatalogPdf(safeBusiness.catalogPdf || null);
@@ -692,9 +680,7 @@ export default function BusinessEditor({
         isExternalLink: isExternalLink,
         actionLink: isExternalLink ? actionLink.trim() : "",
 
-        mediaFeed: mediaFeed.filter(
-          (m: any) => typeof m.url === "string" && m.url.trim() !== "",
-        ),
+        gallery: mockGallery,
         imageUrl: profileImage,
         coverImage: coverImage,
         catalogPdf: catalogPdf,

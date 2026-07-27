@@ -5,7 +5,6 @@ import {
   AlignLeft,
   ListChecks,
   HelpCircle,
-  Video,
   Camera,
   GripVertical,
   Loader2,
@@ -218,16 +217,15 @@ export function ContentSection({
       <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-[10px] font-black uppercase flex items-center gap-2 text-slate-800">
-            <Camera size={18} className="text-indigo-500" /> Vitrine de Fotos e
-            Vídeos
+            <Camera size={18} className="text-indigo-500" /> Galeria de Fotos
           </h2>
           <span className="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-3 py-1 rounded-full">
             Fotos: {imageCount} / 12
           </span>
         </div>
         <p className="text-[10px] text-slate-400 font-bold mb-6 leading-tight">
-          Faça upload de fotos e cole links do YouTube ou TikTok. Clique e
-          arraste para organizar.
+          Faça upload de até 12 fotos em alta definição. Clique e arraste para
+          organizar a ordem de exibição.
         </p>
 
         <div className="space-y-3">
@@ -281,20 +279,7 @@ export function ContentSection({
                       Imagem da Galeria
                     </span>
                   </>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 rounded-xl bg-rose-50 flex items-center justify-center border-2 border-white shadow-sm shrink-0 pointer-events-none">
-                      <Video size={24} className="text-rose-400" />
-                    </div>
-                    <input
-                      value={item.url}
-                      maxLength={1000}
-                      onChange={(e) => updateVideoUrl(i, e.target.value)}
-                      className="w-full md:flex-1 bg-white p-4 rounded-xl text-xs font-bold border outline-none focus:ring-2 ring-rose-500/20"
-                      placeholder="Cole o link do YouTube, Instagram ou TikTok aqui..."
-                    />
-                  </>
-                )}
+                ) : null}
               </div>
               <button
                 onClick={() => removeItem(i)}
@@ -357,15 +342,6 @@ export function ContentSection({
               Limite de 12 fotos atingido
             </div>
           )}
-
-          <button
-            onClick={() =>
-              setMediaFeed((prev: any) => [...prev, { type: "video", url: "" }])
-            }
-            className="h-14 border-2 border-dashed border-rose-200 bg-rose-50 rounded-xl text-[10px] font-black text-rose-500 uppercase hover:border-rose-400 transition-all flex items-center justify-center gap-2 tracking-widest"
-          >
-            <Video size={16} strokeWidth={2.5} /> Adicionar Link de Vídeo
-          </button>
         </div>
       </div>
 
