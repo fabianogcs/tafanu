@@ -65,6 +65,7 @@ const getCachedBusiness = cache(async (slug: string) => {
       menuMode: true,
       isExternalLink: true,
       actionLink: true,
+      agendaLink: true, // ⬅️ NOVO: Libera a leitura da agenda no Edge Cache
       published: true,
       isActive: true,
       isVerified: true,

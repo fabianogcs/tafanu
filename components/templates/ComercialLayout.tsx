@@ -23,6 +23,9 @@ import {
   Navigation,
   ChevronRight,
   BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo de verificado
+  ShoppingBag, // 🚀 NOVO: Ícone para Loja / Pedidos
+  Calendar, // 🚀 NOVO: Ícone para Agendamento
+  FileText, // 🚀 NOVO: Ícone para o Catálogo PDF
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -281,10 +284,22 @@ export default function ComercialLayout({
 
   if (!theme) return null;
 
-  const hasStoreLink =
-    (isExternalLink && actionLink) ||
-    (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf);
+  // 🚀 VARIÁVEIS DO HUB MULTI-CANAL (Verificação Independente)
+  const hasAction =
+    typeof business.actionLink === "string" &&
+    business.actionLink.trim() !== "";
+  const hasAgenda =
+    typeof business.agendaLink === "string" &&
+    business.agendaLink.trim() !== "";
+  const hasCatalog =
+    typeof business.catalogPdf === "string" &&
+    business.catalogPdf.trim() !== "";
   const hasContact = hasWhatsapp || hasPhone;
+
+  // Conta quantos botões vão aparecer para ajustar a largura do Grid automaticamente!
+  const totalCtas = [hasAction, hasAgenda, hasCatalog, hasContact].filter(
+    Boolean,
+  ).length;
 
   return (
     <div
@@ -401,45 +416,96 @@ export default function ComercialLayout({
       </header>
 
       {/* ==========================================
-          🚀 CTAs DE ALTA CONVERSÃO (3.0 Vibe)
-          Layout Grid para alinhar Loja e WhatsApp perfeitamente lado a lado
+          🚀 HUB MULTI-CANAL DE ALTA CONVERSÃO (3.0 Vibe)
+          Hierarquia visual: Loja (Marca), Agenda (Escuro), Catálogo (Borda), Contato (Verde/Ação)
           ========================================== */}
-      {(hasStoreLink || hasContact) && (
+      {totalCtas > 0 && (
         <div className="w-full flex justify-center px-4 mb-8 relative z-10">
           <div
-            className={`w-full max-w-[600px] grid gap-3 ${hasStoreLink && hasContact ? "grid-cols-2" : "grid-cols-1"}`}
+            className={`w-full grid gap-3 ${
+              totalCtas === 1
+                ? "max-w-[380px] grid-cols-1"
+                : totalCtas === 2
+                  ? "max-w-[600px] grid-cols-1 sm:grid-cols-2"
+                  : "max-w-[700px] grid-cols-1 sm:grid-cols-2" // 3 ou 4 formam o Grid 2x2 perfeito!
+            }`}
           >
-            {/* BOTÃO 1: LOJA / CATÁLOGO */}
-            {hasStoreLink && (
+            {/* BOTÃO 1: LOJA / PEDIDOS ONLINE (Cor principal da marca) */}
+            {hasAction && (
               <button
                 onClick={() => {
-                  if (isExternalLink && actionLink) {
-                    Actions.registerClickEvent(business.id, "WEBSITE");
-                    window.open(
-                      formatExternalLink(actionLink),
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                    return;
-                  }
-                  if (rawBusiness.menuMode === "PDF") {
-                    setIsPdfModalOpen(true);
-                  }
+                  Actions.registerClickEvent(business.id, "WEBSITE");
+                  window.open(
+                    formatExternalLink(business.actionLink),
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
                 }}
                 className={`relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 rounded-2xl text-[11px] md:text-xs font-bold tracking-wider uppercase text-white ${theme.bgAction} shadow-md border border-white/10 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95`}
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
                 <span className="relative z-10 flex items-center justify-center gap-1.5 drop-shadow-sm">
-                  {rawBusiness.menuMode === "DIGITAL"
-                    ? "Fazer Pedido"
-                    : rawBusiness.menuMode === "AGENDA"
-                      ? "Agendar"
-                      : "Explorar Menu"}
+                  <ShoppingBag size={16} strokeWidth={2.5} />
+                  Acessar Loja / Pedidos
+                  <ChevronRight
+                    size={16}
+                    strokeWidth={2.5}
+                    className="opacity-70"
+                  />
                 </span>
               </button>
             )}
 
-            {/* BOTÃO 2: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
+            {/* BOTÃO 2: AGENDA / RESERVAS (Escuro elegante para contraste) */}
+            {hasAgenda && (
+              <button
+                onClick={() => {
+                  Actions.registerClickEvent(business.id, "AGENDA");
+                  window.open(
+                    formatExternalLink(business.agendaLink),
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+                className="relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 rounded-2xl text-[11px] md:text-xs font-bold tracking-wider uppercase text-white bg-slate-900 shadow-md border border-white/10 hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-1.5 drop-shadow-sm">
+                  <Calendar
+                    size={16}
+                    strokeWidth={2.5}
+                    className="text-indigo-400"
+                  />
+                  Agendar Horário
+                  <ChevronRight
+                    size={16}
+                    strokeWidth={2.5}
+                    className="opacity-70"
+                  />
+                </span>
+              </button>
+            )}
+
+            {/* BOTÃO 3: CATÁLOGO EM PDF (Borda limpa e clara para leitura) */}
+            {hasCatalog && (
+              <button
+                onClick={() => {
+                  Actions.registerClickEvent(business.id, "CATALOG");
+                  setIsPdfModalOpen(true);
+                }}
+                className="relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 rounded-2xl text-[11px] md:text-xs font-bold tracking-wider uppercase text-slate-800 bg-white shadow-sm border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-1.5">
+                  <FileText
+                    size={16}
+                    strokeWidth={2.5}
+                    className="text-emerald-500"
+                  />
+                  Ver Catálogo / Menu
+                </span>
+              </button>
+            )}
+
+            {/* BOTÃO 4: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
             {hasContact && (
               <button
                 onClick={() =>
@@ -924,7 +990,7 @@ export default function ComercialLayout({
           🚀 MODAL DE PDF (CARDÁPIO/CATÁLOGO)
           ========================================== */}
       <AnimatePresence>
-        {isPdfModalOpen && rawBusiness.catalogPdf && (
+        {isPdfModalOpen && business.catalogPdf && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -948,7 +1014,7 @@ export default function ComercialLayout({
               {/* O Coração: O Leitor de PDF nativo do navegador */}
               <div className="flex-1 w-full bg-slate-200/50">
                 <iframe
-                  src={`${rawBusiness.catalogPdf}#toolbar=0`}
+                  src={`${business.catalogPdf}#toolbar=0`}
                   className="w-full h-full border-none"
                   title="Catálogo PDF"
                 />

@@ -61,6 +61,7 @@ export default async function NewBusinessPage() {
     hours: [],
     isExternalLink: false,
     actionLink: "",
+    agendaLink: "", // ⬅️ NOVO: Inicializa a agenda limpa
     menuMode: "PDF",
   };
 

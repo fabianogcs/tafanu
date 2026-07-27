@@ -33,6 +33,11 @@ function calculateDistance(
   return R * c;
 }
 
+// Verifica se alguma palavra ("term") aparece dentro das subcategorias,
+// mesmo que a subcategoria seja uma frase composta (ex: "Comida Japonesa")
+function subsHasWord(subs: string[], term: string) {
+  return subs.some((s) => s.split(" ").includes(term));
+}
 const SINONIMOS_BASE: Record<string, string[]> = {
   dente: [
     "dentista",
@@ -763,7 +768,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       parsedTerms.forEach((term, index) => {
         const isFirstTerm = index === 0;
         const isExactInName = nameWords.includes(term);
-        const isExactInSubs = nSubs.includes(term);
+        const isExactInSubs = subsHasWord(nSubs, term);
         const isExactInCat = nCat === term;
         const isExactInKeys = keysWords.includes(term);
 
@@ -806,18 +811,31 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         score += Math.round(b.rating * 10);
       }
 
-      // 🚀 CIRURGIA 2 (NEUROMARKETING & ALGORITMO):
-      // Empresas verificadas ganham +150 pontos de relevância e ultrapassam concorrentes comuns!
-      if (b.isVerified) {
+      // Empresa verificada só ganha bônus se já for relevante pra busca
+      // (score > 0). Isso evita que verificação "compre" posição em
+      // buscas onde a empresa não tem nada a ver com o termo pesquisado.
+      if (b.isVerified && score > 0) {
         score += 100;
       }
 
       const hasCoreIntentExact =
         nameWords.includes(parsedTerms[0]) ||
-        nSubs.includes(parsedTerms[0]) ||
-        nCat === parsedTerms[0];
+        subsHasWord(nSubs, parsedTerms[0]) ||
+        nCat === parsedTerms[0] ||
+        keysWords.includes(parsedTerms[0]);
 
-      if (parsedTerms[0]?.length <= 3 && !hasCoreIntentExact) {
+      // REGRA NOVA E MAIS RÍGIDA:
+      // - Busca com 1 palavra só: mantém a proteção antiga (evita lixo
+      //   em buscas curtas tipo "ar", "pé" etc).
+      // - Busca com 2+ palavras (ex: "comida japonesa"): o negócio só
+      //   pode aparecer se bater com TODAS as palavras da busca.
+      //   Bater com só uma ("comida") não é mais suficiente — isso é
+      //   o que fazia o restaurante genérico furar a fila.
+      if (parsedTerms.length > 1) {
+        if (matchedTermsCount < parsedTerms.length) {
+          score = 0;
+        }
+      } else if (matchedTermsCount === 0 && !hasCoreIntentExact) {
         score = 0;
       }
     } else {
@@ -841,10 +859,22 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   if (statusFilter === "open") businesses = businesses.filter((b) => b.isOpen);
 
   if (isOnlineMode && !cityFilter && !stateFilter) {
-    businesses = businesses.map((b) => ({ ...b, score: b.score + 50 }));
+    // Só dá o bônus de +50 se o negócio já era relevante pra busca
+    // (score > 0). Isso evita que um negócio irrelevante "ressuscite"
+    // e volte a aparecer só por causa do bônus do modo online.
+    businesses = businesses.map((b) =>
+      b.score > 0 ? { ...b, score: b.score + 50 } : b,
+    );
   }
 
   if (needsJsEngine) {
+    // Se existe uma busca por texto, negócios irrelevantes (score = 0,
+    // ou seja, que não bateram com todas as palavras pesquisadas) devem
+    // ser removidos SEMPRE, não importa qual ordenação foi escolhida.
+    if (query) {
+      businesses = businesses.filter((b) => b.score > 0);
+    }
+
     if (sort === "distance" && userLat && userLng)
       businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
     else if (isOnlineMode || sort === "popular")
@@ -852,9 +882,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     else if (sort === "recent" || sort === "newest")
       businesses.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     else if (query && sort === "relevance")
-      businesses = businesses
-        .filter((b) => b.score > 0)
-        .sort((a, b) => b.score - a.score);
+      businesses.sort((a, b) => b.score - a.score);
     else businesses.sort((a, b) => b.views - a.views);
 
     paginatedResults = businesses.slice(skip, skip + PAGE_SIZE);

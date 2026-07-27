@@ -184,12 +184,15 @@ export default function BusinessEditor({
     safeBusiness.menuMode || "DIGITAL",
   );
 
-  // 🚀 O NOVO COFRE DE LINK EXTERNO
+  // 🚀 O NOVO COFRE DE LINK EXTERNO E AGENDA
   const [isExternalLink, setIsExternalLink] = useState<boolean>(
     !!safeBusiness.isExternalLink,
   );
   const [actionLink, setActionLink] = useState<string>(
     safeBusiness.actionLink || "",
+  );
+  const [agendaLink, setAgendaLink] = useState<string>(
+    safeBusiness.agendaLink || "", // ⬅️ NOVO: Memória para o link de agendamento
   );
 
   const [categoria, setCategoria] = useState(() => {
@@ -326,6 +329,7 @@ export default function BusinessEditor({
       menuMode !== (safeBusiness.menuMode || "DIGITAL") ||
       isExternalLink !== !!safeBusiness.isExternalLink ||
       actionLink !== (safeBusiness.actionLink || "") ||
+      agendaLink !== (safeBusiness.agendaLink || "") || // ⬅️ NOVO: Detecta mudança na agenda
       categoria !== initialCategory ||
       selectedTheme !== safeBusiness.theme ||
       selectedLayout !== initialLayout ||
@@ -390,6 +394,7 @@ export default function BusinessEditor({
     menuMode,
     isExternalLink,
     actionLink,
+    agendaLink,
   ]);
 
   useEffect(() => {
@@ -459,6 +464,7 @@ export default function BusinessEditor({
       setMenuMode(safeBusiness.menuMode || "DIGITAL");
       setIsExternalLink(!!safeBusiness.isExternalLink);
       setActionLink(safeBusiness.actionLink || "");
+      setAgendaLink(safeBusiness.agendaLink || ""); // ⬅️ NOVO: Carrega a agenda salva no banco
       setIsPublished(safeBusiness.published);
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
@@ -676,9 +682,10 @@ export default function BusinessEditor({
           ? `https://${socials.website.trim().replace(/^(https?:\/\/)+/gi, "")}`
           : "",
 
-        // 🚀 O CAVALO DE TRÓIA ENTRA AQUI NO BANCO DE DADOS
-        isExternalLink: isExternalLink,
-        actionLink: isExternalLink ? actionLink.trim() : "",
+        // 🚀 O HUB MULTI-CANAL ENTRA AQUI NO BANCO DE DADOS
+        isExternalLink: !!(actionLink.trim() || agendaLink.trim()), // Ativa se tiver qualquer link
+        actionLink: actionLink.trim(),
+        agendaLink: agendaLink.trim(), // ⬅️ NOVO: Envia a agenda limpa para o PostgreSQL
 
         gallery: mockGallery,
         imageUrl: profileImage,
@@ -987,7 +994,7 @@ export default function BusinessEditor({
             />
           </div>
 
-          {/* 🚀 5. A LOJA (Link Externo, PDF ou Agenda) */}
+          {/* 🚀 5. O HUB MULTI-CANAL (Loja, PDF e Agenda Simultâneos) */}
           <MenuSection
             menuMode={menuMode}
             setMenuMode={setMenuMode}
@@ -995,6 +1002,8 @@ export default function BusinessEditor({
             setCatalogPdf={setCatalogPdf}
             actionLink={actionLink}
             setActionLink={setActionLink}
+            agendaLink={agendaLink} // ⬅️ NOVO
+            setAgendaLink={setAgendaLink} // ⬅️ NOVO
             setIsExternalLink={setIsExternalLink}
           />
 

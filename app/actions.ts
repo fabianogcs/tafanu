@@ -828,9 +828,11 @@ export async function createBusiness(payload: any) {
           tiktok: buildSafeSocialLink(validatedData.tiktok || "", "tiktok"),
           website: validatedData.website || "",
 
-          // 🚀 O CAVALO DE TRÓIA ENTRA AQUI NO BANCO
+          // 🚀 O HUB MULTI-CANAL ENTRA AQUI NO BANCO
           isExternalLink: validatedData.isExternalLink || false,
           actionLink: validatedData.actionLink || "",
+          agendaLink: validatedData.agendaLink || "",
+          catalogPdf: validatedData.catalogPdf || null, // ⬅️ ADICIONE ESTA LINHA AQUI!
           published: validatedData.published ?? false,
           menuMode: validatedData.menuMode || "PDF",
 
@@ -1039,9 +1041,10 @@ export async function updateFullBusiness(slug: string, payload: any) {
           showroom_collection: validatedData.showroom_collection || "",
           comercial_badge: validatedData.comercial_badge || "",
 
-          // 🚀 O CAVALO DE TRÓIA + FAXINA VELHA
+          // 🚀 O HUB MULTI-CANAL + FAXINA VELHA
           isExternalLink: validatedData.isExternalLink || false,
           actionLink: validatedData.actionLink || "",
+          agendaLink: validatedData.agendaLink || "", // ⬅️ NOVO: Grava a agenda na edição
           shopee: "",
           mercadoLivre: "",
           shein: "",
@@ -1333,8 +1336,10 @@ export async function resetBusiness(slug: string) {
           website: "",
           isExternalLink: false,
           actionLink: "",
+          agendaLink: "", // ⬅️ Você adicionou a agenda perfeitamente
+          catalogPdf: null, // ⬅️ ADICIONE ESTA LINHA PARA ZERAR O PDF NO BANCO!
           shopee: "",
-          mercadoLivre: "",
+          mercadolivre: "",
           shein: "",
           ifood: "",
           urban_tag: "",
@@ -1674,6 +1679,8 @@ export async function registerClickEvent(
     "SHEIN",
     "IFOOD",
     "MAP",
+    "AGENDA", // 🚀 NOVO: Permite rastrear cliques no botão de Agendar
+    "CATALOG", // 🚀 NOVO: Permite rastrear aberturas do Cardápio PDF
   ];
 
   const upperEvent = eventType.toUpperCase();
@@ -1692,6 +1699,7 @@ export async function registerClickEvent(
     SHEIN: "shein_clicks",
     IFOOD: "ifood_clicks",
     MAP: "map_clicks",
+    // AGENDA e CATALOG não precisam de coluna fixa, eles vão direto para o AnalyticsEvent!
   };
 
   const columnToIncrement = columnMap[upperEvent];
@@ -1738,23 +1746,27 @@ export async function registerClickEvent(
       return { success: true, ignored: true };
     }
 
-    // 3. TRANSAÇÃO MÁGICA: Faz duas coisas ao mesmo tempo.
-    // Se uma falhar, ele cancela a outra para não dar erro nos gráficos depois.
-    await db.$transaction([
-      // A) Soma +1 no número total do painel (Para a visão rápida)
-      db.business.update({
-        where: { id: businessId },
-        data: { [columnToIncrement]: { increment: 1 } },
-      }),
-
-      // B) Cria a "Caixa Preta": Anota o clique exato com data e hora para o gráfico
+    // 3. TRANSAÇÃO MÁGICA INTELIGENTE:
+    // Cria a "Caixa Preta" (AnalyticsEvent) sempre, e soma +1 na coluna rápida se ela existir no columnMap!
+    const queries: any[] = [
       db.analyticsEvent.create({
         data: {
           eventType: upperEvent as EventType,
           businessId: businessId,
         },
       }),
-    ]);
+    ];
+
+    if (columnToIncrement) {
+      queries.unshift(
+        db.business.update({
+          where: { id: businessId },
+          data: { [columnToIncrement]: { increment: 1 } },
+        }),
+      );
+    }
+
+    await db.$transaction(queries);
 
     return { success: true };
   } catch (error) {

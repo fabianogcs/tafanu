@@ -39,6 +39,17 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
         typeof business?.description === "string" &&
         business.description.trim() !== "",
 
+      // 🚀 NOVO: Indicadores instantâneos para o Hub Multi-Canal
+      hasActionLink:
+        typeof business?.actionLink === "string" &&
+        business.actionLink.trim() !== "",
+      hasAgendaLink:
+        typeof business?.agendaLink === "string" &&
+        business.agendaLink.trim() !== "",
+      hasCatalogPdf:
+        typeof business?.catalogPdf === "string" &&
+        business.catalogPdf.trim() !== "",
+
       // 🛡️ Prevenção: Garantimos que é um Array antes de ler o .length
       hasGallery:
         Array.isArray(business?.gallery) && business.gallery.length > 0,

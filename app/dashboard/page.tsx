@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   Map,
   TrendingUp,
+  Calendar, // 🚀 NOVO: Ícone para a Agenda
+  FileText, // 🚀 NOVO: Ícone para o Catálogo PDF
 } from "lucide-react";
 import ProfileForm from "@/components/ProfileForm";
 import SubscriptionAlert from "@/components/SubscriptionAlert";
@@ -153,6 +155,13 @@ export default async function DashboardPage() {
                   const phone = business.phone_clicks || 0;
                   const map = business.map_clicks || 0;
                   const favs = business._count?.favorites || 0;
+                  // 🚀 NOVO: Conta os cliques na Agenda e no Catálogo em PDF
+                  const agenda = analytics.filter(
+                    (a) => a.eventType === "AGENDA",
+                  ).length;
+                  const catalog = analytics.filter(
+                    (a) => a.eventType === "CATALOG",
+                  ).length;
 
                   const socials =
                     (business.instagram_clicks || 0) +
@@ -268,6 +277,21 @@ export default async function DashboardPage() {
                             icon={<Map size={18} />}
                             color="text-rose-500"
                             bg="bg-rose-50"
+                          />
+                          {/* 🚀 NOVOS CARDS DO HUB MULTI-CANAL */}
+                          <StandardMetricBox
+                            label="Cliques na Agenda"
+                            value={agenda}
+                            icon={<Calendar size={18} />}
+                            color="text-indigo-500"
+                            bg="bg-indigo-50"
+                          />
+                          <StandardMetricBox
+                            label="Leituras do Catálogo"
+                            value={catalog}
+                            icon={<FileText size={18} />}
+                            color="text-amber-500"
+                            bg="bg-amber-50"
                           />
                         </div>
 

@@ -23,6 +23,9 @@ import {
   Layout,
   Store,
   BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo de verificado
+  ShoppingBag, // 🚀 NOVO: Ícone para Loja / Pedidos
+  Calendar, // 🚀 NOVO: Ícone para Agendamento
+  FileText, // 🚀 NOVO: Ícone para o Catálogo PDF
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -129,9 +132,6 @@ export default function ShowroomLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-
-  const isExternalLink = !!business.isExternalLink;
-  const actionLink = business.actionLink || "";
 
   const salesChannels = [
     {
@@ -275,11 +275,22 @@ export default function ShowroomLayout({
 
   if (!theme) return null;
 
-  // Variáveis para Layout de Botões Superiores
-  const hasStoreLink =
-    (isExternalLink && actionLink) ||
-    (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf);
+  // 🚀 VARIÁVEIS DO HUB MULTI-CANAL (Verificação Independente)
+  const hasAction =
+    typeof business.actionLink === "string" &&
+    business.actionLink.trim() !== "";
+  const hasAgenda =
+    typeof business.agendaLink === "string" &&
+    business.agendaLink.trim() !== "";
+  const hasCatalog =
+    typeof business.catalogPdf === "string" &&
+    business.catalogPdf.trim() !== "";
   const hasContact = hasWhatsapp || hasPhone;
+
+  // Conta quantos botões vão aparecer para adaptar a grade automaticamente (1, 2, 3 ou 4)
+  const totalCtas = [hasAction, hasAgenda, hasCatalog, hasContact].filter(
+    Boolean,
+  ).length;
 
   return (
     <div
@@ -426,45 +437,100 @@ export default function ShowroomLayout({
       </div>
 
       {/* ==========================================
-          🚀 CTAs DE ALTA CONVERSÃO (3.0 Vibe)
+          🚀 HUB MULTI-CANAL DE ALTA CONVERSÃO (Showroom Vibe)
+          Hierarquia limpa: Loja (Ação), Agenda (Escuro), Catálogo (Branco), Contato (Verde/Marca)
           ========================================== */}
-      {(hasStoreLink || hasContact) && (
+      {totalCtas > 0 && (
         <div className="w-full flex justify-center px-4 mb-8 relative z-10">
           <div
-            className={`w-full max-w-[600px] grid gap-3 ${hasStoreLink && hasContact ? "grid-cols-2" : "grid-cols-1"}`}
+            className={`w-full grid gap-3 ${
+              totalCtas === 1
+                ? "max-w-[380px] grid-cols-1"
+                : totalCtas === 2
+                  ? "max-w-[600px] grid-cols-1 sm:grid-cols-2"
+                  : "max-w-[700px] grid-cols-1 sm:grid-cols-2" // 3 ou 4 formam o Grid 2x2 perfeito!
+            }`}
           >
-            {/* BOTÃO 1: LOJA / CATÁLOGO */}
-            {hasStoreLink && (
+            {/* BOTÃO 1: LOJA / PEDIDOS ONLINE (Cor principal da marca) */}
+            {hasAction && (
               <button
                 onClick={() => {
-                  if (isExternalLink && actionLink) {
-                    Actions.registerClickEvent(business.id, "WEBSITE");
-                    window.open(
-                      formatExternalLink(actionLink),
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                    return;
-                  }
-                  if (rawBusiness.menuMode === "PDF") {
-                    setIsPdfModalOpen(true);
-                  }
+                  Actions.registerClickEvent(business.id, "WEBSITE");
+                  window.open(
+                    formatExternalLink(business.actionLink),
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
                 }}
                 className={`relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 md:py-4 rounded-xl text-[11px] md:text-sm font-bold tracking-wide uppercase text-white ${theme.bgAction} shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95`}
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/10 pointer-events-none" />
                 <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
-                  {rawBusiness.menuMode === "DIGITAL"
-                    ? "Fazer Pedido"
-                    : rawBusiness.menuMode === "AGENDA"
-                      ? "Agendar"
-                      : "Catálogo"}
-                  <ChevronRight size={16} strokeWidth={2.5} />
+                  <ShoppingBag
+                    size={18}
+                    strokeWidth={2.5}
+                    className="shrink-0"
+                  />
+                  <span>Acessar Loja / Pedidos</span>
+                  <ChevronRight
+                    size={16}
+                    strokeWidth={2.5}
+                    className="opacity-70 ml-auto sm:ml-0"
+                  />
                 </span>
               </button>
             )}
 
-            {/* BOTÃO 2: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
+            {/* BOTÃO 2: AGENDA / RESERVAS (Contraste escuro corporativo) */}
+            {hasAgenda && (
+              <button
+                onClick={() => {
+                  Actions.registerClickEvent(business.id, "AGENDA");
+                  window.open(
+                    formatExternalLink(business.agendaLink),
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+                className="relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 md:py-4 rounded-xl text-[11px] md:text-sm font-bold tracking-wide uppercase text-white bg-slate-900 shadow-sm border border-white/10 hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2 drop-shadow-sm">
+                  <Calendar
+                    size={18}
+                    strokeWidth={2.5}
+                    className="text-indigo-400 shrink-0"
+                  />
+                  <span>Agendar Horário</span>
+                  <ChevronRight
+                    size={16}
+                    strokeWidth={2.5}
+                    className="opacity-70 ml-auto sm:ml-0"
+                  />
+                </span>
+              </button>
+            )}
+
+            {/* BOTÃO 3: CATÁLOGO EM PDF (Branco limpo com borda definida) */}
+            {hasCatalog && (
+              <button
+                onClick={() => {
+                  Actions.registerClickEvent(business.id, "CATALOG");
+                  setIsPdfModalOpen(true);
+                }}
+                className="relative overflow-hidden flex w-full justify-center items-center gap-2 px-4 py-3.5 md:py-4 rounded-xl text-[11px] md:text-sm font-bold tracking-wide uppercase text-slate-800 bg-white shadow-sm border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <FileText
+                    size={18}
+                    strokeWidth={2.5}
+                    className="text-emerald-500 shrink-0"
+                  />
+                  <span>Ver Catálogo / Menu</span>
+                </span>
+              </button>
+            )}
+
+            {/* BOTÃO 4: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
             {hasContact && (
               <button
                 onClick={() =>
@@ -478,11 +544,19 @@ export default function ShowroomLayout({
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {hasWhatsapp ? (
-                    <MessageCircle size={18} strokeWidth={2.5} />
+                    <MessageCircle
+                      size={18}
+                      strokeWidth={2.5}
+                      className="shrink-0"
+                    />
                   ) : (
-                    <PhoneCall size={18} strokeWidth={2.5} />
+                    <PhoneCall
+                      size={18}
+                      strokeWidth={2.5}
+                      className="shrink-0"
+                    />
                   )}
-                  Contato
+                  <span>Falar Conosco</span>
                 </span>
               </button>
             )}
@@ -832,7 +906,7 @@ export default function ShowroomLayout({
       />
 
       <AnimatePresence>
-        {isPdfModalOpen && rawBusiness.catalogPdf && (
+        {isPdfModalOpen && business.catalogPdf && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -853,7 +927,7 @@ export default function ShowroomLayout({
               </div>
               <div className="flex-1 w-full bg-slate-200/50">
                 <iframe
-                  src={`${rawBusiness.catalogPdf}#toolbar=0`}
+                  src={`${business.catalogPdf}#toolbar=0`}
                   className="w-full h-full border-none"
                   title="Catálogo PDF"
                 />

@@ -152,8 +152,29 @@ export const businessSchema = z.object({
       (val) => !val || val === "" || /^https?:\/\//i.test(val),
       "Cole o link completo começando com https://",
     ),
+  // 🚀 NOVO CAMPO: Validação segura para o Link de Agendamento
+  agendaLink: z
+    .string()
+    .max(1000)
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .refine(
+      (val) => !val || val === "" || /^https?:\/\//i.test(val),
+      "Cole o link da agenda começando com https://",
+    ),
+
   isExternalLink: z.boolean().default(false).optional(),
-  catalogPdf: z.string().max(1000).optional().nullable().or(z.literal("")),
+  catalogPdf: z
+    .string()
+    .max(1000)
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .refine(
+      (val) => !val || val === "" || /^https?:\/\//i.test(val), // 🛡️ TRAVA DE AÇO INJETADA AQUI!
+      "O link do catálogo deve ser um PDF ou endereço válido com https://",
+    ),
   menuMode: z.enum(["PDF", "DIGITAL", "AGENDA"]).default("PDF"), // AGENDA mantida aqui para servir de chave de link
 
   // URLs do UploadThing (Foco 100% em Galeria Fotográfica de Alta Velocidade)

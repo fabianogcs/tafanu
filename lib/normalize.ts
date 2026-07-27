@@ -160,9 +160,10 @@ export function normalizeBusiness(raw: any) {
     menuMode: b.menuMode || "PDF",
     catalogPdf: b.catalogPdf || "",
 
-    // 🚀 O CAVALO DE TRÓIA PRECISA PASSAR NA ADUANA AQUI
+    // 🚀 O HUB MULTI-CANAL PASSA NA ADUANA AQUI
     isExternalLink: !!b.isExternalLink,
     actionLink: b.actionLink || "",
+    agendaLink: b.agendaLink || "", // ⬅️ NOVO: Blindagem contra nulos e undefined
   };
 }
 

@@ -30,6 +30,9 @@ import {
   ArrowRight,
   Navigation,
   BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo de verificado
+  ShoppingBag, // 🚀 NOVO: Ícone para Loja / Pedidos
+  Calendar, // 🚀 NOVO: Ícone para Agendamento
+  FileText, // 🚀 NOVO: Ícone para o Catálogo PDF
 } from "lucide-react";
 import {
   TikTokIcon,
@@ -136,8 +139,23 @@ export default function UrbanLayout({
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
   );
-  const isExternalLink = !!business.isExternalLink;
-  const actionLink = business.actionLink || "";
+
+  // 🚀 VARIÁVEIS DO HUB MULTI-CANAL (Verificação Independente)
+  const hasAction =
+    typeof business.actionLink === "string" &&
+    business.actionLink.trim() !== "";
+  const hasAgenda =
+    typeof business.agendaLink === "string" &&
+    business.agendaLink.trim() !== "";
+  const hasCatalog =
+    typeof business.catalogPdf === "string" &&
+    business.catalogPdf.trim() !== "";
+  const hasContact = hasWhatsapp || hasPhone;
+
+  // Conta quantos botões vão aparecer para adaptar a grade automaticamente (1, 2, 3 ou 4)
+  const totalCtas = [hasAction, hasAgenda, hasCatalog, hasContact].filter(
+    Boolean,
+  ).length;
 
   const salesChannels = [
     {
@@ -388,65 +406,116 @@ export default function UrbanLayout({
               </motion.p>
             )}
 
-            {/* Ação Primária da Capa */}
-            <motion.div
-              variants={fadeUpVariant}
-              className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
-            >
-              {((isExternalLink && actionLink) ||
-                (rawBusiness.menuMode === "PDF" && rawBusiness.catalogPdf)) && (
-                <button
-                  onClick={() => {
-                    if (isExternalLink && actionLink) {
+            {/* ==========================================
+                🚀 HUB MULTI-CANAL DE ALTA CONVERSÃO (Urban Glow Vibe)
+                ========================================== */}
+            {totalCtas > 0 && (
+              <motion.div
+                variants={fadeUpVariant}
+                className={`w-full grid gap-3.5 ${
+                  totalCtas === 1
+                    ? "sm:w-auto grid-cols-1"
+                    : "max-w-[620px] grid-cols-1 sm:grid-cols-2"
+                }`}
+              >
+                {/* BOTÃO 1: LOJA / PEDIDOS ONLINE */}
+                {hasAction && (
+                  <button
+                    onClick={() => {
                       Actions.registerClickEvent(business.id, "WEBSITE");
                       window.open(
-                        formatExternalLink(actionLink),
+                        formatExternalLink(business.actionLink),
                         "_blank",
                         "noopener,noreferrer",
                       );
-                    } else if (rawBusiness.menuMode === "PDF") {
-                      setIsPdfModalOpen(true);
-                    }
-                  }}
-                  className="relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/20 backdrop-blur-lg text-white rounded-full font-bold text-sm tracking-widest uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-3 active:scale-95 group"
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    {rawBusiness.menuMode === "DIGITAL"
-                      ? "Acessar Loja"
-                      : rawBusiness.menuMode === "AGENDA"
-                        ? "Agendar Horário"
-                        : "Catálogo Visual"}
-                    <ChevronRight
+                    }}
+                    className={`relative overflow-hidden flex w-full justify-center items-center gap-2.5 px-6 py-4 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-white ${bgAction} shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all`}
+                  >
+                    <ShoppingBag
                       size={18}
                       strokeWidth={2.5}
-                      className="group-hover:translate-x-1 transition-transform"
+                      className="shrink-0"
                     />
-                  </span>
-                </button>
-              )}
+                    <span>Acessar Loja / Pedidos</span>
+                    <ChevronRight
+                      size={16}
+                      strokeWidth={2.5}
+                      className="opacity-70 ml-auto sm:ml-0"
+                    />
+                  </button>
+                )}
 
-              {/* 🚀 LÓGICA DO BOTÃO "FALAR CONOSCO" (WhatsApp ou Telefone) */}
-              {(hasWhatsapp || hasPhone) && (
-                <button
-                  aria-label={
-                    hasWhatsapp
-                      ? "Entrar em contato via WhatsApp"
-                      : "Ligar para nós"
-                  }
-                  onClick={() =>
-                    handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")
-                  }
-                  className={`w-full sm:w-auto px-8 py-4 bg-white ${theme.primary} rounded-full font-black text-sm tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3`}
-                >
-                  Fale Conosco{" "}
-                  {hasWhatsapp ? (
-                    <MessageCircle size={18} strokeWidth={2.5} />
-                  ) : (
-                    <Phone size={18} strokeWidth={2.5} />
-                  )}
-                </button>
-              )}
-            </motion.div>
+                {/* BOTÃO 2: AGENDA / RESERVAS */}
+                {hasAgenda && (
+                  <button
+                    onClick={() => {
+                      Actions.registerClickEvent(business.id, "AGENDA");
+                      window.open(
+                        formatExternalLink(business.agendaLink),
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }}
+                    className="relative overflow-hidden flex w-full justify-center items-center gap-2.5 px-6 py-4 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-white bg-slate-900 shadow-xl border border-white/20 hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <Calendar
+                      size={18}
+                      strokeWidth={2.5}
+                      className="text-indigo-400 shrink-0"
+                    />
+                    <span>Agendar Horário</span>
+                    <ChevronRight
+                      size={16}
+                      strokeWidth={2.5}
+                      className="opacity-70 ml-auto sm:ml-0"
+                    />
+                  </button>
+                )}
+
+                {/* BOTÃO 3: CATÁLOGO EM PDF */}
+                {hasCatalog && (
+                  <button
+                    onClick={() => {
+                      Actions.registerClickEvent(business.id, "CATALOG");
+                      setIsPdfModalOpen(true);
+                    }}
+                    className="relative overflow-hidden flex w-full justify-center items-center gap-2.5 px-6 py-4 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-white bg-white/10 border border-white/20 backdrop-blur-lg hover:bg-white/20 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <FileText
+                      size={18}
+                      strokeWidth={2.5}
+                      className="text-emerald-400 shrink-0"
+                    />
+                    <span>Ver Catálogo / Menu</span>
+                  </button>
+                )}
+
+                {/* BOTÃO 4: CONTATO RÁPIDO (WhatsApp ou Telefone) */}
+                {hasContact && (
+                  <button
+                    onClick={() =>
+                      handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")
+                    }
+                    className={`relative overflow-hidden flex w-full justify-center items-center gap-2.5 px-6 py-4 rounded-full text-xs font-black tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 transition-all ${
+                      hasWhatsapp
+                        ? "bg-[#25D366] text-white"
+                        : `bg-white ${theme.primary}`
+                    }`}
+                  >
+                    {hasWhatsapp ? (
+                      <MessageCircle
+                        size={18}
+                        strokeWidth={2.5}
+                        className="shrink-0"
+                      />
+                    ) : (
+                      <Phone size={18} strokeWidth={2.5} className="shrink-0" />
+                    )}
+                    <span>Falar Conosco</span>
+                  </button>
+                )}
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </header>
@@ -858,7 +927,7 @@ export default function UrbanLayout({
       />
 
       <AnimatePresence>
-        {isPdfModalOpen && rawBusiness.catalogPdf && (
+        {isPdfModalOpen && business.catalogPdf && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -879,7 +948,7 @@ export default function UrbanLayout({
               </div>
               <div className="flex-1 w-full bg-slate-200/50 p-2 md:p-4">
                 <iframe
-                  src={`${rawBusiness.catalogPdf}#toolbar=0`}
+                  src={`${business.catalogPdf}#toolbar=0`}
                   className="w-full h-full border-none rounded-xl md:rounded-[2rem]"
                   title="Catálogo PDF"
                 />
