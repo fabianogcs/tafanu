@@ -1336,10 +1336,10 @@ export async function resetBusiness(slug: string) {
           website: "",
           isExternalLink: false,
           actionLink: "",
-          agendaLink: "", // ⬅️ Você adicionou a agenda perfeitamente
-          catalogPdf: null, // ⬅️ ADICIONE ESTA LINHA PARA ZERAR O PDF NO BANCO!
+          agendaLink: "",
+          catalogPdf: null,
           shopee: "",
-          mercadolivre: "",
+          mercadoLivre: "", // ⬅️ CORRIGIDO (Letra 'L' maiúscula padrão do Prisma)
           shein: "",
           ifood: "",
           urban_tag: "",
