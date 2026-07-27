@@ -1262,7 +1262,6 @@ export async function deleteBusiness(slug: string) {
           coverImage: null,
           catalogPdf: null,
           gallery: [],
-          mediaFeed: [],
           slug: `deleted-${Date.now()}-${business.id.substring(0, 6)}`,
           subscriptionStatus: "cancelled",
         },
