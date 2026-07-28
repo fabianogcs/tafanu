@@ -35,6 +35,16 @@ export const metadata: Metadata = {
   ],
   applicationName: "Tafanu",
 
+  // 🍏 CIRURGIA APPLE: Garante visual de App Nativo no iPhone e iPad!
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Tafanu",
+  },
+  icons: {
+    apple: "/icon-192.png", // Força o iPhone a usar o seu ícone oficial!
+  },
+
   // 🚀 AQUI ESTÁ A CHAVE DE MESTRE DO GOOGLE SEARCH CONSOLE:
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",

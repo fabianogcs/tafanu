@@ -124,7 +124,7 @@ export default function OsMaisBuscados({ businesses }: { businesses: any[] }) {
             Os Mais <span className="text-emerald-500">Buscados</span>
           </h2>
           <p className="text-slate-500 font-medium text-[11px] md:text-xs">
-            A curadoria das vitrines que estão bombando na sua região.
+            As empresas e profissionais que estão gerando mais conexões.
           </p>
         </div>
       </div>

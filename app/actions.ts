@@ -3736,7 +3736,7 @@ export const getTrendingBusinesses = unstable_cache(
       // 3. RANKING: Ordena do maior pro menor e corta os top 6
       const topBusinessIds = Array.from(scoreMap.entries())
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
+        .slice(0, 8)
         .map(([id]) => id);
 
       if (topBusinessIds.length === 0) return [];
