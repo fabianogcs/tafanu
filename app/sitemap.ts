@@ -8,12 +8,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tafanu.com.br";
   const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  // 1. 🚀 BLINDAGEM SEO: Só avisa o Google sobre lojas que passaram no crivo das 48h
+  // 1. 🚀 BLINDAGEM SEO & ANTI-ZUMBI: Lojas ativas, no prazo e que não foram excluídas
   const businesses = await db.business.findMany({
     where: {
       isActive: true,
       published: true,
       OR: [{ expiresAt: { gte: limiteCarencia } }, { expiresAt: null }],
+      NOT: { slug: { startsWith: "deleted-" } }, // 🛡️ DEFESA EM PROFUNDIDADE
     },
     select: {
       slug: true,
