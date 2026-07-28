@@ -212,6 +212,7 @@ export default auth(async (req) => {
     pathname.startsWith("/busca") ||
     pathname.startsWith("/site") ||
     pathname.startsWith("/anunciar") ||
+    pathname.startsWith("/checkout") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhook") ||
     pathname.startsWith("/api/uploadthing") ||
@@ -260,12 +261,6 @@ export default auth(async (req) => {
     if (userRole === "ADMIN" || userRole === "AFILIADO") {
       return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }
-  }
-
-  if (!isLoggedIn && isCheckoutRoute) {
-    return NextResponse.redirect(
-      new URL("/login?callbackUrl=/checkout&intent=assinante", nextUrl),
-    );
   }
 
   if (isPublicRoute && !isDashboardRoute && !isAdminRoute) {

@@ -4012,3 +4012,176 @@ export async function sendCheckoutEmail(userId: string) {
     return { error: "Falha interna ao disparar o e-mail." };
   }
 }
+
+// ==============================================================================
+// 🚀 MOTOR GUEST CHECKOUT (Lazy Auth - Captação de Lojistas Sem Login)
+// ==============================================================================
+export async function createGuestCheckout(
+  name: string,
+  email: string,
+  phone: string,
+  planType: "monthly" | "quarterly" | "yearly" = "monthly",
+) {
+  // 1. Validações básicas de UX e LGPD
+  if (!name || !email || !phone) {
+    return { error: "Preencha Nome, E-mail e WhatsApp para continuar." };
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPhone = phone.replace(/\D/g, "");
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return { error: "Por favor, insira um e-mail válido." };
+  }
+  if (cleanPhone.length < 10) {
+    return { error: "Por favor, insira um WhatsApp válido com DDD." };
+  }
+
+  // 🛡️ TRAVA ANTI-SPAM DE GATEWAY
+  if (storeActionRatelimit) {
+    const { success } = await storeActionRatelimit.limit(`guest_${cleanEmail}`);
+    if (!success) {
+      return {
+        error: "Muitas tentativas. Aguarde um minuto e tente novamente.",
+      };
+    }
+  }
+
+  try {
+    let userId: string;
+    let hasUsedTrial = false;
+
+    // 2. Verifica se o usuário já existe no nosso banco de dados
+    const existingUser = await db.user.findUnique({
+      where: { email: cleanEmail },
+      include: { businesses: true },
+    });
+
+    if (existingUser) {
+      if (existingUser.isBanned) {
+        return { error: "Esta conta possui restrições administrativas." };
+      }
+
+      // Se ele já é um ASSINANTE e tem loja ativa, pedimos para logar (para não cobrar duplicado)
+      const hasActiveStore = existingUser.businesses.some(
+        (b) => b.mpSubscriptionId && b.subscriptionStatus === "active",
+      );
+      if (hasActiveStore) {
+        return {
+          error:
+            "Você já possui uma assinatura ativa! Por favor, faça login para gerenciar sua vitrine.",
+        };
+      }
+
+      userId = existingUser.id;
+      // Checa se já gastou os 7 dias grátis no passado
+      hasUsedTrial = existingUser.businesses.some(
+        (b) =>
+          b.mpSubscriptionId !== null ||
+          (b.subscriptionStatus !== null &&
+            b.subscriptionStatus !== "inactive") ||
+          b.expiresAt !== null,
+      );
+    } else {
+      // 3. 🚀 A MÁGICA WHITE HAT: Criação do usuário em segundo plano!
+      const randomPassword = crypto.randomBytes(6).toString("hex"); // Senha aleatória indescritível
+      const hashedPassword = await hash(randomPassword, 10);
+
+      // Pega cookie de afiliado para atribuir comissão automaticamente ao parceiro
+      const cookieStore = await cookies();
+      const affiliateCode = cookieStore.get("tafanu_ref")?.value;
+      let affiliateId = null;
+
+      if (affiliateCode) {
+        const partner = await db.user.findFirst({
+          where: {
+            referralCode: { equals: affiliateCode, mode: "insensitive" },
+          },
+          select: { id: true },
+        });
+        if (partner) affiliateId = partner.id;
+      }
+
+      const newUser = await db.user.create({
+        data: {
+          name: name.trim(),
+          email: cleanEmail,
+          phone: cleanPhone,
+          password: hashedPassword,
+          role: "VISITANTE", // Nasce como visitante até pagar o Mercado Pago
+          affiliateId: affiliateId,
+        },
+      });
+
+      if (affiliateId) {
+        await db.referralLog.create({
+          data: { affiliateId: affiliateId, referredId: newUser.id },
+        });
+      }
+
+      userId = newUser.id;
+      hasUsedTrial = false; // Cliente novo tem direito aos 7 dias grátis!
+    }
+
+    // 4. 🏗️ Criação da "Loja Gaveta" (Âncora para receber o webhook do Mercado Pago)
+    const novaLoja = await db.business.create({
+      data: {
+        userId: userId,
+        name: `Vitrine de ${name.split(" ")[0]}`,
+        slug: `vitrine-${userId.substring(0, 5)}-${Date.now()}`,
+        category: "Geral",
+        planType: planType as PlanType,
+        subscriptionStatus: "inactive",
+        isActive: false,
+        published: false,
+        whatsapp: cleanPhone,
+        phone: cleanPhone,
+      },
+    });
+
+    // 5. 💳 Geração da Assinatura no Mercado Pago (Mesma lógica de excelência que você já usa)
+    const subscriptionClient = new PreApproval(client);
+    const planConfigs = {
+      monthly: {
+        amount: 39.9,
+        reason: "Assinatura Tafanu PRO - Mensal",
+        trialDays: hasUsedTrial ? 0 : 7,
+      },
+      quarterly: {
+        amount: 104.7,
+        reason: "Assinatura Tafanu PRO - Trimestral",
+        trialDays: 0,
+      },
+      yearly: {
+        amount: 358.8,
+        reason: "Assinatura Tafanu PRO - Anual",
+        trialDays: 0,
+      },
+    };
+
+    const config = planConfigs[planType];
+    const body = {
+      reason: config.reason,
+      payer_email: cleanEmail,
+      auto_recurring: {
+        frequency:
+          planType === "quarterly" ? 3 : planType === "yearly" ? 12 : 1,
+        frequency_type: "months",
+        transaction_amount: config.amount,
+        currency_id: "BRL",
+        ...(config.trialDays > 0 && {
+          free_trial: { frequency: config.trialDays, frequency_type: "days" },
+        }),
+      },
+      back_url: "https://tafanu.com.br/checkout/sucesso",
+      external_reference: `${userId}___${novaLoja.id}`, // 🎯 Webhook vai identificar perfeitamente!
+    };
+
+    const response = await subscriptionClient.create({ body });
+    return { success: true, init_point: response.init_point };
+  } catch (error) {
+    console.error("❌ Erro no Guest Checkout:", error);
+    return {
+      error: "Erro ao iniciar pagamento. Tente novamente ou contate o suporte.",
+    };
+  }
+}

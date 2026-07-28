@@ -10,9 +10,13 @@ import {
   Sparkles,
   ShieldCheck,
   MessageCircle,
+  User,
+  Mail,
+  Phone,
 } from "lucide-react";
 import {
   createSubscription,
+  createGuestCheckout, // 🚀 CIRURGIA CTO: Importamos o nosso novo motor Lazy Auth!
   getAuthSession,
   getBusinessExpiration,
   checkTrialStatus,
@@ -40,18 +44,24 @@ export default function CheckoutPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isTrialEligible, setIsTrialEligible] = useState(true);
 
+  // 🚀 ESTADOS DO LAZY AUTH (Captação dos dados de quem não está logado)
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+
   const hasFetched = useRef(false);
 
   useEffect(() => {
     async function checkStatus() {
       if (status === "loading") return;
 
-      if (status === "unauthenticated") {
-        const serverSession = await getAuthSession();
-        if (!serverSession) {
-          window.location.href = "/login?callbackUrl=/checkout";
-          return;
-        }
+      // 🚀 CIRURGIA UX/UI & MARKETING: O Fim do Muro de Login!
+      // Se o usuário não estiver logado, NÓS NÃO REDIRECIONAMOS MAIS!
+      // Ele é um visitante público, então garantimos que ele veja a oferta de 7 Dias Grátis (isTrialEligible = true).
+      if (status === "unauthenticated" || !session?.user?.id) {
+        setIsTrialEligible(true);
+        setIsLoadingData(false);
+        return;
       }
 
       if (hasFetched.current) return;
@@ -98,6 +108,56 @@ export default function CheckoutPage() {
   const handlePayment = async () => {
     setIsProcessing(true);
     try {
+      // 🛡️ ESCUDO WHITE HAT TWA: Se estiver dentro do App da Play Store, NUNCA abra o Mercado Pago!
+      const isRunningInApp =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+
+      if (isRunningInApp) {
+        // Se tentar comprar dentro do app, dispara o e-mail mágico e manda pra tela de aviso!
+        const targetUserId = session?.user?.id || "guest";
+        if (targetUserId !== "guest") {
+          router.push(`/api/checkout-magico?uid=${targetUserId}`);
+          return;
+        } else {
+          toast.error(
+            "Para sua segurança, acesse tafanu.com.br pelo navegador Chrome para assinar.",
+          );
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // 🚀 FLUXO 1: SE O CLIENTE NÃO ESTIVER LOGADO (LAZY AUTH / GUEST)
+      if (status === "unauthenticated" || !session?.user?.id) {
+        if (!guestName.trim() || !guestEmail.trim() || !guestPhone.trim()) {
+          toast.error(
+            "Preencha Nome, E-mail e WhatsApp para ativar seu teste.",
+          );
+          setIsProcessing(false);
+          return;
+        }
+
+        // Aciona o nosso novo motor no backend (actions.ts)
+        const res = await createGuestCheckout(
+          guestName,
+          guestEmail,
+          guestPhone,
+          selectedPlan,
+        );
+
+        if (res.success && res.init_point) {
+          window.location.href = res.init_point;
+        } else {
+          toast.error(
+            res.error || "Erro ao gerar pagamento. Verifique seus dados.",
+          );
+          setIsProcessing(false);
+        }
+        return;
+      }
+
+      // ⚡ FLUXO 2: SE O CLIENTE JÁ ESTIVER LOGADO (FLUXO TRADICIONAL)
       const serverSession = await getAuthSession();
 
       if (!serverSession?.id || !serverSession?.email) {
@@ -144,10 +204,11 @@ export default function CheckoutPage() {
   }
 
   const plan = PLANS[selectedPlan];
+  const isGuestUser = status === "unauthenticated" || !session?.user?.id;
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 font-sans relative">
-      {/* 🚀 CIRURGIA 1: BOTÃO WHATSAPP FLUTUANTE DE VENDAS */}
+      {/* 🚀 BOTÃO WHATSAPP FLUTUANTE DE VENDAS */}
       <a
         href="https://wa.me/5514991406618?text=Ol%C3%A1!%20Estou%20na%20p%C3%A1gina%20de%20Checkout%20do%20Tafanu%20e%20fiquei%20com%20uma%20d%C3%BAvida%20antes%20de%20assinar."
         target="_blank"
@@ -178,7 +239,7 @@ export default function CheckoutPage() {
           <button
             onClick={handlePayment}
             disabled={isProcessing}
-            className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-400 bg-white shadow-xl shadow-emerald-900/5 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
+            className="relative p-8 rounded-[2rem] border-2 text-center transition-all w-full flex flex-col items-center justify-center border-emerald-400 bg-white shadow-xl shadow-emerald-900/5 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group cursor-pointer"
           >
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-tafanu-action text-white text-[10px] md:text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-md">
               {isTrialEligible
@@ -287,7 +348,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* COLUNA 3: CAIXA CENTRAL DO MERCADO PAGO */}
+        {/* COLUNA 3: CAIXA CENTRAL DO MERCADO PAGO + LAZY AUTH */}
         <div className="lg:col-span-4 bg-white rounded-[2.5rem] shadow-xl overflow-hidden text-slate-900 border border-slate-200">
           <div className="bg-[#009EE3] py-3 px-6 flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/90">
@@ -298,6 +359,70 @@ export default function CheckoutPage() {
             </span>
           </div>
           <div className="p-8 text-center bg-slate-50/50">
+            {/* 🚀 CIRURGIA NEUROMARKETING: FORMULÁRIO GUEST (SÓ APARECE PARA QUEM NÃO ESTÁ LOGADO) */}
+            {isGuestUser && (
+              <div className="mb-6 space-y-3 text-left border-b border-slate-200/60 pb-6 animate-in fade-in duration-500">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-tafanu-action animate-pulse"></span>
+                  Seus dados para liberação imediata
+                </p>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <User size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Seu Nome Completo"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    maxLength={100}
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-tafanu-action transition-all shadow-2xs"
+                  />
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail size={16} />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="E-mail Profissional (para acesso ao painel)"
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    maxLength={100}
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-tafanu-action transition-all shadow-2xs"
+                  />
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Phone size={16} />
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="WhatsApp com DDD (Ex: 11999999999)"
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    maxLength={20}
+                    required
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-tafanu-action transition-all shadow-2xs"
+                  />
+                </div>
+
+                <p className="text-[10px] text-slate-500 font-medium leading-relaxed bg-emerald-50/70 p-2.5 rounded-lg border border-emerald-100 flex items-start gap-1.5 mt-1">
+                  <span>⚡</span>
+                  <span>
+                    <strong>Sem senhas chatar:</strong> Criaremos seu painel
+                    automaticamente e enviaremos seu link de acesso seguro por
+                    e-mail após a confirmação.
+                  </span>
+                </p>
+              </div>
+            )}
+
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
               Total a pagar hoje
             </p>
@@ -313,7 +438,7 @@ export default function CheckoutPage() {
             <button
               onClick={handlePayment}
               disabled={isProcessing}
-              className="mt-8 group w-full h-16 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_5px_20px_rgba(0,168,107,0.3)] transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+              className="mt-8 group w-full h-16 bg-tafanu-action hover:bg-[#00c27a] text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_5px_20px_rgba(0,168,107,0.3)] transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isProcessing ? (
                 <Loader2 className="animate-spin" size={24} />
