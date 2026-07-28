@@ -13,6 +13,7 @@ import {
   BadgeCheck, // 🚀 CIRURGIA DEV: Importado para o selo oficial
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { getBusinessStatusDetails } from "@/lib/normalize"; // 🚀 CIRURGIA: Importando motor centralizado!
 
 export default function BusinessCard({ business, showDistance }: any) {
   const [isNavigating, setIsNavigating] = useState(false);
@@ -28,92 +29,17 @@ export default function BusinessCard({ business, showDistance }: any) {
       .map((s: string) => s.trim());
   }
 
-  // --- SUBCATEGORIAS (Com lógica de "+X Ocultos") ---
   let currentSub = null;
   if (allSubcategories.length > 0) {
     const visibleSubs = allSubcategories.slice(0, 2).join(" • ");
     const hiddenCount = allSubcategories.length - 2;
 
-    // Se tiver mais de 2, ele mostra "Sub1 • Sub2 • +3"
     currentSub =
       hiddenCount > 0 ? `${visibleSubs} • +${hiddenCount}` : visibleSubs;
   }
 
-  // --- LÓGICA INTELIGENTE ABERTO/FECHADO COM FUSO HORÁRIO BLINDADO ---
-  const getBusinessStatus = (hours: any[]) => {
-    if (!hours || hours.length === 0) return { status: "UNKNOWN", text: null };
-
-    // 🚀 CTO FIX: Sincroniza o relógio do card com o fuso oficial de São Paulo
-    const now = new Date();
-    const brazilDate = new Date(
-      now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
-    );
-    const todayIndex = brazilDate.getDay();
-    const currentMinutes = brazilDate.getHours() * 60 + brazilDate.getMinutes();
-    const daysMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-    const todayHours = hours.find((h: any) => h.dayOfWeek === todayIndex);
-
-    const toMinutes = (timeStr: string) => {
-      const [h, m] = timeStr.split(":").map(Number);
-      return h * 60 + m;
-    };
-
-    if (
-      todayHours &&
-      !todayHours.isClosed &&
-      todayHours.openTime &&
-      todayHours.closeTime
-    ) {
-      const openMins = toMinutes(todayHours.openTime);
-      const closeMins = toMinutes(todayHours.closeTime);
-
-      // 🛡️ Suporte a turnos que passam da meia-noite (Igual ao VitrineCardapio)
-      const crossesMidnight = closeMins < openMins;
-      const isReallyOpen = crossesMidnight
-        ? currentMinutes >= openMins || currentMinutes < closeMins
-        : currentMinutes >= openMins && currentMinutes <= closeMins;
-
-      if (isReallyOpen) {
-        const timeToClose = crossesMidnight
-          ? closeMins + 1440 - currentMinutes
-          : closeMins - currentMinutes;
-
-        if (timeToClose <= 60 && timeToClose > 0) {
-          return {
-            status: "CLOSING_SOON",
-            text: `Fecha às ${todayHours.closeTime}`,
-          };
-        }
-        return { status: "OPEN", text: `Fecha às ${todayHours.closeTime}` };
-      }
-
-      if (!crossesMidnight && currentMinutes < openMins) {
-        return {
-          status: "CLOSED",
-          text: `Abre hoje às ${todayHours.openTime}`,
-        };
-      }
-    }
-
-    // Calcula o próximo dia de abertura caso esteja fechado
-    for (let i = 1; i <= 7; i++) {
-      const nextDayIndex = (todayIndex + i) % 7;
-      const nextDayHours = hours.find((h: any) => h.dayOfWeek === nextDayIndex);
-
-      if (nextDayHours && !nextDayHours.isClosed && nextDayHours.openTime) {
-        const isTomorrow = i === 1;
-        const dayText = isTomorrow ? "amanhã" : daysMap[nextDayIndex];
-        return {
-          status: "CLOSED",
-          text: `Abre ${dayText} às ${nextDayHours.openTime}`,
-        };
-      }
-    }
-
-    return { status: "CLOSED", text: "Fechado" };
-  };
-
-  const { status: currentStatus, text: statusText } = getBusinessStatus(
+  // 🚀 CÁLCULO SÊNIOR: Limpamos 60 linhas e pegamos do motor universal!
+  const { status: currentStatus, text: statusText } = getBusinessStatusDetails(
     business.hours,
   );
   const isCurrentlyOpen =
@@ -123,8 +49,16 @@ export default function BusinessCard({ business, showDistance }: any) {
   const rawPhone = business.whatsapp || business.phone;
   const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, "") : null;
   const defaultMessage = `Olá! Encontrei o anúncio "${business.name}" no Tafanu e gostaria de saber mais.`;
-  const wppLink = cleanPhone
-    ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(defaultMessage)}`
+
+  // 🛡️ CORREÇÃO CIRÚRGICA: Só adiciona 55 se o número não começar com 55 ou se tiver 10/11 dígitos
+  const phoneWithDDI = cleanPhone
+    ? cleanPhone.startsWith("55") && cleanPhone.length > 11
+      ? cleanPhone
+      : `55${cleanPhone}`
+    : null;
+
+  const wppLink = phoneWithDDI
+    ? `https://wa.me/${phoneWithDDI}?text=${encodeURIComponent(defaultMessage)}`
     : null;
 
   // --- ENDEREÇO TEXTO LIMPO ---
@@ -165,7 +99,6 @@ export default function BusinessCard({ business, showDistance }: any) {
             sizes="(max-width: 768px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
-          {/* Gradiente escuro apenas no topo para dar leitura aos selos */}
           <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/50 to-transparent z-10" />
 
           {/* Selos (Tags) Minimalistas */}
@@ -212,14 +145,12 @@ export default function BusinessCard({ business, showDistance }: any) {
 
         {/* --- 2. CORPO DE TEXTO --- */}
         <div className="p-4 flex flex-col flex-1 text-left justify-start">
-          {/* --- Categoria Fixa, Estrelas e Subcategorias --- */}
           <div className="flex items-center w-full mb-2 overflow-hidden relative">
             <div className="shrink-0 bg-white pr-2 z-10 flex items-center gap-1.5">
               <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">
                 {business.category}
               </span>
 
-              {/* 🚀 ULTRA PREMIUM NOTA: Só injeta na busca se a loja tiver nota > 0 */}
               {(business.rating || 0) > 0 && (
                 <div className="flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 text-amber-600 shrink-0 ml-1">
                   <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
@@ -236,7 +167,6 @@ export default function BusinessCard({ business, showDistance }: any) {
               )}
             </div>
 
-            {/* Letreiro Digital (Marquee) das Subcategorias usando Framer Motion */}
             {allSubcategories.length > 0 && (
               <div className="flex-1 overflow-hidden relative flex">
                 <motion.div
@@ -245,10 +175,9 @@ export default function BusinessCard({ business, showDistance }: any) {
                     repeat: Infinity,
                     ease: "linear",
                     duration: 15,
-                  }} // 15 segundos para uma leitura bem suave
+                  }}
                   className="flex whitespace-nowrap text-[9px] font-bold text-slate-400 uppercase tracking-widest w-max"
                 >
-                  {/* Duplicamos o texto para o loop infinito não ter fim nem solavancos */}
                   <span className="pr-4">{allSubcategories.join(" • ")}</span>
                   <span className="pr-4">{allSubcategories.join(" • ")}</span>
                 </motion.div>
@@ -256,7 +185,6 @@ export default function BusinessCard({ business, showDistance }: any) {
             )}
           </div>
 
-          {/* 🚀 CIRURGIA DEV: Título Principal com o Selo Verificado Solid */}
           <h3 className="text-base md:text-lg font-black text-[#023059] leading-tight mb-4 group-hover:text-emerald-500 transition-colors flex items-center gap-1.5">
             <span className="line-clamp-2">{business.name}</span>
             {business.isVerified && (
@@ -272,7 +200,6 @@ export default function BusinessCard({ business, showDistance }: any) {
             )}
           </h3>
 
-          {/* Dados (Endereço e Relógio) empilhados discretamente */}
           <div className="mt-auto flex flex-col gap-2">
             {locationText ? (
               <div className="flex items-center gap-2 text-slate-400">
@@ -282,7 +209,7 @@ export default function BusinessCard({ business, showDistance }: any) {
                 </span>
               </div>
             ) : (
-              <div className="h-[14px]" /> // Espaçador caso não tenha endereço
+              <div className="h-[14px]" />
             )}
 
             {statusText && (

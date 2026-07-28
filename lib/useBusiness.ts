@@ -1,6 +1,6 @@
 // lib/useBusiness.ts
 import { useState, useEffect, useMemo } from "react";
-import { normalizeBusiness } from "./normalize";
+import { normalizeBusiness, checkIsOpen } from "./normalize";
 
 export function useBusiness(rawBusiness: any, rawHours: any) {
   // 1. Blindagem de dados principal
@@ -20,14 +20,15 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
     setIsFavorite(safeFavorites.length > 0);
   }, [business?.id, safeFavorites.length]);
 
+  // 🚀 CÁLCULO DINÂMICO EM TEMPO REAL:
+  // Garante que o hook sempre reavalie o status com base no fuso horário real se a página ficar aberta
+  const isOpen = useMemo(() => checkIsOpen(realHours), [realHours]);
+
   // 3. Capacidades (Booleans blindados contra "Tela Branca da Morte")
   const capabilities = useMemo(() => {
-    // 🚀 A VACINA DOS GLOBOS:
-    // Separamos as redes sociais reais dos Marketplaces para não dar vazamento na UI.
     const socialPlatforms = ["instagram", "tiktok", "facebook", "website"];
 
     return {
-      // 🛡️ Prevenção: Garantimos que é uma string antes de aplicar o .trim()
       hasWhatsapp:
         typeof business?.whatsapp === "string" &&
         business.whatsapp.trim() !== "",
@@ -39,7 +40,6 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
         typeof business?.description === "string" &&
         business.description.trim() !== "",
 
-      // 🚀 NOVO: Indicadores instantâneos para o Hub Multi-Canal
       hasActionLink:
         typeof business?.actionLink === "string" &&
         business.actionLink.trim() !== "",
@@ -50,7 +50,6 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
         typeof business?.catalogPdf === "string" &&
         business.catalogPdf.trim() !== "",
 
-      // 🛡️ Prevenção: Garantimos que é um Array antes de ler o .length
       hasGallery:
         Array.isArray(business?.gallery) && business.gallery.length > 0,
       hasFaqs: Array.isArray(business?.faqs) && business.faqs.length > 0,
@@ -58,12 +57,10 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
         Array.isArray(business?.features) && business.features.length > 0,
       hasHours: realHours.length > 0,
 
-      // Verifica se existe pelo menos uma rede social preenchida validando o tipo
       hasSocials: socialPlatforms.some(
         (s) => typeof business?.[s] === "string" && business[s].trim() !== "",
       ),
 
-      // Lista filtrada SÓ com as redes sociais REAIS
       availableSocials: socialPlatforms.filter(
         (s) => typeof business?.[s] === "string" && business[s].trim() !== "",
       ),
@@ -75,6 +72,7 @@ export function useBusiness(rawBusiness: any, rawHours: any) {
     realHours,
     isFavorite,
     setIsFavorite,
+    isOpen, // 🚀 RETORNA O STATUS INTELIGENTE DA MADRUGADA AQUI!
     ...capabilities,
   };
 }

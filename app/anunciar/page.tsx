@@ -31,12 +31,9 @@ export const metadata: Metadata = {
 export default async function AnunciarPage() {
   const session = (await auth()) as any;
   const userRole = session?.user?.role;
-  const userId = session?.user?.id;
+  const userId = session?.user?.id || null; // 🚀 Agora pode ser nulo para visitantes públicos
 
-  if (!session || !userId) {
-    redirect("/");
-  }
-
+  // Se já for dono de loja ou admin, joga para o painel de gestão
   if (userRole === "ADMIN") redirect("/admin");
   if (userRole === "ASSINANTE") redirect("/dashboard");
   if (userRole === "AFILIADO") redirect("/dashboard");

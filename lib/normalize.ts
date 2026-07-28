@@ -21,26 +21,19 @@ export const cleanSocialHandle = (url: string = "") => {
   if (!url) return "";
   let clean = url.trim();
 
-  // 1. Edge Case: Se for uma página de Facebook antiga (profile.php?id=...) preserva a ID
   if (clean.includes("profile.php?id=")) {
     return clean.replace(/.*facebook\.com\//, "");
   }
 
-  // 2. Remove parâmetros de rastreio de links copiados pelo celular (ex: ?igshid=123, ?hl=pt)
   clean = clean.split("?")[0];
-
-  // 3. Remove barras sobrando no final (ex: instagram.com/loja/)
   clean = clean.replace(/\/+$/, "");
 
-  // 4. Pega só a última parte da URL (que é o nome de usuário de fato)
   const parts = clean.split("/");
   let handle = parts[parts.length - 1];
 
-  // 5. Se o usuário colou com o "@" (ex: @minhaloja), a gente limpa também
   if (handle) {
     handle = handle.replace(/^@+/, "");
   }
-  // 🛡️ TRAVA ANTI-DOMÍNIO: Impede que o nome da rede social vire o nome do usuário
   if (
     handle === "instagram.com" ||
     handle === "facebook.com" ||
@@ -52,18 +45,15 @@ export const cleanSocialHandle = (url: string = "") => {
   return handle || "";
 };
 
-// Mantemos a antiga aqui apenas por segurança, caso algum outro arquivo ainda tente usá-la
 export const cleanHandle = (url: string = "", regex: RegExp) => {
   const clean = (url || "").trim();
   return clean.replace(regex, "").replace(/^@+/, "").replace(/\/+$/, "");
 };
 
-// 🚀 ADICIONAMOS ESTA:
 export const formatPhoneNumber = (value: string) => {
   if (!value) return "";
   let numbers = value.replace(/\D/g, "");
 
-  // 🛡️ TRAVA CÓDIGO DO PAÍS: Se o usuário colou com o "55" na frente, remove o excesso
   if (numbers.length > 11 && numbers.startsWith("55")) {
     numbers = numbers.slice(2);
   }
@@ -76,38 +66,191 @@ export const formatPhoneNumber = (value: string) => {
   return numbers.slice(0, 11);
 };
 
+// ==============================================================================
+// 🚀 ALGORITMO SÊNIOR DE HORÁRIO DE FUNCIONAMENTO (TURNO DA MADRUGADA 3.0)
+// ==============================================================================
+export function getBusinessStatusDetails(hours: any[]) {
+  if (!Array.isArray(hours) || hours.length === 0) {
+    return { status: "UNKNOWN" as const, text: null, isOpen: false };
+  }
+
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo",
+      weekday: "short",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(now);
+    const getPart = (type: string) =>
+      parts.find((p) => p.type === type)?.value || "";
+
+    const weekdayMap: Record<string, number> = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
+    };
+    const today = weekdayMap[getPart("weekday")] ?? now.getDay();
+    const yesterday = today === 0 ? 6 : today - 1;
+
+    let currentHour = parseInt(getPart("hour"), 10);
+    if (currentHour === 24) currentHour = 0;
+    const currentMinute = parseInt(getPart("minute"), 10) || 0;
+    const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+    const daysMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+    const toMinutes = (timeStr: string) => {
+      if (!timeStr || typeof timeStr !== "string") return -1;
+      const [h, m] = timeStr.split(":").map(Number);
+      if (isNaN(h) || isNaN(m)) return -1;
+      return h * 60 + m;
+    };
+
+    // 🚀 REGRA 1: O TURNO DE ONTEM (MADRUGADA / OVERNIGHT SHIFT)
+    // Se ontem a loja abriu (ex: Dom 22:00) e o turno atravessa a meia-noite (fechamento < abertura, ex: 20:28),
+    // checamos se o horário atual ainda não passou do fechamento de ontem!
+    const yesterdayHours = hours.find(
+      (h: any) => Number(h.dayOfWeek) === yesterday,
+    );
+    if (yesterdayHours && !yesterdayHours.isClosed) {
+      const yOpen = toMinutes(yesterdayHours.openTime);
+      const yClose = toMinutes(yesterdayHours.closeTime);
+
+      if (yClose !== -1 && yOpen !== -1 && yClose < yOpen) {
+        if (currentTotalMinutes < yClose) {
+          const timeToClose = yClose - currentTotalMinutes;
+          if (timeToClose <= 60 && timeToClose > 0) {
+            return {
+              status: "CLOSING_SOON" as const,
+              text: `Fecha às ${yesterdayHours.closeTime}`,
+              isOpen: true,
+            };
+          }
+          return {
+            status: "OPEN" as const,
+            text: `Fecha às ${yesterdayHours.closeTime}`,
+            isOpen: true,
+          };
+        }
+      }
+    }
+
+    // 🚀 REGRA 2: O TURNO DE HOJE
+    const todayHours = hours.find((h: any) => Number(h.dayOfWeek) === today);
+    if (todayHours && !todayHours.isClosed) {
+      const open = toMinutes(todayHours.openTime);
+      const close = toMinutes(todayHours.closeTime);
+
+      if (open !== -1 && close !== -1) {
+        // Turno 24h ou horários iguais
+        if (open === close) {
+          return { status: "OPEN" as const, text: "Aberto 24h", isOpen: true };
+        }
+
+        const crossesMidnight = close < open;
+        const isReallyOpen = crossesMidnight
+          ? currentTotalMinutes >= open || currentTotalMinutes < close
+          : currentTotalMinutes >= open && currentTotalMinutes <= close;
+
+        if (isReallyOpen) {
+          const timeToClose = crossesMidnight
+            ? close + 1440 - currentTotalMinutes
+            : close - currentTotalMinutes;
+
+          if (timeToClose <= 60 && timeToClose > 0) {
+            return {
+              status: "CLOSING_SOON" as const,
+              text: `Fecha às ${todayHours.closeTime}`,
+              isOpen: true,
+            };
+          }
+          return {
+            status: "OPEN" as const,
+            text: `Fecha às ${todayHours.closeTime}`,
+            isOpen: true,
+          };
+        }
+
+        // 🚀 A CIRURGIA FOI AQUI: Removido o "!crossesMidnight &&"
+        // Se a loja não está aberta agora, mas a hora atual é menor que a hora de abrir, ELA ABRE HOJE!
+        if (currentTotalMinutes < open) {
+          return {
+            status: "CLOSED" as const,
+            text: `Abre hoje às ${todayHours.openTime}`,
+            isOpen: false,
+          };
+        }
+      }
+    }
+
+    // 🚀 REGRA 3: PRÓXIMO DIA DE ABERTURA (Se hoje estiver fechado ou já encerrou o turno de hoje)
+    for (let i = 1; i <= 7; i++) {
+      const nextDayIndex = (today + i) % 7;
+      const nextDayHours = hours.find(
+        (h: any) => Number(h.dayOfWeek) === nextDayIndex,
+      );
+
+      if (nextDayHours && !nextDayHours.isClosed && nextDayHours.openTime) {
+        const isTomorrow = i === 1;
+        const dayText = isTomorrow ? "amanhã" : daysMap[nextDayIndex];
+        return {
+          status: "CLOSED" as const,
+          text: `Abre ${dayText} às ${nextDayHours.openTime}`,
+          isOpen: false,
+        };
+      }
+    }
+
+    return { status: "CLOSED" as const, text: "Fechado", isOpen: false };
+  } catch (e) {
+    console.error("Erro em getBusinessStatusDetails:", e);
+    return { status: "CLOSED" as const, text: "Fechado", isOpen: false };
+  }
+}
+
+export function checkIsOpen(hours: any[]): boolean {
+  return getBusinessStatusDetails(hours).isOpen;
+}
+
 // --- 2. FUNÇÃO DE NORMALIZAÇÃO ---
 
 export function normalizeBusiness(raw: any) {
   const b = raw || {};
 
-  // 🚀 1. IDENTIFICA AS PALAVRAS FANTASMAS DO SISTEMA (Agora com as picotadas!)
   const baseSubcategories = Array.isArray(b.subcategory)
     ? b.subcategory.map((s: string) => normalizeText(s))
     : [];
 
   const splitSubcategories = baseSubcategories.flatMap((s: string) =>
     s.split(" "),
-  ); // As palavras soltas
+  );
 
   const systemTags = [
     normalizeText(b.name),
     normalizeText(b.category),
     ...baseSubcategories,
-    ...splitSubcategories, // 👈 Adicionamos as palavras picotadas na capa de invisibilidade!
+    ...splitSubcategories,
   ];
 
-  // 🚀 2. PEGA TODAS AS PALAVRAS-CHAVE DO BANCO
   const rawKeywords = Array.isArray(b.keywords)
     ? b.keywords
     : typeof b.keywords === "string"
       ? b.keywords.split(",").map((k: string) => k.trim())
       : [];
 
-  // 🚀 3. FILTRA: Entrega pra tela SÓ o que o usuário digitou (esconde as do sistema)
   const userOnlyKeywords = rawKeywords.filter(
     (k: string) => k !== "" && !systemTags.includes(k),
   );
+
+  const safeHours = Array.isArray(b.hours) ? b.hours : [];
 
   return {
     ...b,
@@ -133,10 +276,10 @@ export function normalizeBusiness(raw: any) {
     address: b.address || "",
     city: b.city || "",
     state: b.state || "",
-    cep: b.cep || "", // ⬅️ CORREÇÃO: Lendo do banco
-    number: b.number || "", // ⬅️ CORREÇÃO: Lendo direto do banco, sem adivinhar
-    complement: b.complement || "", // ⬅️ NOVO: Lendo o complemento
-    neighborhood: b.neighborhood || "", // ⬅️ CORREÇÃO: Lendo direto do banco, sem adivinhar
+    cep: b.cep || "",
+    number: b.number || "",
+    complement: b.complement || "",
+    neighborhood: b.neighborhood || "",
     urban_tag: b.urban_tag || "",
     luxe_quote: b.luxe_quote || "",
     comercial_badge: b.comercial_badge || "",
@@ -144,26 +287,21 @@ export function normalizeBusiness(raw: any) {
     gallery: Array.isArray(b.gallery) ? b.gallery : [],
     features: Array.isArray(b.features) ? b.features : [],
     faqs: Array.isArray(b.faqs) ? b.faqs : [],
-    hours: Array.isArray(b.hours) ? b.hours : [],
+    hours: safeHours,
     favorites: Array.isArray(b.favorites) ? b.favorites : [],
-
-    // 🚀 4. INJETA SÓ AS PALAVRAS DO USUÁRIO NO EDITOR
     keywords: userOnlyKeywords,
-
     theme: b.theme || "urban_gold",
     layout: b.layout || "urban",
-
-    // 🚀 HACKER FIX: Curando a "Amnésia" do Formulário!
-    // Sem isso aqui, o lojista perde a configuração de GPS e Delivery toda vez que edita a loja.
     latitude: b.latitude || null,
     longitude: b.longitude || null,
     menuMode: b.menuMode || "PDF",
     catalogPdf: b.catalogPdf || "",
-
-    // 🚀 O HUB MULTI-CANAL PASSA NA ADUANA AQUI
     isExternalLink: !!b.isExternalLink,
     actionLink: b.actionLink || "",
-    agendaLink: b.agendaLink || "", // ⬅️ NOVO: Blindagem contra nulos e undefined
+    agendaLink: b.agendaLink || "",
+
+    // 🚀 O CÁLCULO SEGURO E AUTOMÁTICO INJETADO AQUI:
+    isOpen: checkIsOpen(safeHours),
   };
 }
 
@@ -173,23 +311,20 @@ export const normalizeText = (text: string | null | undefined): string => {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "") // 🚀 CIRURGIA: Remove símbolos (ex: !, ?, -, &) para não bugar a busca
-    .replace(/\s+/g, " ") // Garante que não fiquem espaços duplos
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 };
 
 // --- 3. VALIDADOR UNIVERSAL (CPF E CNPJ ALFANUMÉRICO 2026) ---
 export function isCpfOrCnpjValid(doc: string): boolean {
-  // Remove formatação e garante que qualquer letra inserida fique maiúscula
   const cleanDoc = (doc || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-  // Se estiver vazio, não valida
   if (!cleanDoc) return false;
 
-  // 🛡️ VALIDAÇÃO DE CPF (11 Dígitos Numéricos)
   if (cleanDoc.length === 11) {
-    if (/[A-Z]/.test(cleanDoc)) return false; // CPF não tem letra
-    if (/^(\d)\1{10}$/.test(cleanDoc)) return false; // Bloqueia 111.111.111-11
+    if (/[A-Z]/.test(cleanDoc)) return false;
+    if (/^(\d)\1{10}$/.test(cleanDoc)) return false;
 
     let sum = 0;
     let rest;
@@ -209,13 +344,11 @@ export function isCpfOrCnpjValid(doc: string): boolean {
     return true;
   }
 
-  // 🛡️ VALIDAÇÃO NOVO CNPJ ALFANUMÉRICO (14 Dígitos)
   if (cleanDoc.length === 14) {
     const calcDigit = (cnpjStr: string, weights: number[]) => {
       let sum = 0;
       for (let i = 0; i < weights.length; i++) {
         const char = cnpjStr[i];
-        // Converte letras para números usando a tabela ASCII (Ex: A=17, B=18, C=19)
         const val =
           char.charCodeAt(0) >= 65 ? char.charCodeAt(0) - 48 : parseInt(char);
         sum += val * weights[i];

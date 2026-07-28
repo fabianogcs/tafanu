@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
+  const callbackUrl = searchParams.get("callbackUrl") || "/checkout";
 
   const domain =
     process.env.NODE_ENV === "production"
@@ -15,16 +16,27 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Ordena o NextAuth a autenticar o cliente via Borda
-    await signIn("magic-login", {
+    const result = await signIn("magic-login", {
       token,
       redirect: false,
     });
 
-    // 🚀 TELETRANSPORTE CONCLUÍDO: Manda logado direto pro seu checkout!
-    return NextResponse.redirect(new URL(`${domain}/checkout`, request.url));
+    if (result?.error) {
+      console.warn("🚨 [Magic Login] Falha ao validar token:", result.error);
+      return NextResponse.redirect(
+        new URL("/login?error=TokenInvalido", request.url),
+      );
+    }
+
+    // 🚀 TELETRANSPORTE CONCLUÍDO: Manda logado para a URL de destino!
+    return NextResponse.redirect(
+      new URL(`${domain}${callbackUrl}`, request.url),
+    );
   } catch (error) {
-    // Fallback de segurança: se falhar, manda pro checkout onde o fluxo padrão assume
-    return NextResponse.redirect(new URL(`${domain}/checkout`, request.url));
+    // 🛡️ CORREÇÃO WHITE HAT: Se o token venceu ou falhou, avisa no login!
+    console.error("❌ Erro Fatal no Magic Login:", error);
+    return NextResponse.redirect(
+      new URL(`${domain}/login?error=TokenExpirado`, request.url),
+    );
   }
 }

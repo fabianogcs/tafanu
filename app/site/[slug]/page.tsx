@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { businessThemes } from "@/lib/themes";
 import { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { checkIsOpen } from "@/lib/normalize"; // 🚀 CIRURGIA: Importamos o motor centralizado!
 
 // IMPORTAÇÃO DO MAESTRO DE TEMPLATES
 import MainLayoutSwitcher from "@/components/templates/MainLayoutSwitcher";
@@ -14,12 +15,8 @@ import ViewCounter from "@/components/ViewCounter";
 
 // 🚀 A CIRURGIA DO CTO: REMOVEMOS O force-dynamic e revalidate=0.
 // Agora o Next.js vai gerar a vitrine e guardar no Edge Cache da Vercel por 1 hora.
-// O tempo de carregamento despenca de 1.5s para 10ms e o custo de banco de dados derrete!
 export const revalidate = 3600;
 
-// 🚀 O COFRE DO CFO: O React memoriza essa busca durante a requisição do servidor.
-// Ele consulta o banco de dados apenas 1 vez (sem atrelar ao userId) e distribui
-// os dados instantaneamente para Viewport, Metadata e Página!
 const getCachedBusiness = cache(async (slug: string) => {
   return await db.business.findUnique({
     where: { slug },
@@ -65,7 +62,7 @@ const getCachedBusiness = cache(async (slug: string) => {
       menuMode: true,
       isExternalLink: true,
       actionLink: true,
-      agendaLink: true, // ⬅️ NOVO: Libera a leitura da agenda no Edge Cache
+      agendaLink: true,
       published: true,
       isActive: true,
       isVerified: true,
@@ -106,7 +103,6 @@ const getCachedBusiness = cache(async (slug: string) => {
   });
 });
 
-// --- 0. VIEWPORT DINÂMICO (Ultrarrápido, sem ler sessão/cookies) ---
 export async function generateViewport({
   params,
 }: {
@@ -127,7 +123,6 @@ export async function generateViewport({
   };
 }
 
-// --- METADATA (Ultrarrápido, sem ler sessão/cookies) ---
 export async function generateMetadata({
   params,
 }: {
@@ -221,8 +216,6 @@ export default async function BusinessPage({
   const session = await auth();
   const userId = session?.user?.id || null;
 
-  // 🚀 PROMISE.ALL DE ELITE: Puxa a loja do cache universal do React e,
-  // paralelamente, consulta dados do usuário logado e status de favorito se houver sessão!
   const [business, loggedUser, userFavorite] = await Promise.all([
     getCachedBusiness(slug),
     userId
@@ -272,32 +265,6 @@ export default async function BusinessPage({
       : `${siteUrl}${rawImage}`
     : `${siteUrl}/og-default.png`;
 
-  const serverDate = new Date();
-  const brazilDate = new Date(
-    serverDate.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
-  );
-  const currentDay = brazilDate.getDay();
-  const currentTime = brazilDate.getHours() * 100 + brazilDate.getMinutes();
-  const todayHours = business.hours.find((h) => h.dayOfWeek === currentDay);
-
-  let isOpen = false;
-  if (
-    todayHours &&
-    !todayHours.isClosed &&
-    todayHours.openTime &&
-    todayHours.closeTime
-  ) {
-    const [openH, openM] = todayHours.openTime.split(":").map(Number);
-    const [closeH, closeM] = todayHours.closeTime.split(":").map(Number);
-    const openVal = openH * 100 + openM;
-    const closeVal = closeH * 100 + closeM;
-    if (closeVal < openVal) {
-      isOpen = currentTime >= openVal || currentTime < closeVal;
-    } else {
-      isOpen = currentTime >= openVal && currentTime < closeVal;
-    }
-  }
-
   const streetWithNumber = [business.address, business.number]
     .filter(Boolean)
     .join(", ");
@@ -332,6 +299,9 @@ export default async function BusinessPage({
       isClosed: dbDay?.isClosed || !dbDay,
     };
   });
+
+  // 🚀 CÁLCULO SÊNIOR: Lendo o status com suporte a madrugada em apenas 1 linha!
+  const isOpen = checkIsOpen(business.hours);
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">

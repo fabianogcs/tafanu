@@ -193,11 +193,7 @@ export default function Navbar({
               {/* 4. VITRINE EM 5 MIN (DESKTOP) Refinado e Delicado */}
               {(isGuest || isVisitor) && (
                 <button
-                  onClick={() =>
-                    isGuest
-                      ? (window.location.href = "/login?callbackUrl=/anunciar")
-                      : (window.location.href = "/anunciar")
-                  }
+                  onClick={() => (window.location.href = "/anunciar")}
                   className="flex items-center gap-1.5 bg-tafanu-action text-white px-4 py-1.5 rounded-full font-black text-[11px] uppercase tracking-wider hover:bg-[#00c27a] hover:scale-105 transition-all shadow-[0_3px_10px_rgba(0,168,107,0.25)] whitespace-nowrap ml-1 cursor-pointer"
                 >
                   <Sparkles size={13} /> Vitrine em 5 min
@@ -349,9 +345,7 @@ export default function Navbar({
             <button
               onClick={() => {
                 setIsOpen(false);
-                isGuest
-                  ? (window.location.href = "/login?callbackUrl=/anunciar")
-                  : (window.location.href = "/anunciar");
+                window.location.href = "/anunciar";
               }}
               className="flex items-center justify-center gap-1.5 w-full bg-tafanu-action text-white font-black p-3.5 rounded-xl shadow-[0_4px_12px_rgba(0,168,107,0.25)] active:scale-[0.98] transition-all uppercase text-[11px] tracking-wider cursor-pointer"
             >

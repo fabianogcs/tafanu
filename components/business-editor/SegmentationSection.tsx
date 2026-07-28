@@ -1,6 +1,6 @@
 "use client";
 
-import { Tag, Hash, X } from "lucide-react";
+import { Tag, Hash, X, Plus } from "lucide-react";
 import { TAFANU_CATEGORIES } from "./constants";
 import { formatDisplayName } from "@/lib/dictionary";
 
@@ -27,12 +27,20 @@ export function SegmentationSection({
   setTagInput,
   categoryKeys,
 }: SegmentationSectionProps) {
+  // 🚀 LÓGICA INTELIGENTE DE ADICIONAR TAG
   const addTag = () => {
     const val = tagInput.trim().toLowerCase();
-    if (val && !keywords.includes(val) && keywords.length < 10) {
-      setKeywords([...keywords, val]);
+    if (!val) return;
+
+    // Se já existe na lista, só limpa o input para não duplicar
+    if (keywords.includes(val)) {
       setTagInput("");
-    } else {
+      return;
+    }
+
+    // Se tem espaço (menos de 10 tags), adiciona a palavra composta inteira
+    if (keywords.length < 10) {
+      setKeywords([...keywords, val]);
       setTagInput("");
     }
   };
@@ -102,15 +110,12 @@ export function SegmentationSection({
                 key={sub}
                 onClick={() =>
                   setSelectedSubs((prev) => {
-                    // Se já tem, ele tira (desmarca)
                     if (prev.includes(sub)) {
                       return prev.filter((s) => s !== sub);
                     }
-                    // 🚀 A TRAVA: Se não tem e já deu 3, ele bloqueia e não faz nada
                     if (prev.length >= 3) {
                       return prev;
                     }
-                    // Se tem espaço, ele adiciona
                     return [...prev, sub];
                   })
                 }
@@ -130,47 +135,79 @@ export function SegmentationSection({
         </div>
       </div>
 
-      {/* --- SEÇÃO 3: PALAVRAS-CHAVE --- */}
+      {/* --- SEÇÃO 3: PALAVRAS-CHAVE (Atualizada para Palavras Compostas) --- */}
       <div className="pt-6 border-t border-slate-100">
         <div className="flex justify-between items-end mb-3">
-          <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-            <Hash size={16} /> Palavras-chave
-          </label>
-          <span className="text-[9px] font-bold text-slate-400">
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+              <Hash size={16} /> Palavras-chave de Busca
+            </label>
+            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+              Digite termos que seus clientes usam (ex: &quot;salão de
+              beleza&quot;, &quot;tele entrega&quot;).
+            </p>
+          </div>
+          <span className="text-[9px] font-bold text-slate-400 shrink-0">
             {keywords.length} / 10
           </span>
         </div>
-        <div className="w-full min-h-[56px] px-2 py-2 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap gap-2 items-center">
-          {keywords.map((tag, i) => (
-            <span
-              key={i}
-              className="bg-white border border-slate-200 text-slate-700 text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg flex items-center gap-1"
-            >
-              {tag}
-              <button onClick={() => removeTag(tag)}>
-                <X size={12} />
-              </button>
+
+        {/* Lista de tags já adicionadas */}
+        <div className="w-full min-h-[56px] p-2.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-wrap gap-2 items-center mb-3">
+          {keywords.length === 0 ? (
+            <span className="text-xs font-semibold text-slate-400 italic px-2 py-1">
+              Nenhuma palavra-chave adicionada ainda.
             </span>
-          ))}
+          ) : (
+            keywords.map((tag, i) => (
+              <span
+                key={i}
+                className="bg-white border border-slate-200 text-slate-700 text-[10px] font-bold uppercase px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm animate-in fade-in zoom-in duration-200"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="text-slate-400 hover:text-rose-500 transition-colors"
+                  title="Remover tag"
+                >
+                  <X size={14} strokeWidth={2.5} />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+
+        {/* Campo de digitação + Botão Adicionar */}
+        <div className="flex items-center gap-2">
           <input
+            type="text"
             value={tagInput}
-            onChange={(e) =>
-              e.target.value.endsWith(" ") || e.target.value.endsWith(",")
-                ? addTag()
-                : setTagInput(e.target.value)
-            }
-            onKeyDown={(e) =>
-              e.key === "Enter" && (e.preventDefault(), addTag())
-            }
+            onChange={(e) => setTagInput(e.target.value)} // 🚀 REMOVIDO O ENDSWITH(" ")
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTag();
+              }
+            }}
             disabled={keywords.length >= 10}
-            maxLength={30} // 🚀 TRAVA DO FRONT-END: Máximo de 30 letras por tag
-            className="bg-transparent text-xs font-bold outline-none flex-1 min-w-[120px]"
+            maxLength={30}
+            className="flex-1 h-12 px-4 bg-white rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-2 ring-indigo-500/20 text-slate-800 placeholder:text-slate-400 transition-all disabled:bg-slate-50 disabled:cursor-not-allowed"
             placeholder={
               keywords.length >= 10
-                ? "Limite atingido"
-                : "Digite e aperte Espaço..."
+                ? "Limite de 10 palavras atingido"
+                : "Digite uma palavra ou frase e clique em Adicionar..."
             }
           />
+          <button
+            type="button"
+            onClick={addTag}
+            disabled={!tagInput.trim() || keywords.length >= 10}
+            className="h-12 px-5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+          >
+            <Plus size={16} strokeWidth={3} />
+            Adicionar
+          </button>
         </div>
       </div>
     </div>

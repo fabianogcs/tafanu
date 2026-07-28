@@ -5,6 +5,7 @@ import LocationTracker from "@/components/LocationTracker";
 import SearchBar from "@/components/SearchBar";
 import FilterModal, { LocationTree } from "@/components/FilterModal";
 import BusinessCard from "@/components/BusinessCard";
+import OpenNowButton from "@/components/OpenNowButton"; // 🚀 NOVO IMPORT AQUI!
 import { auth } from "@/auth";
 import Link from "next/link";
 import { normalizeText } from "@/lib/normalize";
@@ -33,8 +34,6 @@ function calculateDistance(
   return R * c;
 }
 
-// Verifica se alguma palavra ("term") aparece dentro das subcategorias,
-// mesmo que a subcategoria seja uma frase composta (ex: "Comida Japonesa")
 function subsHasWord(subs: string[], term: string) {
   return subs.some((s) => s.split(" ").includes(term));
 }
@@ -573,10 +572,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const onlineWhere: Prisma.BusinessWhereInput = isOnlineMode
     ? {
         OR: [
-          { shopee: { not: "" } },
-          { mercadoLivre: { not: "" } },
-          { shein: { not: "" } },
-          { ifood: { not: "" } },
+          { isExternalLink: true },
+          { menuMode: { in: ["DIGITAL", "AGENDA"] } },
         ],
       }
     : {};
@@ -811,9 +808,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         score += Math.round(b.rating * 10);
       }
 
-      // Empresa verificada só ganha bônus se já for relevante pra busca
-      // (score > 0). Isso evita que verificação "compre" posição em
-      // buscas onde a empresa não tem nada a ver com o termo pesquisado.
       if (b.isVerified && score > 0) {
         score += 100;
       }
@@ -824,13 +818,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         nCat === parsedTerms[0] ||
         keysWords.includes(parsedTerms[0]);
 
-      // REGRA NOVA E MAIS RÍGIDA:
-      // - Busca com 1 palavra só: mantém a proteção antiga (evita lixo
-      //   em buscas curtas tipo "ar", "pé" etc).
-      // - Busca com 2+ palavras (ex: "comida japonesa"): o negócio só
-      //   pode aparecer se bater com TODAS as palavras da busca.
-      //   Bater com só uma ("comida") não é mais suficiente — isso é
-      //   o que fazia o restaurante genérico furar a fila.
       if (parsedTerms.length > 1) {
         if (matchedTermsCount < parsedTerms.length) {
           score = 0;
@@ -854,27 +841,62 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     };
   });
 
-  if (subcategoryArray.length > 0)
+  // ============================================================================
+  // 🚀 1. PRIMEIRO: Filtra pela relevância do texto digitado (score > 0)
+  // ============================================================================
+  if (query) {
+    businesses = businesses.filter((b) => b.score > 0);
+  }
+
+  // ============================================================================
+  // 🚀 2. O INTERCEPTADOR CONTEXTUAL (CTO / UX FIX)
+  // Constrói as opções do modal de filtro APENAS com o que existe na busca atual!
+  // ============================================================================
+  let effectiveFilterMap = orderedFilterMap;
+
+  if (query && businesses.length > 0) {
+    const dynamicMap: Record<string, Set<string>> = {};
+
+    businesses.forEach((item) => {
+      if (!item.category) return;
+      if (!dynamicMap[item.category]) dynamicMap[item.category] = new Set();
+      if (item.subcategory && Array.isArray(item.subcategory)) {
+        item.subcategory.forEach((sub: string) => {
+          if (sub) dynamicMap[item.category].add(sub);
+        });
+      }
+    });
+
+    const sortedDynamicMap: Record<string, string[]> = {};
+    Object.keys(dynamicMap)
+      .sort()
+      .forEach((key) => {
+        sortedDynamicMap[key] = Array.from(dynamicMap[key]).sort();
+      });
+
+    effectiveFilterMap = sortedDynamicMap;
+  }
+
+  // ============================================================================
+  // 🚀 3. SEGUNDO: Aplica os filtros de Subcategoria e Abertos (após criar o menu)
+  // ============================================================================
+  if (subcategoryArray.length > 0) {
     businesses = businesses.filter((b) => b.matchesSubcategoryFilter);
-  if (statusFilter === "open") businesses = businesses.filter((b) => b.isOpen);
+  }
+  if (statusFilter === "open") {
+    businesses = businesses.filter((b) => b.isOpen);
+  }
 
   if (isOnlineMode && !cityFilter && !stateFilter) {
-    // Só dá o bônus de +50 se o negócio já era relevante pra busca
-    // (score > 0). Isso evita que um negócio irrelevante "ressuscite"
-    // e volte a aparecer só por causa do bônus do modo online.
     businesses = businesses.map((b) =>
       b.score > 0 ? { ...b, score: b.score + 50 } : b,
     );
   }
 
+  // ============================================================================
+  // 🚀 4. ORDENAÇÃO E PAGINAÇÃO
+  // ============================================================================
   if (needsJsEngine) {
-    // Se existe uma busca por texto, negócios irrelevantes (score = 0,
-    // ou seja, que não bateram com todas as palavras pesquisadas) devem
-    // ser removidos SEMPRE, não importa qual ordenação foi escolhida.
-    if (query) {
-      businesses = businesses.filter((b) => b.score > 0);
-    }
-
     if (sort === "distance" && userLat && userLng)
       businesses.sort((a, b) => (a.distance ?? 99999) - (b.distance ?? 99999));
     else if (isOnlineMode || sort === "popular")
@@ -895,11 +917,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* 🚀 CIRURGIA FOCADA: O CABEÇALHO REORGANIZADO E INTUITIVO */}
-      {/* Removi o overflow-hidden para o menu do filtro não ser cortado! */}
       <div className="bg-white border-b border-slate-200 py-6 md:py-8 px-4 shadow-sm relative z-30">
         <div className="max-w-7xl mx-auto flex flex-col gap-5 md:gap-6 relative z-10">
-          {/* TÍTULO E SUBTÍTULO (Sempre no topo esquerdo) */}
           <div className="space-y-1">
             <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter flex flex-wrap items-center gap-2 md:gap-3 text-slate-900">
               {isOnlineMode ? (
@@ -936,17 +955,20 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             </p>
           </div>
 
-          {/* 🚀 A MÁGICA: BARRA DE BUSCA + BOTÃO FILTRO LADO A LADO */}
+          {/* 🚀 BARRA DE BUSCA + BOTÃO APENAS ABERTOS + FILTRO */}
           <div className="flex flex-col md:flex-row items-center gap-3 w-full">
-            {/* A barra de busca ocupa o máximo de espaço possível */}
             <div className="w-full flex-1">
               <SearchBar initialQuery={rawQuery} />
             </div>
 
-            {/* O Filtro fica colado nela. O truque [&>button] injeta cor e altura no componente Modal sem precisar alterar o arquivo do modal! */}
+            {/* 🚀 O CHECKBOX / PILL DE APENAS ABERTOS INJETADO AQUI! */}
+            <div className="w-full md:w-auto shrink-0 flex items-center justify-center">
+              <OpenNowButton />
+            </div>
+
             <div className="w-full md:w-auto shrink-0 flex items-center [&>button]:w-full md:[&>button]:w-auto [&>button]:h-12 md:[&>button]:h-[56px] [&>button]:bg-slate-100 [&>button]:border-slate-200 [&>button]:text-slate-700 [&>button]:hover:bg-slate-200 [&>button]:shadow-inner [&>button]:transition-all [&>button]:font-bold [&>button]:tracking-widest">
               <FilterModal
-                availableCategories={orderedFilterMap}
+                availableCategories={effectiveFilterMap} // 🚀 Lendo o mapa contextual!
                 locationData={locationData}
                 currentSort={sort}
               />
@@ -984,7 +1006,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               </div>
             )}
 
-            {/* Aviso de Expansão */}
             {didExpandSearch && (
               <div className="bg-blue-50 border border-blue-200 p-4 md:p-5 rounded-2xl mb-6 flex items-start gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
@@ -1002,9 +1023,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+            {/* 🚀 CIRURGIA DEV: GRID CRAVADO EM EXATAMENTE 2 COLUNAS NO DESKTOP! (grid-cols-1 sm:grid-cols-2) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
               {paginatedResults.length === 0 ? (
-                // O BLOCO VAZIO (OPORTUNIDADE ABERTA) REFINADO
                 <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-4 animate-in fade-in zoom-in duration-500">
                   <div className="bg-emerald-50 p-6 rounded-full mb-6 shadow-inner border border-emerald-100">
                     <SearchX size={48} className="text-tafanu-action" />
@@ -1046,14 +1067,12 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
                   return (
                     <React.Fragment key={item.id}>
-                      {/* O Card do Lojista (Ele já puxa a cor branca do BusinessCard.tsx) */}
                       <BusinessCard
                         business={item}
                         isLoggedIn={!!userId}
                         showDistance={sort === "distance"}
                       />
 
-                      {/* O CARD "OUTDOOR" NO MEIO DA BUSCA (O ÚNICO ESCURO) */}
                       {showCtaCard && (
                         <Link
                           href="/anunciar"
@@ -1086,7 +1105,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               )}
             </div>
 
-            {/* Paginação */}
             {totalPages > 1 && (
               <div className="flex gap-2 mt-12 justify-center flex-wrap">
                 {Array.from({ length: totalPages }).map((_, i) => {

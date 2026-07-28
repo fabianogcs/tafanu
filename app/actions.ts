@@ -1041,14 +1041,13 @@ export async function updateFullBusiness(slug: string, payload: any) {
           showroom_collection: validatedData.showroom_collection || "",
           comercial_badge: validatedData.comercial_badge || "",
 
-          // 🚀 O HUB MULTI-CANAL + FAXINA VELHA
+          // 🚀 O HUB MULTI-CANAL (sistema atual: link único)
           isExternalLink: validatedData.isExternalLink || false,
           actionLink: validatedData.actionLink || "",
-          agendaLink: validatedData.agendaLink || "", // ⬅️ NOVO: Grava a agenda na edição
-          shopee: "",
-          mercadoLivre: "",
-          shein: "",
-          ifood: "",
+          agendaLink: validatedData.agendaLink || "",
+          // Campos antigos (shopee/mercadoLivre/shein/ifood) não são mais
+          // tocados aqui — são resquícios do sistema anterior e serão
+          // limpos do banco depois.
 
           gallery: validatedData.gallery || [],
           faqs: validatedData.faqs as any,
