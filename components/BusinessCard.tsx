@@ -116,11 +116,13 @@ export default function BusinessCard({ business, showDistance }: any) {
                 </div>
               )}
 
-              {/* Tag Distância */}
+              {/* Tag Distância (Termômetro Visual Inteligente) */}
               {showDistance &&
                 business.distance !== null &&
                 business.distance !== undefined && (
-                  <div className="bg-[#023059]/90 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
+                  <div
+                    className={`${business.distance > 11 ? "bg-orange-500/95" : "bg-[#023059]/90"} backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm transition-colors duration-300`}
+                  >
                     <Navigation size={10} className="text-white" />
                     <span className="text-[9px] font-bold text-white uppercase tracking-wide">
                       {business.distance < 1

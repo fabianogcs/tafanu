@@ -1093,6 +1093,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             )}
 
             {/* 🚀 CIRURGIA DEV: GRID CRAVADO EM EXATAMENTE 2 COLUNAS NO DESKTOP! (grid-cols-1 sm:grid-cols-2) */}
+            {/* 🚀 CIRURGIA DEV: GRID DE RESULTADOS + CARD CTA FORÇADO NO FINAL DA PÁGINA 1 */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
               {paginatedResults.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-4 animate-in fade-in zoom-in duration-500">
@@ -1125,55 +1126,47 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                   </div>
                 </div>
               ) : (
-                paginatedResults.map((item, index) => {
-                  const isLastItemAndLessThan10 =
-                    paginatedResults.length < 10 &&
-                    index === paginatedResults.length - 1;
-                  const isTenthPosition =
-                    paginatedResults.length >= 10 && index === 8;
-                  const showCtaCard =
-                    page === 1 && (isLastItemAndLessThan10 || isTenthPosition);
+                <>
+                  {paginatedResults.map((item) => (
+                    <BusinessCard
+                      key={item.id}
+                      business={item}
+                      isLoggedIn={!!userId}
+                      showDistance={sort === "distance"}
+                    />
+                  ))}
 
-                  return (
-                    <React.Fragment key={item.id}>
-                      <BusinessCard
-                        business={item}
-                        isLoggedIn={!!userId}
-                        showDistance={sort === "distance"}
-                      />
+                  {/* 🚀 UX FIX: O CARD ESCURO SEMPRE FICA POR ÚLTIMO, MAS SÓ APARECE SE TIVER ESPAÇO NA GRADE (< 12) */}
+                  {page === 1 && paginatedResults.length < 12 && (
+                    <Link
+                      href="/anunciar"
+                      className="group relative bg-slate-900 p-6 md:p-8 rounded-[1.5rem] flex flex-col h-full overflow-hidden shadow-xl hover:-translate-y-2 transition-all duration-500 border border-slate-800 justify-center items-center text-center"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-tafanu-action opacity-10 rounded-full blur-3xl group-hover:opacity-20 transition-opacity duration-700" />
 
-                      {showCtaCard && (
-                        <Link
-                          href="/anunciar"
-                          className="group relative bg-slate-900 p-6 md:p-8 rounded-[1.5rem] flex flex-col h-full overflow-hidden shadow-xl hover:-translate-y-2 transition-all duration-500 border border-slate-800 justify-center items-center text-center"
-                        >
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-tafanu-action opacity-10 rounded-full blur-3xl group-hover:opacity-20 transition-opacity duration-700" />
+                      <div className="w-14 h-14 bg-tafanu-action rounded-full flex items-center justify-center text-white mb-5 shadow-[0_0_20px_rgba(0,168,107,0.3)] group-hover:scale-110 transition-transform duration-500 relative z-10">
+                        <TrendingUp size={24} strokeWidth={2.5} />
+                      </div>
 
-                          <div className="w-14 h-14 bg-tafanu-action rounded-full flex items-center justify-center text-white mb-5 shadow-[0_0_20px_rgba(0,168,107,0.3)] group-hover:scale-110 transition-transform duration-500 relative z-10">
-                            <TrendingUp size={24} strokeWidth={2.5} />
-                          </div>
+                      <h3 className="font-black text-white text-lg md:text-xl uppercase tracking-tighter mb-2 leading-tight relative z-10">
+                        Sua Empresa{" "}
+                        <span className="text-tafanu-action">Aqui</span>
+                      </h3>
 
-                          <h3 className="font-black text-white text-lg md:text-xl uppercase tracking-tighter mb-2 leading-tight relative z-10">
-                            Sua Empresa{" "}
-                            <span className="text-tafanu-action">Aqui</span>
-                          </h3>
+                      <p className="text-slate-400 text-[10px] md:text-xs font-medium mb-6 relative z-10 max-w-[200px] leading-relaxed">
+                        Crie sua Vitrine Digital em 5 minutos e venda para
+                        clientes que buscam por negócios como o seu todos os
+                        dias!
+                      </p>
 
-                          <p className="text-slate-400 text-[10px] md:text-xs font-medium mb-6 relative z-10 max-w-[200px] leading-relaxed">
-                            Crie sua Vitrine Digital em 2 minutos e venda para
-                            clientes da sua região.
-                          </p>
-
-                          <span className="mt-auto inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-tafanu-action group-hover:text-emerald-300 transition-colors relative z-10">
-                            Ver Planos <ArrowRight size={14} strokeWidth={3} />
-                          </span>
-                        </Link>
-                      )}
-                    </React.Fragment>
-                  );
-                })
+                      <span className="mt-auto inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-tafanu-action group-hover:text-emerald-300 transition-colors relative z-10">
+                        Ver Planos <ArrowRight size={14} strokeWidth={3} />
+                      </span>
+                    </Link>
+                  )}
+                </>
               )}
             </div>
-
             {totalPages > 1 && (
               <div className="flex gap-2 mt-12 justify-center flex-wrap">
                 {Array.from({ length: totalPages }).map((_, i) => {
