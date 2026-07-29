@@ -596,8 +596,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const gpsBoundingBox: Prisma.BusinessWhereInput[] = useGpsRestrict
     ? [
         {
-          latitude: { gte: userLat - 0.2, lte: userLat + 0.2 },
-          longitude: { gte: userLng - 0.2, lte: userLng + 0.2 },
+          latitude: { gte: userLat - 0.1, lte: userLat + 0.1 },
+          longitude: { gte: userLng - 0.1, lte: userLng + 0.1 },
         },
       ]
     : [];
