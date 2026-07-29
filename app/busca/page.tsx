@@ -438,20 +438,96 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     .filter((t) => t.length > 2 && !STOPWORDS.includes(t))
     .slice(0, 4);
 
+  const queryCap = query.charAt(0).toUpperCase() + query.slice(1);
   const strictSearchBlock: Prisma.BusinessWhereInput[] =
     parsedTerms.length > 0
       ? [
           {
-            AND: parsedTerms.map((term) => {
-              const termNormalized = normalizeText(term);
-              const group = [termNormalized];
-              if (SYNONYMS_MAP[termNormalized])
-                group.push(...SYNONYMS_MAP[termNormalized]);
-              if (termNormalized.endsWith("s") && termNormalized.length > 3)
-                group.push(termNormalized.slice(0, -1));
+            OR: [
+              // 🚀 1. O SALVA-VIDAS MULTI-PALAVRA: Tenta achar a frase inteira ("jogos de tabuleiro")
+              { keywords: { hasSome: [query, queryCap] } },
+              { subcategory: { hasSome: [query, queryCap] } },
 
-              return {
-                OR: group.flatMap((gTerm) => {
+              // 🚀 2. BUSCA NORMAL: Se não achar a frase inteira, continua a busca palavra por palavra
+              {
+                AND: parsedTerms.map((term) => {
+                  const termNormalized = normalizeText(term);
+                  const group = [termNormalized];
+                  if (SYNONYMS_MAP[termNormalized])
+                    group.push(...SYNONYMS_MAP[termNormalized]);
+                  if (termNormalized.endsWith("s") && termNormalized.length > 3)
+                    group.push(termNormalized.slice(0, -1));
+
+                  return {
+                    OR: group.flatMap((gTerm) => {
+                      const gTermCap =
+                        gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
+                      const isOriginalTerm =
+                        gTerm === termNormalized ||
+                        gTerm === termNormalized.slice(0, -1);
+
+                      const baseConditions: Prisma.BusinessWhereInput[] = [
+                        { keywords: { hasSome: [gTerm, gTermCap] } },
+                        { subcategory: { hasSome: [gTerm, gTermCap] } },
+                        {
+                          category: {
+                            equals: gTerm,
+                            mode: "insensitive" as const,
+                          },
+                        },
+                      ];
+
+                      if (isOriginalTerm) {
+                        baseConditions.push(
+                          {
+                            name: {
+                              contains: gTerm,
+                              mode: "insensitive" as const,
+                            },
+                          },
+                          {
+                            city: {
+                              contains: gTerm,
+                              mode: "insensitive" as const,
+                            },
+                          },
+                          {
+                            neighborhood: {
+                              contains: gTerm,
+                              mode: "insensitive" as const,
+                            },
+                          },
+                        );
+                      }
+                      return baseConditions;
+                    }),
+                  };
+                }),
+              },
+            ],
+          },
+        ]
+      : [];
+
+  const looseSearchBlock: Prisma.BusinessWhereInput[] =
+    parsedTerms.length > 0
+      ? [
+          {
+            OR: [
+              // 🚀 1. FIX MULTI-PALAVRA: Busca a frase inteira ("jogos de tabuleiro")
+              { keywords: { hasSome: [query, queryCap] } },
+              { subcategory: { hasSome: [query, queryCap] } },
+
+              // 🚀 2. BUSCA DESDOBRADA: Continua buscando palavra por palavra e sinônimos
+              ...parsedTerms.flatMap((term) => {
+                const termNormalized = normalizeText(term);
+                const group = [termNormalized];
+                if (SYNONYMS_MAP[termNormalized])
+                  group.push(...SYNONYMS_MAP[termNormalized]);
+                if (termNormalized.endsWith("s") && termNormalized.length > 3)
+                  group.push(termNormalized.slice(0, -1));
+
+                return group.flatMap((gTerm) => {
                   const gTermCap =
                     gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
                   const isOriginalTerm =
@@ -483,52 +559,9 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     );
                   }
                   return baseConditions;
-                }),
-              };
-            }),
-          },
-        ]
-      : [];
-
-  const looseSearchBlock: Prisma.BusinessWhereInput[] =
-    parsedTerms.length > 0
-      ? [
-          {
-            OR: parsedTerms.flatMap((term) => {
-              const termNormalized = normalizeText(term);
-              const group = [termNormalized];
-              if (SYNONYMS_MAP[termNormalized])
-                group.push(...SYNONYMS_MAP[termNormalized]);
-              if (termNormalized.endsWith("s") && termNormalized.length > 3)
-                group.push(termNormalized.slice(0, -1));
-
-              return group.flatMap((gTerm) => {
-                const gTermCap = gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
-                const isOriginalTerm =
-                  gTerm === termNormalized ||
-                  gTerm === termNormalized.slice(0, -1);
-
-                const baseConditions: Prisma.BusinessWhereInput[] = [
-                  { keywords: { hasSome: [gTerm, gTermCap] } },
-                  { subcategory: { hasSome: [gTerm, gTermCap] } },
-                  { category: { equals: gTerm, mode: "insensitive" as const } },
-                ];
-
-                if (isOriginalTerm) {
-                  baseConditions.push(
-                    { name: { contains: gTerm, mode: "insensitive" as const } },
-                    { city: { contains: gTerm, mode: "insensitive" as const } },
-                    {
-                      neighborhood: {
-                        contains: gTerm,
-                        mode: "insensitive" as const,
-                      },
-                    },
-                  );
-                }
-                return baseConditions;
-              });
-            }),
+                });
+              }),
+            ],
           },
         ]
       : [];
