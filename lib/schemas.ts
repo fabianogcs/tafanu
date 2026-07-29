@@ -8,9 +8,11 @@ const faqSchema = z.object({
 
 // Molde para um item do horário de funcionamento
 const hourSchema = z.object({
-  dayOfWeek: z.number(), // Agora o Zod sabe que é um número (0 a 6)
+  dayOfWeek: z.number(),
   openTime: z.string().optional().or(z.literal("")),
   closeTime: z.string().optional().or(z.literal("")),
+  openTime2: z.string().optional().nullable().or(z.literal("")), // 🚀 NOVO: 2º Turno Liberado no Zod
+  closeTime2: z.string().optional().nullable().or(z.literal("")), // 🚀 NOVO: 2º Turno Liberado no Zod
   isClosed: z.boolean().optional(),
 });
 

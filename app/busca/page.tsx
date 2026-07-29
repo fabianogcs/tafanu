@@ -763,21 +763,34 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
     let isOpen = false;
     const todayHours = b.hours.find((h: any) => h.dayOfWeek === currentDay);
-    if (
-      todayHours &&
-      !todayHours.isClosed &&
-      todayHours.openTime &&
-      todayHours.closeTime
-    ) {
-      const [oH, oM] = todayHours.openTime.split(":").map(Number);
-      const [cH, cM] = todayHours.closeTime.split(":").map(Number);
-      const openVal = oH * 100 + oM;
-      const closeVal = cH * 100 + cM;
 
-      if (closeVal < openVal) {
-        isOpen = currentTime >= openVal || currentTime < closeVal;
-      } else {
-        isOpen = currentTime >= openVal && currentTime < closeVal;
+    if (todayHours && !todayHours.isClosed) {
+      // 🚀 1. Checa o Primeiro Turno
+      if (todayHours.openTime && todayHours.closeTime) {
+        const [oH, oM] = todayHours.openTime.split(":").map(Number);
+        const [cH, cM] = todayHours.closeTime.split(":").map(Number);
+        const openVal = oH * 100 + oM;
+        const closeVal = cH * 100 + cM;
+
+        if (closeVal < openVal) {
+          isOpen = currentTime >= openVal || currentTime < closeVal;
+        } else {
+          isOpen = currentTime >= openVal && currentTime < closeVal;
+        }
+      }
+
+      // 🚀 2. Checa o Segundo Turno (A Mágica da Pausa do Almoço!)
+      if (!isOpen && todayHours.openTime2 && todayHours.closeTime2) {
+        const [oH2, oM2] = todayHours.openTime2.split(":").map(Number);
+        const [cH2, cM2] = todayHours.closeTime2.split(":").map(Number);
+        const openVal2 = oH2 * 100 + oM2;
+        const closeVal2 = cH2 * 100 + cM2;
+
+        if (closeVal2 < openVal2) {
+          isOpen = currentTime >= openVal2 || currentTime < closeVal2;
+        } else {
+          isOpen = currentTime >= openVal2 && currentTime < closeVal2;
+        }
       }
     }
 

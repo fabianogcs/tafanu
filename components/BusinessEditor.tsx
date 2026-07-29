@@ -306,6 +306,8 @@ export default function BusinessEditor({
         dayOfWeek: Number(h.dayOfWeek),
         openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
         closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
+        openTime2: h.openTime2 ? String(h.openTime2).slice(0, 5) : null,
+        closeTime2: h.closeTime2 ? String(h.closeTime2).slice(0, 5) : null,
         isClosed: !!h.isClosed,
       }))
       .sort((a: any, b: any) => a.dayOfWeek - b.dayOfWeek);
@@ -315,6 +317,8 @@ export default function BusinessEditor({
         dayOfWeek: Number(h.dayOfWeek),
         openTime: h.openTime ? String(h.openTime).slice(0, 5) : "09:00",
         closeTime: h.closeTime ? String(h.closeTime).slice(0, 5) : "18:00",
+        openTime2: h.openTime2 ? String(h.openTime2).slice(0, 5) : null,
+        closeTime2: h.closeTime2 ? String(h.closeTime2).slice(0, 5) : null,
         isClosed: !!h.isClosed,
       }))
       .sort((a: any, b: any) => a.dayOfWeek - b.dayOfWeek);

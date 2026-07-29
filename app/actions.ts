@@ -851,6 +851,8 @@ export async function createBusiness(payload: any) {
             dayOfWeek: h.dayOfWeek,
             openTime: h.openTime || "09:00",
             closeTime: h.closeTime || "18:00",
+            openTime2: h.openTime2 || null, // 🚀 INJETADO AQUI
+            closeTime2: h.closeTime2 || null, // 🚀 INJETADO AQUI
             isClosed: !!h.isClosed,
           })),
         });
@@ -1063,6 +1065,8 @@ export async function updateFullBusiness(slug: string, payload: any) {
               dayOfWeek: h.dayOfWeek,
               openTime: h.openTime || "09:00",
               closeTime: h.closeTime || "18:00",
+              openTime2: h.openTime2 || null, // 🚀 INJETADO AQUI
+              closeTime2: h.closeTime2 || null, // 🚀 INJETADO AQUI
               isClosed: !!h.isClosed,
             })),
           });
@@ -1207,6 +1211,10 @@ export async function updateBusinessHours(slug: string, hours: any[]) {
           typeof h.openTime === "string" ? h.openTime.slice(0, 5) : "09:00",
         closeTime:
           typeof h.closeTime === "string" ? h.closeTime.slice(0, 5) : "18:00",
+        openTime2:
+          typeof h.openTime2 === "string" ? h.openTime2.slice(0, 5) : null, // 🚀 INJETADO AQUI
+        closeTime2:
+          typeof h.closeTime2 === "string" ? h.closeTime2.slice(0, 5) : null, // 🚀 INJETADO AQUI
         isClosed: !!h.isClosed,
       })),
     });

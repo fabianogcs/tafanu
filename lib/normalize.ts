@@ -107,91 +107,132 @@ export function getBusinessStatusDetails(hours: any[]) {
 
     const daysMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-    const toMinutes = (timeStr: string) => {
+    const toMinutes = (timeStr: any) => {
       if (!timeStr || typeof timeStr !== "string") return -1;
       const [h, m] = timeStr.split(":").map(Number);
       if (isNaN(h) || isNaN(m)) return -1;
       return h * 60 + m;
     };
 
-    // 🚀 REGRA 1: O TURNO DE ONTEM (MADRUGADA / OVERNIGHT SHIFT)
-    // Se ontem a loja abriu (ex: Dom 22:00) e o turno atravessa a meia-noite (fechamento < abertura, ex: 20:28),
-    // checamos se o horário atual ainda não passou do fechamento de ontem!
+    // 🚀 REGRA 1: O TURNO DE ONTEM (MADRUGADA)
     const yesterdayHours = hours.find(
       (h: any) => Number(h.dayOfWeek) === yesterday,
     );
     if (yesterdayHours && !yesterdayHours.isClosed) {
-      const yOpen = toMinutes(yesterdayHours.openTime);
-      const yClose = toMinutes(yesterdayHours.closeTime);
-
-      if (yClose !== -1 && yOpen !== -1 && yClose < yOpen) {
-        if (currentTotalMinutes < yClose) {
-          const timeToClose = yClose - currentTotalMinutes;
-          if (timeToClose <= 60 && timeToClose > 0) {
-            return {
-              status: "CLOSING_SOON" as const,
-              text: `Fecha às ${yesterdayHours.closeTime}`,
-              isOpen: true,
-            };
+      // 🛡️ TIPAGEM BLINDADA: 'any' resolve as linhas vermelhas do TS
+      const checkOvernight = (oTime: any, cTime: any): any => {
+        const yOpen = toMinutes(oTime);
+        const yClose = toMinutes(cTime);
+        if (yClose !== -1 && yOpen !== -1 && yClose < yOpen) {
+          if (currentTotalMinutes < yClose) {
+            const timeToClose = yClose - currentTotalMinutes;
+            if (timeToClose <= 60 && timeToClose > 0) {
+              return {
+                status: "CLOSING_SOON",
+                text: `Fecha às ${cTime}`,
+                isOpen: true,
+              };
+            }
+            return { status: "OPEN", text: `Fecha às ${cTime}`, isOpen: true };
           }
-          return {
-            status: "OPEN" as const,
-            text: `Fecha às ${yesterdayHours.closeTime}`,
-            isOpen: true,
-          };
         }
-      }
+        return null;
+      };
+
+      const resultShift2 = checkOvernight(
+        yesterdayHours.openTime2,
+        yesterdayHours.closeTime2,
+      );
+      if (resultShift2) return resultShift2;
+
+      const resultShift1 = checkOvernight(
+        yesterdayHours.openTime,
+        yesterdayHours.closeTime,
+      );
+      if (resultShift1) return resultShift1;
     }
 
-    // 🚀 REGRA 2: O TURNO DE HOJE
+    // 🚀 REGRA 2: OS TURNOS DE HOJE
     const todayHours = hours.find((h: any) => Number(h.dayOfWeek) === today);
     if (todayHours && !todayHours.isClosed) {
-      const open = toMinutes(todayHours.openTime);
-      const close = toMinutes(todayHours.closeTime);
+      const checkShiftToday = (oTime: any, cTime: any): any => {
+        const open = toMinutes(oTime);
+        const close = toMinutes(cTime);
 
-      if (open !== -1 && close !== -1) {
-        // Turno 24h ou horários iguais
-        if (open === close) {
-          return { status: "OPEN" as const, text: "Aberto 24h", isOpen: true };
-        }
+        if (open !== -1 && close !== -1) {
+          if (open === close)
+            return { status: "OPEN", text: "Aberto 24h", isOpen: true };
 
-        const crossesMidnight = close < open;
-        const isReallyOpen = crossesMidnight
-          ? currentTotalMinutes >= open || currentTotalMinutes < close
-          : currentTotalMinutes >= open && currentTotalMinutes <= close;
+          const crossesMidnight = close < open;
+          const isReallyOpen = crossesMidnight
+            ? currentTotalMinutes >= open || currentTotalMinutes < close
+            : currentTotalMinutes >= open && currentTotalMinutes <= close;
 
-        if (isReallyOpen) {
-          const timeToClose = crossesMidnight
-            ? close + 1440 - currentTotalMinutes
-            : close - currentTotalMinutes;
+          if (isReallyOpen) {
+            const timeToClose = crossesMidnight
+              ? close + 1440 - currentTotalMinutes
+              : close - currentTotalMinutes;
 
-          if (timeToClose <= 60 && timeToClose > 0) {
-            return {
-              status: "CLOSING_SOON" as const,
-              text: `Fecha às ${todayHours.closeTime}`,
-              isOpen: true,
-            };
+            if (timeToClose <= 60 && timeToClose > 0) {
+              return {
+                status: "CLOSING_SOON",
+                text: `Fecha às ${cTime}`,
+                isOpen: true,
+              };
+            }
+            return { status: "OPEN", text: `Fecha às ${cTime}`, isOpen: true };
           }
-          return {
-            status: "OPEN" as const,
-            text: `Fecha às ${todayHours.closeTime}`,
-            isOpen: true,
-          };
-        }
 
-        // 🚀 A CIRURGIA FOI AQUI: Removido o "!crossesMidnight &&"
-        // Se a loja não está aberta agora, mas a hora atual é menor que a hora de abrir, ELA ABRE HOJE!
-        if (currentTotalMinutes < open) {
+          // Retorna um objeto padronizado para o TS parar de chorar
           return {
-            status: "CLOSED" as const,
-            text: `Abre hoje às ${todayHours.openTime}`,
+            status: "CLOSED",
+            text: `Abre hoje às ${oTime}`,
             isOpen: false,
+            openMinutes: open,
           };
         }
+        return null;
+      };
+
+      // Avalia o Turno 1 e o Turno 2
+      const shift1 = checkShiftToday(todayHours.openTime, todayHours.closeTime);
+      const shift2 = todayHours.openTime2
+        ? checkShiftToday(todayHours.openTime2, todayHours.closeTime2)
+        : null;
+
+      // Se qualquer um dos dois turnos estiver ABERTO AGORA, retorna aberto.
+      if (shift1?.isOpen)
+        return {
+          status: shift1.status as any,
+          text: shift1.text,
+          isOpen: true,
+        };
+      if (shift2?.isOpen)
+        return {
+          status: shift2.status as any,
+          text: shift2.text,
+          isOpen: true,
+        };
+
+      // 🚀 SE NENHUM TURNO ESTÁ ABERTO AGORA, DESCOBRIMOS QUAL ABRE DEPOIS
+      if (
+        shift1 &&
+        !shift1.isOpen &&
+        currentTotalMinutes < shift1.openMinutes
+      ) {
+        return { status: "CLOSED" as const, text: shift1.text, isOpen: false };
+      }
+
+      if (
+        shift2 &&
+        !shift2.isOpen &&
+        currentTotalMinutes < shift2.openMinutes
+      ) {
+        return { status: "CLOSED" as const, text: shift2.text, isOpen: false };
       }
     }
 
-    // 🚀 REGRA 3: PRÓXIMO DIA DE ABERTURA (Se hoje estiver fechado ou já encerrou o turno de hoje)
+    // 🚀 REGRA 3: PRÓXIMO DIA DE ABERTURA
     for (let i = 1; i <= 7; i++) {
       const nextDayIndex = (today + i) % 7;
       const nextDayHours = hours.find(

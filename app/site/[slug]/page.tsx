@@ -288,14 +288,20 @@ export default async function BusinessPage({
     "Sábado",
   ];
   const realHours = Array.from({ length: 7 }).map((_, index) => {
-    const dbDay = business.hours.find((h) => h.dayOfWeek === index);
+    const dbDay = business.hours.find((h: any) => h.dayOfWeek === index);
+
+    let timeString = "Fechado";
+    if (dbDay && !dbDay.isClosed && dbDay.openTime && dbDay.closeTime) {
+      timeString = `${dbDay.openTime} - ${dbDay.closeTime}`;
+      // 🚀 SE TIVER PAUSA PRO ALMOÇO, ADICIONA NO TEXTO
+      if (dbDay.openTime2 && dbDay.closeTime2) {
+        timeString += ` e ${dbDay.openTime2} - ${dbDay.closeTime2}`;
+      }
+    }
+
     return {
       day: DAYS_MAP[index],
-      time: dbDay?.isClosed
-        ? "Fechado"
-        : dbDay?.openTime
-          ? `${dbDay.openTime} - ${dbDay.closeTime}`
-          : "Fechado",
+      time: timeString,
       isClosed: dbDay?.isClosed || !dbDay,
     };
   });

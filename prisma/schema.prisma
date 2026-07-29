@@ -216,6 +216,8 @@ model BusinessHour {
   dayOfWeek  Int
   openTime   String
   closeTime  String
+  openTime2  String?  // 🚀 NOVO: Abertura do 2º Turno (Opcional)
+  closeTime2 String?  // 🚀 NOVO: Fechamento do 2º Turno (Opcional)
   isClosed   Boolean  @default(false)
 
   @@index([businessId])

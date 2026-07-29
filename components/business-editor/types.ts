@@ -2,6 +2,8 @@ export type BusinessHour = {
   dayOfWeek: number;
   openTime: string;
   closeTime: string;
+  openTime2?: string | null; // 🚀 NOVO: 2º Turno
+  closeTime2?: string | null; // 🚀 NOVO: 2º Turno
   isClosed: boolean;
 };
 
