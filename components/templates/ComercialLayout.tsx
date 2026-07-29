@@ -276,10 +276,12 @@ export default function ComercialLayout({
     business.cep,
   ].filter(Boolean);
   const completeAddressForMap = addressPartsForMap.join(", ");
-  const mapDestination =
-    business.latitude && business.longitude
+  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
+  const mapDestination = completeAddressForMap
+    ? completeAddressForMap
+    : business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
-      : completeAddressForMap;
+      : "";
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
@@ -906,20 +908,27 @@ export default function ComercialLayout({
                               Horários
                             </h2>
                           </div>
-                          <div className="space-y-2.5">
+                          <div className="space-y-3">
                             {realHours.map((h: any, i: number) => (
                               <div
                                 key={i}
-                                className="flex justify-between items-center pb-2 border-b border-black/5 last:border-0 last:pb-0"
+                                className="flex justify-between items-start md:items-center pb-3 border-b border-black/5 last:border-0 last:pb-0"
                               >
-                                <span className="text-[10px] font-bold uppercase opacity-50 tracking-wider">
+                                <span className="text-[10px] font-bold uppercase opacity-50 tracking-wider mt-0.5 md:mt-0 shrink-0">
                                   {h.day}
                                 </span>
-                                <span
-                                  className={`text-xs font-bold ${h.isClosed ? "text-rose-500" : "opacity-90"}`}
-                                >
-                                  {h.time}
-                                </span>
+                                <div className="flex flex-col items-end text-right shrink-0">
+                                  {h.time
+                                    .split(" e ")
+                                    .map((turno: string, idx: number) => (
+                                      <span
+                                        key={idx}
+                                        className={`text-[11px] md:text-xs font-bold ${h.isClosed ? "text-rose-500" : "text-slate-700"} ${idx > 0 ? "opacity-60 mt-0.5" : ""}`}
+                                      >
+                                        {turno}
+                                      </span>
+                                    ))}
+                                </div>
                               </div>
                             ))}
                           </div>

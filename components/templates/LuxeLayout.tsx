@@ -338,10 +338,18 @@ export default function LuxeLayout({
     };
   }, [selectedIndex, isPdfModalOpen]);
 
-  const mapDestination =
-    business.latitude && business.longitude
+  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
+  const safeAddressText =
+    `${business.address || ""}, ${business.number || ""}, ${business.city || ""}, ${business.state || ""}`
+      .replace(/,\s*,/g, ",")
+      .replace(/^,\s*/, "")
+      .trim();
+
+  const mapDestination = safeAddressText
+    ? safeAddressText
+    : business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
-      : `${business.address || ""}, ${business.city || ""}, ${business.state || ""}`.trim();
+      : "";
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
     mapDestination,
   )}`;
@@ -1041,23 +1049,28 @@ export default function LuxeLayout({
                   {realHours.map((h: any, i: number) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between font-light text-base md:text-xl group py-2 relative z-10"
+                      className="flex items-start md:items-center justify-between group py-2.5 relative z-10"
                     >
                       <span
-                        className={`uppercase tracking-widest text-[10px] md:text-xs font-bold ${h.isClosed ? "opacity-30" : "opacity-70 group-hover:opacity-100"}`}
+                        className={`uppercase tracking-widest text-[10px] md:text-xs font-bold shrink-0 mt-0.5 md:mt-0 ${h.isClosed ? "opacity-30" : "opacity-70 group-hover:opacity-100"}`}
                       >
                         {h.day}
                       </span>
-                      <div className="flex-grow mx-4 border-b border-dotted border-current/20 opacity-50" />
-                      <span
-                        className={
-                          h.isClosed
-                            ? "opacity-30 italic text-sm"
-                            : `opacity-100 font-medium ${theme.textColor}`
-                        }
+                      <div className="flex-grow mx-3 md:mx-4 border-b border-dotted border-current/20 opacity-50 relative top-2.5 md:top-auto md:self-center" />
+                      <div
+                        className={`flex flex-col items-end text-right shrink-0 ${h.isClosed ? "opacity-30 italic text-sm" : `opacity-100 font-medium ${theme.textColor}`}`}
                       >
-                        {h.time}
-                      </span>
+                        {h.time
+                          .split(" e ")
+                          .map((turno: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className={`block text-[11px] md:text-sm tracking-wide ${idx > 0 ? "opacity-60 mt-1" : ""}`}
+                            >
+                              {turno}
+                            </span>
+                          ))}
+                      </div>
                     </div>
                   ))}
                 </motion.div>

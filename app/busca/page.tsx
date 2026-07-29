@@ -364,6 +364,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     keywords: true,
     neighborhood: true,
     city: true,
+    state: true,
     latitude: true,
     longitude: true,
     views: true,
@@ -896,20 +897,34 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   // ============================================================================
   // 🚀 2. O INTERCEPTADOR CONTEXTUAL (CTO / UX FIX)
-  // Constrói as opções do modal de filtro APENAS com o que existe na busca atual!
+  // Constrói as opções APENAS com o que existe na busca atual (Anti-Resultados Vazios)
   // ============================================================================
   let effectiveFilterMap = orderedFilterMap;
+  let effectiveLocationData = locationData; // 🚀 NOVO: Cidades Inteligentes
 
   if (query && businesses.length > 0) {
     const dynamicMap: Record<string, Set<string>> = {};
+    const dynamicLoc: LocationTree = {}; // 🚀 NOVO: Coletor de Cidades
 
     businesses.forEach((item) => {
-      if (!item.category) return;
-      if (!dynamicMap[item.category]) dynamicMap[item.category] = new Set();
-      if (item.subcategory && Array.isArray(item.subcategory)) {
-        item.subcategory.forEach((sub: string) => {
-          if (sub) dynamicMap[item.category].add(sub);
-        });
+      // Filtro de Categorias
+      if (item.category) {
+        if (!dynamicMap[item.category]) dynamicMap[item.category] = new Set();
+        if (item.subcategory && Array.isArray(item.subcategory)) {
+          item.subcategory.forEach((sub: string) => {
+            if (sub) dynamicMap[item.category].add(sub);
+          });
+        }
+      }
+
+      // 🚀 Filtro de Localização (Só mostra cidades onde a busca deu Match!)
+      if (item.state && item.city && item.neighborhood) {
+        if (!dynamicLoc[item.state]) dynamicLoc[item.state] = {};
+        if (!dynamicLoc[item.state][item.city])
+          dynamicLoc[item.state][item.city] = [];
+        if (!dynamicLoc[item.state][item.city].includes(item.neighborhood)) {
+          dynamicLoc[item.state][item.city].push(item.neighborhood);
+        }
       }
     });
 
@@ -920,7 +935,15 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         sortedDynamicMap[key] = Array.from(dynamicMap[key]).sort();
       });
 
+    // Ordena os bairros dinâmicos em ordem alfabética
+    Object.keys(dynamicLoc).forEach((st) => {
+      Object.keys(dynamicLoc[st]).forEach((ct) => {
+        dynamicLoc[st][ct].sort();
+      });
+    });
+
     effectiveFilterMap = sortedDynamicMap;
+    effectiveLocationData = dynamicLoc; // 🚀 Aplica o mapa geográfico filtrado!
   }
 
   // ============================================================================
@@ -1014,8 +1037,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
             <div className="w-full md:w-auto shrink-0 flex items-center [&>button]:w-full md:[&>button]:w-auto [&>button]:h-12 md:[&>button]:h-[56px] [&>button]:bg-slate-100 [&>button]:border-slate-200 [&>button]:text-slate-700 [&>button]:hover:bg-slate-200 [&>button]:shadow-inner [&>button]:transition-all [&>button]:font-bold [&>button]:tracking-widest">
               <FilterModal
-                availableCategories={effectiveFilterMap} // 🚀 Lendo o mapa contextual!
-                locationData={locationData}
+                availableCategories={effectiveFilterMap}
+                locationData={effectiveLocationData} // 🚀 CIRURGIA AQUI: Atualizado!
                 currentSort={sort}
               />
             </div>

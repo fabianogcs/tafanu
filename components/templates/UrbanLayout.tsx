@@ -130,11 +130,20 @@ export default function UrbanLayout({
   const addressBase = business?.address || "";
   const hasNumberInAddress =
     business?.number && addressBase.includes(business.number);
-  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(
-    business.latitude && business.longitude
+  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
+  const safeAddressText =
+    `${business.address || ""}, ${business.number || ""}, ${business.city || ""}, ${business.state || ""}`
+      .replace(/,\s*,/g, ",")
+      .replace(/^,\s*/, "")
+      .trim();
+
+  const mapsDestination = safeAddressText
+    ? safeAddressText
+    : business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
-      : `${business.address || ""}, ${business.city || ""}, ${business.state || ""}`.trim(),
-  )}`;
+      : "";
+
+  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(mapsDestination)}`;
 
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),
@@ -855,20 +864,23 @@ export default function UrbanLayout({
                   {realHours.map((h: any, i: number) => (
                     <div
                       key={i}
-                      className={`flex justify-between items-center font-bold text-xs pb-4 border-b border-slate-50 last:border-0 last:pb-0`}
+                      className={`flex justify-between items-start md:items-center font-bold text-xs pb-4 border-b border-current/10 last:border-0 last:pb-0`}
                     >
-                      <span className="opacity-50 uppercase tracking-widest">
+                      <span className="opacity-50 uppercase tracking-widest shrink-0 mt-1 md:mt-0">
                         {h.day}
                       </span>
-                      <span
-                        className={
-                          h.isClosed
-                            ? "text-rose-500 bg-rose-50 px-3 py-1 rounded-lg text-[10px]"
-                            : "opacity-90"
-                        }
-                      >
-                        {h.time}
-                      </span>
+                      <div className="flex flex-col items-end text-right shrink-0">
+                        {h.time
+                          .split(" e ")
+                          .map((turno: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className={`${h.isClosed ? "text-rose-500 bg-rose-50 px-3 py-1 rounded-lg text-[10px]" : "opacity-90"} ${idx > 0 && !h.isClosed ? "text-[10px] opacity-60 mt-1" : ""}`}
+                            >
+                              {turno}
+                            </span>
+                          ))}
+                      </div>
                     </div>
                   ))}
                 </div>

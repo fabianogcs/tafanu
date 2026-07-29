@@ -267,10 +267,12 @@ export default function ShowroomLayout({
     business.cep,
   ].filter(Boolean);
   const completeAddressForMap = addressPartsForMap.join(", ");
-  const mapDestination =
-    business.latitude && business.longitude
+  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
+  const mapDestination = completeAddressForMap
+    ? completeAddressForMap
+    : business.latitude && business.longitude
       ? `${business.latitude},${business.longitude}`
-      : completeAddressForMap;
+      : "";
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
@@ -735,20 +737,27 @@ export default function ShowroomLayout({
                   <h2 className="text-sm md:text-base font-bold mb-4 flex items-center gap-2 text-slate-800 uppercase tracking-wider">
                     <Clock size={16} className={theme.primary} /> Horários
                   </h2>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {safeHours.map((h: any, i: number) => (
                       <div
                         key={i}
-                        className="flex justify-between items-center text-sm"
+                        className="flex justify-between items-start text-sm"
                       >
-                        <span className="font-semibold text-slate-500 capitalize tracking-wide">
+                        <span className="font-semibold text-slate-500 capitalize tracking-wide shrink-0">
                           {h.day}
                         </span>
-                        <span
-                          className={`font-bold ${h.isClosed ? "text-rose-500" : "text-slate-800"}`}
-                        >
-                          {h.time}
-                        </span>
+                        <div className="flex flex-col items-end text-right shrink-0">
+                          {h.time
+                            .split(" e ")
+                            .map((turno: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className={`font-bold text-xs md:text-sm ${h.isClosed ? "text-rose-500" : "text-slate-800"} ${idx > 0 ? "opacity-60 mt-0.5" : ""}`}
+                              >
+                                {turno}
+                              </span>
+                            ))}
+                        </div>
                       </div>
                     ))}
                   </div>
