@@ -934,9 +934,10 @@ export default function ShowroomLayout({
                   <Plus className="rotate-45" size={20} strokeWidth={2} />
                 </button>
               </div>
+              {/* 🚀 O Coração: Leitor de PDF via Google Docs (Evita download forçado no Celular) */}
               <div className="flex-1 w-full bg-slate-200/50">
                 <iframe
-                  src={`${business.catalogPdf}#toolbar=0`}
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(business.catalogPdf)}&embedded=true`}
                   className="w-full h-full border-none"
                   title="Catálogo PDF"
                 />

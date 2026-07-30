@@ -1192,8 +1192,9 @@ export default function LuxeLayout({
                 </button>
               </div>
               <div className="flex-1 w-full bg-slate-200/50 p-3 md:p-5">
+                {/* 🚀 UX FIX: Leitor de PDF via Google Docs (Evita download forçado no Celular) */}
                 <iframe
-                  src={`${business.catalogPdf}#toolbar=0`}
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(business.catalogPdf)}&embedded=true`}
                   className="w-full h-full border-none rounded-xl shadow-inner"
                   title="Catálogo PDF"
                 />

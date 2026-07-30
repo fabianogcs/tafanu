@@ -959,8 +959,9 @@ export default function UrbanLayout({
                 </button>
               </div>
               <div className="flex-1 w-full bg-slate-200/50 p-2 md:p-4">
+                {/* 🚀 UX FIX: Força o renderizador do Google no Mobile para evitar o download forçado */}
                 <iframe
-                  src={`${business.catalogPdf}#toolbar=0`}
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(business.catalogPdf)}&embedded=true`}
                   className="w-full h-full border-none rounded-xl md:rounded-[2rem]"
                   title="Catálogo PDF"
                 />
