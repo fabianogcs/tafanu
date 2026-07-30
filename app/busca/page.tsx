@@ -5,7 +5,7 @@ import LocationTracker from "@/components/LocationTracker";
 import SearchBar from "@/components/SearchBar";
 import FilterModal, { LocationTree } from "@/components/FilterModal";
 import BusinessCard from "@/components/BusinessCard";
-import OpenNowButton from "@/components/OpenNowButton"; // 🚀 NOVO IMPORT AQUI!
+import OpenNowButton from "@/components/OpenNowButton";
 import { auth } from "@/auth";
 import Link from "next/link";
 import { normalizeText } from "@/lib/normalize";
@@ -37,6 +37,11 @@ function calculateDistance(
 function subsHasWord(subs: string[], term: string) {
   return subs.some((s) => s.split(" ").includes(term));
 }
+
+// ============================================================================
+// 🚀 ARQUITETURA DE INTENÇÃO E SEMÂNTICA 10.0
+// ============================================================================
+
 const EXCECOES_PLURAL = [
   "oculos",
   "tenis",
@@ -50,22 +55,61 @@ const EXCECOES_PLURAL = [
   "cilios",
 ];
 
-// 1. SINÔNIMOS EXATOS E ERROS DE DIGITAÇÃO (A = B)
+const IRREGULAR_PLURALS: Record<string, string> = {
+  paes: "pao",
+  caes: "cao",
+  moveis: "movel",
+  aneis: "anel",
+  animais: "animal",
+  hospitais: "hospital",
+  papeis: "papel",
+  farois: "farol",
+  luzes: "luz",
+  flores: "flor",
+  cores: "cor",
+};
+
+// 1. SINÔNIMOS EXATOS, ERROS E GÊNEROS (A = B)
 const TRUE_SYNONYMS: Record<string, string[]> = {
+  mecanico: ["mecanica", "mecânico", "mecânica", "oficina"],
+  mecanica: ["mecanico", "mecânica", "mecânico", "oficina"],
+  cabeleireiro: [
+    "cabeleireira",
+    "cabelereiro",
+    "cabelereira",
+    "cabeleleiro",
+    "cabeleleira",
+    "salao",
+  ],
+  medico: [
+    "medica",
+    "doutor",
+    "doutora",
+    "dr",
+    "dra",
+    "clinico",
+    "clínica",
+    "clinica",
+  ],
+  veterinario: ["veterinaria", "vet", "veterinário", "veterinária"],
+  psicologo: ["psicologa", "psicóloga", "psicólogo", "terapeuta"],
+  advogado: ["advogada", "advocacia"],
+  fotografo: ["fotografa", "fotógrafa", "fotógrafo", "fotografia", "estudio"],
+  costureira: ["costureiro", "costura", "alfaiate"],
+  pintor: ["pintora", "pinturas", "pintura"],
+  marceneiro: ["marcenaria"],
+  encanador: ["bombeiro hidraulico"],
   hamburguer: ["burger", "burguer", "x-burguer", "podrao", "x-tudo"],
   pizza: ["piza", "pissa"],
   pneu: ["peneu"],
-  cabeleireiro: ["cabelereiro", "cabeleleiro"],
   sobrancelha: ["sombrancelha"],
   marmita: ["quentinha", "marmitex"],
-  carro: ["veiculo", "automovel"],
+  carro: ["veiculo", "automovel", "automotivo"],
   moto: ["motocicleta"],
-  medico: ["doutor", "dr", "dra", "clinico", "clínico"],
-  dentista: ["odonto", "odontologista"],
+  dentista: ["odonto", "odontologista", "odontologia"],
   acai: ["açaí"],
   otica: ["ótica"],
-  farmacia: ["farmácia"],
-  mecanica: ["mecânica"],
+  farmacia: ["farmácia", "drogaria"],
 };
 
 function expandTrueSynonyms(map: Record<string, string[]>) {
@@ -85,16 +129,13 @@ function expandTrueSynonyms(map: Record<string, string[]>) {
 }
 const TRUE_SYNONYMS_MAP = expandTrueSynonyms(TRUE_SYNONYMS);
 
-// 2. INTENÇÃO DE COMPRA (PRODUTO -> ESTABELECIMENTO)
+// 2. INTENÇÃO DE COMPRA E TIPOS DE NEGÓCIO (A -> B)
 const BUSINESS_TYPES: Record<string, string[]> = {
+  // 🍔 Alimentação
   pao: ["padaria", "panificadora"],
   bolo: ["confeitaria", "doceria", "padaria"],
   carne: ["acougue", "churrascaria", "casa de carnes"],
   churrasco: ["churrascaria"],
-  remedio: ["farmacia", "drogaria"],
-  celular: ["assistencia", "assistencia tecnica", "loja de celulares"],
-  pneu: ["borracharia", "centro automotivo"],
-  oculos: ["otica"],
   lanche: ["lanchonete", "fast food", "hamburgueria"],
   pizza: ["pizzaria"],
   esfiha: ["esfiharia"],
@@ -106,13 +147,38 @@ const BUSINESS_TYPES: Record<string, string[]> = {
   cerveja: ["adega", "distribuidora", "bar", "boteco"],
   chopp: ["adega", "distribuidora", "bar", "boteco"],
   bebida: ["adega", "distribuidora"],
-  flor: ["floricultura"],
-  presente: ["floricultura", "papelaria", "loja de presentes"],
-  cachorro: ["pet shop", "clinica veterinaria"],
-  gato: ["pet shop", "clinica veterinaria"],
-  pet: ["pet shop", "clinica veterinaria", "banho e tosa"],
+  pf: ["restaurante"],
+  hamburguer: ["hamburgueria", "lanchonete"],
+  coxinha: ["salgaderia", "lanchonete", "padaria"],
+  doce: ["doceria", "confeitaria"],
+  salgado: ["padaria", "lanchonete", "salgaderia"],
+  frango: ["rotisseria"],
+  assado: ["rotisseria"],
+  peixe: ["peixaria"],
+  cafe: ["cafeteria"],
+  cha: ["casa de cha", "cafeteria"],
+  vinho: ["adega"],
+  whisky: ["adega"],
+
+  // 🏥 Saúde e Estética
+  remedio: ["farmacia", "drogaria"],
+  oculos: ["otica"],
   cabelo: ["salao", "barbearia", "salao de beleza"],
   unha: ["esmalteria", "salao"],
+  nutricionista: ["clinica"],
+  psicologo: ["clinica"],
+  fonoaudiologo: ["clinica"],
+  cardiologista: ["clinica"],
+  dermatologista: ["clinica"],
+  ginecologista: ["clinica"],
+  pediatra: ["clinica"],
+  aparelho: ["clinica odontologica"],
+  implante: ["clinica odontologica"],
+  canal: ["clinica odontologica"],
+
+  // 🛠️ Serviços, Casa e Automotivo
+  celular: ["assistencia", "assistencia tecnica", "loja de celulares"],
+  pneu: ["borracharia", "centro automotivo"],
   madeira: ["marcenaria", "loja de moveis"],
   movel: ["marcenaria", "loja de moveis"],
   cano: ["encanador", "desentupidora"],
@@ -120,15 +186,11 @@ const BUSINESS_TYPES: Record<string, string[]> = {
   luz: ["eletricista"],
   tomada: ["eletricista"],
   motor: ["oficina", "mecanica", "centro automotivo"],
-  roupa: ["loja de roupas", "boutique", "moda"],
-  sapato: ["loja de calcados", "sapataria"],
-  pf: ["restaurante"],
   carro: [
     "oficina",
     "mecanica",
     "centro automotivo",
     "lava rapido",
-    "lava-rapido",
     "despachante",
     "auto eletrica",
     "guincho",
@@ -136,21 +198,89 @@ const BUSINESS_TYPES: Record<string, string[]> = {
     "auto pecas",
     "estacionamento",
   ],
+  bateria: ["auto eletrica", "centro automotivo"],
+  oleo: ["centro automotivo"],
+  alinhamento: ["centro automotivo"],
+  balanceamento: ["centro automotivo"],
+  escapamento: ["centro automotivo"],
+  tinta: ["loja de tintas"],
+  cimento: ["material de construcao"],
+  areia: ["material de construcao"],
+  telha: ["material de construcao"],
+  roupa: ["loja de roupas", "boutique", "moda"],
+  sapato: ["loja de calcados", "sapataria"],
+  flor: ["floricultura"],
+  presente: ["floricultura", "papelaria", "loja de presentes"],
+  relogio: ["relojoaria"],
+  joia: ["joalheria"],
+  alianca: ["joalheria"],
+  cachorro: ["pet shop", "clinica veterinaria"],
+  gato: ["pet shop", "clinica veterinaria"],
+  pet: ["pet shop", "clinica veterinaria", "banho e tosa"],
+  vacina: ["clinica veterinaria"],
+  racao: ["pet shop"],
+  consulta: ["clinica veterinaria"],
+
+  // 📚 Profissões -> Locais
+  barbeiro: ["barbearia"],
+  manicure: ["salao", "esmalteria"],
+  depilacao: ["salao", "clinica de estetica"],
+  estetica: ["clinica de estetica", "salao"],
+  fisioterapeuta: ["clinica de fisioterapia"],
+  pedreiro: ["material de construcao", "construtora"],
+  serralheiro: ["serralheria"],
+  vidraceiro: ["vidracaria"],
+  gesseiro: ["gesso"],
 };
 
-// 3. TERMOS RELACIONADOS (Bônus Secundário)
+// 3. TERMOS RELACIONADOS E VARIAÇÕES (Bônus Secundário)
 const RELATED_TERMS: Record<string, string[]> = {
+  restaurante: [
+    "self service",
+    "self-service",
+    "a la carte",
+    "buffet",
+    "almoco",
+    "jantar",
+    "refeicao",
+    "comida caseira",
+  ],
+  lanchonete: ["lanche", "lanches"],
+  pastel: ["pastelzinho"],
+  churrasco: ["espeto", "espetinho"],
+  sorvete: ["gelato", "picole"],
+  suco: ["sucos", "vitamina"],
   pizza: ["calzone", "esfiha", "massa"],
   hamburguer: ["batata", "refrigerante", "combo", "milkshake"],
   salgado: ["coxinha", "kibe", "empada", "esfiha"],
   cafe: ["cappuccino", "espresso", "pingado", "pao de queijo"],
+  padaria: ["pao", "bolo", "rosca", "croissant", "cafe da manha"],
+  fisioterapeuta: ["fisioterapia"],
+  nutricionista: ["nutricao", "nutrição", "nutri"],
+  fonoaudiologo: ["fono", "fonoaudiólogo", "fonoaudióloga"],
+  ginecologista: ["gineco"],
+  cardiologista: ["cardio"],
+  oftalmologista: ["oculista"],
   corpo: ["massagem", "estetica", "drenagem", "pilates"],
   rosto: ["limpeza de pele", "harmonizacao", "botox", "maquiagem"],
+  farmacia: ["remedio", "medicamento", "vitamina"],
   festa: ["evento", "decoracao", "salao de festas", "buffet", "dj"],
   carro: ["lavagem", "polimento", "funilaria", "martelinho"],
   casa: ["imobiliaria", "aluguel", "venda", "apartamento"],
   escola: ["colegio", "curso", "idiomas", "reforco"],
-  pet: ["racao", "vacina", "veterinario"],
+  borracharia: ["borracha"],
+  funilaria: ["lanternagem", "chapeacao"],
+  autoeletrica: ["auto elétrica", "injeção eletrônica"],
+  guincho: ["reboque"],
+  "lava rapido": ["lava-rápido", "lava jato", "lavajato"],
+  imobiliaria: ["imobiliária", "corretor"],
+  moveis: ["móveis", "mobilia", "mobília"],
+  colchao: ["colchão", "cama"],
+  petshop: ["pet shop"],
+  racao: ["ração", "petisco"],
+  banho: ["banho e tosa"],
+  pet: ["racao", "vacina", "veterinario", "banho e tosa"],
+  academia: ["musculacao", "crossfit", "personal", "treino"],
 };
 
 // 🚀 TABELA DE PESOS DO MOTOR DE BUSCA (Score Engine)
@@ -170,6 +300,36 @@ const SCORE_WEIGHTS = {
   VERIFIED_BADGE: 50,
 };
 
+// 🚀 FUNÇÃO INTELIGENTE DE PLURAIS (Irregulares + Padrão)
+function getPluralVariations(term: string): string[] {
+  const variations = [term];
+
+  if (IRREGULAR_PLURALS[term]) {
+    variations.push(IRREGULAR_PLURALS[term]);
+  }
+
+  const irregularPluralForm = Object.keys(IRREGULAR_PLURALS).find(
+    (k) => IRREGULAR_PLURALS[k] === term,
+  );
+  if (irregularPluralForm) {
+    variations.push(irregularPluralForm);
+  }
+
+  if (
+    !EXCECOES_PLURAL.includes(term) &&
+    !IRREGULAR_PLURALS[term] &&
+    !irregularPluralForm
+  ) {
+    if (term.endsWith("s") && term.length > 3) {
+      variations.push(term.slice(0, -1));
+    } else {
+      variations.push(term + "s");
+    }
+  }
+
+  return variations;
+}
+
 function getSmartTerms(query: string) {
   const terms = query
     .toLowerCase()
@@ -179,13 +339,8 @@ function getSmartTerms(query: string) {
 
   terms.forEach((term) => {
     const normalizedTerm = normalizeText(term);
-    result.add(normalizedTerm);
 
-    if (!EXCECOES_PLURAL.includes(normalizedTerm)) {
-      if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3)
-        result.add(normalizedTerm.slice(0, -1));
-      else result.add(normalizedTerm + "s");
-    }
+    getPluralVariations(normalizedTerm).forEach((v) => result.add(v));
 
     if (TRUE_SYNONYMS_MAP[normalizedTerm])
       TRUE_SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
@@ -331,6 +486,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     .slice(0, 4);
 
   const queryCap = query.charAt(0).toUpperCase() + query.slice(1);
+
   const strictSearchBlock: Prisma.BusinessWhereInput[] =
     parsedTerms.length > 0
       ? [
@@ -341,21 +497,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               {
                 AND: parsedTerms.map((term) => {
                   const termNormalized = normalizeText(term);
-                  const coreGroup = [termNormalized];
+                  const coreGroup = getPluralVariations(termNormalized);
 
                   if (TRUE_SYNONYMS_MAP[termNormalized]) {
                     coreGroup.push(...TRUE_SYNONYMS_MAP[termNormalized]);
-                  }
-
-                  if (!EXCECOES_PLURAL.includes(termNormalized)) {
-                    if (
-                      termNormalized.endsWith("s") &&
-                      termNormalized.length > 3
-                    ) {
-                      coreGroup.push(termNormalized.slice(0, -1));
-                    } else {
-                      coreGroup.push(termNormalized + "s");
-                    }
                   }
 
                   const businessGroup = BUSINESS_TYPES[termNormalized] || [];
@@ -421,21 +566,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               { subcategory: { hasSome: [query, queryCap] } },
               ...parsedTerms.flatMap((term) => {
                 const termNormalized = normalizeText(term);
-                const coreGroup = [termNormalized];
+                const coreGroup = getPluralVariations(termNormalized);
 
                 if (TRUE_SYNONYMS_MAP[termNormalized]) {
                   coreGroup.push(...TRUE_SYNONYMS_MAP[termNormalized]);
-                }
-
-                if (!EXCECOES_PLURAL.includes(termNormalized)) {
-                  if (
-                    termNormalized.endsWith("s") &&
-                    termNormalized.length > 3
-                  ) {
-                    coreGroup.push(termNormalized.slice(0, -1));
-                  } else {
-                    coreGroup.push(termNormalized + "s");
-                  }
                 }
 
                 const businessGroup = BUSINESS_TYPES[termNormalized] || [];
@@ -679,7 +813,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     const todayHours = b.hours.find((h: any) => h.dayOfWeek === currentDay);
 
     if (todayHours && !todayHours.isClosed) {
-      // 🚀 1. Checa o Primeiro Turno
       if (todayHours.openTime && todayHours.closeTime) {
         const [oH, oM] = todayHours.openTime.split(":").map(Number);
         const [cH, cM] = todayHours.closeTime.split(":").map(Number);
@@ -693,7 +826,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         }
       }
 
-      // 🚀 2. Checa o Segundo Turno (A Mágica da Pausa do Almoço!)
       if (!isOpen && todayHours.openTime2 && todayHours.closeTime2) {
         const [oH2, oM2] = todayHours.openTime2.split(":").map(Number);
         const [cH2, cM2] = todayHours.closeTime2.split(":").map(Number);
@@ -725,13 +857,8 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       parsedTerms.forEach((term, index) => {
         const isFirstTerm = index === 0;
 
-        const coreGroup = [term];
+        const coreGroup = getPluralVariations(term);
         if (TRUE_SYNONYMS_MAP[term]) coreGroup.push(...TRUE_SYNONYMS_MAP[term]);
-        if (!EXCECOES_PLURAL.includes(term)) {
-          if (term.endsWith("s") && term.length > 3)
-            coreGroup.push(term.slice(0, -1));
-          else coreGroup.push(term + "s");
-        }
 
         const businessGroup = BUSINESS_TYPES[term] || [];
         const relatedGroup = RELATED_TERMS[term] || [];
@@ -810,14 +937,10 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       }
 
       const firstTerm = parsedTerms[0];
-      const firstCoreGroup = [firstTerm];
+      const firstCoreGroup = getPluralVariations(firstTerm);
+
       if (TRUE_SYNONYMS_MAP[firstTerm])
         firstCoreGroup.push(...TRUE_SYNONYMS_MAP[firstTerm]);
-      if (!EXCECOES_PLURAL.includes(firstTerm)) {
-        if (firstTerm.endsWith("s") && firstTerm.length > 3)
-          firstCoreGroup.push(firstTerm.slice(0, -1));
-        else firstCoreGroup.push(firstTerm + "s");
-      }
 
       const firstBusinessGroup = BUSINESS_TYPES[firstTerm] || [];
 
@@ -865,14 +988,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   // Constrói as opções APENAS com o que existe na busca atual (Anti-Resultados Vazios)
   // ============================================================================
   let effectiveFilterMap = orderedFilterMap;
-  let effectiveLocationData = locationData; // 🚀 NOVO: Cidades Inteligentes
+  let effectiveLocationData = locationData;
 
   if (query && businesses.length > 0) {
     const dynamicMap: Record<string, Set<string>> = {};
-    const dynamicLoc: LocationTree = {}; // 🚀 NOVO: Coletor de Cidades
+    const dynamicLoc: LocationTree = {};
 
     businesses.forEach((item) => {
-      // Filtro de Categorias
       if (item.category) {
         if (!dynamicMap[item.category]) dynamicMap[item.category] = new Set();
         if (item.subcategory && Array.isArray(item.subcategory)) {
@@ -882,7 +1004,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         }
       }
 
-      // 🚀 Filtro de Localização (Só mostra cidades onde a busca deu Match!)
       if (item.state && item.city && item.neighborhood) {
         if (!dynamicLoc[item.state]) dynamicLoc[item.state] = {};
         if (!dynamicLoc[item.state][item.city])
@@ -900,7 +1021,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         sortedDynamicMap[key] = Array.from(dynamicMap[key]).sort();
       });
 
-    // Ordena os bairros dinâmicos em ordem alfabética
     Object.keys(dynamicLoc).forEach((st) => {
       Object.keys(dynamicLoc[st]).forEach((ct) => {
         dynamicLoc[st][ct].sort();
@@ -908,7 +1028,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
     });
 
     effectiveFilterMap = sortedDynamicMap;
-    effectiveLocationData = dynamicLoc; // 🚀 Aplica o mapa geográfico filtrado!
+    effectiveLocationData = dynamicLoc;
   }
 
   // ============================================================================
@@ -1003,7 +1123,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
             <div className="w-full md:w-auto shrink-0 flex items-center [&>button]:w-full md:[&>button]:w-auto [&>button]:h-12 md:[&>button]:h-[56px] [&>button]:bg-slate-100 [&>button]:border-slate-200 [&>button]:text-slate-700 [&>button]:hover:bg-slate-200 [&>button]:shadow-inner [&>button]:transition-all [&>button]:font-bold [&>button]:tracking-widest">
               <FilterModal
                 availableCategories={effectiveFilterMap}
-                locationData={effectiveLocationData} // 🚀 CIRURGIA AQUI: Atualizado!
+                locationData={effectiveLocationData}
                 currentSort={sort}
               />
             </div>
@@ -1057,8 +1177,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
               </div>
             )}
 
-            {/* 🚀 CIRURGIA DEV: GRID CRAVADO EM EXATAMENTE 2 COLUNAS NO DESKTOP! (grid-cols-1 sm:grid-cols-2) */}
-            {/* 🚀 CIRURGIA DEV: GRID DE RESULTADOS + CARD CTA FORÇADO NO FINAL DA PÁGINA 1 */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
               {paginatedResults.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-4 animate-in fade-in zoom-in duration-500">
@@ -1101,7 +1219,6 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     />
                   ))}
 
-                  {/* 🚀 UX FIX: O CARD ESCURO SEMPRE FICA POR ÚLTIMO, MAS SÓ APARECE SE TIVER ESPAÇO NA GRADE (< 12) */}
                   {page === 1 && paginatedResults.length < 12 && (
                     <Link
                       href="/anunciar"
