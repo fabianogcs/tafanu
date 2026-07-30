@@ -37,823 +37,38 @@ function calculateDistance(
 function subsHasWord(subs: string[], term: string) {
   return subs.some((s) => s.split(" ").includes(term));
 }
-const SINONIMOS_BASE: Record<string, string[]> = {
-  // 🍔 ALIMENTAÇÃO E BEBIDAS
-  pao: [
-    "padaria",
-    "panificadora",
-    "confeitaria",
-    "paes",
-    "baguete",
-    "pãozinho",
-    "pão francês",
-    "bolo",
-    "bolos",
-    "croissant",
-    "salgados",
-  ],
-  lanche: [
-    "lanches",
-    "hamburguer",
-    "hamburgueres",
-    "hamburgueria",
-    "sanduiche",
-    "sanduiches",
-    "fast food",
-    "hot dog",
-    "cachorro quente",
-    "burguer",
-    "burger",
-    "x-tudo",
-    "podrão",
-    "lanchonete",
-    "salgado",
-    "coxinha",
-  ],
-  pizza: [
-    "pizzas",
-    "pizzaria",
-    "calzone",
-    "rodizio",
-    "piza",
-    "pissa",
-    "esfiharia",
-    "esfiha",
-    "esfia",
-    "massa",
-    "massas",
-  ],
-  marmita: [
-    "marmitas",
-    "quentinha",
-    "quentinhas",
-    "pf",
-    "prato feito",
-    "restaurante",
-    "restaurantes",
-    "comida caseira",
-    "marmitex",
-    "self service",
-    "a la carte",
-    "executivo",
-  ],
-  carne: [
-    "carnes",
-    "churrasco",
-    "churrascos",
-    "churrascaria",
-    "espetinho",
-    "espetinhos",
-    "acougue",
-    "picanha",
-    "costela",
-    "maminha",
-    "assados",
-    "frango assado",
-  ],
-  doce: [
-    "doces",
-    "bolo",
-    "bolos",
-    "doceria",
-    "confeitaria",
-    "sobremesa",
-    "sobremesas",
-    "chocolate",
-    "chocolates",
-    "brigadeiro",
-    "torta",
-    "tortas",
-    "bombom",
-    "trufa",
-    "trufas",
-  ],
-  japones: [
-    "japonesa",
-    "sushi",
-    "sushis",
-    "temaki",
-    "temakis",
-    "oriental",
-    "sashimi",
-    "yakisoba",
-    "rodizio japones",
-    "temakeria",
-    "japa",
-    "comida asiatica",
-  ],
-  sorvete: [
-    "sorvetes",
-    "sorveteria",
-    "acai",
-    "açais",
-    "gelato",
-    "picole",
-    "picoles",
-    "paleta",
-    "milk shake",
-    "milkshake",
-  ],
-  cerveja: [
-    "cervejas",
-    "chopp",
-    "chopps",
-    "adega",
-    "adegas",
-    "bar",
-    "bares",
-    "bebidas",
-    "bebida",
-    "distribuidora",
-    "boteco",
-    "botecos",
-    "pub",
-    "gelada",
-    "combo",
-    "vinho",
-    "vinhos",
-    "destilado",
-    "pinga",
-    "cachaça",
-  ],
-  cafe: [
-    "cafes",
-    "cafeteria",
-    "cafeterias",
-    "cappuccino",
-    "espresso",
-    "cafe da manha",
-    "lanchonete",
-    "expresso",
-    "pingado",
-  ],
-  pastel: [
-    "pasteis",
-    "pastelaria",
-    "salgado",
-    "salgados",
-    "salgaderia",
-    "caldo de cana",
-    "frito na hora",
-  ],
+const EXCECOES_PLURAL = [
+  "oculos",
+  "tenis",
+  "lapis",
+  "onibus",
+  "gratis",
+  "simples",
+  "pais",
+  "gas",
+  "virus",
+  "cilios",
+];
 
-  // 🏥 SAÚDE E BEM-ESTAR
-  dente: [
-    "dentes",
-    "dentista",
-    "dentistas",
-    "odontologia",
-    "clinica odontologica",
-    "aparelho",
-    "clareamento",
-    "implante",
-    "implantes",
-    "extracao",
-    "canal",
-    "odonto",
-    "protese",
-    "siso",
-  ],
-  olho: [
-    "olhos",
-    "oculos",
-    "otica",
-    "oticas",
-    "lente",
-    "lentes",
-    "exame de vista",
-    "lentes de contato",
-    "armacao",
-    "oftalmologista",
-    "oculista",
-    "oftalmo",
-  ],
-  medico: [
-    "medicos",
-    "clinica medica",
-    "clinicas medicas",
-    "consulta",
-    "consultas",
-    "exame",
-    "exames",
-    "laboratorio",
-    "laboratorios",
-    "pediatra",
-    "ginecologista",
-    "cardiologista",
-    "dermatologista",
-    "ortopedista",
-    "clinica geral",
-    "posto medico",
-    "hospital",
-    "hospitais",
-  ],
-  mente: [
-    "psicologo",
-    "psicologos",
-    "psicologia",
-    "terapia",
-    "terapias",
-    "psiquiatra",
-    "terapeuta",
-    "terapeutas",
-    "psicanalista",
-    "saude mental",
-  ],
-
-  // 💅 BELEZA E ESTÉTICA
-  corpo: [
-    "corpos",
-    "massagem",
-    "massagens",
-    "drenagem",
-    "clinica de estetica",
-    "spa",
-    "emagrecimento",
-    "fisioterapia",
-    "fisioterapeuta",
-    "quiropraxia",
-    "pilates",
-    "estetica corporal",
-  ],
-  unha: [
-    "unhas",
-    "manicure",
-    "pedicure",
-    "esmalteria",
-    "salao",
-    "alongamento de unhas",
-    "gel",
-    "fibra de vidro",
-    "acrilico",
-    "unhas decoradas",
-    "pe e mao",
-  ],
-  cabelo: [
-    "cabelos",
-    "salao",
-    "saloes",
-    "cabeleireiro",
-    "cabeleireiros",
-    "barbearia",
-    "barbearias",
-    "corte",
-    "cortes",
-    "mechas",
-    "coloracao",
-    "cabelereiro",
-    "cabeleleiro",
-    "barbeiro",
-    "barbeiros",
-    "progressiva",
-    "luzes",
-    "loiro",
-    "penteado",
-    "escova",
-    "tranca",
-    "salao de beleza",
-  ],
-  pelo: ["pelos", "depilacao", "cera", "laser", "depiladora", "epilacao"],
-  rosto: [
-    "rostos",
-    "sobrancelha",
-    "sobrancelhas",
-    "cilios",
-    "maquiagem",
-    "maquiagens",
-    "limpeza de pele",
-    "estetica",
-    "harmonizacao facial",
-    "sombrancelha",
-    "micropigmentacao",
-    "botox",
-    "make",
-  ],
-
-  // 🚗 AUTOMOTIVO E LOGÍSTICA
-  carro: [
-    "carros",
-    "mecanica",
-    "mecanicas",
-    "mecanico",
-    "mecanicos",
-    "oficina",
-    "oficinas",
-    "automotivo",
-    "auto pecas",
-    "veiculo",
-    "veiculos",
-    "centro automotivo",
-    "revisao",
-    "troca de oleo",
-    "freio",
-    "suspensao",
-  ],
-  moto: [
-    "motos",
-    "motocicleta",
-    "motocicletas",
-    "oficina de moto",
-    "motopeças",
-    "motopecas",
-    "mecanico de moto",
-    "capacete",
-    "revisao de moto",
-  ],
-  bateria: [
-    "baterias",
-    "auto eletrica",
-    "arranque",
-    "alternador",
-    "bateria de carro",
-    "eletricista de carros",
-  ],
-  pneu: [
-    "pneus",
-    "borracharia",
-    "borracharias",
-    "borracheiro",
-    "alinhamento",
-    "balanceamento",
-    "peneu",
-    "peneus",
-    "estepe",
-    "remendo",
-    "calibragem",
-    "vulcanizacao",
-    "pneu furado",
-  ],
-  lavagem: [
-    "lavagens",
-    "lavar",
-    "lava jato",
-    "estetica automotiva",
-    "polimento",
-    "lavar car",
-    "lava rapido",
-    "higienizacao automotiva",
-    "lavagem detalhada",
-    "vitrificacao",
-    "cristalizacao",
-  ],
-  lataria: [
-    "latarias",
-    "batida",
-    "funilaria",
-    "funilarias",
-    "martelinho",
-    "pintura automotiva",
-    "martelinho de ouro",
-    "chapeacao",
-    "polimento",
-  ],
-  guincho: [
-    "guinchos",
-    "reboque",
-    "reboques",
-    "socorro",
-    "auto socorro",
-    "bateria arriada",
-    "pane seca",
-    "guincho 24h",
-    "reboque 24h",
-  ],
-  frete: [
-    "fretes",
-    "mudanca",
-    "mudancas",
-    "carreto",
-    "carretos",
-    "transporte",
-    "transportes",
-    "logistica",
-    "caminhao",
-    "motoboy",
-    "entrega",
-    "entregas",
-    "entregador",
-    "transportadora",
-  ],
-
-  // 🛠️ CASA E SERVIÇOS GERAIS
-  chave: [
-    "chaves",
-    "chaveiro",
-    "chaveiros",
-    "copia de chave",
-    "fechadura",
-    "cadeado",
-    "chave codificada",
-    "abertura de porta",
-    "carimbo",
-  ],
-  vazamento: [
-    "vazamentos",
-    "cano",
-    "canos",
-    "encanador",
-    "encanadores",
-    "hidraulico",
-    "desentupidora",
-    "desentupidoras",
-    "bombeiro hidraulico",
-    "esgoto",
-    "pia entupida",
-    "ralo",
-  ],
-  energia: [
-    "energias",
-    "luz",
-    "luzes",
-    "tomada",
-    "tomadas",
-    "eletricista",
-    "eletricistas",
-    "eletrica",
-    "fiacao",
-    "padrao",
-    "quadro de luz",
-    "disjuntor",
-    "curto circuito",
-  ],
-  limpeza: [
-    "limpezas",
-    "diarista",
-    "diaristas",
-    "faxina",
-    "faxinas",
-    "faxineira",
-    "faxineiras",
-    "higienizacao",
-    "limpeza pos obra",
-    "lavagem de estofado",
-    "limpeza de sofa",
-  ],
-  parede: [
-    "paredes",
-    "tinta",
-    "tintas",
-    "pintor",
-    "pintores",
-    "pintura",
-    "pinturas",
-    "textura",
-    "grafiato",
-    "massa corrida",
-    "gesso",
-  ],
-  madeira: [
-    "madeiras",
-    "movel",
-    "moveis",
-    "marceneiro",
-    "marceneiros",
-    "marcenaria",
-    "marcenarias",
-    "planejados",
-    "carpintaria",
-    "mdf",
-    "conserto de moveis",
-  ],
-  vidro: [
-    "vidros",
-    "box",
-    "vidracaria",
-    "vidracarias",
-    "espelho",
-    "espelhos",
-    "vidraceiro",
-    "vidraceiros",
-    "blindex",
-    "envidracamento",
-    "sacada",
-  ],
-  clima: [
-    "climas",
-    "ar condicionado",
-    "refrigeracao",
-    "climatizacao",
-    "limpeza de ar",
-    "instalacao de ar",
-    "conserto de ar",
-  ],
-  costura: [
-    "costuras",
-    "costureira",
-    "costureiras",
-    "conserto de roupa",
-    "bainha",
-    "alfaiate",
-    "sapateiro",
-    "customizacao",
-    "remendo",
-    "ajuste",
-  ],
-  grafica: [
-    "graficas",
-    "impressao",
-    "impressoes",
-    "copiadora",
-    "xerox",
-    "banner",
-    "banners",
-    "cartao de visita",
-    "adesivo",
-    "adesivos",
-    "comunicacao visual",
-    "lona",
-    "fachada",
-    "letreiro",
-    "plotagem",
-  ],
-  construcao: [
-    "construcoes",
-    "material de construcao",
-    "materiais de construcao",
-    "cimento",
-    "tijolo",
-    "tijolos",
-    "ferragem",
-    "deposito",
-    "depositos",
-    "tintas",
-    "hidraulica",
-    "eletrica",
-    "ferramentas",
-    "areia",
-    "pedra",
-    "casa de material",
-  ],
-
-  // 👗 MODA E ELETRÔNICOS
-  roupa: [
-    "roupas",
-    "vestuario",
-    "loja",
-    "lojas",
-    "moda",
-    "boutique",
-    "boutiques",
-    "calcados",
-    "sapato",
-    "sapatos",
-    "vestido",
-    "vestidos",
-    "camisa",
-    "camisas",
-    "calca",
-    "calcas",
-    "moda feminina",
-    "moda masculina",
-    "moda infantil",
-    "tenis",
-  ],
-  celular: [
-    "celulares",
-    "smartphone",
-    "smartphones",
-    "capinha",
-    "capinhas",
-    "assistencia",
-    "assistencias",
-    "eletronicos",
-    "conserto",
-    "consertos",
-    "iphone",
-    "iphones",
-    "tela quebrada",
-    "troca de tela",
-    "bateria de celular",
-    "pelicula",
-    "carregador",
-    "fone",
-  ],
-  informatica: [
-    "informaticas",
-    "computador",
-    "computadores",
-    "notebook",
-    "notebooks",
-    "pc",
-    "pcs",
-    "ti",
-    "manutencao de pc",
-    "tecnico",
-    "tecnicos",
-    "formatacao",
-    "conserto de notebook",
-    "impressora",
-    "impressoras",
-    "cartucho",
-    "tonner",
-  ],
-
-  // 🛒 MERCADO E COTIDIANO
-  presente: [
-    "presentes",
-    "lembrancinha",
-    "lembrancinhas",
-    "floricultura",
-    "floriculturas",
-    "papelaria",
-    "papelarias",
-    "variedades",
-    "brinquedo",
-    "brinquedos",
-    "flores",
-    "buque",
-    "cesta",
-    "cestas",
-    "embalagem",
-    "presente criativo",
-  ],
-  mercado: [
-    "mercados",
-    "supermercado",
-    "supermercados",
-    "mercearia",
-    "mercearias",
-    "hortifruti",
-    "sacolao",
-    "atacadao",
-    "atacado",
-    "varejo",
-    "conveniencia",
-    "conveniencias",
-    "mercadinho",
-    "mercadinhos",
-    "quitanda",
-    "emporio",
-  ],
-  remedio: [
-    "remedios",
-    "farmacia",
-    "farmacias",
-    "drogaria",
-    "drogarias",
-    "medicamento",
-    "medicamentos",
-    "perfumaria",
-    "farmacia de manipulacao",
-  ],
-
-  // 🎓 PROFISSIONAIS E EVENTOS
-  academia: [
-    "academias",
-    "musculacao",
-    "crossfit",
-    "pilates",
-    "personal",
-    "fitness",
-    "treino",
-    "treinos",
-    "luta",
-    "lutas",
-    "natacao",
-    "artes marciais",
-    "ginastica",
-    "zumba",
-    "fit",
-  ],
-  festa: [
-    "festas",
-    "eventos",
-    "buffet",
-    "buffets",
-    "decoracao de festas",
-    "espaco para festas",
-    "aniversario",
-    "casamento",
-    "salao de festas",
-    "locacao de brinquedos",
-    "dj",
-    "som",
-    "iluminacao",
-  ],
-  foto: [
-    "fotos",
-    "fotografo",
-    "fotografos",
-    "ensaio",
-    "ensaios",
-    "book",
-    "estudio fotografico",
-    "filmagem",
-    "fotografia",
-    "video",
-    "cobertura de eventos",
-  ],
-  casa: [
-    "casas",
-    "imobiliaria",
-    "imobiliarias",
-    "aluguel",
-    "venda",
-    "vendas",
-    "apartamento",
-    "apartamentos",
-    "corretor",
-    "corretores",
-    "terreno",
-    "terrenos",
-    "imovel",
-    "imoveis",
-    "locacao",
-    "kitnet",
-    "casa para alugar",
-  ],
-  escola: [
-    "escolas",
-    "colegio",
-    "colegios",
-    "creche",
-    "creches",
-    "bercario",
-    "bercarios",
-    "reforco escolar",
-    "curso",
-    "cursos",
-    "idiomas",
-    "ingles",
-    "autoescola",
-    "autoescolas",
-    "cfc",
-    "espanhol",
-    "supletivo",
-    "aula",
-    "aulas",
-  ],
-  justica: [
-    "justicas",
-    "processo",
-    "processos",
-    "advogado",
-    "advogados",
-    "advocacia",
-    "juridico",
-    "cartorio",
-    "cartorios",
-    "direito",
-    "consultoria juridica",
-    "oab",
-    "defensoria",
-  ],
-  imposto: [
-    "impostos",
-    "cnpj",
-    "contador",
-    "contadores",
-    "contabilidade",
-    "imposto de renda",
-    "abertura de empresa",
-    "mei",
-    "escritorio contabil",
-    "auditoria",
-  ],
-
-  // 🐶 MUNDO PET
-  pet: [
-    "pets",
-    "animal",
-    "animais",
-    "cachorro",
-    "cachorros",
-    "gato",
-    "gatos",
-    "pet shop",
-    "petshop",
-    "veterinario",
-    "veterinarios",
-    "clinica veterinaria",
-    "racao",
-    "racoes",
-    "vacina pet",
-    "castracao",
-  ],
-  tosa: [
-    "tosas",
-    "banho",
-    "estetica animal",
-    "cuidado pet",
-    "tosa higienica",
-    "hidratacao pet",
-  ],
-  racao: [
-    "racoes",
-    "petisco",
-    "petiscos",
-    "agropecuaria",
-    "comida pet",
-    "banho e tosa",
-    "casinha",
-    "coleira",
-    "brinquedo pet",
-    "areia de gato",
-    "tapete higienico",
-  ],
+// 1. SINÔNIMOS EXATOS E ERROS DE DIGITAÇÃO (A = B)
+const TRUE_SYNONYMS: Record<string, string[]> = {
+  hamburguer: ["burger", "burguer", "x-burguer", "podrao", "x-tudo"],
+  pizza: ["piza", "pissa"],
+  pneu: ["peneu"],
+  cabeleireiro: ["cabelereiro", "cabeleleiro"],
+  sobrancelha: ["sombrancelha"],
+  marmita: ["quentinha", "marmitex"],
+  carro: ["veiculo", "automovel"],
+  moto: ["motocicleta"],
+  medico: ["doutor", "dr", "dra", "clinico", "clínico"],
+  dentista: ["odonto", "odontologista"],
+  acai: ["açaí"],
+  otica: ["ótica"],
+  farmacia: ["farmácia"],
+  mecanica: ["mecânica"],
 };
 
-function expandSynonyms(map: Record<string, string[]>) {
+function expandTrueSynonyms(map: Record<string, string[]>) {
   const expanded: Record<string, Set<string>> = {};
   Object.entries(map).forEach(([key, values]) => {
     const group = [key, ...values].map((v) => normalizeText(v));
@@ -868,8 +83,92 @@ function expandSynonyms(map: Record<string, string[]>) {
     Object.entries(expanded).map(([k, v]) => [k, Array.from(v)]),
   );
 }
+const TRUE_SYNONYMS_MAP = expandTrueSynonyms(TRUE_SYNONYMS);
 
-const SYNONYMS_MAP = expandSynonyms(SINONIMOS_BASE);
+// 2. INTENÇÃO DE COMPRA (PRODUTO -> ESTABELECIMENTO)
+const BUSINESS_TYPES: Record<string, string[]> = {
+  pao: ["padaria", "panificadora"],
+  bolo: ["confeitaria", "doceria", "padaria"],
+  carne: ["acougue", "churrascaria", "casa de carnes"],
+  churrasco: ["churrascaria"],
+  remedio: ["farmacia", "drogaria"],
+  celular: ["assistencia", "assistencia tecnica", "loja de celulares"],
+  pneu: ["borracharia", "centro automotivo"],
+  oculos: ["otica"],
+  lanche: ["lanchonete", "fast food", "hamburgueria"],
+  pizza: ["pizzaria"],
+  esfiha: ["esfiharia"],
+  pastel: ["pastelaria"],
+  sushi: ["restaurante japones", "temakeria"],
+  japones: ["restaurante japones", "temakeria"],
+  sorvete: ["sorveteria"],
+  acai: ["sorveteria", "acaiteria"],
+  cerveja: ["adega", "distribuidora", "bar", "boteco"],
+  chopp: ["adega", "distribuidora", "bar", "boteco"],
+  bebida: ["adega", "distribuidora"],
+  flor: ["floricultura"],
+  presente: ["floricultura", "papelaria", "loja de presentes"],
+  cachorro: ["pet shop", "clinica veterinaria"],
+  gato: ["pet shop", "clinica veterinaria"],
+  pet: ["pet shop", "clinica veterinaria", "banho e tosa"],
+  cabelo: ["salao", "barbearia", "salao de beleza"],
+  unha: ["esmalteria", "salao"],
+  madeira: ["marcenaria", "loja de moveis"],
+  movel: ["marcenaria", "loja de moveis"],
+  cano: ["encanador", "desentupidora"],
+  vazamento: ["encanador", "desentupidora"],
+  luz: ["eletricista"],
+  tomada: ["eletricista"],
+  motor: ["oficina", "mecanica", "centro automotivo"],
+  roupa: ["loja de roupas", "boutique", "moda"],
+  sapato: ["loja de calcados", "sapataria"],
+  pf: ["restaurante"],
+  carro: [
+    "oficina",
+    "mecanica",
+    "centro automotivo",
+    "lava rapido",
+    "lava-rapido",
+    "despachante",
+    "auto eletrica",
+    "guincho",
+    "funilaria",
+    "auto pecas",
+    "estacionamento",
+  ],
+};
+
+// 3. TERMOS RELACIONADOS (Bônus Secundário)
+const RELATED_TERMS: Record<string, string[]> = {
+  pizza: ["calzone", "esfiha", "massa"],
+  hamburguer: ["batata", "refrigerante", "combo", "milkshake"],
+  salgado: ["coxinha", "kibe", "empada", "esfiha"],
+  cafe: ["cappuccino", "espresso", "pingado", "pao de queijo"],
+  corpo: ["massagem", "estetica", "drenagem", "pilates"],
+  rosto: ["limpeza de pele", "harmonizacao", "botox", "maquiagem"],
+  festa: ["evento", "decoracao", "salao de festas", "buffet", "dj"],
+  carro: ["lavagem", "polimento", "funilaria", "martelinho"],
+  casa: ["imobiliaria", "aluguel", "venda", "apartamento"],
+  escola: ["colegio", "curso", "idiomas", "reforco"],
+  pet: ["racao", "vacina", "veterinario"],
+};
+
+// 🚀 TABELA DE PESOS DO MOTOR DE BUSCA (Score Engine)
+const SCORE_WEIGHTS = {
+  EXACT_NAME: 300,
+  CONTAINS_NAME: 220,
+  KEYWORD: 180,
+  SUBCATEGORY: 170,
+  CATEGORY: 140,
+  BUSINESS_TYPE: 100,
+  RELATED: 20,
+  SEC_NAME: 50,
+  SEC_SUB_KEY: 40,
+  SEC_BUSINESS: 30,
+  SEC_RELATED: 10,
+  CITY_NEIGHBORHOOD: 100,
+  VERIFIED_BADGE: 50,
+};
 
 function getSmartTerms(query: string) {
   const terms = query
@@ -877,13 +176,23 @@ function getSmartTerms(query: string) {
     .split(" ")
     .filter((t) => t.length > 2 && !STOPWORDS.includes(t));
   const result = new Set<string>();
+
   terms.forEach((term) => {
     const normalizedTerm = normalizeText(term);
     result.add(normalizedTerm);
-    if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3)
-      result.add(normalizedTerm.slice(0, -1));
-    if (SYNONYMS_MAP[normalizedTerm])
-      SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
+
+    if (!EXCECOES_PLURAL.includes(normalizedTerm)) {
+      if (normalizedTerm.endsWith("s") && normalizedTerm.length > 3)
+        result.add(normalizedTerm.slice(0, -1));
+      else result.add(normalizedTerm + "s");
+    }
+
+    if (TRUE_SYNONYMS_MAP[normalizedTerm])
+      TRUE_SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
+    if (BUSINESS_TYPES[normalizedTerm])
+      BUSINESS_TYPES[normalizedTerm].forEach((s) => result.add(s));
+    if (RELATED_TERMS[normalizedTerm])
+      RELATED_TERMS[normalizedTerm].forEach((s) => result.add(s));
   });
   return Array.from(result);
 }
@@ -1027,27 +336,38 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       ? [
           {
             OR: [
-              // 🚀 1. O SALVA-VIDAS MULTI-PALAVRA: Tenta achar a frase inteira ("jogos de tabuleiro")
               { keywords: { hasSome: [query, queryCap] } },
               { subcategory: { hasSome: [query, queryCap] } },
-
-              // 🚀 2. BUSCA NORMAL: Se não achar a frase inteira, continua a busca palavra por palavra
               {
                 AND: parsedTerms.map((term) => {
                   const termNormalized = normalizeText(term);
-                  const group = [termNormalized];
-                  if (SYNONYMS_MAP[termNormalized])
-                    group.push(...SYNONYMS_MAP[termNormalized]);
-                  if (termNormalized.endsWith("s") && termNormalized.length > 3)
-                    group.push(termNormalized.slice(0, -1));
+                  const coreGroup = [termNormalized];
+
+                  if (TRUE_SYNONYMS_MAP[termNormalized]) {
+                    coreGroup.push(...TRUE_SYNONYMS_MAP[termNormalized]);
+                  }
+
+                  if (!EXCECOES_PLURAL.includes(termNormalized)) {
+                    if (
+                      termNormalized.endsWith("s") &&
+                      termNormalized.length > 3
+                    ) {
+                      coreGroup.push(termNormalized.slice(0, -1));
+                    } else {
+                      coreGroup.push(termNormalized + "s");
+                    }
+                  }
+
+                  const businessGroup = BUSINESS_TYPES[termNormalized] || [];
+                  const searchGroup = Array.from(
+                    new Set([...coreGroup, ...businessGroup]),
+                  );
 
                   return {
-                    OR: group.flatMap((gTerm) => {
+                    OR: searchGroup.flatMap((gTerm) => {
                       const gTermCap =
                         gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
-                      const isOriginalTerm =
-                        gTerm === termNormalized ||
-                        gTerm === termNormalized.slice(0, -1);
+                      const isOriginalCoreTerm = coreGroup.includes(gTerm);
 
                       const baseConditions: Prisma.BusinessWhereInput[] = [
                         { keywords: { hasSome: [gTerm, gTermCap] } },
@@ -1060,7 +380,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                         },
                       ];
 
-                      if (isOriginalTerm) {
+                      if (isOriginalCoreTerm) {
                         baseConditions.push(
                           {
                             name: {
@@ -1097,25 +417,36 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       ? [
           {
             OR: [
-              // 🚀 1. FIX MULTI-PALAVRA: Busca a frase inteira ("jogos de tabuleiro")
               { keywords: { hasSome: [query, queryCap] } },
               { subcategory: { hasSome: [query, queryCap] } },
-
-              // 🚀 2. BUSCA DESDOBRADA: Continua buscando palavra por palavra e sinônimos
               ...parsedTerms.flatMap((term) => {
                 const termNormalized = normalizeText(term);
-                const group = [termNormalized];
-                if (SYNONYMS_MAP[termNormalized])
-                  group.push(...SYNONYMS_MAP[termNormalized]);
-                if (termNormalized.endsWith("s") && termNormalized.length > 3)
-                  group.push(termNormalized.slice(0, -1));
+                const coreGroup = [termNormalized];
 
-                return group.flatMap((gTerm) => {
+                if (TRUE_SYNONYMS_MAP[termNormalized]) {
+                  coreGroup.push(...TRUE_SYNONYMS_MAP[termNormalized]);
+                }
+
+                if (!EXCECOES_PLURAL.includes(termNormalized)) {
+                  if (
+                    termNormalized.endsWith("s") &&
+                    termNormalized.length > 3
+                  ) {
+                    coreGroup.push(termNormalized.slice(0, -1));
+                  } else {
+                    coreGroup.push(termNormalized + "s");
+                  }
+                }
+
+                const businessGroup = BUSINESS_TYPES[termNormalized] || [];
+                const searchGroup = Array.from(
+                  new Set([...coreGroup, ...businessGroup]),
+                );
+
+                return searchGroup.flatMap((gTerm) => {
                   const gTermCap =
                     gTerm.charAt(0).toUpperCase() + gTerm.slice(1);
-                  const isOriginalTerm =
-                    gTerm === termNormalized ||
-                    gTerm === termNormalized.slice(0, -1);
+                  const isOriginalCoreTerm = coreGroup.includes(gTerm);
 
                   const baseConditions: Prisma.BusinessWhereInput[] = [
                     { keywords: { hasSome: [gTerm, gTermCap] } },
@@ -1125,7 +456,7 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
                     },
                   ];
 
-                  if (isOriginalTerm) {
+                  if (isOriginalCoreTerm) {
                     baseConditions.push(
                       {
                         name: { contains: gTerm, mode: "insensitive" as const },
@@ -1387,29 +718,66 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       const nameWords = nName.split(" ");
       const keysWords = nKeys.split(" ");
 
-      if (nName === query) score += 300;
-      else if (nName.includes(query)) score += 150;
+      if (nName === query) score += SCORE_WEIGHTS.EXACT_NAME + 50;
+      else if (nName.includes(query)) score += SCORE_WEIGHTS.CONTAINS_NAME;
 
       let matchedTermsCount = 0;
       parsedTerms.forEach((term, index) => {
         const isFirstTerm = index === 0;
-        const isExactInName = nameWords.includes(term);
-        const isExactInSubs = subsHasWord(nSubs, term);
-        const isExactInCat = nCat === term;
-        const isExactInKeys = keysWords.includes(term);
 
-        if (isExactInName || isExactInSubs || isExactInCat || isExactInKeys)
+        const coreGroup = [term];
+        if (TRUE_SYNONYMS_MAP[term]) coreGroup.push(...TRUE_SYNONYMS_MAP[term]);
+        if (!EXCECOES_PLURAL.includes(term)) {
+          if (term.endsWith("s") && term.length > 3)
+            coreGroup.push(term.slice(0, -1));
+          else coreGroup.push(term + "s");
+        }
+
+        const businessGroup = BUSINESS_TYPES[term] || [];
+        const relatedGroup = RELATED_TERMS[term] || [];
+
+        const isCoreInName = coreGroup.some((t) => nameWords.includes(t));
+        const isCoreInCat = coreGroup.some((t) => nCat === t);
+        const isCoreInSubs = coreGroup.some((t) => subsHasWord(nSubs, t));
+        const isCoreInKeys = coreGroup.some((t) => keysWords.includes(t));
+
+        const isBusinessInCatOrSubs = businessGroup.some(
+          (t) =>
+            nCat === t ||
+            subsHasWord(nSubs, t) ||
+            keysWords.includes(t) ||
+            nameWords.includes(t),
+        );
+        const isRelated = relatedGroup.some(
+          (t) => keysWords.includes(t) || subsHasWord(nSubs, t),
+        );
+
+        if (
+          isCoreInName ||
+          isCoreInCat ||
+          isCoreInSubs ||
+          isCoreInKeys ||
+          isBusinessInCatOrSubs
+        )
           matchedTermsCount++;
 
         if (isFirstTerm) {
-          if (isExactInName) score += 200;
-          else if (isExactInSubs) score += 180;
-          else if (isExactInCat) score += 150;
+          if (isCoreInName) score += SCORE_WEIGHTS.EXACT_NAME;
+          else if (isCoreInKeys) score += SCORE_WEIGHTS.KEYWORD;
+          else if (isCoreInSubs) score += SCORE_WEIGHTS.SUBCATEGORY;
+          else if (isCoreInCat) score += SCORE_WEIGHTS.CATEGORY;
+          else if (isBusinessInCatOrSubs) score += SCORE_WEIGHTS.BUSINESS_TYPE;
+          else if (isRelated) score += SCORE_WEIGHTS.RELATED;
           else if (nName.includes(term)) score += 15;
         } else {
-          if (isExactInName) score += 50;
-          else if (isExactInSubs || isExactInKeys) score += 40;
-          if (b.city === term || b.neighborhood === term) score += 100;
+          if (isCoreInName) score += SCORE_WEIGHTS.SEC_NAME;
+          else if (isCoreInSubs || isCoreInKeys)
+            score += SCORE_WEIGHTS.SEC_SUB_KEY;
+          else if (isBusinessInCatOrSubs) score += SCORE_WEIGHTS.SEC_BUSINESS;
+          else if (isRelated) score += SCORE_WEIGHTS.SEC_RELATED;
+
+          if (b.city === term || b.neighborhood === term)
+            score += SCORE_WEIGHTS.CITY_NEIGHBORHOOD;
         }
       });
 
@@ -1438,14 +806,29 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
       }
 
       if (b.isVerified && score > 0) {
-        score += 100;
+        score += SCORE_WEIGHTS.VERIFIED_BADGE;
       }
 
+      const firstTerm = parsedTerms[0];
+      const firstCoreGroup = [firstTerm];
+      if (TRUE_SYNONYMS_MAP[firstTerm])
+        firstCoreGroup.push(...TRUE_SYNONYMS_MAP[firstTerm]);
+      if (!EXCECOES_PLURAL.includes(firstTerm)) {
+        if (firstTerm.endsWith("s") && firstTerm.length > 3)
+          firstCoreGroup.push(firstTerm.slice(0, -1));
+        else firstCoreGroup.push(firstTerm + "s");
+      }
+
+      const firstBusinessGroup = BUSINESS_TYPES[firstTerm] || [];
+
       const hasCoreIntentExact =
-        nameWords.includes(parsedTerms[0]) ||
-        subsHasWord(nSubs, parsedTerms[0]) ||
-        nCat === parsedTerms[0] ||
-        keysWords.includes(parsedTerms[0]);
+        firstCoreGroup.some((t) => nameWords.includes(t)) ||
+        firstCoreGroup.some((t) => subsHasWord(nSubs, t)) ||
+        firstCoreGroup.some((t) => nCat === t) ||
+        firstCoreGroup.some((t) => keysWords.includes(t)) ||
+        firstBusinessGroup.some(
+          (t) => nCat === t || subsHasWord(nSubs, t) || keysWords.includes(t),
+        );
 
       if (parsedTerms.length > 1) {
         if (matchedTermsCount < parsedTerms.length) {
