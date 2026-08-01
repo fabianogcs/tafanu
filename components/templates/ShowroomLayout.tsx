@@ -896,7 +896,7 @@ export default function ShowroomLayout({
               : { opacity: 1, scale: 1, pointerEvents: "auto" }
           }
           onClick={() => handleTrackLead(hasWhatsapp ? "whatsapp" : "phone")}
-          className={`fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all ${
+          className={`fixed bottom-20 right-6 md:bottom-10 md:right-10 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all ${
             hasWhatsapp
               ? "bg-[#25D366] text-white"
               : `${theme.bgAction} text-white`
