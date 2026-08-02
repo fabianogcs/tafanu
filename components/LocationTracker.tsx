@@ -51,9 +51,11 @@ export default function LocationTracker() {
 
       // 🍎 SAFARI FIX: Opções ajustadas para não dar timeout no iPhone
       const options = {
-        enableHighAccuracy: isRetry,
-        timeout: isRetry ? 20000 : 15000, // Aumentado para dar tempo do PWA pensar
-        maximumAge: 0, // Força o celular a pegar a localização de agora, não a velha
+        // 🚀 CIRURGIA DO CTO: Sempre TRUE para forçar o satélite real e ignorar a antena velha!
+        enableHighAccuracy: true,
+        timeout: isRetry ? 20000 : 15000,
+        // 🚀 Força o celular a ignorar qualquer posição antiga guardada no cache do navegador
+        maximumAge: 0,
       };
 
       navigator.geolocation.getCurrentPosition(

@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
 
   // 🚀 A linha transpilePackages foi removida para parar de corromper o UploadThing
   images: {
+    unoptimized: true,
     qualities: [60, 75, 90, 100],
     remotePatterns: [
       { protocol: "https", hostname: "utfs.io" },
