@@ -73,7 +73,7 @@ export default function LocationTracker() {
           let foundCity = null;
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`,
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
               {
                 headers: {
                   "Accept-Language": "pt-BR",
@@ -84,17 +84,11 @@ export default function LocationTracker() {
 
             if (res.ok) {
               const data = await res.json();
-              const bairro =
-                data.address?.suburb ||
-                data.address?.neighbourhood ||
-                data.address?.city_district;
-              const cidade =
+              foundCity =
                 data.address?.city ||
                 data.address?.town ||
                 data.address?.municipality ||
-                "";
-
-              foundCity = bairro ? `${bairro}, ${cidade}` : cidade || null;
+                null;
               if (foundCity) setCachedCity(foundCity);
             }
           } catch (e) {}
