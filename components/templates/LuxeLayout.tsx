@@ -338,18 +338,20 @@ export default function LuxeLayout({
     };
   }, [selectedIndex, isPdfModalOpen]);
 
-  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
+  // 🚀 CTO FIX: Injeta Nome da Empresa + Complemento (Km) para o Google achar a ficha exata!
   const safeAddressText =
-    `${business.address || ""}, ${business.number || ""}, ${business.city || ""}, ${business.state || ""}`
+    `${business.address || ""}, ${business.number || ""}, ${business.complement || ""}, ${business.neighborhood || ""}, ${business.city || ""}, ${business.state || ""}`
       .replace(/,\s*,/g, ",")
       .replace(/^,\s*/, "")
       .trim();
 
-  const mapDestination = safeAddressText
-    ? safeAddressText
-    : business.latitude && business.longitude
-      ? `${business.latitude},${business.longitude}`
-      : "";
+  const mapDestination =
+    safeAddressText.length > 5
+      ? `${business.name}, ${safeAddressText}`
+      : business.latitude && business.longitude
+        ? `${business.latitude},${business.longitude}`
+        : "";
+
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
     mapDestination,
   )}`;

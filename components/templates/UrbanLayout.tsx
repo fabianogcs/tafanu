@@ -127,23 +127,25 @@ export default function UrbanLayout({
   const primary = theme.primary || "text-current";
   const bgAction = theme.bgAction || "bg-current text-white";
 
-  const addressBase = business?.address || "";
-  const hasNumberInAddress =
-    business?.number && addressBase.includes(business.number);
-  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
-  const safeAddressText =
-    `${business.address || ""}, ${business.number || ""}, ${business.city || ""}, ${business.state || ""}`
-      .replace(/,\s*,/g, ",")
-      .replace(/^,\s*/, "")
-      .trim();
+  const addressPartsForMap = [
+    business.address,
+    business.number,
+    business.complement,
+    business.neighborhood,
+    business.city,
+    business.state,
+    business.cep,
+  ].filter(Boolean);
+  const completeAddressForMap = addressPartsForMap.join(", ");
 
-  const mapsDestination = safeAddressText
-    ? safeAddressText
-    : business.latitude && business.longitude
-      ? `${business.latitude},${business.longitude}`
-      : "";
+  const mapDestination =
+    completeAddressForMap.length > 5
+      ? `${business.name}, ${completeAddressForMap}`
+      : business.latitude && business.longitude
+        ? `${business.latitude},${business.longitude}`
+        : "";
 
-  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(mapsDestination)}`;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   const faqs = (business.faqs || []).filter(
     (f: any) => (f.q || f.question) && (f.a || f.answer),

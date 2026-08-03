@@ -261,18 +261,21 @@ export default function ShowroomLayout({
   const addressPartsForMap = [
     business.address,
     business.number,
+    business.complement,
     business.neighborhood,
     business.city,
     business.state,
     business.cep,
   ].filter(Boolean);
   const completeAddressForMap = addressPartsForMap.join(", ");
-  // 🚀 UX FIX: Prioriza o texto do endereço completo (o Google Maps lê melhor)
-  const mapDestination = completeAddressForMap
-    ? completeAddressForMap
-    : business.latitude && business.longitude
-      ? `${business.latitude},${business.longitude}`
-      : "";
+
+  const mapDestination =
+    completeAddressForMap.length > 5
+      ? `${business.name}, ${completeAddressForMap}`
+      : business.latitude && business.longitude
+        ? `${business.latitude},${business.longitude}`
+        : "";
+
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapDestination)}`;
 
   if (!theme) return null;
