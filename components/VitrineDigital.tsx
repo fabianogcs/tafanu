@@ -106,8 +106,9 @@ export default function VitrineDigital() {
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
       if (cachedCoords) {
-        const { city } = JSON.parse(cachedCoords);
-        if (city) setUserCity(city);
+        const { city, timestamp } = JSON.parse(cachedCoords);
+        const tempoPassado = Date.now() - (timestamp || 0);
+        if (city && tempoPassado < 3 * 60 * 60 * 1000) setUserCity(city);
       }
     } catch (err) {}
   }, []);
@@ -124,14 +125,15 @@ export default function VitrineDigital() {
 
     if (cachedCoords) {
       try {
-        const { lat, lng } = JSON.parse(cachedCoords);
-        router.push(
-          `${baseUrl}&lat=${lat}&lng=${lng}&sort=distance&status=open&page=1`,
-        );
-        return;
-      } catch (err) {
-        console.error("Erro ao ler cache de localização");
-      }
+        const { lat, lng, timestamp } = JSON.parse(cachedCoords);
+        const tempoPassado = Date.now() - (timestamp || 0);
+        if (lat && lng && tempoPassado < 3 * 60 * 60 * 1000) {
+          router.push(
+            `${baseUrl}&lat=${lat}&lng=${lng}&sort=distance&status=open&page=1`,
+          );
+          return;
+        }
+      } catch (err) {}
     }
 
     if (!navigator.geolocation) {
@@ -157,25 +159,35 @@ export default function VitrineDigital() {
         async (position) => {
           const { latitude, longitude } = position.coords;
           let foundCity = null;
-
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`,
               { headers: { "Accept-Language": "pt-BR" } },
             );
             if (res.ok) {
               const data = await res.json();
-              foundCity =
+              const bairro =
+                data.address?.suburb ||
+                data.address?.neighbourhood ||
+                data.address?.city_district;
+              const cidade =
                 data.address?.city ||
                 data.address?.town ||
                 data.address?.municipality ||
-                null;
+                "";
+
+              foundCity = bairro ? `${bairro}, ${cidade}` : cidade || null;
             }
           } catch (e) {}
 
           localStorage.setItem(
             "tafanu_user_coords",
-            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+            JSON.stringify({
+              lat: latitude,
+              lng: longitude,
+              city: foundCity,
+              timestamp: Date.now(),
+            }),
           );
 
           setActiveLoadingId(null);

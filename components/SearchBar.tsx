@@ -42,8 +42,11 @@ export default function SearchBar({
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
       if (cachedCoords) {
-        const { lat, lng } = JSON.parse(cachedCoords);
-        if (lat && lng) {
+        const { lat, lng, timestamp } = JSON.parse(cachedCoords);
+        const tempoPassado = Date.now() - (timestamp || 0);
+        const TRES_HORAS = 3 * 60 * 60 * 1000;
+
+        if (lat && lng && tempoPassado < TRES_HORAS) {
           if (!params.has("lat")) params.set("lat", lat);
           if (!params.has("lng")) params.set("lng", lng);
           params.set("sort", "distance");
@@ -81,22 +84,33 @@ export default function SearchBar({
           let foundCity = null;
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`,
               { headers: { "Accept-Language": "pt-BR" } },
             );
             if (res.ok) {
               const data = await res.json();
-              foundCity =
+              const bairro =
+                data.address?.suburb ||
+                data.address?.neighbourhood ||
+                data.address?.city_district;
+              const cidade =
                 data.address?.city ||
                 data.address?.town ||
                 data.address?.municipality ||
-                null;
+                "";
+
+              foundCity = bairro ? `${bairro}, ${cidade}` : cidade || null;
             }
           } catch (e) {}
 
           localStorage.setItem(
             "tafanu_user_coords",
-            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+            JSON.stringify({
+              lat: latitude,
+              lng: longitude,
+              city: foundCity,
+              timestamp: Date.now(),
+            }),
           );
 
           router.push(`/busca?${params.toString()}`);

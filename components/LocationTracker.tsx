@@ -73,7 +73,7 @@ export default function LocationTracker() {
           let foundCity = null;
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`,
               {
                 headers: {
                   "Accept-Language": "pt-BR",
@@ -84,18 +84,29 @@ export default function LocationTracker() {
 
             if (res.ok) {
               const data = await res.json();
-              foundCity =
+              const bairro =
+                data.address?.suburb ||
+                data.address?.neighbourhood ||
+                data.address?.city_district;
+              const cidade =
                 data.address?.city ||
                 data.address?.town ||
                 data.address?.municipality ||
-                null;
+                "";
+
+              foundCity = bairro ? `${bairro}, ${cidade}` : cidade || null;
               if (foundCity) setCachedCity(foundCity);
             }
           } catch (e) {}
 
           localStorage.setItem(
             "tafanu_user_coords",
-            JSON.stringify({ lat: latitude, lng: longitude, city: foundCity }),
+            JSON.stringify({
+              lat: latitude,
+              lng: longitude,
+              city: foundCity,
+              timestamp: Date.now(),
+            }),
           );
 
           setLoading(false);
@@ -162,8 +173,9 @@ export default function LocationTracker() {
     try {
       const coords = localStorage.getItem("tafanu_user_coords");
       if (coords) {
-        const parsed = JSON.parse(coords);
-        if (parsed.city) setCachedCity(parsed.city);
+        const { city, timestamp } = JSON.parse(coords);
+        const tempoPassado = Date.now() - (timestamp || 0);
+        if (city && tempoPassado < 3 * 60 * 60 * 1000) setCachedCity(city);
       }
     } catch (e) {}
 
@@ -279,7 +291,12 @@ export default function LocationTracker() {
 
         localStorage.setItem(
           "tafanu_user_coords",
-          JSON.stringify({ lat: latitude, lng: longitude, city: city }),
+          JSON.stringify({
+            lat: latitude,
+            lng: longitude,
+            city: city,
+            timestamp: Date.now(),
+          }),
         );
         setCachedCity(city);
 
