@@ -756,8 +756,20 @@ export async function createBusiness(payload: any) {
 
   const validatedData = validatedFields.data;
 
+  // 🚀 CTO FIX: Inteligência de Endereço Avançada (Lê o complemento se for Rodovia/Km)
+  let searchQuery = `${validatedData.address}`;
+  if (validatedData.number && validatedData.number.toLowerCase() !== "s/n") {
+    searchQuery += `, ${validatedData.number}`;
+  }
+  if (
+    validatedData.complement &&
+    validatedData.address?.toLowerCase().includes("rodovia")
+  ) {
+    searchQuery += ` - ${validatedData.complement}`;
+  }
+
   const coords = await getCoordinates(
-    `${validatedData.address}${validatedData.number ? `, ${validatedData.number}` : ""}`, // Rua + Número
+    searchQuery,
     validatedData.city || "",
     validatedData.state || "",
   );
@@ -934,8 +946,23 @@ export async function updateFullBusiness(slug: string, payload: any) {
         lat = null;
         lng = null;
       } else {
+        // 🚀 CTO FIX: Inteligência de Endereço Avançada para Edição
+        let searchQuery = `${validatedData.address}`;
+        if (
+          validatedData.number &&
+          validatedData.number.toLowerCase() !== "s/n"
+        ) {
+          searchQuery += `, ${validatedData.number}`;
+        }
+        if (
+          validatedData.complement &&
+          validatedData.address?.toLowerCase().includes("rodovia")
+        ) {
+          searchQuery += ` - ${validatedData.complement}`;
+        }
+
         const newCoords = await getCoordinates(
-          validatedData.address || "",
+          searchQuery,
           validatedData.city || "",
           validatedData.state || "",
         );

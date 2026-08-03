@@ -131,7 +131,6 @@ export function AddressSection({
             name="cep"
             value={addressData.cep}
             onChange={(e) => {
-              // 🚀 SE O USUÁRIO APAGAR E COMEÇAR A DIGITAR, JÁ DESLIGAMOS A TRAVA!
               isFirstRender.current = false;
               setAddressData((prev) => ({ ...prev, cep: e.target.value }));
             }}
@@ -146,23 +145,30 @@ export function AddressSection({
           )}
         </div>
 
+        {/* 🚀 CTO FIX: O campo Rua agora precisa ser EDITÁVEL! O Google nem sempre puxa 'Rodovia' corretamente do CEP, e precisamos corrigir a mão. */}
         <input
           name="address"
           value={addressData.address}
-          readOnly
-          className="md:col-span-2 h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+          onChange={(e) =>
+            setAddressData((prev) => ({ ...prev, address: e.target.value }))
+          }
+          className="md:col-span-2 h-12 px-5 bg-white text-slate-800 rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
           placeholder="Rua / Logradouro"
         />
 
+        {/* 🚀 CTO FIX: O campo Número aceita S/N e agora também fica mais amigável */}
         <input
           name="number"
           ref={numberInputRef}
           value={addressData.number}
-          maxLength={20} // 🚀 TRAVA UX (Sincronizado com o Back-end)
+          maxLength={20}
           onChange={(e) =>
-            setAddressData((prev) => ({ ...prev, number: e.target.value }))
+            setAddressData((prev) => ({
+              ...prev,
+              number: e.target.value.toUpperCase(), // Força S/N pra ficar bonitão
+            }))
           }
-          placeholder="Nº"
+          placeholder="Nº (Ex: S/N)"
           className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
         />
 
@@ -178,12 +184,17 @@ export function AddressSection({
           className="h-12 px-5 bg-white rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
         />
 
-        {/* ATUALIZAÇÃO: Removido o md:col-span-2 do Bairro para caberem 4 itens nesta linha */}
+        {/* 🚀 CTO FIX: Bairro liberado para o cliente colocar o nome comercial correto */}
         <input
           name="neighborhood"
           value={addressData.neighborhood}
-          readOnly
-          className="h-12 px-5 bg-slate-100 text-slate-400 rounded-xl font-bold text-xs border cursor-not-allowed"
+          onChange={(e) =>
+            setAddressData((prev) => ({
+              ...prev,
+              neighborhood: e.target.value,
+            }))
+          }
+          className="h-12 px-5 bg-white text-slate-800 rounded-xl font-bold text-xs border border-slate-200 outline-none focus:ring-2 ring-indigo-50"
           placeholder="Bairro"
         />
 
