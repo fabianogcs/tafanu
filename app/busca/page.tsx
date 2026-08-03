@@ -480,10 +480,16 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
   const smartTerms = getSmartTerms(query);
   const limiteCarencia = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  const parsedTerms = query
+  // 🚀 CTO FIX: Blindagem contra quebra de banco de dados por caracteres isolados e Stop Words.
+  // Se sobrou vazio após filtrar as stop words, a gente usa a palavra inteira como "Fallback" para não quebrar o Prisma.
+  let parsedTerms = query
     .split(" ")
     .filter((t) => t.length > 2 && !STOPWORDS.includes(t))
     .slice(0, 4);
+
+  if (parsedTerms.length === 0 && query.length > 0) {
+    parsedTerms = [query];
+  }
 
   const queryCap = query.charAt(0).toUpperCase() + query.slice(1);
 

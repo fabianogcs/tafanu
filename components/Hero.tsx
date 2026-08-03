@@ -17,8 +17,16 @@ export default function Hero() {
     if (e) e.preventDefault();
 
     const finalQuery = tagQuery || query;
-    // 🔒 TRAVA DE SEGURANÇA E PERFORMANCE (CFO/CTO): Aborta no milissegundo zero se estiver vazio!
-    if (!finalQuery.trim()) return;
+    // 🔒 TRAVA DE SEGURANÇA E PERFORMANCE (CFO/CTO): Exige no mínimo 2 letras!
+    if (finalQuery.trim().length < 2) {
+      if (finalQuery.trim().length === 1) {
+        toast.info("Pesquisa muito curta", {
+          description:
+            "Digite pelo menos 2 letras para encontrar o que procura.",
+        });
+      }
+      return;
+    }
 
     setIsSearching(true);
 

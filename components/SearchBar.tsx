@@ -22,8 +22,15 @@ export default function SearchBar({
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    // 🔒 TRAVA DE SEGURANÇA E PERFORMANCE (CFO/CTO): Aborta se estiver vazio!
-    if (!query.trim()) return;
+    // 🔒 TRAVA DE SEGURANÇA E PERFORMANCE (CFO/CTO): Exige no mínimo 2 letras!
+    if (query.trim().length < 2) {
+      if (query.trim().length === 1) {
+        toast.info("Digite um pouco mais", {
+          description: "Por favor, digite pelo menos 2 letras para buscar.",
+        });
+      }
+      return;
+    }
 
     setIsSearching(true);
 
