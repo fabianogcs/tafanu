@@ -75,43 +75,47 @@ export default function CommentsSection({
     return themeColor;
   }, [themeColor]);
 
-  // 🚀 CTO LOGIC: Cálculo de estatísticas e filtros em useMemo para performance
-  const { filteredMainComments, ratingDistribution, totalRatedComments } =
-    useMemo(() => {
-      // 1. Separa comentários principais
-      const mains = comments.filter((c) => !c.parentId);
+  // 🚀 CTO LOGIC: Cálculo de estatísticas dinâmicas
+  const {
+    filteredMainComments,
+    ratingDistribution,
+    totalRatedComments,
+    dynamicAverage,
+  } = useMemo(() => {
+    const mains = comments.filter((c) => !c.parentId);
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    let totalRated = 0;
+    let sumRating = 0; // 🚀 FIX: Vamos somar as notas reais da tela!
 
-      // 2. Calcula distribuição de notas (5, 4, 3, 2, 1)
-      const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      let totalRated = 0;
-
-      mains.forEach((c) => {
-        if (c.rating && c.rating >= 1 && c.rating <= 5) {
-          distribution[c.rating as 5 | 4 | 3 | 2 | 1]++;
-          totalRated++;
-        }
-      });
-
-      // 3. Aplica o filtro de estrela se selecionado
-      let filtered = mains;
-      if (selectedStarFilter !== null) {
-        filtered = mains.filter((c) => c.rating === selectedStarFilter);
+    mains.forEach((c) => {
+      if (c.rating && c.rating >= 1 && c.rating <= 5) {
+        distribution[c.rating as 5 | 4 | 3 | 2 | 1]++;
+        totalRated++;
+        sumRating += c.rating;
       }
+    });
 
-      // 4. Ordenação premium: mais recentes primeiro
-      filtered.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+    let filtered = mains;
+    if (selectedStarFilter !== null) {
+      filtered = mains.filter((c) => c.rating === selectedStarFilter);
+    }
 
-      return {
-        filteredMainComments: filtered,
-        ratingDistribution: distribution,
-        totalRatedComments: totalRated,
-      };
-    }, [comments, selectedStarFilter]);
+    filtered.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
-  const averageRating = businessRating > 0 ? businessRating.toFixed(1) : 0;
+    // 🚀 FIX: A média agora é baseada na soma real da tela. Se tiver 1 nota 5, a média será 5.0!
+    const calculatedAverage =
+      totalRated > 0 ? (sumRating / totalRated).toFixed(1) : "0.0";
+
+    return {
+      filteredMainComments: filtered,
+      ratingDistribution: distribution,
+      totalRatedComments: totalRated,
+      dynamicAverage: calculatedAverage,
+    };
+  }, [comments, selectedStarFilter]);
 
   // Controle de paginação (baseado na lista filtrada)
   const [visibleCount, setVisibleCount] = useState(5);
@@ -247,30 +251,69 @@ export default function CommentsSection({
             {/* FILTROS E NOTAS (Só aparece se tiver comentários) */}
             {totalRatedComments > 0 && (
               <>
-                <hr className="border-slate-100 my-6" />
-                <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-6 md:gap-8 items-center">
-                  {/* Nota Grande */}
-                  <div className="flex flex-col items-center md:items-start md:border-r md:border-slate-100 md:pr-8">
-                    <div className="text-[3.5rem] font-black text-slate-950 leading-none mb-1">
-                      {averageRating}
+                <hr className="border-slate-100 my-5 md:my-6" />
+
+                {/* 🚀 UX MOBILE FIX: Mudei para flex-row no mobile, lado a lado para evitar grosseria */}
+                <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
+                  {/* 🚀 NOTA GRANDE E ESTRELAS FRACIONADAS */}
+                  <div className="flex flex-row md:flex-col items-center justify-center md:items-start md:border-r md:border-slate-100 md:pr-8 gap-4 md:gap-1">
+                    {/* 🚀 UX FIX: Tamanho reduzido para text-5xl (mobile) e text-6xl (desktop) */}
+                    <div className="text-5xl md:text-6xl font-black text-slate-950 leading-none tracking-tighter">
+                      {dynamicAverage}
                     </div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <RenderStars count={Math.round(Number(averageRating))} />
+
+                    <div className="flex flex-col items-start justify-center">
+                      <div className="flex items-center gap-1 mb-1">
+                        {Array.from({ length: 5 }).map((_, i) => {
+                          const currentStar = i + 1;
+                          const avg = Number(dynamicAverage);
+                          let fillPercent = 0;
+
+                          // Lógica Premium de Preenchimento Fracionado
+                          if (avg >= currentStar) fillPercent = 100;
+                          else if (avg >= currentStar - 1)
+                            fillPercent = (avg % 1) * 100;
+
+                          return (
+                            <div
+                              key={i}
+                              className="relative w-4 h-4 md:w-5 md:h-5"
+                            >
+                              {/* Estrela Cinza de Fundo */}
+                              <Star
+                                className="absolute inset-0 text-slate-200 fill-slate-100 w-full h-full"
+                                strokeWidth={1.5}
+                              />
+                              {/* Estrela Dourada Preenchida (Cortada pela porcentagem) */}
+                              <div
+                                className="absolute top-0 left-0 h-full overflow-hidden"
+                                style={{ width: `${fillPercent}%` }}
+                              >
+                                <Star
+                                  className="text-amber-400 fill-amber-400 w-4 h-4 md:w-5 md:h-5"
+                                  strokeWidth={1.5}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                        {totalRatedComments}{" "}
+                        {totalRatedComments === 1 ? "avaliação" : "avaliações"}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-                      Média em {totalRatedComments} notas
-                    </p>
                   </div>
 
                   {/* Barras de Distribuição Interativas (Os Filtros) */}
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex items-center gap-3 mb-1 text-sm font-bold text-slate-800">
-                      <Filter size={16} className="text-slate-400" /> Clique nas
-                      barras para filtrar
+                  <div className="flex-1 flex flex-col gap-2 w-full">
+                    <div className="flex items-center gap-2 mb-1 text-[13px] md:text-sm font-bold text-slate-800">
+                      <Filter size={16} className="text-slate-400" /> Filtrar
+                      por nota
                       {selectedStarFilter && (
                         <button
                           onClick={() => setSelectedStarFilter(null)}
-                          className="text-[10px] text-rose-500 font-black uppercase tracking-widest ml-auto bg-rose-50 px-2 py-0.5 rounded"
+                          className="text-[9px] md:text-[10px] text-rose-500 font-black uppercase tracking-widest ml-auto bg-rose-50 px-2 py-1 rounded-md"
                         >
                           Limpar Filtro
                         </button>
@@ -293,7 +336,7 @@ export default function CommentsSection({
                               star === selectedStarFilter ? null : star,
                             )
                           }
-                          className={`flex items-center gap-3 group text-left w-full rounded-full p-1 -m-1 transition-colors ${isSelected ? "bg-amber-50/50" : "hover:bg-slate-50"}`}
+                          className={`flex items-center gap-3 group text-left w-full rounded-full p-1.5 -m-1.5 transition-colors ${isSelected ? "bg-amber-50/80 border border-amber-100/50" : "hover:bg-slate-50 border border-transparent"}`}
                         >
                           <span className="flex items-center gap-1 w-10 shrink-0 text-xs font-bold text-amber-600">
                             {star}{" "}
