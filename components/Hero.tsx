@@ -153,13 +153,11 @@ export default function Hero() {
       />
 
       {/* =========================================================================
-          💻 NOVO ALGORITMO DE FUSÃO NA DIREITA (Cores vivas e máscara ajustada)
+          💻 NOVO ALGORITMO DE FUSÃO NA DIREITA (Ancorado à Direita)
           ========================================================================= */}
       <div
         className="hidden lg:block absolute inset-y-0 right-0 w-[60%] xl:w-[55%] z-10 pointer-events-none overflow-hidden"
         style={{
-          // 🚀 FIX: O "black 80%" garante que a foto e os cards fiquem 100% sólidos.
-          // O esfumaçado só acontece nos últimos 20% da esquerda!
           WebkitMaskImage:
             "linear-gradient(to left, black 80%, transparent 100%)",
           maskImage: "linear-gradient(to left, black 80%, transparent 100%)",
@@ -171,9 +169,10 @@ export default function Hero() {
           fill
           priority
           sizes="(min-width: 1024px) 60vw, 1vw"
-          className="object-cover object-[center_35%] scale-100 hover:scale-[1.01] transition-transform duration-1000 ease-out"
+          /* 🚀 UX FIX: Trocamos o center_35% por object-right (ou object-[right_35%]). 
+             Isso trava a margem direita da imagem, impedindo que o celular e a modelo sejam cortados! */
+          className="object-cover object-right xl:object-[right_35%] scale-100 hover:scale-[1.01] transition-transform duration-1000 ease-out"
         />
-        {/* Removemos a div branca por cima para as cores originais da sua foto brilharem! */}
       </div>
 
       {/* =========================================================================

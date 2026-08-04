@@ -359,25 +359,6 @@ export default function VitrineDigital() {
               </button>
             );
           })}
-
-          {/* 🚀 BOTÃO "MAIS CATEGORIAS" FIXO NO FINAL DA LISTA */}
-          <Link
-            href="/explorar"
-            draggable={false}
-            className="group flex flex-row items-center gap-3 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_20px_rgba(0,0,0,0.06)] hover:border-emerald-300 transition-all duration-300 w-[160px] sm:w-[180px] shrink-0 snap-start text-left"
-          >
-            <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-sm">
-              <MoreHorizontal size={20} strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-black text-slate-800 text-[13px] md:text-sm truncate group-hover:text-emerald-600 transition-colors">
-                Mais
-              </span>
-              <span className="text-slate-500 text-[10px] font-bold truncate">
-                Ver todas
-              </span>
-            </div>
-          </Link>
         </div>
 
         {/* Seta Direita */}
