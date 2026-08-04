@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -15,6 +15,9 @@ export default function SearchBar({
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
 
+  // 🚀 FIX CTO: O motor concorrente do React. Ele gerencia rotas pesadas sem travar a UI.
+  const [isPending, startTransition] = useTransition();
+
   useEffect(() => {
     setIsSearching(false);
   }, [searchParams]);
@@ -22,7 +25,7 @@ export default function SearchBar({
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    // 🔒 TRAVA DE SEGURANÇA E PERFORMANCE (CFO/CTO): Exige no mínimo 2 letras!
+    // 🔒 TRAVA DE SEGURANÇA E PERFORMANCE
     if (query.trim().length < 2) {
       if (query.trim().length === 1) {
         toast.info("Digite um pouco mais", {
@@ -34,18 +37,20 @@ export default function SearchBar({
 
     setIsSearching(true);
 
-    const params = new URLSearchParams(searchParams.toString());
+    // =========================================================================
+    // 🚀 O VERDADEIRO RESET NUCLEAR (Sem vazamento de dados antigos)
+    // Usamos new URLSearchParams() VAZIO. Ele destrói qualquer cidade, estado,
+    // ou categoria que estava preso na URL anterior. É um recomeço limpo!
+    // =========================================================================
+    const params = new URLSearchParams();
     params.set("q", query.trim());
-    params.delete("page");
 
-    // Cenário 1: Modo Explorar
-    const isExploreMode = params.has("city") || params.has("state");
-    if (isExploreMode) {
-      router.push(`/busca?${params.toString()}`);
-      return;
+    // Se a pessoa estiver na aba "Online/Marketplace", nós preservamos apenas isso.
+    if (searchParams.has("modo")) {
+      params.set("modo", searchParams.get("modo") as string);
     }
 
-    // Cenário 2: GPS no Cache
+    // Cenário 1: GPS no Cache
     try {
       const cachedCoords = localStorage.getItem("tafanu_user_coords");
       if (cachedCoords) {
@@ -54,18 +59,25 @@ export default function SearchBar({
         const TRES_HORAS = 3 * 60 * 60 * 1000;
 
         if (lat && lng && tempoPassado < TRES_HORAS) {
-          if (!params.has("lat")) params.set("lat", lat);
-          if (!params.has("lng")) params.set("lng", lng);
+          params.set("lat", lat);
+          params.set("lng", lng);
           params.set("sort", "distance");
-          router.push(`/busca?${params.toString()}`);
+
+          startTransition(() => {
+            router.push(`/busca?${params.toString()}`);
+          });
+          setIsSearching(false);
           return;
         }
       }
     } catch (err) {}
 
-    // Cenário 3: Verificação Geolocation
+    // Cenário 2: Verificação Geolocation
     if (!navigator.geolocation) {
-      router.push(`/busca?${params.toString()}`);
+      startTransition(() => {
+        router.push(`/busca?${params.toString()}`);
+      });
+      setIsSearching(false);
       return;
     }
 
@@ -73,13 +85,16 @@ export default function SearchBar({
       try {
         const perm = await navigator.permissions.query({ name: "geolocation" });
         if (perm.state === "denied") {
-          router.push(`/busca?${params.toString()}`);
+          startTransition(() => {
+            router.push(`/busca?${params.toString()}`);
+          });
+          setIsSearching(false);
           return;
         }
       } catch (e) {}
     }
 
-    // Cenário 4: Busca com GPS otimizado (2.5s)
+    // Cenário 3: Busca com GPS otimizado (2.5s)
     const executeGpsFetch = (isRetry = false) => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -114,7 +129,10 @@ export default function SearchBar({
             }),
           );
 
-          router.push(`/busca?${params.toString()}`);
+          startTransition(() => {
+            router.push(`/busca?${params.toString()}`);
+          });
+          setIsSearching(false);
         },
         (error) => {
           if (error.code === error.TIMEOUT && !isRetry) {
@@ -122,7 +140,10 @@ export default function SearchBar({
             return;
           }
 
-          router.push(`/busca?${params.toString()}`);
+          startTransition(() => {
+            router.push(`/busca?${params.toString()}`);
+          });
+          setIsSearching(false);
 
           if (error.code === error.PERMISSION_DENIED) {
             toast.warning("Buscando em todo o diretório", {
@@ -133,7 +154,7 @@ export default function SearchBar({
         },
         {
           enableHighAccuracy: isRetry,
-          timeout: isRetry ? 3000 : 2500, // ⚡ 2.5s para não travar!
+          timeout: isRetry ? 3000 : 2500,
           maximumAge: 300000,
         },
       );
@@ -143,7 +164,6 @@ export default function SearchBar({
   };
 
   return (
-    // 🎨 HARMONIZAÇÃO UX/UI: Altura h-12 md:h-[56px] alinhada com o FilterModal, bg-slate-50, borda e foco verde esmeralda!
     <form
       onSubmit={(e) => handleSearch(e)}
       className="w-full h-12 md:h-[56px] flex flex-row items-center gap-2 bg-slate-50 rounded-2xl px-3 py-1.5 border border-slate-200/80 focus-within:bg-white focus-within:border-tafanu-action focus-within:ring-2 focus-within:ring-tafanu-action/20 transition-all shadow-sm"
@@ -160,15 +180,15 @@ export default function SearchBar({
         value={query}
         maxLength={80}
         onChange={(e) => setQuery(e.target.value)}
-        disabled={isSearching}
+        disabled={isSearching || isPending}
       />
 
       <button
         type="submit"
-        disabled={isSearching || !query.trim()}
+        disabled={isSearching || isPending || !query.trim()}
         className="h-9 md:h-10 px-4 md:px-6 rounded-xl bg-tafanu-action text-white font-black text-xs md:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md hover:bg-emerald-600"
       >
-        {isSearching ? (
+        {isSearching || isPending ? (
           <>
             <Loader2 size={16} strokeWidth={3} className="animate-spin" />
             <span className="hidden sm:inline">Buscando...</span>
