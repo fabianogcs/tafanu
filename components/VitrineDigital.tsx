@@ -1,99 +1,118 @@
 "use client";
 
-import { ArrowRight, Sparkles, MapPin, Loader2 } from "lucide-react";
+import {
+  Sparkles,
+  MapPin,
+  Loader2,
+  LayoutGrid,
+  Utensils,
+  Car,
+  ShoppingBag,
+  GraduationCap,
+  Calendar,
+  Package,
+  PawPrint,
+  Briefcase,
+  Stethoscope,
+  Wrench,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
+import Link from "next/link";
 
-// 🚀 AS 11 CATEGORIAS: Cores preservadas para atuar como ACENTO DE LUXO no botão de ação!
+// 🚀 AS 11 CATEGORIAS: Agora com ícones reais mapeados para ficar idêntico ao mockup premium!
 const CATEGORIES_SHOWCASE = [
   {
     id: "Alimentacao",
     title: "Alimentação",
     subtitle: "Lanches & Pizzas",
     url: "/busca?category=Alimentacao",
-    bgClass: "from-orange-500 to-amber-600",
-    shadowClass: "shadow-orange-500/20",
+    bgClass: "from-orange-500 to-orange-500", // Cores mais flat/sólidas estilo SaaS
+    icon: Utensils,
   },
   {
     id: "Automotivo",
     title: "Automotivo",
     subtitle: "Oficinas & Peças",
     url: "/busca?category=Automotivo",
-    bgClass: "from-slate-700 to-slate-900",
-    shadowClass: "shadow-slate-700/20",
+    bgClass: "from-slate-700 to-slate-800",
+    icon: Car,
   },
   {
     id: "Beleza",
     title: "Beleza",
     subtitle: "Salões & Estética",
     url: "/busca?category=Beleza",
-    bgClass: "from-rose-500 to-pink-600",
-    shadowClass: "shadow-rose-500/20",
-  },
-  {
-    id: "Comercio",
-    title: "Comércio",
-    subtitle: "Lojas & Varejo",
-    url: "/busca?category=Comercio",
-    bgClass: "from-indigo-600 to-purple-700",
-    shadowClass: "shadow-indigo-500/20",
-  },
-  {
-    id: "Educacao",
-    title: "Educação",
-    subtitle: "Cursos & Escolas",
-    url: "/busca?category=Educacao",
-    bgClass: "from-blue-600 to-cyan-600",
-    shadowClass: "shadow-blue-500/20",
-  },
-  {
-    id: "Eventos",
-    title: "Eventos",
-    subtitle: "Festas & Shows",
-    url: "/busca?category=Eventos",
-    bgClass: "from-fuchsia-600 to-purple-600",
-    shadowClass: "shadow-fuchsia-500/20",
-  },
-  {
-    id: "Logistica",
-    title: "Logística",
-    subtitle: "Fretes & Entregas",
-    url: "/busca?category=Logistica",
-    bgClass: "from-amber-500 to-orange-600",
-    shadowClass: "shadow-amber-500/20",
-  },
-  {
-    id: "Pets",
-    title: "Pets",
-    subtitle: "Clínicas & Banho",
-    url: "/busca?category=Pets",
-    bgClass: "from-emerald-500 to-teal-700",
-    shadowClass: "shadow-emerald-500/20",
-  },
-  {
-    id: "Profissionais",
-    title: "Serv. Prof.",
-    subtitle: "Advogados, T.I",
-    url: "/busca?category=Profissionais",
-    bgClass: "from-stone-600 to-zinc-800",
-    shadowClass: "shadow-stone-600/20",
+    bgClass: "from-rose-500 to-rose-500",
+    icon: Sparkles,
   },
   {
     id: "Saude",
     title: "Saúde",
     subtitle: "Médicos & Clínicas",
     url: "/busca?category=Saude",
-    bgClass: "from-red-600 to-rose-700",
-    shadowClass: "shadow-red-600/20",
+    bgClass: "from-emerald-500 to-emerald-500",
+    icon: Stethoscope,
+  },
+  {
+    id: "Educacao",
+    title: "Educação",
+    subtitle: "Cursos & Escolas",
+    url: "/busca?category=Educacao",
+    bgClass: "from-blue-500 to-blue-500",
+    icon: GraduationCap,
+  },
+  {
+    id: "Pets",
+    title: "Pets",
+    subtitle: "Clínicas & Banho",
+    url: "/busca?category=Pets",
+    bgClass: "from-purple-500 to-purple-500",
+    icon: PawPrint,
   },
   {
     id: "Servicos",
     title: "Serv. Gerais",
     subtitle: "Reformas & Limpeza",
     url: "/busca?category=Servicos",
-    bgClass: "from-sky-500 to-blue-600",
-    shadowClass: "shadow-sky-500/20",
+    bgClass: "from-amber-500 to-amber-500",
+    icon: Wrench,
+  },
+  {
+    id: "Eventos",
+    title: "Eventos",
+    subtitle: "Festas & Shows",
+    url: "/busca?category=Eventos",
+    bgClass: "from-fuchsia-500 to-fuchsia-500",
+    icon: Calendar,
+  },
+  {
+    id: "Comercio",
+    title: "Comércio",
+    subtitle: "Lojas & Varejo",
+    url: "/busca?category=Comercio",
+    bgClass: "from-indigo-500 to-indigo-500",
+    icon: ShoppingBag,
+  },
+  {
+    id: "Logistica",
+    title: "Logística",
+    subtitle: "Fretes & Entregas",
+    url: "/busca?category=Logistica",
+    bgClass: "from-sky-500 to-sky-500",
+    icon: Package,
+  },
+  {
+    id: "Profissionais",
+    title: "Serv. Prof.",
+    subtitle: "Advogados, T.I",
+    url: "/busca?category=Profissionais",
+    bgClass: "from-stone-600 to-stone-600",
+    icon: Briefcase,
   },
 ];
 
@@ -101,6 +120,14 @@ export default function VitrineDigital() {
   const router = useRouter();
   const [userCity, setUserCity] = useState<string | null>(null);
   const [activeLoadingId, setActiveLoadingId] = useState<string | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [dragDistance, setDragDistance] = useState(0);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(true);
 
   useEffect(() => {
     try {
@@ -113,12 +140,47 @@ export default function VitrineDigital() {
     } catch (err) {}
   }, []);
 
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setShowLeft(scrollLeft > 5);
+    setShowRight(scrollLeft < scrollWidth - clientWidth - 5);
+  };
+
+  const scroll = (offset: number) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setDragDistance(0);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const onMouseLeave = () => setIsDragging(false);
+  const onMouseUp = () => setIsDragging(false);
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+    setDragDistance((prev) => prev + Math.abs(e.movementX));
+  };
+
   const handleMoodClick = async (
     e: React.MouseEvent,
     baseUrl: string,
     categoryId: string,
   ) => {
     e.preventDefault();
+
+    // 🚀 Se o usuário arrastou o mouse, cancela o clique!
+    if (dragDistance > 10) return;
     if (activeLoadingId) return;
 
     const cachedCoords = localStorage.getItem("tafanu_user_coords");
@@ -153,7 +215,6 @@ export default function VitrineDigital() {
 
     setActiveLoadingId(categoryId);
 
-    // ⚡ CIRURGIA DE VELOCIDADE: GPS agora tem limite de 2.5s para não travar a tela!
     const executeGpsFetch = (isRetry = false) => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -207,7 +268,7 @@ export default function VitrineDigital() {
         },
         {
           enableHighAccuracy: isRetry,
-          timeout: isRetry ? 3000 : 2500, // 🚀 DE 12s/7s PARA 3s/2.5s!
+          timeout: isRetry ? 3000 : 2500,
           maximumAge: 300000,
         },
       );
@@ -217,80 +278,115 @@ export default function VitrineDigital() {
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-6 pt-6 pb-8 md:pb-12 relative z-10 -mt-2 sm:-mt-4">
-      <div className="mb-6 md:mb-8 text-center flex flex-col items-center animate-in fade-in duration-500">
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className="bg-emerald-50 border border-emerald-100 text-tafanu-action p-1 rounded-lg shadow-2xs">
-            {userCity ? (
-              <MapPin size={12} strokeWidth={2.5} />
-            ) : (
-              <Sparkles size={12} strokeWidth={2.5} />
-            )}
-          </span>
-          <span className="text-tafanu-action font-black text-[10px] uppercase tracking-[0.25em]">
-            {userCity ? "Aberto Perto de Você" : "Categorias Oficiais"}
-          </span>
-        </div>
+    // 🚀 UX FIX: Espaçamento reduzido (pt-4 pb-6) para aproximar a seção da Hero
+    <section className="w-full max-w-[1500px] mx-auto px-6 lg:px-12 xl:px-16 pt-4 pb-6 relative z-10 animate-in fade-in duration-700">
+      {/* Estilo para matar a barra de rolagem */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+      `,
+        }}
+      />
 
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 uppercase italic tracking-tighter leading-tight">
-          {userCity ? (
-            <>
-              Opções em{" "}
-              <span className="text-tafanu-action truncate">{userCity}</span>
-            </>
-          ) : (
-            <>
-              O Que Você <span className="text-tafanu-action">Busca Hoje?</span>
-            </>
-          )}
-        </h2>
+      {/* 🚀 CABEÇALHO DA SEÇÃO (Limpo, sem redundância) */}
+      <div className="flex items-end justify-between mb-6 md:mb-8">
+        <div className="flex flex-col">
+          <h2 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2 mb-1">
+            <LayoutGrid className="text-slate-700" size={24} />
+            Navegue por categorias
+          </h2>
+          <p className="text-slate-500 font-medium text-[11px] md:text-xs">
+            {userCity
+              ? `Exibindo melhores resultados em ${userCity}`
+              : "O que você busca hoje?"}
+          </p>
+        </div>
       </div>
 
-      {/* 🚀 GRID PREMIUM: Layout preservado em 5 colunas no desktop com respiro perfeito */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3 md:gap-3.5">
-        {CATEGORIES_SHOWCASE.map((mood) => {
-          const isLoadingThis = activeLoadingId === mood.id;
+      <div className="relative group/carousel">
+        {/* Seta Esquerda */}
+        <button
+          onClick={() => scroll(-300)}
+          className={`absolute left-[-20px] top-[50%] -translate-y-1/2 z-30 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_5px_15px_rgba(0,0,0,0.15)] border border-slate-100 text-slate-600 hover:text-emerald-600 hover:scale-110 transition-all hidden md:flex ${!showLeft ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        >
+          <ChevronLeft size={24} strokeWidth={2.5} />
+        </button>
 
-          return (
-            // 🎨 CIRURGIA DE LUXO: Fundo branco, borda suave, sombra elegante e hover esmeralda
-            <button
-              key={mood.id}
-              onClick={(e) => handleMoodClick(e, mood.url, mood.id)}
-              disabled={activeLoadingId !== null && !isLoadingThis}
-              className="group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.4rem] px-4 py-3.5 md:px-5 md:py-4 flex items-center justify-between min-h-[76px] sm:min-h-[84px] bg-white border border-slate-200/80 hover:border-tafanu-action/50 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left w-full disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {/* Efeito sutil de brilho esmeralda no fundo ao passar o mouse */}
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        {/* 🚀 CARROSSEL HORIZONTAL DE CATEGORIAS (DRAG TO SCROLL) */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          onMouseDown={onMouseDown}
+          onMouseLeave={onMouseLeave}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
+          className={`flex flex-nowrap overflow-x-auto gap-3 md:gap-4 pb-4 pt-2 hide-scroll ${isDragging ? "cursor-grabbing snap-none" : "cursor-grab snap-x snap-mandatory"}`}
+        >
+          {CATEGORIES_SHOWCASE.map((mood) => {
+            const isLoadingThis = activeLoadingId === mood.id;
+            const Icon = mood.icon;
 
-              {/* LADO ESQUERDO: Título Escuro e Subtítulo Cinza */}
-              <div className="relative z-10 flex flex-col justify-center pr-2 min-w-0">
-                <h3 className="text-slate-800 group-hover:text-tafanu-action transition-colors font-black text-sm sm:text-base md:text-lg uppercase tracking-tight leading-tight mb-0.5 truncate">
-                  {isLoadingThis ? "Abrindo..." : mood.title}
-                </h3>
-                <p className="text-slate-500 font-bold text-[11px] sm:text-xs tracking-wider truncate">
-                  {isLoadingThis ? "Buscando..." : mood.subtitle}
-                </p>
-              </div>
-
-              {/* LADO DIREITO: O Acento Colorido Exclusivo de Cada Categoria! */}
-              <div className="relative z-10 shrink-0">
+            return (
+              <button
+                key={mood.id}
+                onClick={(e) => handleMoodClick(e, mood.url, mood.id)}
+                disabled={activeLoadingId !== null && !isLoadingThis}
+                draggable={false}
+                className="group flex flex-row items-center gap-3 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_20px_rgba(0,0,0,0.06)] hover:border-slate-300 transition-all duration-300 w-[200px] sm:w-[220px] shrink-0 snap-start text-left disabled:opacity-40 disabled:pointer-events-none"
+              >
+                {/* Ícone Redondo */}
                 <div
-                  className={`w-8 h-8 rounded-full bg-gradient-to-br ${mood.bgClass} flex items-center justify-center text-white shadow-sm group-hover:scale-110 group-hover:${mood.shadowClass} transition-all duration-300`}
+                  className={`w-12 h-12 rounded-full bg-gradient-to-br ${mood.bgClass} flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-sm`}
                 >
                   {isLoadingThis ? (
-                    <Loader2 size={14} className="animate-spin text-white" />
+                    <Loader2 size={20} className="animate-spin text-white" />
                   ) : (
-                    <ArrowRight
-                      size={15}
-                      strokeWidth={2.5}
-                      className="group-hover:translate-x-0.5 transition-transform"
-                    />
+                    <Icon size={20} strokeWidth={2.5} />
                   )}
                 </div>
-              </div>
-            </button>
-          );
-        })}
+
+                {/* Textos */}
+                <div className="flex flex-col overflow-hidden">
+                  <span className="font-black text-slate-800 text-[13px] md:text-sm truncate group-hover:text-emerald-600 transition-colors">
+                    {isLoadingThis ? "Abrindo..." : mood.title}
+                  </span>
+                  <span className="text-slate-500 text-[10px] font-bold truncate">
+                    {mood.subtitle}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+
+          {/* 🚀 BOTÃO "MAIS CATEGORIAS" FIXO NO FINAL DA LISTA */}
+          <Link
+            href="/explorar"
+            draggable={false}
+            className="group flex flex-row items-center gap-3 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_10px_20px_rgba(0,0,0,0.06)] hover:border-emerald-300 transition-all duration-300 w-[160px] sm:w-[180px] shrink-0 snap-start text-left"
+          >
+            <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+              <MoreHorizontal size={20} strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-black text-slate-800 text-[13px] md:text-sm truncate group-hover:text-emerald-600 transition-colors">
+                Mais
+              </span>
+              <span className="text-slate-500 text-[10px] font-bold truncate">
+                Ver todas
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Seta Direita */}
+        <button
+          onClick={() => scroll(300)}
+          className={`absolute right-[-20px] top-[50%] -translate-y-1/2 z-30 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_5px_15px_rgba(0,0,0,0.15)] border border-slate-100 text-slate-600 hover:text-emerald-600 hover:scale-110 transition-all hidden md:flex ${!showRight ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        >
+          <ChevronRight size={24} strokeWidth={2.5} />
+        </button>
       </div>
     </section>
   );

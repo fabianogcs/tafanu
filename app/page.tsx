@@ -39,21 +39,32 @@ export default async function Home() {
   const trendingBusinesses = await getTrendingBusinesses();
 
   return (
-    <main className="relative min-h-screen pb-6 md:pb-12 overflow-hidden bg-[#F8FAFC]">
-      {/* 📐 FUNDO ARQUITETÔNICO MODERNISTA */}
+    // 🚀 FIX: overflow-x-clip mata a 2ª barra de rolagem. Reduzimos o pb-32 para pb-10 para colar no Footer!
+    <main className="relative min-h-screen pb-6 lg:pb-10 bg-white selection:bg-emerald-200 selection:text-emerald-900 overflow-x-clip w-full">
+      {/* 📐 FUNDO SAAS PREMIUM */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[25vh] left-0 w-full h-[80%] bg-white transform -skew-y-2 origin-top-left border-t border-slate-200/60 shadow-[inset_0_10px_30px_rgba(0,0,0,0.01)]" />
-        <div className="absolute top-[60vh] -right-48 w-[800px] h-[800px] rounded-full border-[60px] border-emerald-50/50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC] via-white to-[#F8FAFC]" />
+
+        {/* FIX: Trocamos VW por px para não bugar o zoom em telas Ultra-Wide */}
+        <div className="absolute top-[35%] -left-[200px] w-[800px] h-[800px] bg-emerald-400/5 rounded-full blur-[120px]" />
+        <div className="absolute top-[65%] -right-[200px] w-[600px] h-[600px] bg-teal-400/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* 📦 FLUXO DE NAVEGAÇÃO COMPLETO, DENSO E NA ORDEM ESTRATÉGICA CORRETA */}
-      <div className="relative z-10 space-y-4 md:space-y-8">
+      <div className="relative z-10 flex flex-col w-full">
         <Hero />
-        <VitrineDigital />
-        {/* 🚀 CIRURGIA APLICADA: Os Mais Buscados vêm primeiro (Social Proof)... */}
-        <OsMaisBuscados businesses={trendingBusinesses} />
-        {/* ...e o WhyTafanu fecha a página ancorando a confiança e autoridade! */}
-        <WhyTafanu />
+
+        <div className="relative z-30">
+          <VitrineDigital />
+        </div>
+
+        <div className="relative z-20">
+          <OsMaisBuscados businesses={trendingBusinesses} />
+        </div>
+
+        {/* FIX: Tiramos o mt-16 gigante para o bloco de vantagens colar na lista de empresas */}
+        <div className="relative mt-2 md:mt-4 z-10">
+          <WhyTafanu />
+        </div>
       </div>
     </main>
   );

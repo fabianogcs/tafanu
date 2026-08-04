@@ -89,7 +89,8 @@ export default function Navbar({
     <>
       {/* 🚀 CIRURGIA UX/UI: Altura reduzida para h-14 (mobile) e h-16 (desktop) */}
       <nav className="bg-white/90 backdrop-blur-xl sticky top-0 z-[80] border-b border-slate-200 w-full transition-all duration-300">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 🚀 UX FIX: Alinhamento sincronizado milimetricamente com a Hero (1500px) */}
+        <div className="w-full max-w-[1500px] mx-auto px-6 lg:px-12 xl:px-16">
           <div className="flex justify-between items-center h-14 md:h-16">
             {/* LOGO COM DESTAQUE E PRESENÇA DE MARCA (UX/UI Premium) */}
             <div className="flex-shrink-0">

@@ -1,12 +1,30 @@
 "use client";
 
-import { Search, Sparkles, Loader2, TrendingUp } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  Loader2,
+  Store,
+  LayoutGrid,
+  MapPin,
+  Star,
+  Smile,
+  ShieldCheck, // 🚀 Importado para o card flutuante!
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
 
-const POPULAR_TAGS = ["Mecânico", "Salão", "Pizzaria", "Barbearia", "Padaria"];
+// 🚀 Atualizado com os textos do mockup!
+const POPULAR_TAGS = [
+  "Mecânico",
+  "Pizzaria",
+  "Salão de Beleza",
+  "Dentista",
+  "Academia",
+  "Delivery",
+];
 
 export default function Hero() {
   const router = useRouter();
@@ -120,64 +138,31 @@ export default function Hero() {
   };
 
   return (
-    // 🚀 MANTIDA A SUA ALTURA EXATA: min-h-[400px] lg:min-h-[440px] pt-6 pb-8 lg:py-6
-    <section className="relative w-full min-h-[400px] lg:min-h-[440px] bg-gradient-to-br from-[#E6F9F0] via-white to-[#F0FDF4] overflow-hidden flex items-center border-b border-slate-200/60 pt-6 pb-8 lg:py-6">
-      {/* Luz Esmeralda Principal */}
-      <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-emerald-400/25 to-teal-300/10 rounded-full blur-[90px] pointer-events-none" />
+    // 🚀 UX FIX: Reduzimos o padding no mobile (pt-10 pb-8) para subir o conteúdo e não colidir com a navbar!
+    <section className="relative w-full min-h-[auto] lg:min-h-[640px] bg-gradient-to-br from-[#F8FAFC] via-white to-[#F0FDF4] overflow-hidden flex items-center border-b border-slate-200/60 pt-10 pb-8 lg:pt-24 lg:pb-20">
+      {/* Luz Esmeralda Suave no Topo (Elegância no Mobile e Desktop) */}
+      <div className="absolute top-[-10%] left-[-10%] w-[350px] md:w-[600px] h-[350px] md:h-[600px] bg-emerald-400/10 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* 📱 FOTO MOBILE VIBRANTE (lg:hidden) */}
-      <div className="absolute inset-0 z-0 lg:hidden pointer-events-none overflow-hidden">
-        <Image
-          src="/hero-bg.webp"
-          alt="Fundo Urbano Mobile"
-          fill
-          priority
-          sizes="(max-width: 1023px) 100vw, 1vw"
-          className="object-cover object-center opacity-75 scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/85 to-[#F8FAFC]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/15 via-transparent to-teal-500/10" />
-      </div>
-
-      {/* Onda Abstrata Esquerda */}
-      <div className="absolute bottom-0 left-0 w-full lg:w-[60%] h-full pointer-events-none overflow-hidden opacity-40">
-        <svg
-          className="absolute bottom-0 left-0 w-full h-[80%]"
-          viewBox="0 0 1000 600"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0,600 C200,500 350,300 200,100 C100,0 400,0 500,200 C600,400 800,550 1000,450 L1000,600 L0,600 Z"
-            fill="url(#wave-grad)"
-          />
-          <defs>
-            <linearGradient id="wave-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#059669" stopOpacity="0.05" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-
-      {/* Padrão de Pontos Digitais no Fundo */}
+      {/* Padrão de Pontos Digitais Sutil */}
       <div
-        className="absolute top-6 left-8 w-56 h-48 opacity-25 pointer-events-none hidden md:block"
+        className="absolute bottom-10 left-10 w-64 h-64 opacity-[0.03] pointer-events-none hidden lg:block"
         style={{
-          backgroundImage: "radial-gradient(#10b981 1.5px, transparent 1.5px)",
-          backgroundSize: "18px 18px",
+          backgroundImage: "radial-gradient(#000000 2px, transparent 2px)",
+          backgroundSize: "24px 24px",
         }}
       />
 
       {/* =========================================================================
-          💻 NOVO ALGORITMO DE FUSÃO NA DIREITA (Sem borda, w-[62%], máscara gradual)
+          💻 NOVO ALGORITMO DE FUSÃO NA DIREITA (Cores vivas e máscara ajustada)
           ========================================================================= */}
       <div
-        className="hidden lg:block absolute inset-y-0 right-0 w-[62%] z-10 pointer-events-none overflow-hidden"
+        className="hidden lg:block absolute inset-y-0 right-0 w-[60%] xl:w-[55%] z-10 pointer-events-none overflow-hidden"
         style={{
+          // 🚀 FIX: O "black 80%" garante que a foto e os cards fiquem 100% sólidos.
+          // O esfumaçado só acontece nos últimos 20% da esquerda!
           WebkitMaskImage:
-            "linear-gradient(to left, black 65%, transparent 100%)",
-          maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+            "linear-gradient(to left, black 80%, transparent 100%)",
+          maskImage: "linear-gradient(to left, black 80%, transparent 100%)",
         }}
       >
         <Image
@@ -185,76 +170,71 @@ export default function Hero() {
           alt="Centro Comercial Cidade e Serviços"
           fill
           priority
-          sizes="(min-width: 1024px) 62vw, 1vw"
-          /* 🚀 CIRURGIA: Tiramos o scale-105 (zoom) e mudamos object-center para object-[center_25%] para descer a cabeça do rapaz! */
-          className="object-cover object-[center_25%] scale-100 hover:scale-[1.02] transition-transform duration-1000 ease-out"
+          sizes="(min-width: 1024px) 60vw, 1vw"
+          className="object-cover object-[center_35%] scale-100 hover:scale-[1.01] transition-transform duration-1000 ease-out"
         />
-        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/15 to-white" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-60" />
+        {/* Removemos a div branca por cima para as cores originais da sua foto brilharem! */}
       </div>
 
       {/* =========================================================================
-          🎯 LADO ESQUERDO: MANTIDAS SUAS FONTES, ALTURAS E ESPAÇAMENTOS EXATOS
+          🎯 LADO ESQUERDO: LARGURA OTIMIZADA (Para o texto começar na margem correta)
           ========================================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-20">
-        <div className="w-full lg:w-[54%] xl:w-[51%] flex flex-col items-center lg:items-start text-center lg:text-left">
-          {/* Sua Tag Topo Exata */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border border-emerald-200 text-tafanu-action text-[10px] font-black uppercase tracking-widest mb-3.5 shadow-sm backdrop-blur-md">
-            <Sparkles size={12} className="animate-pulse text-tafanu-action" />{" "}
-            Guia comercial inteligente
+      <div className="max-w-[1500px] mx-auto px-6 lg:px-12 xl:px-16 w-full relative z-20 flex">
+        {/* BLOCO DE TEXTO E BUSCA */}
+        <div className="w-full lg:w-[62%] flex flex-col items-start text-left">
+          {/* Tag Topo */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest mb-4 shadow-sm">
+            <Sparkles size={12} className="text-emerald-500" /> A Vitrine
+            Digital da sua cidade
           </div>
 
-          {/* Seu Título Exato (3xl/4xl/5xl) */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.06] mb-2.5 uppercase italic drop-shadow-sm">
-            Tudo o que você busca, <br className="hidden sm:block" />
-            <span className="text-tafanu-action drop-shadow-[0_0_25px_rgba(0,168,107,0.3)]">
-              em um só lugar.
-            </span>
+          {/* Título SaaS Mockup 3 */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold text-slate-900 tracking-tight leading-[1.05] mb-4">
+            Encontre os melhores <br className="hidden sm:block" />
+            negócios <span className="text-emerald-600">perto de você</span>
           </h1>
 
-          {/* Seu Subtítulo Exato */}
-          <p className="text-xs sm:text-sm md:text-base text-slate-700 font-semibold leading-relaxed max-w-md mb-5 drop-shadow-2xs">
-            Conectamos você aos melhores serviços e comércios de confiança da
-            sua cidade em poucos segundos.
+          {/* Subtítulo Clean */}
+          <p className="text-sm md:text-lg text-slate-600 font-medium leading-relaxed max-w-lg mb-6 md:mb-8 pr-4">
+            Descubra empresas verificadas, avaliações reais e os melhores
+            serviços da sua região em segundos.
           </p>
 
-          {/* BARRA DE PESQUISA COM DESTAQUE MÁXIMO (Branco puro + Sombra de Alta Elevação!) */}
+          {/* BARRA DE PESQUISA */}
           <form
             onSubmit={handleSearch}
-            className="w-full max-w-lg h-14 sm:h-15 flex flex-row items-center gap-2 bg-white rounded-2xl px-3 py-1.5 border border-slate-200/80 focus-within:border-tafanu-action focus-within:ring-4 focus-within:ring-tafanu-action/15 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.12)] hover:shadow-[0_20px_50px_rgba(0,168,107,0.18)] mb-5 relative z-30"
+            className="w-full max-w-2xl h-14 md:h-16 flex flex-row items-center gap-2 bg-white rounded-2xl md:rounded-[2rem] pl-4 md:pl-6 pr-2 py-2 border border-slate-200/80 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/15 transition-all duration-300 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08)] mb-5 relative z-30"
           >
-            {/* Ícone de Busca Cinza (Esquerda) */}
-            <Search className="text-slate-400 w-5 h-5 ml-1.5 shrink-0" />
-
-            {/* Campo de Texto Limpo e com Fonte Bem Legível */}
+            <Search className="text-slate-400 w-5 h-5 shrink-0" />
             <input
               type="text"
-              placeholder="Ex: Mecânico, Pizzaria, Moda..."
-              className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 font-bold text-sm sm:text-base h-full"
+              placeholder="Ex: Mecânico, Pizzaria, Salão, Dentista..."
+              className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 font-medium text-sm md:text-base h-full"
               value={query}
               maxLength={80}
               onChange={(e) => setQuery(e.target.value)}
               disabled={isSearching}
             />
-
-            {/* Botão de Pesquisar Compacto com Trava de Segurança */}
             <button
               type="submit"
               disabled={isSearching || !query.trim()}
-              className="w-11 h-11 rounded-xl bg-tafanu-action text-white flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shadow-md hover:bg-emerald-600"
+              className="h-full px-5 md:px-8 rounded-xl md:rounded-full bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
               {isSearching ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
-                <Search className="w-5 h-5" strokeWidth={3} />
+                <>
+                  <span className="hidden sm:block">Buscar</span>
+                  <Search className="w-4 h-4 sm:hidden" />
+                </>
               )}
             </button>
           </form>
 
-          {/* Suas Tags Rápidas Exatas */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 max-w-lg">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
-              <TrendingUp size={12} className="text-tafanu-action" /> Populares:
+          {/* Tags Populares Clean (Ocultas em telas muito pequenas para poupar espaço) */}
+          <div className="hidden sm:flex flex-wrap items-center justify-start gap-2 max-w-2xl">
+            <span className="text-[11px] font-bold text-slate-800 mr-1">
+              Buscas populares:
             </span>
             {POPULAR_TAGS.map((tag) => (
               <button
@@ -264,11 +244,85 @@ export default function Hero() {
                   setQuery(tag);
                   handleSearch(e, tag);
                 }}
-                className="px-3 py-1 rounded-full bg-white/90 border border-slate-200 hover:border-tafanu-action hover:bg-emerald-50 text-slate-700 hover:text-tafanu-action text-[11px] font-bold transition-all shadow-2xs active:scale-95 backdrop-blur-sm"
+                className="px-4 py-1.5 rounded-full bg-white border border-slate-200 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 text-[11px] font-medium transition-all shadow-sm active:scale-95"
               >
                 {tag}
               </button>
             ))}
+          </div>
+
+          {/* =========================================================================
+              🚀 NOVA BARRA DE ESTATÍSTICAS (Apertada no Mobile para caber certinho!)
+              ========================================================================= */}
+          <div className="mt-6 md:mt-10 lg:mt-12 bg-white rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 md:px-8 md:py-6 grid grid-cols-2 md:flex md:flex-row items-center justify-between gap-y-4 gap-x-2 w-full max-w-3xl relative z-30">
+            {/* Bloco 1 */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0">
+                <Store className="w-5 h-5 text-emerald-600" strokeWidth={2.5} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm md:text-base font-black text-slate-800 leading-none mb-1">
+                  1.100+
+                </span>
+                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  Empresas
+                </span>
+              </div>
+            </div>
+
+            <div className="hidden md:block w-px h-8 bg-slate-100"></div>
+
+            {/* Bloco 2 */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0">
+                <LayoutGrid
+                  className="w-5 h-5 text-emerald-600"
+                  strokeWidth={2.5}
+                />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm md:text-base font-black text-slate-800 leading-none mb-1">
+                  48
+                </span>
+                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  Categorias
+                </span>
+              </div>
+            </div>
+
+            <div className="hidden md:block w-px h-8 bg-slate-100"></div>
+
+            {/* Bloco 3 */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0">
+                <Star className="w-5 h-5 text-emerald-600" strokeWidth={2.5} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm md:text-base font-black text-slate-800 leading-none mb-1">
+                  300+
+                </span>
+                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  Avaliações
+                </span>
+              </div>
+            </div>
+
+            <div className="hidden md:block w-px h-8 bg-slate-100"></div>
+
+            {/* Bloco 4 */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0">
+                <Smile className="w-5 h-5 text-emerald-600" strokeWidth={2.5} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm md:text-base font-black text-slate-800 leading-none mb-1">
+                  98%
+                </span>
+                <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  Satisfação
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
