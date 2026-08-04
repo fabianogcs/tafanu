@@ -468,7 +468,7 @@ export default function BusinessEditor({
       setMenuMode(safeBusiness.menuMode || "DIGITAL");
       setIsExternalLink(!!safeBusiness.isExternalLink);
       setActionLink(safeBusiness.actionLink || "");
-      setAgendaLink(safeBusiness.agendaLink || ""); // ⬅️ NOVO: Carrega a agenda salva no banco
+      setAgendaLink(safeBusiness.agendaLink || "");
       setIsPublished(safeBusiness.published);
       setWhatsapp(formatPhoneNumber(safeBusiness.whatsapp || ""));
       setPhone(formatPhoneNumber(safeBusiness.phone || ""));
@@ -770,7 +770,7 @@ export default function BusinessEditor({
         fireConfetti();
         toast.success("Alterações salvas com sucesso!");
 
-        hasInitialized.current = false;
+        hasInitialized.current = false; // 🚀 CTO FIX: Sua linha original que força a sincronização e desliga o botão!
 
         if (updateResult.newSlug && updateResult.newSlug !== business.slug) {
           router.push(`/dashboard/editar/${updateResult.newSlug}`);
