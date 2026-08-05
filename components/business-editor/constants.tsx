@@ -35,6 +35,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Som e Acessorios",
     "Auto Pecas",
     "Funilaria e Pintura",
+    "Vidros Automotivos",
     "Venda de Veiculos",
     "Oficina de Motos",
     "Guincho",
