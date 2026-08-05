@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   Database,
   CreditCard,
+  TrendingUp,
 } from "lucide-react";
 
 export default function TermosPage() {
@@ -130,6 +131,10 @@ export default function TermosPage() {
               <li className="flex items-center gap-2">
                 ❌ Venda de produtos ilícitos
               </li>
+              {/* 🚀 CIRURGIA JURÍDICA: Bloqueio de Bets e Rifas */}
+              <li className="flex items-center gap-2">
+                ❌ Jogos de azar, cassinos online, rifas e apostas (Bets)
+              </li>
             </ul>
           </section>
 
@@ -172,6 +177,32 @@ export default function TermosPage() {
                 </p>
               </div>
             </div>
+          </section>
+
+          {/* 4.1 REAJUSTES DE PREÇO */}
+          <section className="p-6 bg-slate-50 rounded-3xl border border-slate-200">
+            <div className="flex items-center gap-2 mb-3 text-tafanu-blue">
+              <TrendingUp size={20} />
+              <h2 className="text-xl font-black uppercase italic m-0">
+                4.1. Política de Preços e Reajustes
+              </h2>
+            </div>
+            <p className="text-slate-700 text-sm leading-relaxed mb-3">
+              O TAFANU reserva-se o direito de reajustar o valor das assinaturas
+              a qualquer momento. Em caso de alteração no preço do seu plano
+              atual,{" "}
+              <strong>
+                você será notificado com pelo menos 30 (trinta) dias de
+                antecedência
+              </strong>{" "}
+              através do e-mail cadastrado ou WhatsApp.
+            </p>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              A continuidade do uso da plataforma após a efetivação do reajuste
+              será considerada como concordância com o novo valor. Caso não
+              concorde, o anunciante tem o direito de cancelar a assinatura sem
+              multas antes da próxima cobrança.
+            </p>
           </section>
 
           {/* 5. DADOS E PRIVACIDADE (LGPD) */}
@@ -229,6 +260,27 @@ export default function TermosPage() {
               serviço será ininterrupto, livre de erros ou totalmente imune a
               falhas externas, isentando-se de lucros cessantes decorrentes de
               eventuais instabilidades técnicas temporárias.
+            </p>
+          </section>
+
+          {/* 8. MUDANÇAS E FORO JURÍDICO (O QUE FALTAVA) */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 text-tafanu-blue">
+              <RefreshCcw size={20} />
+              <h2 className="text-xl font-black uppercase italic m-0">
+                8. Disposições Gerais e Foro
+              </h2>
+            </div>
+            <p className="text-slate-600 leading-relaxed text-sm mb-3">
+              O TAFANU reserva-se o direito de alterar ou atualizar estes Termos
+              de Uso a qualquer momento, para refletir melhorias no serviço ou
+              mudanças na legislação aplicável.
+            </p>
+            <p className="text-slate-600 leading-relaxed text-sm">
+              Fica eleito o foro da comarca de Guarulhos, Estado de São Paulo,
+              para dirimir quaisquer dúvidas ou litígios decorrentes deste
+              instrumento, renunciando as partes a qualquer outro, por mais
+              privilegiado que seja.
             </p>
           </section>
 

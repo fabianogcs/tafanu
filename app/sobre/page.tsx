@@ -23,24 +23,28 @@ export default function SobrePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-indigo-500/10 text-slate-800 pb-20">
+    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-indigo-500/10 text-slate-800 pb-16 md:pb-20">
       {/* Hero Section */}
-      <section className="py-24 bg-white border-b border-slate-200 rounded-b-[2.5rem] md:rounded-b-[4rem] shadow-sm relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <section className="py-16 md:py-24 bg-white border-b border-slate-200 rounded-b-[2rem] md:rounded-b-[4rem] shadow-sm relative overflow-hidden">
+        {/* Fundo com o Algoritmo Nativo Base64 (Sem arquivos externos!) */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjAwIDIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZmlsdGVyIGlkPSJub2lzZUZpbHRlciI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgibm9pc2VGaWx0ZXIpIi8+PC9zdmc+')]" />
 
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <div className="inline-flex p-3 bg-indigo-50 border border-indigo-100 rounded-2xl mb-6 shadow-inner animate-bounce duration-1000">
-            <Zap className="text-indigo-600" fill="currentColor" size={24} />
+          <div className="inline-flex p-2.5 md:p-3 bg-indigo-50 border border-indigo-100 rounded-xl md:rounded-2xl mb-5 md:mb-6 shadow-inner animate-bounce duration-1000">
+            <Zap
+              className="text-indigo-600 w-5 h-5 md:w-6 md:h-6"
+              fill="currentColor"
+            />
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-6">
-            Mais que um diretório, <br />
-            <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent normal-case not-italic tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 uppercase italic tracking-tighter leading-[1.1] mb-5 md:mb-6">
+            Mais que um diretório, <br className="hidden sm:block" />
+            <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent normal-case not-italic tracking-tight block mt-1 md:mt-0">
               o ecossistema do seu negócio.
             </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-slate-500 leading-relaxed font-semibold max-w-2xl mx-auto text-balance">
+          <p className="text-sm sm:text-base md:text-xl text-slate-500 leading-relaxed font-semibold max-w-2xl mx-auto text-balance">
             O TAFANU nasceu para revolucionar a infraestrutura digital de marcas
             em escala. Elevamos o posicionamento de negócios locais e globais
             através de vitrines premium inteligentes, eliminando o atrito entre
@@ -49,21 +53,23 @@ export default function SobrePage() {
         </div>
       </section>
 
-      {/* Grid de Valores */}
-      <section className="py-16 max-w-5xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      {/* Grid de Valores (🚀 Refatorado para 3 colunas compactas no Mobile!) */}
+      <section className="py-10 md:py-16 max-w-5xl mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-8">
           {stats.map((item, index) => (
             <div
               key={index}
-              className="p-8 bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/40 flex flex-col items-center text-center group hover:border-indigo-500/30 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              className="p-3 md:p-8 bg-white rounded-2xl md:rounded-[2.5rem] border border-slate-100 md:border-slate-200 shadow-md shadow-slate-200/30 md:shadow-xl md:shadow-slate-200/40 flex flex-col items-center text-center group hover:border-indigo-500/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="mb-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
-                {item.icon}
+              <div className="mb-2 md:mb-4 p-2 md:p-4 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
+                <div className="scale-75 md:scale-100 origin-center">
+                  {item.icon}
+                </div>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+              <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-0.5 md:mb-1">
                 {item.label}
               </span>
-              <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight">
+              <h3 className="text-[11px] sm:text-xs md:text-2xl font-black text-slate-900 uppercase italic tracking-tight">
                 {item.value}
               </h3>
             </div>
@@ -72,19 +78,19 @@ export default function SobrePage() {
       </section>
 
       {/* Manifesto / Proposta de Valor */}
-      <section className="py-12 max-w-3xl mx-auto px-6">
-        <div className="space-y-6 text-slate-600 text-base md:text-lg leading-relaxed font-medium">
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 uppercase italic tracking-tight mb-4">
+      <section className="py-8 md:py-12 max-w-3xl mx-auto px-6">
+        <div className="space-y-4 md:space-y-6 text-slate-600 text-sm md:text-lg leading-relaxed font-medium">
+          <h2 className="text-xl md:text-3xl font-black text-slate-900 uppercase italic tracking-tight mb-2 md:mb-4 text-center md:text-left">
             Por que posicionar sua marca no TAFANU?
           </h2>
-          <p className="text-balance">
+          <p className="text-balance text-justify md:text-left">
             Acreditamos no poder do neuromarketing e do design de padrão
             internacional. Todo negócio merece uma interface que transmita
             autoridade instantânea. No mercado digital moderno, ter links
             fragmentados e canais espalhados destrói sua conversão. Centralizar
             sua operação é o único caminho para escalar o faturamento.
           </p>
-          <p className="text-balance">
+          <p className="text-balance text-justify md:text-left">
             Para o <strong>empreendedor</strong>, entregamos um hub de
             tecnologia de alta retenção que unifica suas redes, portfólio,
             agendas e canais de checkout, respondendo de forma flexível ao seu
@@ -96,28 +102,28 @@ export default function SobrePage() {
         </div>
 
         {/* Call to Action Box */}
-        <div className="mt-16 p-8 md:p-12 bg-slate-900 rounded-[2.5rem] md:rounded-[3.5rem] text-center text-white shadow-2xl relative overflow-hidden border border-slate-800">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-600/20 blur-3xl rounded-full" />
-          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-violet-600/20 blur-3xl rounded-full" />
+        <div className="mt-12 md:mt-16 p-6 sm:p-8 md:p-12 bg-slate-900 rounded-[2rem] md:rounded-[3.5rem] text-center text-white shadow-2xl relative overflow-hidden border border-slate-800">
+          <div className="absolute -right-10 -top-10 w-32 md:w-40 h-32 md:h-40 bg-indigo-600/20 blur-3xl rounded-full" />
+          <div className="absolute -left-10 -bottom-10 w-32 md:w-40 h-32 md:h-40 bg-violet-600/20 blur-3xl rounded-full" />
 
-          <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tight mb-4 relative z-10">
+          <h3 className="text-xl md:text-3xl font-black uppercase italic tracking-tight mb-3 md:mb-4 relative z-10 text-balance">
             Pronto para dominar o mercado?
           </h3>
-          <p className="text-slate-400 text-sm md:text-base font-semibold max-w-lg mx-auto mb-8 relative z-10">
+          <p className="text-slate-400 text-xs md:text-base font-semibold max-w-lg mx-auto mb-6 md:mb-8 relative z-10 text-balance">
             Crie sua vitrine inteligente em menos de 5 minutos e mude o patamar
             digital do seu negócio hoje mesmo.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10 max-w-md mx-auto">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 relative z-10 max-w-md mx-auto">
             <Link
               href="/anunciar"
-              className="flex-1 px-8 py-4 bg-white text-slate-900 rounded-xl font-black uppercase text-xs tracking-wider hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+              className="flex-1 px-6 md:px-8 py-3.5 md:py-4 bg-white text-slate-900 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-wider hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
               Criar Minha Vitrine <ArrowUpRight size={14} strokeWidth={2.5} />
             </Link>
             <Link
               href="/"
-              className="flex-1 px-8 py-4 bg-slate-800 border border-slate-700 text-white rounded-xl font-black uppercase text-xs tracking-wider hover:bg-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="flex-1 px-6 md:px-8 py-3.5 md:py-4 bg-slate-800 border border-slate-700 text-white rounded-xl font-black uppercase text-[10px] md:text-xs tracking-wider hover:bg-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               Explorar Negócios
             </Link>

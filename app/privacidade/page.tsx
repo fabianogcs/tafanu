@@ -189,6 +189,32 @@ export default function PrivacidadePage() {
             </ul>
           </section>
 
+          {/* 6. EXCLUSÃO E CONTATO (EXIGÊNCIA LGPD / GOOGLE PLAY) */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 text-rose-500">
+              <Trash2 size={20} />
+              <h2 className="text-xl font-black uppercase italic m-0 text-slate-900">
+                6. Exclusão de Dados e Contato
+              </h2>
+            </div>
+            <p className="text-slate-600 leading-relaxed text-sm mb-3">
+              Você pode solicitar a exclusão da sua conta e de sua vitrine a
+              qualquer momento diretamente pelo seu painel de controle ou
+              entrando em contato conosco. Ao confirmar a exclusão, seus dados
+              pessoais e mídias serão <strong>apagados permanentemente</strong>{" "}
+              de nossos bancos de dados, ressalvados apenas os registros de
+              transações financeiras exigidos por lei (compliance fiscal).
+            </p>
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <p className="text-[13px] text-slate-600 leading-relaxed m-0">
+                Para exercer seus direitos da LGPD, relatar incidentes ou
+                solicitar a exclusão manual dos seus dados, entre em contato com
+                nosso Encarregado de Dados (DPO) através do e-mail oficial de
+                suporte na página de contato do Tafanu.
+              </p>
+            </div>
+          </section>
+
           <div className="pt-10 border-t border-slate-100 flex flex-col items-center gap-4">
             <button
               onClick={handleClose}
