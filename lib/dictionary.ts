@@ -66,6 +66,7 @@ export const categoryDictionary: Record<string, string> = {
   acougue: "Açougue",
   hortifruti: "Hortifruti",
   "material de construcao": "Material de Construção",
+  "casa e decoracao": "Casa e Decoração",
   "distribuidora de bebidas": "Distribuidora de Bebidas",
   "moda feminina": "Moda Feminina",
   "moda masculina": "Moda Masculina",

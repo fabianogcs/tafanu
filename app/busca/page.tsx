@@ -176,6 +176,9 @@ const BUSINESS_TYPES: Record<string, string[]> = {
   implante: ["clinica odontologica"],
   canal: ["clinica odontologica"],
 
+  // 🏡 Casa e Decoração
+  decoracao: ["casa e decoracao", "loja de moveis", "design de interiores"],
+
   // 🛠️ Serviços, Casa e Automotivo
   celular: ["assistencia", "assistencia tecnica", "loja de celulares"],
   pneu: ["borracharia", "centro automotivo"],
@@ -276,6 +279,16 @@ const RELATED_TERMS: Record<string, string[]> = {
   imobiliaria: ["imobiliária", "corretor"],
   moveis: ["móveis", "mobilia", "mobília"],
   colchao: ["colchão", "cama"],
+  decoracao: [
+    "quadro",
+    "tapete",
+    "papel de parede",
+    "cortina",
+    "persiana",
+    "enxoval",
+  ],
+  cortina: ["persiana", "tecido", "blackout", "sob medida"],
+  tapete: ["carpete", "passadeira", "capacho"],
   petshop: ["pet shop"],
   racao: ["ração", "petisco"],
   banho: ["banho e tosa"],

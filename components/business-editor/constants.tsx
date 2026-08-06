@@ -72,6 +72,7 @@ export const TAFANU_CATEGORIES: Record<string, string[]> = {
     "Variedades e Utilidades",
     "Suplementos",
     "Moveis e Eletro",
+    "Casa e Decoracao",
   ].sort(),
 
   Educacao: [
