@@ -80,7 +80,7 @@ export default async function AnunciarPage() {
         name: "A PLATAFORMA COBRA TAXAS SOBRE MINHAS VENDAS?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Não! Nós não somos intermediários. O cliente acha você no Tafanu e clica para ir direto para o seu WhatsApp, seu Instagram ou sua Maquininha. Você paga apenas a assinatura mensal da vitrine e fica com 100% do lucro das suas vendas.",
+          text: "Não! Nós não somos intermediários. O cliente acha você no Tafanu e clica para ir direto para o seu WhatsApp, seu link de Delivery (iFood, etc) ou Agendamento. Você paga apenas a assinatura da vitrine e fica com 100% do lucro das vendas.",
         },
       },
     ],
@@ -299,25 +299,24 @@ export default async function AnunciarPage() {
                       size={18}
                       className="text-tafanu-action shrink-0"
                     />{" "}
-                    Cliques no WhatsApp, Site e Mapa
+                    Rastreio de Cliques no WhatsApp e Ligações
                   </p>
                   <p className="flex items-center gap-3">
                     <CheckCircle2
                       size={18}
                       className="text-tafanu-action shrink-0"
                     />{" "}
-                    Cliques no Instagram, TikTok e Facebook
+                    Cliques na Agenda, Delivery e Leitura de Catálogo
                   </p>
                   <p className="flex items-center gap-3">
                     <CheckCircle2
                       size={18}
                       className="text-tafanu-action shrink-0"
                     />{" "}
-                    Quantidade de Pessoas que Favoritaram a Loja
+                    Engajamento em Redes Sociais e Favoritos
                   </p>
                 </div>
               </div>
-
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-100 pb-2">
                   Busca e Posicionamento
@@ -557,9 +556,9 @@ export default async function AnunciarPage() {
             </summary>
             <div className="px-6 pb-6 text-slate-500 text-sm leading-relaxed">
               Não! Nós não somos intermediários. O cliente acha você no Tafanu e
-              clica para ir direto para o seu WhatsApp, seu Instagram ou sua
-              Maquininha. Você paga apenas a assinatura mensal da vitrine e fica
-              com 100% do lucro das suas vendas.
+              clica para ir direto para o seu WhatsApp, seu link de Delivery
+              (iFood, etc) ou Agendamento. Você paga apenas a assinatura mensal
+              da vitrine e fica com 100% do lucro das suas vendas.
             </div>
           </details>
         </div>

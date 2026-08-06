@@ -19,9 +19,10 @@ const REASONS = [
     desc: "Encontre o que precisa em poucos segundos, sem burocracia.",
   },
   {
+    // 🚀 MARKETING FIX: Texto ampliado para suportar o Hub Multicanal real exibido no painel de métricas!
     icon: MessageCircle,
-    title: "Atendimento",
-    desc: "Fale direto com os donos no WhatsApp e tire suas dúvidas.",
+    title: "Conexão Direta",
+    desc: "Acesse cardápios, faça agendamentos ou fale direto com os donos sem intermediários.",
   },
 ];
 

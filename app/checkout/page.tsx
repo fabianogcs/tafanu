@@ -312,19 +312,20 @@ export default function CheckoutPage() {
               },
               {
                 title: "Tráfego Direto sem Taxas",
-                desc: "Receba clientes no seu WhatsApp, iFood ou site próprio sem pagar NENHUMA comissão por venda.",
+                desc: "Receba clientes no seu WhatsApp, telefone, links de delivery ou agendamento sem NENHUMA comissão.",
               },
               {
                 title: "Hub de Lojas Oficiais",
-                desc: "Centralize Mercado Livre, Shopee, Shein, iFood e redes sociais em uma única vitrine premium.",
+                desc: "Centralize Mercado Livre, Shopee, iFood e redes sociais em uma única vitrine premium.",
               },
               {
                 title: "O Ímã do Google (SEO Local)",
                 desc: "Código otimizado para o robô do Google achar sua loja e indexar sua marca na sua região.",
               },
+              // 🚀 MARKETING FIX: O Ouro do Painel revelado no Checkout!
               {
-                title: "Métricas em Tempo Real",
-                desc: "Acompanhe no seu painel quantos acessos, cliques no WhatsApp e ligações você recebeu.",
+                title: "Analytics em Tempo Real",
+                desc: "Acompanhe os acessos, cliques no WhatsApp, ligações, rotas de GPS, agendamentos e leituras do seu catálogo.",
               },
             ].map((item, i) => (
               <div
