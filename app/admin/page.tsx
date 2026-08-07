@@ -49,6 +49,8 @@ export default async function AdminPage({
     comissoesAgregadas,
     lojasAtivasGerais,
     historicoSaques, // 🚀 RECIBOS DE SAQUE
+    topSearches, // 🚀 O Radar de Busca (Em Alta)
+    emptySearches, // 🚀 O Radar de Vendas (Buscas Vazias)
   ] = await Promise.all([
     // A. LISTA DE USUÁRIOS (Para a tabela - Limitado para não travar a tela)
     db.user.findMany({
@@ -138,6 +140,19 @@ export default async function AdminPage({
       take: 100, // 🚀 CIRURGIA: Trava de memória! Evita que o painel caia por excesso de dados
       include: { affiliate: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
+    }),
+
+    // F. 🚀 LOGS DE BUSCA: O que a cidade mais pesquisa
+    db.searchLog.findMany({
+      orderBy: { count: "desc" },
+      take: 50,
+    }),
+
+    // G. 🚀 RADAR DE VENDAS: Buscas vazias (Oportunidades de Ouro)
+    db.searchLog.findMany({
+      where: { hasResults: false },
+      orderBy: { count: "desc" },
+      take: 50,
     }),
   ]);
 
@@ -238,6 +253,10 @@ export default async function AdminPage({
       totalPagantes,
       globalVencendo: vencendo7d,
       globalVencidos: totalVencidosGlobal,
+    },
+    searchLogs: {
+      top: topSearches,
+      empty: emptySearches,
     },
   };
 

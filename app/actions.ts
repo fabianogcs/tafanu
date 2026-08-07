@@ -1696,6 +1696,45 @@ export async function toggleFavorite(businessId: string) {
 // 📊 SISTEMA DE ANALYTICS (SAAS) - O "Espião" de Cliques
 // ==============================================================================
 
+// 🚀 O MOTOR DE INTELIGÊNCIA: Salva o que os clientes estão buscando!
+export async function recordSearchQuery(rawQuery: string, hasResults: boolean) {
+  try {
+    const queryClean = rawQuery.toLowerCase().trim();
+    // 🛡️ Ignora buscas vazias ou muito curtas para não poluir o banco
+    if (!queryClean || queryClean.length < 2) return;
+
+    const stopWords = [
+      "na",
+      "no",
+      "em",
+      "de",
+      "do",
+      "da",
+      "com",
+      "para",
+      "o",
+      "a",
+    ];
+    if (stopWords.includes(queryClean)) return;
+
+    // 🚀 UPSERT ATÔMICO: Atualiza se existir, cria se for nova. Sem duplicatas!
+    await db.searchLog.upsert({
+      where: { query: queryClean },
+      update: {
+        count: { increment: 1 },
+        hasResults: hasResults, // Atualiza para o status mais recente do banco
+      },
+      create: {
+        query: queryClean,
+        count: 1,
+        hasResults: hasResults,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao registrar log de busca:", error);
+  }
+}
+
 export async function registerClickEvent(
   businessId: string,
   eventType: string,

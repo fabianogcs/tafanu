@@ -83,6 +83,10 @@ type AdminData = {
     globalVencendo: number; // 🚀 AVISAMOS A TELA QUE ISSO EXISTE
     globalVencidos: number; // 🚀 AVISAMOS A TELA QUE ISSO EXISTE
   };
+  searchLogs: {
+    top: any[];
+    empty: any[];
+  };
 };
 
 export default function AdminDashboard({
@@ -96,7 +100,7 @@ export default function AdminDashboard({
   const searchParams = useSearchParams(); // 🚀 NOVO
   const [isPending, startTransition] = useTransition();
   const [mainTab, setMainTab] = useState<
-    "overview" | "users" | "affiliates" | "security"
+    "overview" | "users" | "affiliates" | "security" | "search"
   >("overview");
   const [subTab, setSubTab] = useState("subscribers");
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
@@ -570,6 +574,13 @@ export default function AdminDashboard({
                 segments.pendingReports.length + data.flaggedComments.length,
               alert: true,
             },
+            {
+              key: "search",
+              label: "Radar de Vendas",
+              icon: <Search size={15} />,
+              count: data.searchLogs.empty.length,
+              alert: data.searchLogs.empty.length > 0,
+            },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -582,7 +593,9 @@ export default function AdminDashboard({
                       ? "affiliates"
                       : tab.key === "security"
                         ? "reports"
-                        : "overview",
+                        : tab.key === "search"
+                          ? "empty"
+                          : "overview",
                 );
               }}
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${mainTab === tab.key ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"}`}
@@ -688,6 +701,34 @@ export default function AdminDashboard({
                 label: "Moderação",
                 count: data.flaggedComments.length,
                 alert: true,
+              },
+            ].map((t) => (
+              <SubTab
+                key={t.key}
+                active={subTab === t.key}
+                onClick={() => setSubTab(t.key)}
+                label={t.label}
+                count={t.count}
+                alert={t.alert}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* TABS NÍVEL 2 - SEARCH LOGS */}
+        {mainTab === "search" && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar w-full">
+            {[
+              {
+                key: "empty",
+                label: "Vendas Perdidas (Vazias)",
+                count: data.searchLogs.empty.length,
+                alert: true,
+              },
+              {
+                key: "top",
+                label: "Termos em Alta",
+                count: data.searchLogs.top.length,
               },
             ].map((t) => (
               <SubTab
@@ -1427,6 +1468,82 @@ export default function AdminDashboard({
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {/* RADAR DE BUSCAS (NOVO) */}
+          {mainTab === "search" && (
+            <div className="p-6">
+              <div className="mb-6 flex items-center justify-between bg-slate-900 rounded-2xl p-5 shadow-lg">
+                <div>
+                  <h3 className="text-white font-black uppercase tracking-widest text-sm flex items-center gap-2">
+                    <Zap size={16} className="text-emerald-400" /> Radar de
+                    Intenção
+                  </h3>
+                  <p className="text-slate-400 text-[10px] font-bold mt-1">
+                    {subTab === "empty"
+                      ? "Termos pesquisados que não retornaram NENHUMA loja. Venda a assinatura para profissionais destes nichos!"
+                      : "Termos que geram mais acessos e pesquisas na sua cidade atualmente."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto w-full">
+                <table className="w-full min-w-[600px] text-left">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      <th className="p-4">Termo Pesquisado</th>
+                      <th className="p-4 text-center">Volume Acumulado</th>
+                      <th className="p-4 text-right">Última Busca</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {(subTab === "empty"
+                      ? data.searchLogs.empty
+                      : data.searchLogs.top
+                    ).map((log: any) => (
+                      <tr
+                        key={log.id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="p-4">
+                          <p className="text-[12px] font-black uppercase text-slate-700">
+                            {log.query}
+                          </p>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span
+                            className={`px-3 py-1 rounded-full text-[10px] font-black ${subTab === "empty" ? "bg-rose-50 text-rose-600 border border-rose-100" : "bg-emerald-50 text-emerald-600 border border-emerald-100"}`}
+                          >
+                            {log.count} {log.count === 1 ? "busca" : "buscas"}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right text-[11px] font-bold text-slate-400">
+                          {new Date(log.updatedAt).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                    {(subTab === "empty"
+                      ? data.searchLogs.empty
+                      : data.searchLogs.top
+                    ).length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="py-10 text-center text-[10px] font-black uppercase text-slate-400"
+                        >
+                          Nenhum registro no radar ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

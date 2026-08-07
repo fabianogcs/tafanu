@@ -7,6 +7,7 @@ import FilterModal, { LocationTree } from "@/components/FilterModal";
 import BusinessCard from "@/components/BusinessCard";
 import OpenNowButton from "@/components/OpenNowButton";
 import { auth } from "@/auth";
+import { recordSearchQuery } from "@/app/actions"; // 🚀 INJETADO AQUI
 import Link from "next/link";
 import { normalizeText } from "@/lib/normalize";
 import { unstable_cache } from "next/cache";
@@ -67,6 +68,11 @@ const IRREGULAR_PLURALS: Record<string, string> = {
   luzes: "luz",
   flores: "flor",
   cores: "cor",
+  tintas: "tinta",
+  cortinas: "cortina",
+  persianas: "persiana",
+  quadros: "quadro",
+  tapetes: "tapete",
 };
 
 // 1. SINÔNIMOS EXATOS, ERROS E GÊNEROS (A = B)
@@ -74,6 +80,7 @@ const TRUE_SYNONYMS: Record<string, string[]> = {
   mecanico: ["mecanica", "mecânico", "mecânica", "oficina"],
   mecanica: ["mecanico", "mecânica", "mecânico", "oficina"],
   cabeleireiro: [
+    "cabelo",
     "cabeleireira",
     "cabelereiro",
     "cabelereira",
@@ -110,6 +117,7 @@ const TRUE_SYNONYMS: Record<string, string[]> = {
   acai: ["açaí"],
   otica: ["ótica"],
   farmacia: ["farmácia", "drogaria"],
+  decoracao: ["casa e decoracao", "loja de moveis", "design de interiores"],
 };
 
 function expandTrueSynonyms(map: Record<string, string[]>) {
@@ -159,6 +167,7 @@ const BUSINESS_TYPES: Record<string, string[]> = {
   cha: ["casa de cha", "cafeteria"],
   vinho: ["adega"],
   whisky: ["adega"],
+  cachaça: ["adega"],
 
   // 🏥 Saúde e Estética
   remedio: ["farmacia", "drogaria"],
@@ -236,6 +245,61 @@ const BUSINESS_TYPES: Record<string, string[]> = {
   gesseiro: ["gesso"],
 };
 
+// 🚀 NOVO: 2.1 INTENÇÃO DE MARCAS (BRANDS -> CATEGORIA)
+const BRANDS_MAP: Record<string, string[]> = {
+  "coca cola": ["distribuidora de bebidas", "adega", "supermercado"],
+  heineken: ["distribuidora de bebidas", "adega", "bares"],
+  samsung: ["assistencia de celular", "loja de celulares"],
+  apple: ["assistencia de celular", "loja de celulares"],
+  iphone: ["assistencia de celular", "loja de celulares"],
+  motorola: ["assistencia de celular", "loja de celulares"],
+  coral: ["material de construcao", "loja de tintas", "tintas"],
+  suvinil: ["material de construcao", "loja de tintas", "tintas"],
+  tigre: ["material de construcao"],
+  votorantim: ["material de construcao"],
+  loreal: ["salao de beleza", "clinica de estetica"],
+};
+
+// 🚀 NOVO: 2.2 INTENÇÃO DE PRODUTOS (PRODUTO -> LOCAL)
+const PRODUCTS_MAP: Record<string, string[]> = {
+  parafuso: ["material de construcao", "ferragens"],
+  tinta: ["material de construcao", "pintor", "loja de tintas"],
+  cimento: ["material de construcao"],
+  argamassa: ["material de construcao"],
+  piso: ["material de construcao"],
+  celular: ["loja de celulares", "assistencia de celular"],
+  capinha: ["loja de celulares", "assistencia de celular"],
+  carregador: ["loja de celulares", "assistencia de celular"],
+  pneu: ["borracharia", "centro automotivo", "auto pecas"],
+  bateria: ["auto eletrica", "centro automotivo", "auto pecas"],
+  vestido: ["moda feminina", "boutique"],
+  calca: ["moda feminina", "moda masculina"],
+  tenis: ["calcados", "moda masculina", "moda feminina"],
+  brinquedo: ["moda infantil", "locacao de brinquedos"],
+  racao: ["pet shop", "casa de racao", "clinica veterinaria"],
+  remedio: ["farmacia", "drogaria"],
+  alianca: ["joalheria"],
+  oculos: ["otica"],
+};
+
+// 🚀 NOVO: 2.3 INTENÇÃO DE SERVIÇOS (SERVIÇO -> PROFISSIONAL/LOCAL)
+const SERVICES_MAP: Record<string, string[]> = {
+  "troca de oleo": ["centro automotivo", "oficina mecanica"],
+  alinhamento: ["centro automotivo", "borracharia"],
+  balanceamento: ["centro automotivo", "borracharia"],
+  "troca de tela": ["assistencia de celular", "assistencia tecnica"],
+  formatacao: ["assistencia tecnica"],
+  "corte masculino": ["barbearia", "salao de beleza"],
+  "corte feminino": ["salao de beleza"],
+  "limpeza de pele": ["clinica de estetica", "estetica"],
+  botox: ["clinica de estetica", "dentista", "clinica odontologica"],
+  clareamento: ["clinica odontologica", "dentista"],
+  canal: ["clinica odontologica", "dentista"],
+  "banho e tosa": ["pet shop", "clinica veterinaria"],
+  "limpeza de sofa": ["limpeza e faxina"],
+  "instalacao de ar": ["ar condicionado residencial", "eletricista"],
+};
+
 // 3. TERMOS RELACIONADOS E VARIAÇÕES (Bônus Secundário)
 const RELATED_TERMS: Record<string, string[]> = {
   restaurante: [
@@ -287,7 +351,7 @@ const RELATED_TERMS: Record<string, string[]> = {
     "persiana",
     "enxoval",
   ],
-  cortina: ["persiana", "tecido", "blackout", "sob medida"],
+  cortina: ["persiana", "cortinas", "tecido", "blackout", "sob medida"],
   tapete: ["carpete", "passadeira", "capacho"],
   petshop: ["pet shop"],
   racao: ["ração", "petisco"],
@@ -359,6 +423,15 @@ function getSmartTerms(query: string) {
       TRUE_SYNONYMS_MAP[normalizedTerm].forEach((s) => result.add(s));
     if (BUSINESS_TYPES[normalizedTerm])
       BUSINESS_TYPES[normalizedTerm].forEach((s) => result.add(s));
+
+    // 🚀 CIRURGIA: Lendo as novas tabelas de intenção
+    if (BRANDS_MAP[normalizedTerm])
+      BRANDS_MAP[normalizedTerm].forEach((s) => result.add(s));
+    if (PRODUCTS_MAP[normalizedTerm])
+      PRODUCTS_MAP[normalizedTerm].forEach((s) => result.add(s));
+    if (SERVICES_MAP[normalizedTerm])
+      SERVICES_MAP[normalizedTerm].forEach((s) => result.add(s));
+
     if (RELATED_TERMS[normalizedTerm])
       RELATED_TERMS[normalizedTerm].forEach((s) => result.add(s));
   });
@@ -879,7 +952,13 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
         const coreGroup = getPluralVariations(term);
         if (TRUE_SYNONYMS_MAP[term]) coreGroup.push(...TRUE_SYNONYMS_MAP[term]);
 
-        const businessGroup = BUSINESS_TYPES[term] || [];
+        // 🚀 Agrupamos tudo o que indica "Tipo de Negócio" (Categorias, Marcas, Produtos, Serviços)
+        const businessGroup = [
+          ...(BUSINESS_TYPES[term] || []),
+          ...(BRANDS_MAP[term] || []),
+          ...(PRODUCTS_MAP[term] || []),
+          ...(SERVICES_MAP[term] || []),
+        ];
         const relatedGroup = RELATED_TERMS[term] || [];
 
         const isCoreInName = coreGroup.some((t) => nameWords.includes(t));
@@ -1087,6 +1166,15 @@ export default async function BuscaPage({ searchParams }: BuscaProps) {
 
   const effectiveTotal = needsJsEngine ? businesses.length : totalCount;
   const totalPages = Math.ceil(effectiveTotal / PAGE_SIZE);
+
+  // ============================================================================
+  // 🚀 MOTOR DE INTELIGÊNCIA: Grava a palavra pesquisada e diz se deu bom ou vazia
+  // ============================================================================
+  if (rawQuery && page === 1) {
+    recordSearchQuery(rawQuery, effectiveTotal > 0).catch((err) =>
+      console.error("Erro silencioso ao gravar log de busca:", err),
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">

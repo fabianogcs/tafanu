@@ -404,3 +404,16 @@ model CheckoutToken {
   createdAt DateTime @default(now())
   expiresAt DateTime                      // 15 minutos e o link se autodestrói
 }
+
+// 🚀 MODELO DE LOGS DE BUSCA INTELIGENTE (TAFANU ENGINE)
+model SearchLog {
+  id              String   @id @default(cuid())
+  query           String   @unique // Palavra pura pesquisada (normalizada)
+  count           Int      @default(1) // Quantidade de vezes pesquisada
+  hasResults      Boolean  @default(true) // Se retornou lojas ou se foi uma busca vazia
+  clickedCount    Int      @default(0) // Quantidade de cliques gerados por essa busca
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([query])
+}
